@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="es"><head>
+<meta charset="UTF-8">
+<title>Reporte de carga del catalogo - 2026-05-09 07:20:45</title>
+<style>
+:root {
+  --marino: #003B7A; --teal: #00A6C0; --dorado: #F4C430;
+  --arena: #FAFAF7; --negro: #0A1628; --gris: #4A5568;
+  --error: #DC2626; --ok: #16A34A;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, sans-serif; background: var(--arena); color: var(--negro); line-height: 1.55; }
+.hero { background: linear-gradient(135deg, var(--marino), #002952); color: white; padding: 40px 50px; border-bottom: 6px solid var(--teal); }
+.hero h1 { font-size: 28px; font-weight: 800; letter-spacing: -0.02em; }
+.hero p { opacity: 0.9; margin-top: 6px; font-size: 14px; }
+.verdict { display: inline-block; padding: 6px 16px; border-radius: 30px; font-weight: 700; font-size: 12px; letter-spacing: 0.1em; margin-top: 14px; }
+.verdict.ok { background: var(--ok); }
+.verdict.err { background: var(--error); }
+main { max-width: 1300px; margin: 30px auto; padding: 0 30px; }
+.kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 30px; }
+.kpi { background: white; border-radius: 14px; padding: 20px; box-shadow: 0 4px 12px -4px rgba(0,59,122,0.15); border-top: 4px solid var(--marino); }
+.kpi.ok { border-top-color: var(--ok); }
+.kpi.err { border-top-color: var(--error); }
+.kpi.skip { border-top-color: var(--dorado); }
+.kpi .num { font-size: 32px; font-weight: 800; color: var(--marino); }
+.kpi.ok .num { color: var(--ok); }
+.kpi.err .num { color: var(--error); }
+.kpi .lbl { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--gris); margin-top: 4px; }
+table { width: 100%; border-collapse: collapse; background: white; border-radius: 14px; overflow: hidden; box-shadow: 0 4px 12px -4px rgba(0,59,122,0.10); }
+th { background: var(--marino); color: white; padding: 12px 14px; text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
+td { padding: 12px 14px; border-bottom: 1px solid #e5e7eb; font-size: 13px; vertical-align: top; }
+tr.ok td:first-child { border-left: 4px solid var(--ok); }
+tr.err td:first-child { border-left: 4px solid var(--error); }
+tr.skip td:first-child { border-left: 4px solid var(--dorado); }
+.badge { display: inline-block; padding: 3px 10px; border-radius: 10px; font-size: 10px; font-weight: 700; letter-spacing: 0.1em; }
+.badge.ok { background: rgba(22,163,74,0.15); color: var(--ok); }
+.badge.err { background: rgba(220,38,38,0.15); color: var(--error); }
+.badge.skip { background: rgba(244,196,48,0.2); color: #92400E; }
+code { background: #f3f4f6; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-family: ui-monospace, monospace; }
+.small { font-size: 12px; color: var(--gris); }
+.warn { color: #92400E; }
+h2 { color: var(--marino); margin: 30px 0 14px; font-size: 20px; padding-bottom: 6px; border-bottom: 2px solid var(--teal); }
+footer { max-width: 1300px; margin: 50px auto 30px; padding: 0 30px; font-size: 12px; color: var(--gris); text-align: center; }
+</style>
+</head><body>
+
+<div class="hero">
+<h1>Reporte de carga del catalogo</h1>
+<p>Plataforma DTI Nijar - Subtarea 6.8 del Plan de Trabajo Pre-SAT - IT DIGITTAL</p>
+<p>Ejecucion: 2026-05-09 07:20:45 - Backend: http://localhost:8000 - Modo: DRY-RUN (no se envio nada)</p>
+<span class="verdict ok">AUDITORIA SUPERADA</span>
+</div>
+
+<main>
+
+<h2>Resumen</h2>
+<div class="kpis">
+<div class="kpi"><div class="num">10</div><div class="lbl">Filas procesadas</div></div>
+<div class="kpi ok"><div class="num">10</div><div class="lbl">Cargadas con exito</div></div>
+<div class="kpi err"><div class="num">0</div><div class="lbl">Con errores</div></div>
+<div class="kpi skip"><div class="num">0</div><div class="lbl">Saltadas (ya existian)</div></div>
+</div>
+
+<h2>Detalle por fila</h2>
+<table>
+<thead><tr>
+<th>Fila</th><th>ID</th><th>Nombre</th><th>Tipo</th><th>Estado</th><th>Detalle</th><th>Avisos</th>
+</tr></thead>
+<tbody>
+
+        <tr class="ok">
+            <td>5</td>
+            <td><code>R-001</code></td>
+            <td>Playa de Mónsul</td>
+            <td>recurso<br><small>playa</small></td>
+            <td><span class="badge ok">OK</span></td>
+            <td class="small">dry-run, no enviado</td>
+            <td class="small warn"></td>
+        </tr>
+        
+        <tr class="ok">
+            <td>6</td>
+            <td><code>R-002</code></td>
+            <td>Playa de los Genoveses</td>
+            <td>recurso<br><small>playa</small></td>
+            <td><span class="badge ok">OK</span></td>
+            <td class="small">dry-run, no enviado</td>
+            <td class="small warn"></td>
+        </tr>
+        
+        <tr class="ok">
+            <td>7</td>
+            <td><code>R-003</code></td>
+            <td>Mirador de la Amatista</td>
+            <td>recurso<br><small>mirador</small></td>
+            <td><span class="badge ok">OK</span></td>
+            <td class="small">dry-run, no enviado</td>
+            <td class="small warn"></td>
+        </tr>
+        
+        <tr class="ok">
+            <td>8</td>
+            <td><code>R-004</code></td>
+            <td>Sendero Cala Higuera - Cala San Pedro</td>
+            <td>recurso<br><small>ruta</small></td>
+            <td><span class="badge ok">OK</span></td>
+            <td class="small">dry-run, no enviado</td>
+            <td class="small warn"></td>
+        </tr>
+        
+        <tr class="ok">
+            <td>9</td>
+            <td><code>R-005</code></td>
+            <td>Salinas de Cabo de Gata</td>
+            <td>recurso<br><small>monumento</small></td>
+            <td><span class="badge ok">OK</span></td>
+            <td class="small">dry-run, no enviado</td>
+            <td class="small warn"></td>
+        </tr>
+        
+        <tr class="ok">
+            <td>10</td>
+            <td><code>R-006</code></td>
+            <td>Castillo de San Felipe (Los Escullos)</td>
+            <td>recurso<br><small>monumento</small></td>
+            <td><span class="badge ok">OK</span></td>
+            <td class="small">dry-run, no enviado</td>
+            <td class="small warn"></td>
+        </tr>
+        
+        <tr class="ok">
+            <td>11</td>
+            <td><code>R-007</code></td>
+            <td>Centro de Visitantes Las Amoladeras</td>
+            <td>recurso<br><small>centro_visitantes</small></td>
+            <td><span class="badge ok">OK</span></td>
+            <td class="small">dry-run, no enviado</td>
+            <td class="small warn"></td>
+        </tr>
+        
+        <tr class="ok">
+            <td>12</td>
+            <td><code>R-008</code></td>
+            <td>Restaurante La Ola (San José)</td>
+            <td>servicio<br><small>gastronomia_restaurante</small></td>
+            <td><span class="badge ok">OK</span></td>
+            <td class="small">dry-run, no enviado</td>
+            <td class="small warn"></td>
+        </tr>
+        
+        <tr class="ok">
+            <td>13</td>
+            <td><code>R-009</code></td>
+            <td>Hotel Cortijo Sotillo</td>
+            <td>servicio<br><small>alojamiento_hotel</small></td>
+            <td><span class="badge ok">OK</span></td>
+            <td class="small">dry-run, no enviado</td>
+            <td class="small warn"></td>
+        </tr>
+        
+        <tr class="ok">
+            <td>14</td>
+            <td><code>R-010</code></td>
+            <td>Oficina de Turismo de San José</td>
+            <td>recurso<br><small>oficina_turismo</small></td>
+            <td><span class="badge ok">OK</span></td>
+            <td class="small">dry-run, no enviado</td>
+            <td class="small warn"></td>
+        </tr>
+        
+</tbody></table>
+
+</main>
+
+<footer>
+<p><strong>Plataforma DTI Nijar</strong> - Expediente 18962/2025 - IT DIGITTAL</p>
+<p>Subtarea 6.8 del Plan de Trabajo Pre-SAT - Carga del catalogo de recursos turisticos</p>
+</footer>
+
+</body></html>

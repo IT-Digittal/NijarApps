@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nijar.es/schemas/Visita.schema.json",
+  "title": "Visita",
+  "description": "Evento de visita / interacción digital con el destino. Datos siempre anonimizados conforme a RGPD.",
+  "type": "object",
+  "required": ["tipo", "ocurrido_en"],
+  "properties": {
+    "tipo": {
+      "type": "string",
+      "enum": [
+        "proximidad_ble",
+        "interaccion_totem",
+        "consulta_chatbot",
+        "app_vista",
+        "web_vista",
+        "wifi_conexion"
+      ]
+    },
+    "ocurrido_en": { "type": "string", "format": "date-time" },
+    "visitante_hash": {
+      "type": ["string", "null"],
+      "pattern": "^[a-f0-9]{64}$",
+      "description": "Hash SHA-256 del identificador del visitante (anonimizado, RGPD)"
+    },
+    "recurso_id": {
+      "type": ["string", "null"],
+      "format": "uuid",
+      "description": "RecursoTuristico asociado al evento (POI visitado, tótem consultado)"
+    },
+    "idioma": {
+      "type": ["string", "null"],
+      "enum": ["es", "en", "de", "fr", "it", "nl", "otro", null]
+    },
+    "canal": {
+      "type": ["string", "null"],
+      "enum": ["web", "app", "totem", "beacon", "wifi", null]
+    },
+    "atributos": {
+      "type": ["object", "null"],
+      "description": "Atributos específicos del evento",
+      "examples": [
+        { "intent_chatbot": "consulta_horario", "satisfaccion": "alta" },
+        { "seccion_totem": "rutas", "duracion_seg": 45 },
+        { "poi_id": "playa-monsul", "rssi": -65 }
+      ]
+    }
+  },
+  "additionalProperties": false,
+  "examples": [
+    {
+      "tipo": "interaccion_totem",
+      "ocurrido_en": "2026-07-20T11:32:18+02:00",
+      "visitante_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "idioma": "en",
+      "canal": "totem",
+      "atributos": {
+        "totem_id": "urn:ngsi-ld:Totem:nijar:rodalquilar",
+        "seccion": "rutas",
+        "duracion_seg": 45
+      }
+    },
+    {
+      "tipo": "consulta_chatbot",
+      "ocurrido_en": "2026-07-20T15:48:00+02:00",
+      "idioma": "de",
+      "canal": "web",
+      "atributos": {
+        "intent": "horario_centro_visitantes",
+        "nivel_confianza": "alta",
+        "resuelta_autonomamente": true
+      }
+    }
+  ]
+}

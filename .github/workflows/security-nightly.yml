@@ -1,0 +1,96 @@
+name: Security nightly
+
+on:
+  schedule:
+    - cron: '0 3 * * *'  # 03:00 UTC todos los días
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+  issues: write
+
+jobs:
+  full-scan:
+    name: Escaneo completo de seguridad
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11", cache: pip }
+
+      - name: Instalar herramientas
+        run: |
+          pip install pip-audit semgrep bandit[toml] safety
+          pip install -e .
+
+      - name: pip-audit completo (incluyendo no-strict)
+        run: pip-audit --vulnerability-service osv -f json -o pip-audit.json
+        continue-on-error: true
+
+      - name: Safety check
+        run: safety check --json --output safety.json
+        continue-on-error: true
+
+      - name: Semgrep — set extendido
+        run: |
+          semgrep --config p/owasp-top-ten \
+                  --config p/python \
+                  --config p/security-audit \
+                  --config p/secrets \
+                  --json -o semgrep.json src/
+        continue-on-error: true
+
+      - name: Bandit completo (incluyendo low/medium)
+        run: bandit -r src/nijar_dti -f json -o bandit-full.json
+        continue-on-error: true
+
+      - name: OSV Scanner
+        uses: google/osv-scanner-action/osv-scanner-action@v1.9.0
+        with:
+          scan-args: |-
+            --recursive
+            --skip-git
+            ./
+        continue-on-error: true
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nightly-security-reports
+          path: |
+            pip-audit.json
+            safety.json
+            semgrep.json
+            bandit-full.json
+
+      - name: Crear issue si hay hallazgos críticos
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `🔒 Hallazgos críticos en escaneo nocturno (${new Date().toISOString().split('T')[0]})`,
+              body: `Se han detectado hallazgos en el escaneo nocturno automático. Revisar los artefactos del workflow run [#${context.runId}](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}).`,
+              labels: ['security', 'priority:high']
+            });
+
+  trivy-image-nightly:
+    name: Trivy de imagen en producción
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build imagen
+        run: docker build -t nijar-dti-api:nightly .
+      - name: Trivy completo (LOW+MEDIUM+HIGH+CRITICAL)
+        uses: aquasecurity/trivy-action@0.24.0
+        with:
+          image-ref: 'nijar-dti-api:nightly'
+          format: 'sarif'
+          output: 'trivy-nightly.sarif'
+          severity: 'CRITICAL,HIGH,MEDIUM,LOW'
+      - if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with: { sarif_file: trivy-nightly.sarif }

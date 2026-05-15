@@ -1,0 +1,119 @@
+# =============================================================================
+# kube-prometheus-stack — Prometheus + Grafana + Alertmanager
+# =============================================================================
+# Instalación:
+#   helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+#   helm install kube-prom prometheus-community/kube-prometheus-stack \
+#     --namespace monitoring --create-namespace \
+#     --values infra/observability/prometheus-values.yaml
+# =============================================================================
+
+fullnameOverride: kube-prom
+
+# Etiqueta el namespace para que las NetworkPolicies de la app permitan scraping
+namespaceOverride: monitoring
+
+# --- Prometheus ---
+prometheus:
+  prometheusSpec:
+    retention: 15d
+    retentionSize: "30GB"
+    resources:
+      requests: { cpu: 200m, memory: 1Gi }
+      limits:   { cpu: 1500m, memory: 4Gi }
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          accessModes: ["ReadWriteOnce"]
+          storageClassName: gp3
+          resources:
+            requests:
+              storage: 50Gi
+    # Permite descubrir ServiceMonitors de cualquier namespace
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+    # Logs estructurados para Loki
+    logFormat: json
+    logLevel: info
+    walCompression: true
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 1000
+      fsGroup: 2000
+      seccompProfile:
+        type: RuntimeDefault
+
+# --- Alertmanager ---
+alertmanager:
+  alertmanagerSpec:
+    resources:
+      requests: { cpu: 50m, memory: 128Mi }
+      limits:   { cpu: 200m, memory: 256Mi }
+    storage:
+      volumeClaimTemplate:
+        spec:
+          accessModes: ["ReadWriteOnce"]
+          storageClassName: gp3
+          resources: { requests: { storage: 5Gi } }
+  config:
+    global:
+      resolve_timeout: 5m
+    route:
+      group_by: ['alertname', 'cluster', 'service']
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 4h
+      receiver: 'soc-default'
+      routes:
+        - matchers: ['severity = critical']
+          receiver: 'soc-critical'
+          continue: true
+        - matchers: ['severity = warning']
+          receiver: 'soc-default'
+    receivers:
+      - name: 'soc-default'
+        # Configurar webhooks reales en producción (Slack, Teams, email del SOC)
+        webhook_configs:
+          - url: 'http://alert-bridge.monitoring.svc/default'
+            send_resolved: true
+      - name: 'soc-critical'
+        webhook_configs:
+          - url: 'http://alert-bridge.monitoring.svc/critical'
+            send_resolved: true
+
+# --- Grafana ---
+grafana:
+  enabled: true
+  adminPassword: REEMPLAZAR_EN_PRODUCCION
+  resources:
+    requests: { cpu: 100m, memory: 256Mi }
+    limits:   { cpu: 500m, memory: 512Mi }
+  persistence:
+    enabled: true
+    size: 5Gi
+    storageClassName: gp3
+  defaultDashboardsEnabled: true
+  sidecar:
+    dashboards:
+      enabled: true
+      label: grafana_dashboard
+      searchNamespace: ALL
+    datasources:
+      enabled: true
+      label: grafana_datasource
+  additionalDataSources:
+    - name: Loki
+      type: loki
+      access: proxy
+      url: http://loki.monitoring.svc:3100
+      isDefault: false
+
+# --- ServiceMonitor para los componentes propios de la plataforma ---
+# Se aplica como manifiesto separado: prometheus-servicemonitor.yaml
+
+nodeExporter:
+  enabled: true
+
+kubeStateMetrics:
+  enabled: true

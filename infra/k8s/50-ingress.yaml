@@ -1,0 +1,62 @@
+# =============================================================================
+# Ingress — AWS Load Balancer Controller con TLS y WAF
+# =============================================================================
+# Requiere AWS Load Balancer Controller instalado en el cluster:
+#   helm repo add eks https://aws.github.io/eks-charts
+#   helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
+#     --namespace kube-system --set clusterName=<cluster>
+# =============================================================================
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: nijar-api
+  namespace: nijar-dti
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80},{"HTTPS":443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: '443'
+    alb.ingress.kubernetes.io/certificate-arn: ACM_CERTIFICATE_ARN
+    alb.ingress.kubernetes.io/wafv2-acl-arn: WAF_ACL_ARN
+    alb.ingress.kubernetes.io/healthcheck-path: /api/v1/health
+    alb.ingress.kubernetes.io/healthcheck-interval-seconds: '15'
+    alb.ingress.kubernetes.io/success-codes: '200'
+    # Headers de seguridad gestionados aquí, no en la app, para
+    # cumplir con OWASP Secure Headers (ASVS V14).
+    alb.ingress.kubernetes.io/actions.security-headers: |
+      {
+        "type": "fixed-response",
+        "fixedResponseConfig": {
+          "contentType": "text/plain",
+          "statusCode": "200"
+        }
+      }
+    alb.ingress.kubernetes.io/load-balancer-attributes: |
+      idle_timeout.timeout_seconds=60,
+      routing.http2.enabled=true,
+      routing.http.drop_invalid_header_fields.enabled=true,
+      access_logs.s3.enabled=true,
+      access_logs.s3.bucket=nijar-dti-production-alb-logs
+spec:
+  rules:
+    - host: api.dti.nijar.es
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: nijar-api
+                port:
+                  number: 80
+    - host: dti.nijar.es
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: nijar-api
+                port:
+                  number: 80

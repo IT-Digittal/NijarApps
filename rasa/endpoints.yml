@@ -1,0 +1,10 @@
+version: "3.1"
+
+# Endpoints externos del servidor Rasa.
+# El servidor solo expone su HTTP API; no usamos action server por ahora.
+# Cuando se integre con la BBDD para slots dinámicos (ej. eventos del mes
+# en curso) se añadirá `action_endpoint` apuntando a un servicio Python.
+
+# tracker_store y event_broker quedan en la implementación por defecto
+# (memoria) en desarrollo. En producción se conecta a Redis y a un broker
+# Kafka/Rabbit, ambos ya disponibles en docker-compose.

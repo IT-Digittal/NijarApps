@@ -1,0 +1,57 @@
+# =============================================================================
+# Loki + Promtail — agregación de logs estructurados
+# =============================================================================
+# Instalación:
+#   helm repo add grafana https://grafana.github.io/helm-charts
+#   helm install loki grafana/loki-stack \
+#     --namespace monitoring \
+#     --values infra/observability/loki-values.yaml
+# =============================================================================
+
+loki:
+  enabled: true
+  persistence:
+    enabled: true
+    size: 30Gi
+    storageClassName: gp3
+  config:
+    auth_enabled: false
+    limits_config:
+      retention_period: 720h  # 30 días
+      max_query_lookback: 720h
+    schema_config:
+      configs:
+        - from: "2025-01-01"
+          store: boltdb-shipper
+          object_store: filesystem
+          schema: v11
+          index:
+            prefix: index_
+            period: 24h
+  resources:
+    requests: { cpu: 200m, memory: 512Mi }
+    limits:   { cpu: 1000m, memory: 1Gi }
+
+promtail:
+  enabled: true
+  config:
+    snippets:
+      pipelineStages:
+        - json:
+            expressions:
+              level: level
+              timestamp: timestamp
+              message: event
+              service: logger
+        - labels:
+            level:
+            service:
+  resources:
+    requests: { cpu: 50m, memory: 128Mi }
+    limits:   { cpu: 200m, memory: 256Mi }
+
+grafana:
+  enabled: false  # Ya viene del kube-prometheus-stack
+
+prometheus:
+  enabled: false

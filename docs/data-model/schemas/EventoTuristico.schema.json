@@ -1,0 +1,107 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nijar.es/schemas/EventoTuristico.schema.json",
+  "title": "EventoTuristico",
+  "description": "Evento turístico programado en el destino. Compatible con FIWARE Event.",
+  "type": "object",
+  "required": ["urn", "nombre", "tipo", "fecha_inicio", "fecha_fin"],
+  "properties": {
+    "urn": {
+      "type": "string",
+      "pattern": "^urn:ngsi-ld:EventoTuristico:nijar:[a-z0-9-]+$"
+    },
+    "nombre": { "type": "string", "maxLength": 255 },
+    "tipo": {
+      "type": "string",
+      "enum": [
+        "cultural",
+        "gastronomico",
+        "deportivo",
+        "musical",
+        "festivo",
+        "naturaleza",
+        "educativo",
+        "otro"
+      ]
+    },
+    "descripcion": { "type": ["string", "null"] },
+    "nombre_i18n": {
+      "type": ["object", "null"],
+      "properties": {
+        "es": { "type": "string" },
+        "en": { "type": "string" },
+        "de": { "type": "string" },
+        "fr": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "descripcion_i18n": {
+      "type": ["object", "null"],
+      "properties": {
+        "es": { "type": "string" },
+        "en": { "type": "string" },
+        "de": { "type": "string" },
+        "fr": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "fecha_inicio": { "type": "string", "format": "date-time" },
+    "fecha_fin": { "type": "string", "format": "date-time" },
+    "recurso_id": {
+      "type": ["string", "null"],
+      "format": "uuid",
+      "description": "ID del RecursoTuristico asociado (opcional)"
+    },
+    "ubicacion": {
+      "type": ["object", "null"],
+      "properties": {
+        "type": { "const": "Point" },
+        "coordinates": {
+          "type": "array",
+          "items": { "type": "number" },
+          "minItems": 2,
+          "maxItems": 2
+        }
+      },
+      "required": ["type", "coordinates"]
+    },
+    "direccion": { "type": ["string", "null"], "maxLength": 500 },
+    "organizador": { "type": ["string", "null"] },
+    "precio": { "type": ["string", "null"] },
+    "capacidad_aforo": { "type": ["integer", "null"], "minimum": 0 },
+    "enlace_inscripcion": { "type": ["string", "null"], "format": "uri" },
+    "imagenes": {
+      "type": ["array", "null"],
+      "items": { "type": "string", "format": "uri" }
+    },
+    "etiquetas": {
+      "type": ["array", "null"],
+      "items": { "type": "string" }
+    },
+    "fuente": {
+      "type": ["string", "null"],
+      "description": "Origen del dato: cms_manual | facebook_municipal | instagram | web_municipal"
+    },
+    "activo": { "type": "boolean", "default": true },
+    "publicado": { "type": "boolean", "default": false },
+    "metadata_adicional": { "type": ["object", "null"] }
+  },
+  "additionalProperties": false,
+  "examples": [
+    {
+      "urn": "urn:ngsi-ld:EventoTuristico:nijar:fiestas-rodalquilar-2026",
+      "nombre": "Fiestas de Rodalquilar",
+      "tipo": "festivo",
+      "descripcion": "Fiestas patronales del núcleo de Rodalquilar.",
+      "fecha_inicio": "2026-08-15T18:00:00+02:00",
+      "fecha_fin": "2026-08-17T23:59:00+02:00",
+      "ubicacion": {
+        "type": "Point",
+        "coordinates": [-2.052, 36.853]
+      },
+      "organizador": "Ayuntamiento de Níjar",
+      "fuente": "cms_manual",
+      "publicado": true
+    }
+  ]
+}

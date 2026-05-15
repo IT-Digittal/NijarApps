@@ -1,0 +1,86 @@
+# =============================================================
+# docker-compose.override.windows.yml
+# =============================================================
+# Override OPCIONAL para Windows con limites de recursos para
+# evitar consumir toda la RAM disponible.
+#
+# Para activar:
+#   1. Renombrar este archivo a "docker-compose.override.yml"
+#      (sin .windows en el nombre)
+#   2. Docker Compose lo cogera automaticamente.
+#
+# O alternativamente:
+#   docker compose -f docker-compose.yml -f docker-compose.override.windows.yml up -d
+#
+# Si NO quieres limites, simplemente NO actives este archivo y
+# Docker Desktop usara los limites globales de su panel
+# (Settings -> Resources).
+# =============================================================
+
+services:
+  api:
+    deploy:
+      resources:
+        limits:
+          memory: 1024M
+          cpus: "1.5"
+
+  db:
+    deploy:
+      resources:
+        limits:
+          memory: 768M
+          cpus: "1.0"
+    # Postgres optimizado para desarrollo (no produccion)
+    command: >
+      postgres
+      -c shared_buffers=128MB
+      -c effective_cache_size=384MB
+      -c maintenance_work_mem=64MB
+      -c work_mem=8MB
+      -c max_connections=50
+      -c log_statement=none
+      -c log_duration=off
+
+  redis:
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.5"
+    command: >
+      redis-server
+      --maxmemory 200mb
+      --maxmemory-policy allkeys-lru
+      --save ""
+
+  mqtt:
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: "0.3"
+
+  mqtt-subscriber:
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "0.8"
+
+  social-worker:
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "0.8"
+
+  # Rasa es el componente mas pesado. Si tu maquina tiene poca
+  # RAM, considera no arrancar el perfil rasa y usar el motor
+  # lexical (CHATBOT_ENGINE=lexical en .env).
+  rasa:
+    deploy:
+      resources:
+        limits:
+          memory: 2048M
+          cpus: "2.0"

@@ -1,0 +1,67 @@
+{
+  "title": "Nijar DTI · Big Data turístico",
+  "uid": "nijar-big-data",
+  "tags": ["nijar", "dti", "big-data", "social"],
+  "timezone": "Europe/Madrid",
+  "schemaVersion": 39,
+  "refresh": "5m",
+  "time": { "from": "now-7d", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Menciones últimas 24h por fuente",
+      "type": "barchart",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{
+        "expr": "sum by (fuente) (nijar_opiniones_ultimas_24h_total)",
+        "legendFormat": "{{fuente}}"
+      }],
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 }
+    },
+    {
+      "id": 2,
+      "title": "Sentimiento últimas 24h",
+      "type": "piechart",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{
+        "expr": "sum by (sentimiento) (nijar_opiniones_ultimas_24h_total)",
+        "legendFormat": "{{sentimiento}}"
+      }],
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 }
+    },
+    {
+      "id": 3,
+      "title": "Total de menciones (últimas 24h)",
+      "type": "stat",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "sum(nijar_opiniones_ultimas_24h_total)" }],
+      "gridPos": { "h": 4, "w": 8, "x": 0, "y": 8 }
+    },
+    {
+      "id": 4,
+      "title": "Ratio sentimiento positivo",
+      "type": "stat",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{
+        "expr": "100 * sum(nijar_opiniones_ultimas_24h_total{sentimiento=\"positivo\"}) / clamp_min(sum(nijar_opiniones_ultimas_24h_total), 1)"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "red", "value": 0 }, { "color": "yellow", "value": 40 }, { "color": "green", "value": 60 }
+          ]}
+        }
+      },
+      "gridPos": { "h": 4, "w": 8, "x": 8, "y": 8 }
+    },
+    {
+      "id": 5,
+      "title": "Evolución de menciones",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "sum(nijar_opiniones_ultimas_24h_total)" }],
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 12 }
+    }
+  ]
+}

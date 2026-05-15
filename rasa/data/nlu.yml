@@ -1,0 +1,327 @@
+# Generado automáticamente desde nijar_dti.data.seeds.faqs
+# NO EDITAR A MANO — ejecutar `python -m nijar_dti.workers.rasa_generator`
+
+version: '3.1'
+nlu:
+- intent: playas_destacadas
+  examples: '|
+
+    - ¿Cuáles son las playas más conocidas del Cabo de Gata?
+
+    - qué playas hay
+
+    - playas mejores cabo de gata
+
+    - playas turísticas níjar
+
+    - playas más bonitas
+
+    - dónde puedo bañarme
+
+    - Which are the most famous beaches of Cabo de Gata?
+
+    - best beaches near Níjar
+
+    - top beaches Cabo de Gata
+
+    - where can I swim
+
+    - Welche sind die bekanntesten Strände am Cabo de Gata?
+
+    - beste Strände Cabo de Gata
+
+    - wo schwimmen
+
+    - Quelles sont les plages les plus célèbres de Cabo de Gata?
+
+    - meilleures plages Cabo de Gata
+
+    '
+- intent: acceso_playa_monsul
+  examples: '|
+
+    - ¿Cómo se accede a la Playa de Mónsul en verano?
+
+    - acceso playa monsul
+
+    - como llegar monsul
+
+    - monsul restringido
+
+    - How do I access Mónsul Beach in summer?
+
+    - monsul beach access
+
+    - monsul summer access
+
+    - Wie komme ich im Sommer zum Strand von Mónsul?
+
+    - Comment accéder à la plage de Mónsul en été?
+
+    '
+- intent: playas_perro
+  examples: '|
+
+    - ¿Puedo ir con perro a las playas de Níjar?
+
+    - Can I bring my dog to Níjar beaches?
+
+    - Darf ich meinen Hund an die Strände von Níjar mitnehmen?
+
+    - Puis-je amener mon chien sur les plages de Níjar?
+
+    '
+- intent: horario_amoladeras
+  examples: '|
+
+    - ¿Cuál es el horario del Centro de Visitantes Las Amoladeras?
+
+    - horario amoladeras
+
+    - centro visitantes hora
+
+    - What are Las Amoladeras Visitor Center opening hours?
+
+    - Wie sind die Öffnungszeiten des Besucherzentrums Las Amoladeras?
+
+    - Quels sont les horaires du Centre des Visiteurs Las Amoladeras?
+
+    '
+- intent: normativa_parque
+  examples: '|
+
+    - ¿Qué está prohibido hacer en el Parque Natural Cabo de Gata-Níjar?
+
+    - What is forbidden in Cabo de Gata-Níjar Natural Park?
+
+    - Was ist im Naturpark Cabo de Gata-Níjar verboten?
+
+    - Qu''est-ce qui est interdit dans le Parc Naturel Cabo de Gata-Níjar?
+
+    '
+- intent: ruta_rodalquilar_albaricoques
+  examples: '|
+
+    - ¿Cómo es la ruta cicloturista Rodalquilar–Albaricoques?
+
+    - ruta bici rodalquilar
+
+    - ruta albaricoques
+
+    - What is the Rodalquilar–Albaricoques cycling route like?
+
+    - Wie ist die Radroute Rodalquilar–Albaricoques?
+
+    - Comment est l''itinéraire cyclable Rodalquilar–Albaricoques?
+
+    '
+- intent: ruta_faro_vela_blanca
+  examples: '|
+
+    - ¿Qué es el sendero del Faro a Vela Blanca?
+
+    - What is the Lighthouse to Vela Blanca trail?
+
+    - Was ist der Wanderweg vom Leuchtturm nach Vela Blanca?
+
+    - Qu''est-ce que le sentier du Phare à Vela Blanca?
+
+    '
+- intent: donde_dormir
+  examples: '|
+
+    - ¿Dónde puedo alojarme en Níjar?
+
+    - Where can I stay in Níjar?
+
+    - Wo kann ich in Níjar übernachten?
+
+    - Où puis-je me loger à Níjar?
+
+    '
+- intent: donde_comer
+  examples: '|
+
+    - ¿Dónde puedo comer en Níjar?
+
+    - Where can I eat in Níjar?
+
+    - Wo kann ich in Níjar essen?
+
+    - Où puis-je manger à Níjar?
+
+    '
+- intent: transporte_publico
+  examples: '|
+
+    - ¿Hay transporte público para llegar a las playas?
+
+    - Is there public transport to the beaches?
+
+    - Gibt es öffentliche Verkehrsmittel zu den Stränden?
+
+    - Y a-t-il des transports publics jusqu''aux plages?
+
+    '
+- intent: eventos_proximos
+  examples: '|
+
+    - ¿Qué eventos hay en Níjar este mes?
+
+    - What events are there in Níjar this month?
+
+    - Welche Veranstaltungen gibt es diesen Monat in Níjar?
+
+    - Quels événements y a-t-il à Níjar ce mois-ci?
+
+    '
+- intent: emergencias
+  examples: '|
+
+    - ¿Cuál es el número de emergencias?
+
+    - What is the emergency number?
+
+    - Was ist die Notrufnummer?
+
+    - Quel est le numéro d''urgence?
+
+    '
+- intent: centro_salud
+  examples: '|
+
+    - ¿Hay centro de salud en Níjar?
+
+    - Is there a health centre in Níjar?
+
+    - Gibt es in Níjar ein Gesundheitszentrum?
+
+    - Y a-t-il un centre de santé à Níjar?
+
+    '
+- intent: accesibilidad_playas
+  examples: '|
+
+    - ¿Hay playas accesibles para personas con movilidad reducida?
+
+    - Are there beaches accessible for people with reduced mobility?
+
+    - Gibt es Strände für Personen mit eingeschränkter Mobilität?
+
+    - Y a-t-il des plages accessibles aux personnes à mobilité réduite?
+
+    '
+- intent: oficina_turismo
+  examples: '|
+
+    - ¿Dónde está la oficina de turismo?
+
+    - Where is the tourist information office?
+
+    - Wo befindet sich das Touristenbüro?
+
+    - Où se trouve l''office de tourisme?
+
+    '
+- intent: artesania_jarapas
+  examples: '|
+
+    - ¿Qué es la jarapa de Níjar?
+
+    - What is a Níjar jarapa?
+
+    - Was ist eine Jarapa aus Níjar?
+
+    - Qu''est-ce qu''une jarapa de Níjar?
+
+    '
+- intent: mejor_epoca_visita
+  examples: '|
+
+    - ¿Cuál es la mejor época para visitar Níjar?
+
+    - What is the best time to visit Níjar?
+
+    - Wann ist die beste Zeit für einen Besuch in Níjar?
+
+    - Quelle est la meilleure période pour visiter Níjar?
+
+    '
+- intent: lugares_fotografia
+  examples: '|
+
+    - ¿Cuáles son los mejores lugares para hacer fotos?
+
+    - What are the best photography spots?
+
+    - Was sind die besten Fotospots?
+
+    - Quels sont les meilleurs endroits pour la photographie?
+
+    '
+- intent: saludo
+  examples: '|
+
+    - Hola
+
+    - buenos días
+
+    - buenas tardes
+
+    - buenas noches
+
+    - qué tal
+
+    - Hello
+
+    - hi
+
+    - good morning
+
+    - good afternoon
+
+    - Hallo
+
+    - guten tag
+
+    - guten morgen
+
+    - Bonjour
+
+    - salut
+
+    - bonsoir
+
+    '
+- intent: despedida
+  examples: '|
+
+    - Adiós
+
+    - chao
+
+    - hasta luego
+
+    - gracias por todo
+
+    - Goodbye
+
+    - bye
+
+    - thanks
+
+    - see you
+
+    - Auf Wiedersehen
+
+    - tschüss
+
+    - danke
+
+    - Au revoir
+
+    - merci
+
+    - à bientôt
+
+    '

@@ -1,0 +1,729 @@
+# Generado automáticamente desde nijar_dti.data.seeds.faqs
+# NO EDITAR A MANO — ejecutar `python -m nijar_dti.workers.rasa_generator`
+
+version: '3.1'
+intents:
+- accesibilidad_playas
+- acceso_playa_monsul
+- artesania_jarapas
+- centro_salud
+- despedida
+- donde_comer
+- donde_dormir
+- emergencias
+- eventos_proximos
+- horario_amoladeras
+- lugares_fotografia
+- mejor_epoca_visita
+- nlu_fallback
+- normativa_parque
+- oficina_turismo
+- playas_destacadas
+- playas_perro
+- ruta_faro_vela_blanca
+- ruta_rodalquilar_albaricoques
+- saludo
+- transporte_publico
+slots:
+  language:
+    type: categorical
+    values:
+    - es
+    - en
+    - de
+    - fr
+    initial_value: es
+    influence_conversation: true
+    mappings:
+    - type: from_text
+responses:
+  utter_playas_destacadas:
+  - text: 'Las playas más conocidas son: Mónsul (icónica, con aforo limitado en verano),
+      Genoveses (virgen y muy extensa), Playazo (junto al castillo de San Ramón) y
+      Cala de Enmedio (sólo accesible a pie). Todas están dentro del Parque Natural
+      Cabo de Gata-Níjar.'
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: 'The most famous beaches are: Mónsul (iconic, capacity-limited in summer),
+      Genoveses (vast and unspoilt), Playazo (next to San Ramón Castle) and Cala de
+      Enmedio (foot-access only). All are inside the Cabo de Gata-Níjar Natural Park.'
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: 'Die bekanntesten Strände sind: Mónsul (ikonisch, im Sommer mit Zugangsbeschränkung),
+      Genoveses (unberührt und weitläufig), Playazo (neben der Burg San Ramón) und
+      Cala de Enmedio (nur zu Fuß erreichbar). Alle liegen im Naturpark Cabo de Gata-Níjar.'
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: 'Les plages les plus connues sont : Mónsul (emblématique, accès limité en
+      été), Genoveses (vaste et préservée), Playazo (près du château de San Ramón)
+      et Cala de Enmedio (accessible uniquement à pied). Toutes se trouvent dans le
+      Parc Naturel Cabo de Gata-Níjar.'
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: 'Las playas más conocidas son: Mónsul (icónica, con aforo limitado en verano),
+      Genoveses (virgen y muy extensa), Playazo (junto al castillo de San Ramón) y
+      Cala de Enmedio (sólo accesible a pie). Todas están dentro del Parque Natural
+      Cabo de Gata-Níjar.'
+  utter_acceso_playa_monsul:
+  - text: Durante la temporada alta (junio a septiembre) el acceso a Mónsul está regulado
+      por aforo. Es necesario consultar el sistema de control en la web del Ayuntamiento;
+      se recomienda llegar a primera hora o usar el bus lanzadera desde San José.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: During high season (June to September) Mónsul access is regulated by capacity.
+      Check the council's online system; arriving early or using the shuttle bus from
+      San José is recommended.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: In der Hochsaison (Juni bis September) ist der Zugang zu Mónsul kapazitätsgeregelt.
+      Prüfen Sie das Online-System der Gemeinde; früh ankommen oder den Pendelbus
+      von San José nutzen.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: En haute saison (juin à septembre) l'accès à Mónsul est régulé par capacité.
+      Consultez le système en ligne de la mairie ; arriver tôt ou utiliser la navette
+      depuis San José est recommandé.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: Durante la temporada alta (junio a septiembre) el acceso a Mónsul está regulado
+      por aforo. Es necesario consultar el sistema de control en la web del Ayuntamiento;
+      se recomienda llegar a primera hora o usar el bus lanzadera desde San José.
+  utter_playas_perro:
+  - text: Los perros no están permitidos en las playas de uso público durante la temporada
+      de baño (1 de junio a 30 de septiembre), excepto en las playas habilitadas específicamente.
+      Consulta los carteles informativos en cada acceso.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: Dogs are not allowed on public beaches during bathing season (1 June to
+      30 September), except on specifically designated beaches. Check the signs at
+      each access point.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Hunde sind während der Badesaison (1. Juni bis 30. September) an öffentlichen
+      Stränden nicht erlaubt, außer an dafür ausgewiesenen Stränden. Beachten Sie
+      die Hinweisschilder.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Les chiens ne sont pas autorisés sur les plages publiques pendant la saison
+      balnéaire (1er juin au 30 septembre), sauf sur les plages spécifiquement désignées.
+      Consultez les panneaux à chaque accès.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: Los perros no están permitidos en las playas de uso público durante la temporada
+      de baño (1 de junio a 30 de septiembre), excepto en las playas habilitadas específicamente.
+      Consulta los carteles informativos en cada acceso.
+  utter_horario_amoladeras:
+  - text: El Centro de Visitantes Las Amoladeras abre, en general, de 10:00 a 14:00.
+      En invierno los fines de semana y festivos suele extender el horario hasta las
+      15:00. Cierre habitual los lunes. Recomendamos confirmar en el teléfono +34
+      950 16 04 35.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: Las Amoladeras Visitor Center is generally open 10:00-14:00. In winter,
+      opening is extended until 15:00 on weekends and public holidays. Closed on Mondays.
+      We recommend confirming on +34 950 16 04 35.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Das Besucherzentrum Las Amoladeras öffnet in der Regel von 10:00 bis 14:00
+      Uhr. Im Winter werden die Öffnungszeiten an Wochenenden und Feiertagen bis 15:00
+      Uhr verlängert. Montags geschlossen. Bestätigung unter +34 950 16 04 35.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Le Centre des Visiteurs Las Amoladeras est généralement ouvert de 10h00
+      à 14h00. En hiver, l'ouverture est prolongée jusqu'à 15h00 les week-ends et
+      jours fériés. Fermé le lundi. Confirmation au +34 950 16 04 35.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: El Centro de Visitantes Las Amoladeras abre, en general, de 10:00 a 14:00.
+      En invierno los fines de semana y festivos suele extender el horario hasta las
+      15:00. Cierre habitual los lunes. Recomendamos confirmar en el teléfono +34
+      950 16 04 35.
+  utter_normativa_parque:
+  - text: 'Está prohibido: hacer fuego (incluido barbacoas), acampar fuera de zonas
+      habilitadas, recolectar plantas o fauna, salirse de los senderos señalizados,
+      circular con vehículos por pistas no autorizadas y dejar residuos de cualquier
+      tipo. Es un Parque Natural protegido y Reserva de la Biosfera UNESCO.'
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: 'Forbidden activities: making fires (including barbecues), camping outside
+      designated areas, collecting plants or fauna, leaving marked trails, driving
+      on unauthorised tracks, and leaving any waste. It is a protected Natural Park
+      and UNESCO Biosphere Reserve.'
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: 'Verboten sind: Feuer machen (einschließlich Grillen), Zelten außerhalb
+      ausgewiesener Bereiche, Sammeln von Pflanzen oder Tieren, Verlassen markierter
+      Wege, Fahren auf nicht genehmigten Wegen und Hinterlassen jeglicher Abfälle.
+      Es ist ein geschützter Naturpark und UNESCO-Biosphärenreservat.'
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: 'Sont interdits : faire du feu (y compris barbecues), camper hors des zones
+      désignées, ramasser plantes ou faune, sortir des sentiers balisés, circuler
+      en véhicule sur des pistes non autorisées, abandonner des déchets. C''est un
+      Parc Naturel protégé et Réserve de Biosphère UNESCO.'
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: 'Está prohibido: hacer fuego (incluido barbacoas), acampar fuera de zonas
+      habilitadas, recolectar plantas o fauna, salirse de los senderos señalizados,
+      circular con vehículos por pistas no autorizadas y dejar residuos de cualquier
+      tipo. Es un Parque Natural protegido y Reserva de la Biosfera UNESCO.'
+  utter_ruta_rodalquilar_albaricoques:
+  - text: Es una ruta de unos 8,5 km de baja-media dificultad que conecta Rodalquilar
+      con Los Albaricoques atravesando paisajes de antiguas minas y la rambla. Está
+      señalizada y tiene un tótem digital interactivo en cada extremo con información
+      del recorrido.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: An 8.5 km route of low-medium difficulty connecting Rodalquilar with Los
+      Albaricoques across former mining landscapes and the rambla. It is signposted
+      and has an interactive digital totem at each end with route information.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Eine etwa 8,5 km lange Route mit niedriger bis mittlerer Schwierigkeit,
+      die Rodalquilar mit Los Albaricoques durch ehemalige Bergbaulandschaften und
+      die Rambla verbindet. Beschildert und mit interaktivem Digital-Totem an jedem
+      Ende.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Un itinéraire d'environ 8,5 km de difficulté faible à moyenne reliant Rodalquilar
+      à Los Albaricoques à travers des paysages miniers et la rambla. Balisé et équipé
+      d'un totem numérique interactif à chaque extrémité.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: Es una ruta de unos 8,5 km de baja-media dificultad que conecta Rodalquilar
+      con Los Albaricoques atravesando paisajes de antiguas minas y la rambla. Está
+      señalizada y tiene un tótem digital interactivo en cada extremo con información
+      del recorrido.
+  utter_ruta_faro_vela_blanca:
+  - text: Es uno de los senderos costeros más espectaculares del Parque, de unos 4
+      km. Sale del Faro de Cabo de Gata y llega al mirador de Vela Blanca con vistas
+      a los acantilados volcánicos. Apto para senderistas y cicloturistas.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: One of the park's most spectacular coastal trails, about 4 km. It starts
+      at Cabo de Gata Lighthouse and reaches Vela Blanca viewpoint with views of the
+      volcanic cliffs. Suitable for walkers and cyclists.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Einer der spektakulärsten Küstenwege des Parks, etwa 4 km. Beginnt am Leuchtturm
+      von Cabo de Gata und endet am Aussichtspunkt Vela Blanca mit Blick auf vulkanische
+      Klippen. Für Wanderer und Radfahrer geeignet.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: L'un des sentiers côtiers les plus spectaculaires du parc, environ 4 km.
+      Du phare de Cabo de Gata jusqu'au belvédère de Vela Blanca avec vue sur les
+      falaises volcaniques. Adapté aux randonneurs et cyclistes.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: Es uno de los senderos costeros más espectaculares del Parque, de unos 4
+      km. Sale del Faro de Cabo de Gata y llega al mirador de Vela Blanca con vistas
+      a los acantilados volcánicos. Apto para senderistas y cicloturistas.
+  utter_donde_dormir:
+  - text: Las opciones principales se concentran en San José (la mayor oferta hotelera
+      y de apartamentos), Níjar pueblo (alojamientos rurales con encanto), Las Negras
+      y La Isleta del Moro (pesqueros con apartamentos). Hay también campings autorizados.
+      Consulta la sección de servicios turísticos publicados.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: Main options are concentrated in San José (largest hotel and apartment offer),
+      Níjar village (charming rural stays), Las Negras and La Isleta del Moro (fishing
+      villages with apartments). Authorised campsites are also available. Check the
+      published tourist services section.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Die Hauptoptionen befinden sich in San José (größtes Hotel- und Apartmentangebot),
+      Níjar Dorf (charmante ländliche Unterkünfte), Las Negras und La Isleta del Moro
+      (Fischerorte mit Apartments). Es gibt auch genehmigte Campingplätze.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Les principales options sont concentrées à San José (plus grande offre hôtelière
+      et appartements), village de Níjar (logements ruraux de charme), Las Negras
+      et La Isleta del Moro (villages de pêcheurs avec appartements). Campings autorisés
+      disponibles.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: Las opciones principales se concentran en San José (la mayor oferta hotelera
+      y de apartamentos), Níjar pueblo (alojamientos rurales con encanto), Las Negras
+      y La Isleta del Moro (pesqueros con apartamentos). Hay también campings autorizados.
+      Consulta la sección de servicios turísticos publicados.
+  utter_donde_comer:
+  - text: La gastronomía local se basa en pescado fresco, gurullos, ajoblanco y productos
+      del mar. Restaurantes destacados están en La Isleta del Moro (especialidad pescado
+      a la sal), San José (variedad amplia) y el casco histórico de Níjar (cocina
+      tradicional). Consulta la sección de servicios para la lista actualizada.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: Local cuisine is based on fresh fish, gurullos, ajoblanco and seafood. Notable
+      restaurants are in La Isleta del Moro (salt-baked fish specialty), San José
+      (wide variety), and Níjar historic centre (traditional cuisine).
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Die lokale Küche basiert auf frischem Fisch, Gurullos, Ajoblanco und Meeresfrüchten.
+      Bemerkenswerte Restaurants in La Isleta del Moro (Fisch im Salz), San José (große
+      Vielfalt) und Altstadt Níjar (traditionelle Küche).
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: La cuisine locale est basée sur le poisson frais, les gurullos, l'ajoblanco
+      et les fruits de mer. Restaurants remarquables à La Isleta del Moro (poisson
+      en croûte de sel), San José (grande variété) et centre historique de Níjar (cuisine
+      traditionnelle).
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: La gastronomía local se basa en pescado fresco, gurullos, ajoblanco y productos
+      del mar. Restaurantes destacados están en La Isleta del Moro (especialidad pescado
+      a la sal), San José (variedad amplia) y el casco histórico de Níjar (cocina
+      tradicional). Consulta la sección de servicios para la lista actualizada.
+  utter_transporte_publico:
+  - text: 'En temporada alta (julio-agosto-septiembre) opera el bus lanzadera desde
+      San José a las playas de Mónsul y Genoveses. Hay líneas regulares de autobús
+      desde Almería capital a San José y a Níjar pueblo. Más información: estaciones
+      de autobuses de Almería y página oficial del Ayuntamiento.'
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: In high season (July-August-September) a shuttle bus operates from San José
+      to Mónsul and Genoveses beaches. Regular bus lines run from Almería city to
+      San José and Níjar village. More info at Almería bus stations and the council's
+      website.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: In der Hochsaison (Juli-August-September) verkehrt ein Pendelbus von San
+      José zu den Stränden Mónsul und Genoveses. Regelmäßige Buslinien fahren von
+      Almería-Stadt nach San José und ins Dorf Níjar.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: En haute saison (juillet-août-septembre), une navette circule depuis San
+      José vers les plages de Mónsul et Genoveses. Des lignes régulières de bus relient
+      Almería à San José et au village de Níjar.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: 'En temporada alta (julio-agosto-septiembre) opera el bus lanzadera desde
+      San José a las playas de Mónsul y Genoveses. Hay líneas regulares de autobús
+      desde Almería capital a San José y a Níjar pueblo. Más información: estaciones
+      de autobuses de Almería y página oficial del Ayuntamiento.'
+  utter_eventos_proximos:
+  - text: Puedes consultar la agenda actualizada de eventos en la web turística del
+      Ayuntamiento o desde la sección 'Eventos' de la app Vive Níjar. Los eventos
+      más destacados son el Festival Cortos en Femenino, las fiestas de Rodalquilar
+      (agosto) y la Feria de Artesanía.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: You can check the updated events agenda on the council's tourism website
+      or in the 'Events' section of the Vive Níjar app. Highlights include the Women's
+      Short Film Festival, Rodalquilar fiestas (August) and the Crafts Fair.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Den aktualisierten Veranstaltungskalender finden Sie auf der Tourismus-Website
+      der Gemeinde oder im Bereich 'Veranstaltungen' der Vive Níjar App. Höhepunkte
+      sind das Frauen-Kurzfilmfestival, das Fest in Rodalquilar (August) und die Handwerksmesse.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: 'Vous pouvez consulter l''agenda actualisé sur le site web touristique de
+      la mairie ou dans la section ''Événements'' de l''app Vive Níjar. Points forts
+      : Festival du Court Métrage Féminin, fêtes de Rodalquilar (août) et Foire de
+      l''Artisanat.'
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: Puedes consultar la agenda actualizada de eventos en la web turística del
+      Ayuntamiento o desde la sección 'Eventos' de la app Vive Níjar. Los eventos
+      más destacados son el Festival Cortos en Femenino, las fiestas de Rodalquilar
+      (agosto) y la Feria de Artesanía.
+  utter_emergencias:
+  - text: El número de emergencias en España es el 112 (operativo 24h, multilingüe).
+      Para emergencias en el mar puede llamar también a Salvamento Marítimo en el
+      900 202 202.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: The emergency number in Spain is 112 (24/7, multilingual). For maritime
+      emergencies you can also call the Maritime Rescue at 900 202 202.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Die Notrufnummer in Spanien ist 112 (24/7, mehrsprachig). Für Seenotfälle
+      auch der Seenotrettungsdienst unter 900 202 202.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Le numéro d'urgence en Espagne est le 112 (24h/24, multilingue). Pour les
+      urgences maritimes, vous pouvez également appeler le Sauvetage Maritime au 900
+      202 202.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: El número de emergencias en España es el 112 (operativo 24h, multilingüe).
+      Para emergencias en el mar puede llamar también a Salvamento Marítimo en el
+      900 202 202.
+  utter_centro_salud:
+  - text: Sí, hay centros de salud en Níjar pueblo, San Isidro, Campohermoso y San
+      José. Para urgencias graves debe acudir al Hospital Torrecárdenas en Almería
+      capital o llamar al 112. Horarios concretos en la web del Servicio Andaluz de
+      Salud.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: Yes, health centres are located in Níjar village, San Isidro, Campohermoso
+      and San José. For serious emergencies go to Torrecárdenas Hospital in Almería
+      or call 112. Specific hours on the Andalusian Health Service website.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Ja, Gesundheitszentren befinden sich in Níjar Dorf, San Isidro, Campohermoso
+      und San José. Bei schweren Notfällen das Krankenhaus Torrecárdenas in Almería
+      oder die 112 anrufen.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Oui, des centres de santé sont à Níjar village, San Isidro, Campohermoso
+      et San José. Pour urgences graves, l'Hôpital Torrecárdenas à Almería ou le 112.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: Sí, hay centros de salud en Níjar pueblo, San Isidro, Campohermoso y San
+      José. Para urgencias graves debe acudir al Hospital Torrecárdenas en Almería
+      capital o llamar al 112. Horarios concretos en la web del Servicio Andaluz de
+      Salud.
+  utter_accesibilidad_playas:
+  - text: Sí. La playa de San José cuenta con servicio de baño asistido y pasarelas
+      de madera. La Fabriquilla y Las Negras también tienen accesos adaptados. Consulta
+      el plan de accesibilidad municipal para servicios disponibles cada temporada.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: Yes. San José beach offers assisted bathing service and wooden walkways.
+      La Fabriquilla and Las Negras also have adapted access. Check the municipal
+      accessibility plan for services each season.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Ja. Der Strand von San José bietet Badeunterstützung und Holzstege. La Fabriquilla
+      und Las Negras haben ebenfalls angepassten Zugang.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Oui. La plage de San José offre un service de baignade assistée et des passerelles
+      en bois. La Fabriquilla et Las Negras ont également des accès adaptés.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: Sí. La playa de San José cuenta con servicio de baño asistido y pasarelas
+      de madera. La Fabriquilla y Las Negras también tienen accesos adaptados. Consulta
+      el plan de accesibilidad municipal para servicios disponibles cada temporada.
+  utter_oficina_turismo:
+  - text: La Oficina de Turismo de Níjar se encuentra en el casco histórico del pueblo.
+      Atiende en español, inglés y francés. También hay puntos de información en San
+      José y en el Centro de Visitantes Las Amoladeras.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: The Níjar Tourist Information Office is in the historic centre of the village.
+      It assists in Spanish, English and French. There are also info points in San
+      José and at Las Amoladeras Visitor Center.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Das Touristenbüro Níjar liegt im historischen Zentrum des Dorfes. Beratung
+      auf Spanisch, Englisch und Französisch. Weitere Infopunkte in San José und im
+      Besucherzentrum Las Amoladeras.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: L'office de tourisme de Níjar se trouve dans le centre historique du village.
+      Service en espagnol, anglais et français. Points d'information à San José et
+      au Centre des Visiteurs Las Amoladeras.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: La Oficina de Turismo de Níjar se encuentra en el casco histórico del pueblo.
+      Atiende en español, inglés y francés. También hay puntos de información en San
+      José y en el Centro de Visitantes Las Amoladeras.
+  utter_artesania_jarapas:
+  - text: La jarapa es un tejido artesanal tradicional de Níjar, hecho con tiras de
+      tela reciclada en telares manuales. Forma parte del patrimonio cultural del
+      pueblo y se puede comprar en numerosos talleres del casco histórico.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: The jarapa is a traditional handcrafted textile from Níjar, made from recycled
+      fabric strips on manual looms. It is part of the village's cultural heritage
+      and can be bought in many workshops in the historic centre.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Die Jarapa ist ein traditioneller handgefertigter Stoff aus Níjar, hergestellt
+      aus recycelten Stoffstreifen auf manuellen Webstühlen. Teil des kulturellen
+      Erbes des Dorfes, in zahlreichen Werkstätten in der Altstadt erhältlich.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: La jarapa est un tissu artisanal traditionnel de Níjar, fabriqué à partir
+      de bandes de tissu recyclé sur des métiers manuels. Elle fait partie du patrimoine
+      culturel du village et est disponible dans de nombreux ateliers du centre historique.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: La jarapa es un tejido artesanal tradicional de Níjar, hecho con tiras de
+      tela reciclada en telares manuales. Forma parte del patrimonio cultural del
+      pueblo y se puede comprar en numerosos talleres del casco histórico.
+  utter_mejor_epoca_visita:
+  - text: 'La primavera (abril-junio) y el otoño (septiembre-octubre) son ideales:
+      temperatura agradable, menos masificación y los paisajes están en su mejor momento.
+      Julio y agosto son los meses con más afluencia. El invierno es suave y excelente
+      para senderismo.'
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: 'Spring (April-June) and autumn (September-October) are ideal: pleasant
+      temperature, fewer crowds, and landscapes at their best. July and August are
+      the busiest months. Winter is mild and excellent for hiking.'
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: 'Frühling (April-Juni) und Herbst (September-Oktober) sind ideal: angenehme
+      Temperaturen, weniger Andrang, Landschaften in Bestform. Juli und August sind
+      am stärksten besucht. Der Winter ist mild und ideal zum Wandern.'
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: 'Le printemps (avril-juin) et l''automne (septembre-octobre) sont idéaux
+      : température agréable, moins de foule, paysages magnifiques. Juillet et août
+      sont les mois les plus fréquentés. L''hiver est doux et excellent pour la randonnée.'
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: 'La primavera (abril-junio) y el otoño (septiembre-octubre) son ideales:
+      temperatura agradable, menos masificación y los paisajes están en su mejor momento.
+      Julio y agosto son los meses con más afluencia. El invierno es suave y excelente
+      para senderismo.'
+  utter_lugares_fotografia:
+  - text: 'Los enclaves más fotogénicos son: Playa de Mónsul (al amanecer o atardecer),
+      Arrecife de las Sirenas, Mirador de la Amatista, antigua mina de Rodalquilar,
+      Faro de Cabo de Gata y los pueblos blancos de La Isleta del Moro y Las Negras.'
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: 'Most photogenic spots: Mónsul Beach (sunrise or sunset), Mermaids'' Reef,
+      Amatista Viewpoint, Rodalquilar old mine, Cabo de Gata Lighthouse, and the white
+      villages of La Isleta del Moro and Las Negras.'
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: 'Die fotogensten Orte: Strand Mónsul (Sonnenauf- oder -untergang), Sirenen-Riff,
+      Aussichtspunkt Amatista, alte Mine Rodalquilar, Leuchtturm Cabo de Gata und
+      weiße Dörfer La Isleta del Moro und Las Negras.'
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: 'Les lieux les plus photogéniques : plage de Mónsul (lever ou coucher de
+      soleil), Récif des Sirènes, Belvédère de l''Amatista, ancienne mine de Rodalquilar,
+      Phare de Cabo de Gata et villages blancs de La Isleta del Moro et Las Negras.'
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: 'Los enclaves más fotogénicos son: Playa de Mónsul (al amanecer o atardecer),
+      Arrecife de las Sirenas, Mirador de la Amatista, antigua mina de Rodalquilar,
+      Faro de Cabo de Gata y los pueblos blancos de La Isleta del Moro y Las Negras.'
+  utter_saludo:
+  - text: ¡Hola! Soy el asistente turístico de Níjar. Puedo ayudarte con información
+      sobre playas, rutas, parque natural, eventos, alojamiento, transporte y servicios
+      turísticos. ¿Qué necesitas saber?
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: Hello! I'm the Níjar tourism assistant. I can help you with information
+      about beaches, routes, natural park, events, accommodation, transport and tourist
+      services. What would you like to know?
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Hallo! Ich bin der Tourismus-Assistent von Níjar. Ich helfe gerne bei Informationen
+      zu Stränden, Routen, Naturpark, Veranstaltungen, Unterkunft, Transport und touristischen
+      Dienstleistungen. Was möchten Sie wissen?
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Bonjour ! Je suis l'assistant touristique de Níjar. Je peux vous aider avec
+      des informations sur les plages, itinéraires, parc naturel, événements, hébergement,
+      transport et services touristiques. Que souhaitez-vous savoir ?
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: ¡Hola! Soy el asistente turístico de Níjar. Puedo ayudarte con información
+      sobre playas, rutas, parque natural, eventos, alojamiento, transporte y servicios
+      turísticos. ¿Qué necesitas saber?
+  utter_despedida:
+  - text: ¡Hasta luego! Que disfrutes tu visita a Níjar. Si necesitas algo más, vuelve
+      a preguntar cuando quieras.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: Goodbye! Enjoy your visit to Níjar. If you need anything else, come back
+      any time.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Auf Wiedersehen! Genießen Sie Ihren Besuch in Níjar. Bei weiteren Fragen
+      jederzeit wiederkommen.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Au revoir ! Profitez bien de votre visite à Níjar. Si vous avez besoin d'autre
+      chose, revenez quand vous voulez.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: ¡Hasta luego! Que disfrutes tu visita a Níjar. Si necesitas algo más, vuelve
+      a preguntar cuando quieras.
+  utter_default:
+  - text: No dispongo de información sobre esa consulta. ¿Puedo ayudarte con rutas,
+      playas, eventos o servicios turísticos de Níjar?
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: I don't have information about that. Can I help you with routes, beaches,
+      events, or services in Níjar?
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Dazu habe ich leider keine Informationen. Kann ich Ihnen bei Routen, Stränden,
+      Veranstaltungen oder Dienstleistungen in Níjar helfen?
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Je ne dispose pas d'informations sur ce sujet. Puis-je vous aider avec les
+      itinéraires, plages, événements ou services à Níjar ?
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: No dispongo de información sobre esa consulta. ¿Puedo ayudarte con rutas,
+      playas, eventos o servicios turísticos de Níjar?
+session_config:
+  session_expiration_time: 60
+  carry_over_slots_to_new_session: true

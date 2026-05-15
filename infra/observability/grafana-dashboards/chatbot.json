@@ -1,0 +1,59 @@
+{
+  "title": "Nijar DTI · Chatbot",
+  "uid": "nijar-chatbot",
+  "tags": ["nijar", "dti", "chatbot", "rasa"],
+  "timezone": "Europe/Madrid",
+  "schemaVersion": 39,
+  "refresh": "1m",
+  "time": { "from": "now-24h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Interacciones últimas 24h por confianza",
+      "type": "piechart",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{
+        "expr": "nijar_chatbot_interacciones_ultimas_24h_total",
+        "legendFormat": "{{nivel_confianza}}"
+      }],
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 }
+    },
+    {
+      "id": 2,
+      "title": "Resolución autónoma (alta + media)",
+      "type": "stat",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{
+        "expr": "100 * sum(nijar_chatbot_interacciones_ultimas_24h_total{nivel_confianza=~\"alta|media\"}) / clamp_min(sum(nijar_chatbot_interacciones_ultimas_24h_total), 1)"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "red", "value": 0 }, { "color": "yellow", "value": 70 }, { "color": "green", "value": 80 }
+          ]}
+        }
+      },
+      "gridPos": { "h": 8, "w": 6, "x": 12, "y": 0 }
+    },
+    {
+      "id": 3,
+      "title": "Total interacciones",
+      "type": "stat",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "sum(nijar_chatbot_interacciones_ultimas_24h_total)" }],
+      "gridPos": { "h": 8, "w": 6, "x": 18, "y": 0 }
+    },
+    {
+      "id": 4,
+      "title": "Evolución por nivel de confianza",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{
+        "expr": "nijar_chatbot_interacciones_ultimas_24h_total",
+        "legendFormat": "{{nivel_confianza}}"
+      }],
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 8 }
+    }
+  ]
+}

@@ -1,0 +1,120 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nijar.es/schemas/Sensor.schema.json",
+  "title": "Sensor",
+  "description": "Catálogo de sensores IoT integrados en la plataforma DTI. Compatible con FIWARE Device.",
+  "type": "object",
+  "required": ["urn", "nombre", "tipo"],
+  "properties": {
+    "urn": {
+      "type": "string",
+      "pattern": "^urn:ngsi-ld:Device:nijar:[a-z0-9-]+:[a-z0-9-]+$"
+    },
+    "nombre": { "type": "string", "maxLength": 255 },
+    "tipo": {
+      "type": "string",
+      "enum": [
+        "ambiental_co2",
+        "ambiental_temperatura",
+        "ambiental_humedad",
+        "ambiental_ruido",
+        "meteo",
+        "aforo",
+        "beacon_ble",
+        "wifi_publico",
+        "videocamara",
+        "alumbrado",
+        "otro"
+      ]
+    },
+    "fabricante": { "type": ["string", "null"] },
+    "modelo": { "type": ["string", "null"] },
+    "numero_serie": { "type": ["string", "null"] },
+    "firmware_version": { "type": ["string", "null"] },
+    "ubicacion": {
+      "type": ["object", "null"],
+      "properties": {
+        "type": { "const": "Point" },
+        "coordinates": {
+          "type": "array",
+          "items": { "type": "number" },
+          "minItems": 2,
+          "maxItems": 2
+        }
+      },
+      "required": ["type", "coordinates"]
+    },
+    "descripcion_ubicacion": { "type": ["string", "null"] },
+    "unidades_medida": {
+      "type": ["string", "null"],
+      "description": "Ej. ppm, °C, %, dB, lux"
+    },
+    "rango_minimo": { "type": ["number", "null"] },
+    "rango_maximo": { "type": ["number", "null"] },
+    "umbrales_alerta": {
+      "type": ["object", "null"],
+      "properties": {
+        "warning_min": { "type": ["number", "null"] },
+        "warning_max": { "type": ["number", "null"] },
+        "critical_min": { "type": ["number", "null"] },
+        "critical_max": { "type": ["number", "null"] }
+      }
+    },
+    "frecuencia_muestreo_seg": {
+      "type": ["integer", "null"],
+      "minimum": 1
+    },
+    "estado": {
+      "type": "string",
+      "enum": [
+        "operativo",
+        "offline",
+        "mantenimiento",
+        "averia",
+        "bateria_baja",
+        "desconocido"
+      ],
+      "default": "desconocido"
+    },
+    "nivel_bateria": {
+      "type": ["number", "null"],
+      "minimum": 0,
+      "maximum": 100
+    },
+    "topic_mqtt": {
+      "type": ["string", "null"],
+      "description": "Topic MQTT al que el sensor publica observaciones"
+    },
+    "fecha_ultima_calibracion": { "type": ["string", "null"], "format": "date" },
+    "fecha_proxima_calibracion": { "type": ["string", "null"], "format": "date" },
+    "etiquetas": { "type": ["array", "null"], "items": { "type": "string" } },
+    "activo": { "type": "boolean", "default": true },
+    "metadata_adicional": { "type": ["object", "null"] }
+  },
+  "additionalProperties": false,
+  "examples": [
+    {
+      "urn": "urn:ngsi-ld:Device:nijar:co2:smartoffice-01",
+      "nombre": "Sensor CO₂ Smart Office - Sala de reuniones",
+      "tipo": "ambiental_co2",
+      "fabricante": "Sensirion",
+      "modelo": "SCD41",
+      "ubicacion": {
+        "type": "Point",
+        "coordinates": [-2.207, 36.965]
+      },
+      "descripcion_ubicacion": "Sala de reuniones principal del Smart Office",
+      "unidades_medida": "ppm",
+      "rango_minimo": 400,
+      "rango_maximo": 5000,
+      "umbrales_alerta": {
+        "warning_max": 1000,
+        "critical_max": 2000
+      },
+      "frecuencia_muestreo_seg": 60,
+      "estado": "operativo",
+      "topic_mqtt": "nijar/sensors/co2-smartoffice-01/observation",
+      "activo": true
+    }
+  ]
+}

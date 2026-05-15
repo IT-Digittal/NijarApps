@@ -1,0 +1,25 @@
+# Generado automáticamente desde nijar_dti.data.seeds.faqs
+# NO EDITAR A MANO — ejecutar `python -m nijar_dti.workers.rasa_generator`
+
+version: '3.1'
+stories:
+- story: happy path playas_destacadas
+  steps:
+  - intent: playas_destacadas
+  - action: utter_playas_destacadas
+- story: happy path acceso_playa_monsul
+  steps:
+  - intent: acceso_playa_monsul
+  - action: utter_acceso_playa_monsul
+- story: happy path playas_perro
+  steps:
+  - intent: playas_perro
+  - action: utter_playas_perro
+- story: happy path horario_amoladeras
+  steps:
+  - intent: horario_amoladeras
+  - action: utter_horario_amoladeras
+- story: happy path normativa_parque
+  steps:
+  - intent: normativa_parque
+  - action: utter_normativa_parque

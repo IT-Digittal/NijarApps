@@ -1,0 +1,25 @@
+{
+  "name": "nijar-dti-accessibility-audit",
+  "version": "1.0.0",
+  "description": "Auditoría WCAG 2.1 AA de los frontales del proyecto DTI Níjar",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "audit": "node audit-accessibility.js",
+    "audit:totem": "node audit-accessibility.js --only=totem",
+    "audit:dashboard": "node audit-accessibility.js --only=dashboard",
+    "audit:strict": "node audit-accessibility.js --strict",
+    "postinstall": "playwright install chromium"
+  },
+  "dependencies": {
+    "@axe-core/playwright": "^4.10.0",
+    "axe-core": "^4.10.0",
+    "chrome-launcher": "^1.1.2",
+    "exceljs": "^4.4.0",
+    "lighthouse": "^11.7.1",
+    "playwright": "^1.50.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

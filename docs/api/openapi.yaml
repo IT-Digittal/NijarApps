@@ -1,0 +1,1007 @@
+openapi: 3.1.0
+info:
+  title: Plataforma DTI Níjar — API
+  version: "1.0.0"
+  description: |
+    API REST/JSON de la **Plataforma de Destino Turístico Inteligente (DTI) Smart City**
+    del Ayuntamiento de Níjar.
+
+    **Expediente:** 18962/2025
+    **Adjudicatario:** IT DIGITTAL
+    **Marco:** PRTR — NextGenerationEU — Componente 14
+    **Estándares:** UNE 178104 · FIWARE Smart Data Models · ENS Nivel Medio · WCAG 2.1 AA
+
+    ## Versiones y compatibilidad
+    - Esta especificación corresponde a la **API v1**.
+    - Las rutas están prefijadas con `/api/v1`.
+    - Compatibilidad retroactiva garantizada en versiones menores.
+
+    ## Autenticación
+    Todos los endpoints (excepto `health`, `ready` y los de autenticación) requieren un
+    token JWT válido emitido por `/api/v1/auth/login`. Los tokens incluyen scopes RBAC
+    asociados al rol del usuario (administrador_tic, gestor_contenidos, analista_datos,
+    operador_smart_office, auditor).
+  contact:
+    name: IT DIGITTAL
+    url: https://www.turismonijar.es
+  license:
+    name: Propiedad del Ayuntamiento de Níjar (PCAP Anexo XIII)
+
+servers:
+  - url: https://api.dti.nijar.es/api/v1
+    description: Producción
+  - url: https://staging.api.dti.nijar.es/api/v1
+    description: Pre-producción
+  - url: http://localhost:8000/api/v1
+    description: Desarrollo local
+
+tags:
+  - name: health
+    description: Liveness y readiness
+  - name: auth
+    description: Autenticación OAuth2 + JWT (ENS Medio)
+  - name: tourism
+    description: Recursos, eventos y servicios turísticos
+  - name: iot
+    description: Ingesta y consulta de datos IoT
+  - name: social-listening
+    description: Menciones del destino en RRSS y KPIs derivados
+  - name: cms
+    description: Gestión multicanal de contenidos
+  - name: chatbot
+    description: Asistente de Turismo de Níjar (NLP multilingüe)
+  - name: dashboards
+    description: KPIs e informes para Smart Office y Big Data
+
+security:
+  - bearerAuth: []
+
+paths:
+  # ---------------- HEALTH ----------------
+  /health:
+    get:
+      tags: [health]
+      summary: Liveness probe
+      security: []
+      responses:
+        "200":
+          description: API operativa
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HealthResponse" }
+
+  /ready:
+    get:
+      tags: [health]
+      summary: Readiness probe
+      security: []
+      responses:
+        "200":
+          description: API y dependencias operativas
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ReadinessResponse" }
+
+  # ---------------- AUTH ----------------
+  /auth/login:
+    post:
+      tags: [auth]
+      summary: Iniciar sesión
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LoginRequest" }
+      responses:
+        "200":
+          description: Tokens emitidos
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TokenResponse" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /auth/refresh:
+    post:
+      tags: [auth]
+      summary: Refrescar el token de acceso
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refresh_token]
+              properties:
+                refresh_token: { type: string }
+      responses:
+        "200":
+          description: Nuevo par de tokens
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TokenResponse" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /auth/logout:
+    post:
+      tags: [auth]
+      summary: Cerrar sesión
+      responses:
+        "204": { description: Sesión cerrada }
+
+  # ---------------- TOURISM: RESOURCES ----------------
+  /tourism/resources:
+    get:
+      tags: [tourism]
+      summary: Listar recursos turísticos
+      parameters:
+        - { in: query, name: categoria, schema: { type: string } }
+        - { in: query, name: municipio, schema: { type: string } }
+        - { in: query, name: page, schema: { type: integer, minimum: 1, default: 1 } }
+        - { in: query, name: page_size, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+      responses:
+        "200":
+          description: Lista paginada
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PaginatedRecursos" }
+    post:
+      tags: [tourism]
+      summary: Crear un recurso turístico
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RecursoTuristicoIn" }
+      responses:
+        "201":
+          description: Recurso creado
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RecursoTuristicoOut" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+
+  /tourism/resources/{resource_id}:
+    parameters:
+      - { in: path, name: resource_id, required: true, schema: { type: string, format: uuid } }
+    get:
+      tags: [tourism]
+      summary: Detalle de un recurso turístico
+      responses:
+        "200":
+          description: Recurso
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RecursoTuristicoOut" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    put:
+      tags: [tourism]
+      summary: Actualizar un recurso turístico
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RecursoTuristicoIn" }
+      responses:
+        "200":
+          description: Recurso actualizado
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RecursoTuristicoOut" }
+    delete:
+      tags: [tourism]
+      summary: Despublicar un recurso (soft delete)
+      responses:
+        "204": { description: Recurso despublicado }
+
+  # ---------------- TOURISM: EVENTS ----------------
+  /tourism/events:
+    get:
+      tags: [tourism]
+      summary: Listar eventos turísticos
+      parameters:
+        - { in: query, name: desde, schema: { type: string, format: date-time } }
+        - { in: query, name: hasta, schema: { type: string, format: date-time } }
+        - { in: query, name: tipo, schema: { type: string } }
+        - { in: query, name: page, schema: { type: integer, minimum: 1, default: 1 } }
+        - { in: query, name: page_size, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+      responses:
+        "200":
+          description: Lista paginada
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PaginatedEventos" }
+
+  /tourism/events/{event_id}:
+    parameters:
+      - { in: path, name: event_id, required: true, schema: { type: string, format: uuid } }
+    get:
+      tags: [tourism]
+      summary: Detalle de un evento
+      responses:
+        "200":
+          description: Evento
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EventoTuristicoOut" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  # ---------------- TOURISM: SERVICES ----------------
+  /tourism/services:
+    get:
+      tags: [tourism]
+      summary: Listar servicios turísticos
+      parameters:
+        - { in: query, name: tipo, schema: { type: string } }
+        - { in: query, name: page, schema: { type: integer, minimum: 1, default: 1 } }
+        - { in: query, name: page_size, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+      responses:
+        "200":
+          description: Lista paginada
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PaginatedServicios" }
+
+  /tourism/services/{service_id}:
+    parameters:
+      - { in: path, name: service_id, required: true, schema: { type: string, format: uuid } }
+    get:
+      tags: [tourism]
+      summary: Detalle de un servicio
+      responses:
+        "200":
+          description: Servicio
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ServicioOut" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  # ---------------- IOT ----------------
+  /data/iot/ingest:
+    post:
+      tags: [iot]
+      summary: Ingerir una observación IoT (HTTP)
+      description: |
+        Endpoint alternativo al broker MQTT para sistemas que solo pueden publicar por HTTP.
+        Aplica las mismas validaciones (rango, deduplicación, normalización semántica).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ObservacionIn" }
+      responses:
+        "202":
+          description: Aceptada para procesamiento
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  observacion_id: { type: string, format: uuid }
+
+  /data/iot/sensors:
+    get:
+      tags: [iot]
+      summary: Catálogo de sensores
+      parameters:
+        - { in: query, name: tipo, schema: { type: string } }
+        - { in: query, name: estado, schema: { type: string } }
+        - { in: query, name: page, schema: { type: integer, default: 1 } }
+        - { in: query, name: page_size, schema: { type: integer, default: 20, maximum: 200 } }
+      responses:
+        "200":
+          description: Lista paginada de sensores
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PaginatedSensores" }
+
+  /data/iot/sensors/{sensor_id}/observations:
+    parameters:
+      - { in: path, name: sensor_id, required: true, schema: { type: string, format: uuid } }
+    get:
+      tags: [iot]
+      summary: Histórico de observaciones de un sensor
+      parameters:
+        - { in: query, name: desde, schema: { type: string, format: date-time } }
+        - { in: query, name: hasta, schema: { type: string, format: date-time } }
+        - { in: query, name: limit, schema: { type: integer, default: 100, maximum: 10000 } }
+      responses:
+        "200":
+          description: Lista de observaciones
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/ObservacionOut" }
+
+  # ---------------- SOCIAL LISTENING ----------------
+  /data/social/mentions:
+    get:
+      tags: [social-listening]
+      summary: Menciones del destino capturadas en RRSS
+      parameters:
+        - { in: query, name: fuente, schema: { type: string } }
+        - { in: query, name: sentimiento, schema: { type: string, enum: [positivo, neutro, negativo] } }
+        - { in: query, name: desde, schema: { type: string, format: date-time } }
+        - { in: query, name: hasta, schema: { type: string, format: date-time } }
+        - { in: query, name: page, schema: { type: integer, default: 1 } }
+        - { in: query, name: page_size, schema: { type: integer, default: 50, maximum: 200 } }
+      responses:
+        "200":
+          description: Lista paginada
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PaginatedOpiniones" }
+
+  /data/social/kpis/sentiment:
+    get:
+      tags: [social-listening]
+      summary: KPI de sentimiento medio del destino
+      parameters:
+        - { in: query, name: desde, schema: { type: string, format: date-time } }
+        - { in: query, name: hasta, schema: { type: string, format: date-time } }
+        - { in: query, name: granularidad, schema: { type: string, enum: [hora, dia, semana, mes], default: dia } }
+      responses:
+        "200":
+          description: Serie temporal de sentimiento
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SentimentSeries" }
+
+  /data/social/kpis/share-of-voice:
+    get:
+      tags: [social-listening]
+      summary: Share of voice por plataforma
+      responses:
+        "200":
+          description: Share of voice
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: { type: number }
+
+  /data/social/topics:
+    get:
+      tags: [social-listening]
+      summary: Temas más mencionados
+      parameters:
+        - { in: query, name: desde, schema: { type: string, format: date-time } }
+        - { in: query, name: hasta, schema: { type: string, format: date-time } }
+        - { in: query, name: limit, schema: { type: integer, default: 20, maximum: 100 } }
+      responses:
+        "200":
+          description: Top temas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    tema: { type: string }
+                    menciones: { type: integer }
+                    sentimiento_medio: { type: number }
+
+  # ---------------- CMS ----------------
+  /cms/content:
+    get:
+      tags: [cms]
+      summary: Listar contenidos publicados
+      parameters:
+        - { in: query, name: canal, schema: { type: string, enum: [totem, web, app, todos] } }
+        - { in: query, name: idioma, schema: { type: string, enum: [es, en, de, fr] } }
+        - { in: query, name: page, schema: { type: integer, default: 1 } }
+        - { in: query, name: page_size, schema: { type: integer, default: 20, maximum: 100 } }
+      responses:
+        "200":
+          description: Lista paginada
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PaginatedContenidos" }
+    post:
+      tags: [cms]
+      summary: Publicar nuevo contenido
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ContenidoIn" }
+      responses:
+        "201":
+          description: Contenido publicado
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ContenidoOut" }
+
+  /cms/content/{content_id}:
+    parameters:
+      - { in: path, name: content_id, required: true, schema: { type: string, format: uuid } }
+    get:
+      tags: [cms]
+      summary: Detalle de un contenido
+      responses:
+        "200":
+          description: Contenido
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ContenidoOut" }
+    put:
+      tags: [cms]
+      summary: Actualizar contenido
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ContenidoIn" }
+      responses:
+        "200":
+          description: Contenido actualizado
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ContenidoOut" }
+    delete:
+      tags: [cms]
+      summary: Despublicar contenido
+      responses:
+        "204": { description: Despublicado }
+
+  /cms/templates:
+    get:
+      tags: [cms]
+      summary: Listar plantillas de contenido
+      responses:
+        "200":
+          description: Lista de plantillas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id: { type: string }
+                    nombre: { type: string }
+                    descripcion: { type: string }
+
+  # ---------------- CHATBOT ----------------
+  /chatbot/query:
+    post:
+      tags: [chatbot]
+      summary: Consultar al asistente de turismo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ChatQueryIn" }
+      responses:
+        "200":
+          description: Respuesta del chatbot
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ChatResponseOut" }
+
+  /chatbot/feedback:
+    post:
+      tags: [chatbot]
+      summary: Registrar feedback de una interacción
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [sesion_id, interaccion_id, util]
+              properties:
+                sesion_id: { type: string }
+                interaccion_id: { type: string }
+                util: { type: boolean }
+                comentario: { type: string }
+      responses:
+        "204": { description: Feedback registrado }
+
+  /chatbot/intents:
+    get:
+      tags: [chatbot]
+      summary: Listar intents configurados (admin)
+      responses:
+        "200":
+          description: Lista de intents
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    nombre: { type: string }
+                    ejemplos: { type: integer }
+                    cobertura_idiomas: { type: array, items: { type: string } }
+
+  /chatbot/telemetry:
+    get:
+      tags: [chatbot]
+      summary: Telemetría de uso del chatbot
+      responses:
+        "200":
+          description: Métricas agregadas
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ChatbotTelemetry" }
+
+  # ---------------- DASHBOARDS ----------------
+  /dashboards/smart-office/overview:
+    get:
+      tags: [dashboards]
+      summary: Vista general Smart Office
+      responses:
+        "200":
+          description: KPIs en tiempo real
+          content:
+            application/json:
+              schema: { type: object }
+
+  /dashboards/smart-office/environment:
+    get:
+      tags: [dashboards]
+      summary: Indicadores ambientales (CO₂, temperatura, humedad, ruido)
+      parameters:
+        - { in: query, name: desde, schema: { type: string, format: date-time } }
+        - { in: query, name: hasta, schema: { type: string, format: date-time } }
+        - { in: query, name: granularidad, schema: { type: string, enum: [minuto, hora, dia], default: hora } }
+      responses:
+        "200":
+          description: Series temporales
+          content:
+            application/json:
+              schema: { type: object }
+
+  /dashboards/big-data/overview:
+    get:
+      tags: [dashboards]
+      summary: Vista general Big Data turístico
+      responses:
+        "200":
+          description: KPIs Big Data
+          content:
+            application/json:
+              schema: { type: object }
+
+  /dashboards/totems/usage:
+    get:
+      tags: [dashboards]
+      summary: Estadísticas de uso de los tótems
+      parameters:
+        - { in: query, name: desde, schema: { type: string, format: date-time } }
+        - { in: query, name: hasta, schema: { type: string, format: date-time } }
+      responses:
+        "200":
+          description: Métricas de uso
+          content:
+            application/json:
+              schema: { type: object }
+
+  /dashboards/reports/monthly:
+    get:
+      tags: [dashboards]
+      summary: Datos del informe mensual de servicio (C.1)
+      parameters:
+        - { in: query, name: year, required: true, schema: { type: integer } }
+        - { in: query, name: month, required: true, schema: { type: integer, minimum: 1, maximum: 12 } }
+      responses:
+        "200":
+          description: Datos del informe mensual
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MonthlyReport" }
+
+# ===================== COMPONENTES =====================
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  responses:
+    Unauthorized:
+      description: Credenciales inválidas o token expirado
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    BadRequest:
+      description: Petición mal formada
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    NotFound:
+      description: Recurso no encontrado
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Conflict:
+      description: Conflicto (ej. URN duplicado)
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+
+  schemas:
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        details: { type: object }
+
+    HealthResponse:
+      type: object
+      properties:
+        status: { type: string, example: ok }
+        app: { type: string }
+        version: { type: string }
+        environment: { type: string }
+
+    ReadinessResponse:
+      type: object
+      properties:
+        status: { type: string }
+        checks:
+          type: object
+          additionalProperties: { type: string }
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string, minLength: 8 }
+
+    TokenResponse:
+      type: object
+      properties:
+        access_token: { type: string }
+        refresh_token: { type: string }
+        token_type: { type: string, example: bearer }
+        expires_in: { type: integer }
+
+    GeoPoint:
+      type: object
+      required: [type, coordinates]
+      properties:
+        type: { type: string, enum: [Point] }
+        coordinates:
+          type: array
+          items: { type: number }
+          minItems: 2
+          maxItems: 2
+
+    I18nText:
+      type: object
+      properties:
+        es: { type: string }
+        en: { type: string }
+        de: { type: string }
+        fr: { type: string }
+
+    # ---- Recurso Turístico ----
+    RecursoTuristicoIn:
+      type: object
+      required: [urn, nombre, categoria]
+      properties:
+        urn: { type: string, pattern: "^urn:ngsi-ld:RecursoTuristico:nijar:[a-z0-9-]+$" }
+        nombre: { type: string }
+        categoria:
+          type: string
+          enum: [playa, monumento, ruta, mirador, centro_visitantes, parque_natural, museo, yacimiento, punto_interes, oficina_turismo]
+        descripcion_corta: { type: string }
+        nombre_i18n: { $ref: "#/components/schemas/I18nText" }
+        descripcion_i18n: { $ref: "#/components/schemas/I18nText" }
+        ubicacion: { $ref: "#/components/schemas/GeoPoint" }
+        direccion: { type: string }
+        municipio: { type: string, default: Níjar }
+        codigo_postal: { type: string }
+        telefono: { type: string }
+        email: { type: string, format: email }
+        web: { type: string, format: uri }
+        horario: { type: object }
+        accesibilidad: { type: object }
+        servicios_disponibles: { type: array, items: { type: string } }
+        etiquetas: { type: array, items: { type: string } }
+        imagenes: { type: array, items: { type: string, format: uri } }
+        publicado: { type: boolean, default: false }
+        activo: { type: boolean, default: true }
+
+    RecursoTuristicoOut:
+      allOf:
+        - { $ref: "#/components/schemas/RecursoTuristicoIn" }
+        - type: object
+          properties:
+            id: { type: string, format: uuid }
+            created_at: { type: string, format: date-time }
+            updated_at: { type: string, format: date-time }
+
+    PaginatedRecursos:
+      type: object
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/RecursoTuristicoOut" }
+        total: { type: integer }
+        page: { type: integer }
+        page_size: { type: integer }
+
+    # ---- Evento ----
+    EventoTuristicoOut:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        urn: { type: string }
+        nombre: { type: string }
+        tipo: { type: string }
+        descripcion: { type: string }
+        fecha_inicio: { type: string, format: date-time }
+        fecha_fin: { type: string, format: date-time }
+        ubicacion: { $ref: "#/components/schemas/GeoPoint" }
+        organizador: { type: string }
+        publicado: { type: boolean }
+
+    PaginatedEventos:
+      type: object
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/EventoTuristicoOut" }
+        total: { type: integer }
+        page: { type: integer }
+        page_size: { type: integer }
+
+    # ---- Servicio ----
+    ServicioOut:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        urn: { type: string }
+        nombre: { type: string }
+        tipo: { type: string }
+        descripcion: { type: string }
+        ubicacion: { $ref: "#/components/schemas/GeoPoint" }
+        direccion: { type: string }
+        municipio: { type: string }
+        telefono: { type: string }
+        web: { type: string, format: uri }
+        rango_precios: { type: string }
+        valoracion_media: { type: number }
+        publicado: { type: boolean }
+
+    PaginatedServicios:
+      type: object
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/ServicioOut" }
+        total: { type: integer }
+        page: { type: integer }
+        page_size: { type: integer }
+
+    # ---- Sensor / Observación ----
+    SensorOut:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        urn: { type: string }
+        nombre: { type: string }
+        tipo: { type: string }
+        estado: { type: string }
+        ubicacion: { $ref: "#/components/schemas/GeoPoint" }
+
+    PaginatedSensores:
+      type: object
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/SensorOut" }
+        total: { type: integer }
+        page: { type: integer }
+        page_size: { type: integer }
+
+    ObservacionIn:
+      type: object
+      required: [sensor_urn, observado_en]
+      properties:
+        sensor_urn: { type: string }
+        observado_en: { type: string, format: date-time }
+        valor: { type: number }
+        valores: { type: object }
+        unidades: { type: string }
+        payload_original: { type: object }
+
+    ObservacionOut:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        sensor_id: { type: string, format: uuid }
+        observado_en: { type: string, format: date-time }
+        valor: { type: number }
+        valores: { type: object }
+        unidades: { type: string }
+        valido: { type: boolean }
+
+    # ---- Opinion / Social ----
+    OpinionOut:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        fuente: { type: string }
+        autor_handle: { type: string }
+        texto_original: { type: string }
+        idioma: { type: string }
+        publicado_en: { type: string, format: date-time }
+        sentimiento: { type: string }
+        score_sentimiento: { type: number }
+        temas: { type: array, items: { type: string } }
+
+    PaginatedOpiniones:
+      type: object
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/OpinionOut" }
+        total: { type: integer }
+        page: { type: integer }
+        page_size: { type: integer }
+
+    SentimentSeries:
+      type: object
+      properties:
+        granularidad: { type: string }
+        puntos:
+          type: array
+          items:
+            type: object
+            properties:
+              timestamp: { type: string, format: date-time }
+              positivo: { type: integer }
+              neutro: { type: integer }
+              negativo: { type: integer }
+              score_medio: { type: number }
+
+    # ---- CMS ----
+    ContenidoIn:
+      type: object
+      required: [titulo, cuerpo, canal]
+      properties:
+        titulo: { type: string }
+        titulo_i18n: { $ref: "#/components/schemas/I18nText" }
+        cuerpo: { type: string }
+        cuerpo_i18n: { $ref: "#/components/schemas/I18nText" }
+        canal:
+          type: array
+          items: { type: string, enum: [totem, web, app] }
+        plantilla_id: { type: string }
+        recurso_id: { type: string, format: uuid }
+        publicar: { type: boolean, default: false }
+        publicar_desde: { type: string, format: date-time }
+        publicar_hasta: { type: string, format: date-time }
+
+    ContenidoOut:
+      allOf:
+        - { $ref: "#/components/schemas/ContenidoIn" }
+        - type: object
+          properties:
+            id: { type: string, format: uuid }
+            estado: { type: string, enum: [borrador, programado, publicado, archivado] }
+            created_at: { type: string, format: date-time }
+            updated_at: { type: string, format: date-time }
+
+    PaginatedContenidos:
+      type: object
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/ContenidoOut" }
+        total: { type: integer }
+        page: { type: integer }
+        page_size: { type: integer }
+
+    # ---- Chatbot ----
+    ChatQueryIn:
+      type: object
+      required: [sesion_id, canal, pregunta]
+      properties:
+        sesion_id: { type: string }
+        canal: { type: string, enum: [web, app, totem] }
+        idioma: { type: string, enum: [es, en, de, fr], default: es }
+        pregunta: { type: string }
+        contexto: { type: object }
+
+    ChatResponseOut:
+      type: object
+      properties:
+        respuesta: { type: string }
+        intent_detectado: { type: string }
+        nivel_confianza: { type: string, enum: [alta, media, fuera_de_dominio] }
+        fuentes:
+          type: array
+          items:
+            type: object
+            properties:
+              tipo: { type: string }
+              referencia: { type: string }
+              fecha: { type: string, format: date }
+        sugerencias:
+          type: array
+          items: { type: string }
+
+    ChatbotTelemetry:
+      type: object
+      properties:
+        sesiones_totales: { type: integer }
+        sesiones_unicas: { type: integer }
+        resolucion_autonoma_porc: { type: number }
+        satisfaccion_porc: { type: number }
+        idiomas_distribucion: { type: object, additionalProperties: { type: number } }
+        top_intents:
+          type: array
+          items:
+            type: object
+            properties:
+              nombre: { type: string }
+              ocurrencias: { type: integer }
+
+    # ---- Informe mensual ----
+    MonthlyReport:
+      type: object
+      properties:
+        periodo:
+          type: object
+          properties:
+            year: { type: integer }
+            month: { type: integer }
+        disponibilidad_por_componente:
+          type: object
+          additionalProperties: { type: number }
+        ans:
+          type: object
+          properties:
+            criticas:
+              type: object
+              properties:
+                tickets: { type: integer }
+                tiempo_medio_respuesta_h: { type: number }
+                tiempo_medio_resolucion_h: { type: number }
+                cumplimiento_porc: { type: number }
+            altas: { $ref: "#/components/schemas/AnsBucket" }
+            medias: { $ref: "#/components/schemas/AnsBucket" }
+            bajas: { $ref: "#/components/schemas/AnsBucket" }
+        kpis_uso:
+          type: object
+          properties:
+            interacciones_totems: { type: integer }
+            sesiones_chatbot: { type: integer }
+            visitas_web: { type: integer }
+            sesiones_app: { type: integer }
+        seguridad:
+          type: object
+          properties:
+            eventos_waf_bloqueados: { type: integer }
+            alertas_edr: { type: integer }
+            incidentes_confirmados: { type: integer }
+            brechas_notificadas_aepd: { type: integer }
+        acciones_preventivas:
+          type: array
+          items:
+            type: object
+            properties:
+              accion: { type: string }
+              ejecutada: { type: boolean }
+              fecha: { type: string, format: date }
+
+    AnsBucket:
+      type: object
+      properties:
+        tickets: { type: integer }
+        tiempo_medio_respuesta_h: { type: number }
+        tiempo_medio_resolucion_h: { type: number }
+        cumplimiento_porc: { type: number }

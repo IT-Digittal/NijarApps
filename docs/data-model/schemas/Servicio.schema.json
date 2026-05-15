@@ -1,0 +1,126 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nijar.es/schemas/Servicio.schema.json",
+  "title": "Servicio",
+  "description": "Servicio turístico ofrecido en el destino: alojamiento, gastronomía, ocio, comercio, transporte.",
+  "type": "object",
+  "required": ["urn", "nombre", "tipo", "municipio"],
+  "properties": {
+    "urn": {
+      "type": "string",
+      "pattern": "^urn:ngsi-ld:Servicio:nijar:[a-z0-9-]+$"
+    },
+    "nombre": { "type": "string", "maxLength": 255 },
+    "tipo": {
+      "type": "string",
+      "enum": [
+        "alojamiento_hotel",
+        "alojamiento_apartamento",
+        "alojamiento_rural",
+        "alojamiento_camping",
+        "gastronomia_restaurante",
+        "gastronomia_bar",
+        "gastronomia_cafeteria",
+        "ocio_actividad",
+        "ocio_alquiler",
+        "transporte",
+        "guia_turistico",
+        "comercio",
+        "otro"
+      ]
+    },
+    "descripcion": { "type": ["string", "null"] },
+    "nombre_i18n": {
+      "type": ["object", "null"],
+      "properties": {
+        "es": { "type": "string" },
+        "en": { "type": "string" },
+        "de": { "type": "string" },
+        "fr": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "descripcion_i18n": {
+      "type": ["object", "null"],
+      "properties": {
+        "es": { "type": "string" },
+        "en": { "type": "string" },
+        "de": { "type": "string" },
+        "fr": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "ubicacion": {
+      "type": ["object", "null"],
+      "properties": {
+        "type": { "const": "Point" },
+        "coordinates": {
+          "type": "array",
+          "items": { "type": "number" },
+          "minItems": 2,
+          "maxItems": 2
+        }
+      },
+      "required": ["type", "coordinates"]
+    },
+    "direccion": { "type": ["string", "null"], "maxLength": 500 },
+    "municipio": { "type": "string", "default": "Níjar" },
+    "codigo_postal": { "type": ["string", "null"], "pattern": "^[0-9]{5}$" },
+    "telefono": { "type": ["string", "null"] },
+    "email": { "type": ["string", "null"], "format": "email" },
+    "web": { "type": ["string", "null"], "format": "uri" },
+    "horario": { "type": ["object", "null"] },
+    "rango_precios": {
+      "type": ["string", "null"],
+      "enum": ["€", "€€", "€€€", "€€€€", null]
+    },
+    "valoracion_media": {
+      "type": ["number", "null"],
+      "minimum": 0,
+      "maximum": 5
+    },
+    "registro_turismo": {
+      "type": ["string", "null"],
+      "description": "Identificador en el Registro de Turismo de Andalucía"
+    },
+    "cif": { "type": ["string", "null"] },
+    "accesibilidad": {
+      "type": ["object", "null"],
+      "properties": {
+        "silla_ruedas": { "type": ["boolean", "null"] },
+        "bucle_magnetico": { "type": ["boolean", "null"] },
+        "menu_braille": { "type": ["boolean", "null"] },
+        "menu_lectura_facil": { "type": ["boolean", "null"] }
+      }
+    },
+    "idiomas_atencion": {
+      "type": ["array", "null"],
+      "items": { "type": "string", "enum": ["es", "en", "de", "fr", "it", "nl", "otro"] }
+    },
+    "etiquetas": { "type": ["array", "null"], "items": { "type": "string" } },
+    "imagenes": {
+      "type": ["array", "null"],
+      "items": { "type": "string", "format": "uri" }
+    },
+    "activo": { "type": "boolean", "default": true },
+    "publicado": { "type": "boolean", "default": false },
+    "metadata_adicional": { "type": ["object", "null"] }
+  },
+  "additionalProperties": false,
+  "examples": [
+    {
+      "urn": "urn:ngsi-ld:Servicio:nijar:hotel-cortijo-fragua",
+      "nombre": "Cortijo La Fragua",
+      "tipo": "alojamiento_rural",
+      "descripcion": "Alojamiento rural en el corazón del Parque Natural Cabo de Gata-Níjar.",
+      "ubicacion": {
+        "type": "Point",
+        "coordinates": [-2.108, 36.879]
+      },
+      "municipio": "Níjar",
+      "rango_precios": "€€",
+      "idiomas_atencion": ["es", "en"],
+      "publicado": true
+    }
+  ]
+}

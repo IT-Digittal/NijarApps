@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nijar.es/schemas/Opinion.schema.json",
+  "title": "Opinion",
+  "description": "Mención u opinión sobre el destino capturada por el motor de Social Listening.",
+  "type": "object",
+  "required": ["fuente", "texto_original", "publicado_en"],
+  "properties": {
+    "fuente": {
+      "type": "string",
+      "enum": [
+        "twitter_x",
+        "facebook",
+        "instagram",
+        "tripadvisor",
+        "google_reviews",
+        "encuesta_municipal",
+        "otro"
+      ]
+    },
+    "fuente_id_externo": {
+      "type": ["string", "null"],
+      "description": "ID original de la publicación en la plataforma de origen"
+    },
+    "autor_handle": {
+      "type": ["string", "null"],
+      "description": "Nombre/handle del autor (si público)"
+    },
+    "texto_original": { "type": "string" },
+    "idioma": {
+      "type": ["string", "null"],
+      "enum": ["es", "en", "de", "fr", "it", "nl", "otro", null]
+    },
+    "publicado_en": { "type": "string", "format": "date-time" },
+    "sentimiento": {
+      "type": "string",
+      "enum": ["positivo", "neutro", "negativo", "desconocido"],
+      "default": "desconocido"
+    },
+    "score_sentimiento": {
+      "type": ["number", "null"],
+      "minimum": -1,
+      "maximum": 1,
+      "description": "Score continuo: -1 (muy negativo) a +1 (muy positivo)"
+    },
+    "temas": {
+      "type": ["array", "null"],
+      "items": { "type": "string" },
+      "description": "Etiquetas temáticas: playa, gastronomia, parque-natural, alojamiento, etc."
+    },
+    "entidades_mencionadas": {
+      "type": ["array", "null"],
+      "items": { "type": "string" },
+      "description": "URNs de entidades detectadas (recursos turísticos, eventos, servicios)"
+    },
+    "metricas": {
+      "type": ["object", "null"],
+      "properties": {
+        "likes": { "type": ["integer", "null"], "minimum": 0 },
+        "compartidos": { "type": ["integer", "null"], "minimum": 0 },
+        "comentarios": { "type": ["integer", "null"], "minimum": 0 },
+        "alcance": { "type": ["integer", "null"], "minimum": 0 }
+      }
+    },
+    "latitud": { "type": ["number", "null"], "minimum": -90, "maximum": 90 },
+    "longitud": { "type": ["number", "null"], "minimum": -180, "maximum": 180 },
+    "capturado_en": { "type": ["string", "null"], "format": "date-time" },
+    "payload_original": {
+      "type": ["object", "null"],
+      "description": "Payload bruto del API de origen (linaje del dato)"
+    },
+    "revisado_humano": { "type": "boolean", "default": false },
+    "sentimiento_humano": {
+      "type": ["string", "null"],
+      "enum": ["positivo", "neutro", "negativo", "desconocido", null]
+    }
+  },
+  "additionalProperties": false,
+  "examples": [
+    {
+      "fuente": "twitter_x",
+      "fuente_id_externo": "1234567890",
+      "autor_handle": "@viajero_anonimo",
+      "texto_original": "El atardecer en la Playa de Mónsul es algo único. Cabo de Gata sigue siendo mágico. #Níjar #CaboDeGata",
+      "idioma": "es",
+      "publicado_en": "2026-08-05T20:14:32+02:00",
+      "sentimiento": "positivo",
+      "score_sentimiento": 0.86,
+      "temas": ["playa", "paisaje"],
+      "entidades_mencionadas": ["urn:ngsi-ld:RecursoTuristico:nijar:playa-monsul"],
+      "metricas": {
+        "likes": 142,
+        "compartidos": 18,
+        "comentarios": 7
+      },
+      "capturado_en": "2026-08-05T20:25:00+02:00"
+    }
+  ]
+}

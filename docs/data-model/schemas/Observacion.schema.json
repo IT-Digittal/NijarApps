@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nijar.es/schemas/Observacion.schema.json",
+  "title": "Observacion",
+  "description": "Lectura/medida puntual de un sensor IoT. Compatible con FIWARE AirQualityObserved y WeatherObserved.",
+  "type": "object",
+  "required": ["sensor_urn", "observado_en"],
+  "properties": {
+    "sensor_urn": {
+      "type": "string",
+      "pattern": "^urn:ngsi-ld:Device:nijar:[a-z0-9-]+:[a-z0-9-]+$",
+      "description": "URN del sensor que emite la observación"
+    },
+    "observado_en": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp del evento (ISO 8601 con zona horaria)"
+    },
+    "valor": {
+      "type": ["number", "null"],
+      "description": "Valor único (cuando el sensor mide una sola magnitud)"
+    },
+    "valores": {
+      "type": ["object", "null"],
+      "description": "Diccionario de valores múltiples (ej. estación meteo)",
+      "examples": [
+        {
+          "temperatura_c": 24.5,
+          "humedad_porc": 62,
+          "viento_kmh": 12,
+          "radiacion_uv": 7
+        }
+      ]
+    },
+    "unidades": { "type": ["string", "null"] },
+    "valido": {
+      "type": "boolean",
+      "default": true,
+      "description": "Indica si el dato superó las validaciones (rango, deduplicación)"
+    },
+    "motivo_invalidez": {
+      "type": ["string", "null"],
+      "description": "Motivo si valido=false: fuera_rango | duplicado | timestamp_invalido | etc."
+    },
+    "payload_original": {
+      "type": ["object", "null"],
+      "description": "Payload bruto recibido del sensor (linaje del dato — ENS Medio)"
+    }
+  },
+  "additionalProperties": false,
+  "examples": [
+    {
+      "sensor_urn": "urn:ngsi-ld:Device:nijar:co2:smartoffice-01",
+      "observado_en": "2026-05-15T10:23:45+02:00",
+      "valor": 845.2,
+      "unidades": "ppm",
+      "valido": true
+    },
+    {
+      "sensor_urn": "urn:ngsi-ld:Device:nijar:meteo:rodalquilar-01",
+      "observado_en": "2026-05-15T11:00:00+02:00",
+      "valores": {
+        "temperatura_c": 24.5,
+        "humedad_porc": 62,
+        "viento_kmh": 12,
+        "radiacion_uv": 7,
+        "precipitacion_mm": 0
+      },
+      "valido": true
+    }
+  ]
+}

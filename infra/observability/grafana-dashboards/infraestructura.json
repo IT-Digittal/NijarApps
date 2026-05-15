@@ -1,0 +1,71 @@
+{
+  "title": "Nijar DTI · Infraestructura",
+  "uid": "nijar-infra",
+  "tags": ["nijar", "dti", "infra", "kubernetes"],
+  "timezone": "Europe/Madrid",
+  "schemaVersion": 39,
+  "refresh": "1m",
+  "time": { "from": "now-3h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Pods nijar-dti por estado",
+      "type": "stat",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{
+        "expr": "sum by (phase) (kube_pod_status_phase{namespace=\"nijar-dti\"})",
+        "legendFormat": "{{phase}}"
+      }],
+      "gridPos": { "h": 4, "w": 12, "x": 0, "y": 0 }
+    },
+    {
+      "id": 2,
+      "title": "Restarts en última hora",
+      "type": "stat",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{
+        "expr": "sum(increase(kube_pod_container_status_restarts_total{namespace=\"nijar-dti\"}[1h]))"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green", "value": 0 }, { "color": "yellow", "value": 1 }, { "color": "red", "value": 5 }
+          ]}
+        }
+      },
+      "gridPos": { "h": 4, "w": 12, "x": 12, "y": 0 }
+    },
+    {
+      "id": 3,
+      "title": "CPU usado por pod",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{
+        "expr": "sum by (pod) (rate(container_cpu_usage_seconds_total{namespace=\"nijar-dti\"}[2m]))",
+        "legendFormat": "{{pod}}"
+      }],
+      "fieldConfig": { "defaults": { "unit": "percentunit" } },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 }
+    },
+    {
+      "id": 4,
+      "title": "Memoria usada por pod",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{
+        "expr": "sum by (pod) (container_memory_working_set_bytes{namespace=\"nijar-dti\"})",
+        "legendFormat": "{{pod}}"
+      }],
+      "fieldConfig": { "defaults": { "unit": "bytes" } },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 }
+    },
+    {
+      "id": 5,
+      "title": "Estado BBDD (1=up, 0=down)",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "nijar_db_up" }],
+      "gridPos": { "h": 6, "w": 24, "x": 0, "y": 12 }
+    }
+  ]
+}

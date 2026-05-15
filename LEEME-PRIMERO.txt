@@ -1,0 +1,129 @@
+================================================================
+ PLATAFORMA DTI NIJAR - DESPLIEGUE LOCAL EN WINDOWS
+ Expediente 18962/2025 - Ayuntamiento de Nijar / IT DIGITTAL
+================================================================
+
+Bienvenido.
+
+
+ ANTES DE EMPEZAR - Lee esto si es tu primer contacto
+--------------------------------------------------------
+ Si te acabas de incorporar al equipo y nunca has tocado
+ este proyecto, dedica 30 minutos a leer:
+
+   docs\onboarding\Onboarding-Equipo-Tecnico.pdf
+
+ Cubre que es el proyecto, quien lo paga, que estamos
+ construyendo, como esta organizado el codigo y cuales
+ son las decisiones tecnicas que NO se tocan a la ligera.
+ Te ahorrara semanas de despiste y errores evitables.
+
+
+ DESPLIEGUE LOCAL - Si solo quieres arrancar la plataforma,
+ sigue estos 4 pasos:
+
+
+ PASO 1. Comprobar que tienes Docker Desktop instalado
+--------------------------------------------------------
+ Si no lo tienes, descargalo de:
+   https://www.docker.com/products/docker-desktop
+
+ Tras instalar, abrelo y espera a que el icono de la
+ ballena en la bandeja del sistema se ponga verde.
+
+
+ PASO 2. Mover esta carpeta a una ruta sin espacios
+--------------------------------------------------------
+ Recomendado:   C:\dev\nijar-dti\
+
+ EVITA rutas con espacios o acentos como:
+   C:\Users\Tu Nombre\Escritorio\Plataforma DTI Nijar\
+
+ Los espacios y acentos pueden causar problemas con
+ Docker en algunas configuraciones.
+
+
+ PASO 3. Setup inicial (solo la primera vez)
+--------------------------------------------------------
+ Doble clic en:
+
+   windows\setup.bat
+
+ Comprobara que todo este OK y creara los archivos
+ de configuracion necesarios.
+
+
+ PASO 4. Arrancar la plataforma
+--------------------------------------------------------
+ Doble clic en:
+
+   windows\start.bat
+
+ Tras 1-2 minutos se abrira el navegador en:
+   http://localhost:8000/docs
+
+
+================================================================
+ DOCUMENTACION COMPLETA
+================================================================
+
+ - docs\onboarding\Onboarding-Equipo-Tecnico.pdf
+                          Onboarding tecnico para nuevos
+                          miembros del equipo (lectura
+                          previa recomendada).
+
+ - README-Windows.md      Guia detallada Windows con
+                          troubleshooting y configuracion
+                          avanzada.
+
+ - README.md              Documentacion del proyecto
+                          (arquitectura, endpoints, etc.)
+
+ - windows\README.md      Referencia rapida de los scripts
+                          de despliegue.
+
+
+================================================================
+ COMANDOS HABITUALES
+================================================================
+
+ Doble clic en cualquiera de estos archivos:
+
+   windows\setup.bat    Comprobaciones iniciales
+   windows\start.bat    Arrancar la plataforma
+   windows\stop.bat     Parar la plataforma
+   windows\status.bat   Ver estado de los servicios
+   windows\logs.bat     Ver logs en tiempo real
+   windows\reset.bat    Borrar todo y empezar de cero
+
+
+================================================================
+ CREDENCIALES POR DEFECTO TRAS PRIMER ARRANQUE
+================================================================
+
+   email:       admin@nijar.es
+   contrasena:  CambiarEnPrimerArranque#2026
+
+   (Cambiar tras el primer login.)
+
+
+================================================================
+ PROBLEMAS HABITUALES
+================================================================
+
+ - "Docker Desktop no esta arrancado"
+   Abre Docker Desktop desde el menu Inicio y espera
+   30-60 segundos.
+
+ - "Puerto 5432 ocupado"
+   Tienes otro PostgreSQL local. Detenlo o cambia el
+   puerto en docker-compose.yml.
+
+ - "Acceso denegado al ejecutar .ps1"
+   Usa siempre los .bat en lugar de los .ps1
+   directamente. Los .bat ya gestionan los permisos
+   de PowerShell automaticamente.
+
+ - Mas problemas: ver README-Windows.md seccion 7.
+
+================================================================

@@ -1,0 +1,72 @@
+{
+  "title": "Nijar DTI · API overview",
+  "uid": "nijar-api",
+  "tags": ["nijar", "dti", "api"],
+  "timezone": "Europe/Madrid",
+  "schemaVersion": 39,
+  "refresh": "30s",
+  "time": { "from": "now-6h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Peticiones por segundo",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "sum(rate(nijar_http_requests_total[1m]))", "legendFormat": "rps total" },
+        { "expr": "sum by (status) (rate(nijar_http_requests_total[1m]))", "legendFormat": "{{status}}" }
+      ],
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 }
+    },
+    {
+      "id": 2,
+      "title": "Latencia p50/p95/p99",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "histogram_quantile(0.50, sum by (le) (rate(nijar_http_request_duration_seconds_bucket[5m])))", "legendFormat": "p50" },
+        { "expr": "histogram_quantile(0.95, sum by (le) (rate(nijar_http_request_duration_seconds_bucket[5m])))", "legendFormat": "p95" },
+        { "expr": "histogram_quantile(0.99, sum by (le) (rate(nijar_http_request_duration_seconds_bucket[5m])))", "legendFormat": "p99" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s" } },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 }
+    },
+    {
+      "id": 3,
+      "title": "Tasa de error 5xx (%)",
+      "type": "stat",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "100 * sum(rate(nijar_http_requests_total{status=~\"5..\"}[5m])) / clamp_min(sum(rate(nijar_http_requests_total[5m])), 0.001)" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green", "value": 0 }, { "color": "yellow", "value": 1 }, { "color": "red", "value": 5 }
+          ]}
+        }
+      },
+      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 8 }
+    },
+    {
+      "id": 4,
+      "title": "Pods activos",
+      "type": "stat",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "sum(up{namespace=\"nijar-dti\", pod=~\"nijar-api-.*\"})" }],
+      "gridPos": { "h": 6, "w": 6, "x": 6, "y": 8 }
+    },
+    {
+      "id": 5,
+      "title": "Top endpoints por latencia p95",
+      "type": "table",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{
+        "expr": "topk(10, histogram_quantile(0.95, sum by (le, path) (rate(nijar_http_request_duration_seconds_bucket[10m]))))",
+        "format": "table"
+      }],
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 8 }
+    }
+  ]
+}

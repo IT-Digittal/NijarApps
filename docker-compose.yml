@@ -1,0 +1,169 @@
+# =============================================================
+# Plataforma DTI Níjar — Entorno de desarrollo local
+# =============================================================
+# Servicios principales:
+#   - api               Backend FastAPI
+#   - db                PostgreSQL 16 con PostGIS 3
+#   - redis             Cache y pub/sub
+#   - mqtt              Broker MQTT (Eclipse Mosquitto) para sensores IoT
+#
+# Workers (Hito 2):
+#   - mqtt-subscriber   Subscriber MQTT que persiste observaciones en BBDD
+#   - social-worker     Polling de Social Listening (X, Facebook, Instagram)
+#   - rasa              Servidor Rasa Open Source (chatbot avanzado)
+#
+# Para arrancar todo: docker compose --profile workers --profile rasa up
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nijar-dti-api
+    env_file: .env
+    environment:
+      PYTHONPATH: /app/src        # <-- AÑADIR ESTA LÍNEA (con sus 2 anteriores)
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mqtt:
+        condition: service_started
+    volumes:
+      - ./src:/app/src:ro
+      - ./alembic:/app/alembic:ro
+      - ./frontend:/app/frontend:ro
+    command: >
+      sh -c "alembic upgrade head &&
+             uvicorn nijar_dti.main:app --host 0.0.0.0 --port 8000 --reload --reload-dir /app/src"
+    networks:
+      - nijar-net
+  db:
+    image: postgis/postgis:16-3.4-alpine
+    container_name: nijar-dti-db
+    environment:
+      POSTGRES_DB: nijar_dti
+      POSTGRES_USER: nijar
+      POSTGRES_PASSWORD: nijar_dev_pwd
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./docs/database/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nijar -d nijar_dti"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - nijar-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: nijar-dti-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - nijar-net
+
+  mqtt:
+    image: eclipse-mosquitto:2
+    container_name: nijar-dti-mqtt
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - ./docs/mqtt/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - mqtt_data:/mosquitto/data
+      - mqtt_log:/mosquitto/log
+    networks:
+      - nijar-net
+
+  # ----------------- Workers Hito 2 -----------------
+
+  mqtt-subscriber:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nijar-dti-mqtt-subscriber
+    env_file: .env
+    depends_on:
+      db:
+        condition: service_healthy
+      mqtt:
+        condition: service_started
+    volumes:
+      - ./src:/app/src:ro
+    command: ["python", "-m", "nijar_dti.workers.mqtt_worker"]
+    restart: unless-stopped
+    profiles: ["workers"]
+    networks:
+      - nijar-net
+
+  social-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nijar-dti-social-worker
+    env_file: .env
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./src:/app/src:ro
+    command: ["python", "-m", "nijar_dti.workers.social_worker"]
+    restart: unless-stopped
+    profiles: ["workers"]
+    networks:
+      - nijar-net
+
+  # ----------------- Rasa (chatbot avanzado) -----------------
+
+  rasa:
+    image: rasa/rasa:3.6.20-full
+    container_name: nijar-dti-rasa
+    ports:
+      - "5005:5005"
+    volumes:
+      - ./rasa:/app
+      - rasa_models:/app/models
+    command: >
+      run
+      --enable-api
+      --cors "*"
+      --port 5005
+    profiles: ["rasa"]
+    networks:
+      - nijar-net
+
+  rasa-trainer:
+    image: rasa/rasa:3.6.20-full
+    container_name: nijar-dti-rasa-trainer
+    volumes:
+      - ./rasa:/app
+      - rasa_models:/app/models
+    command: ["train", "--out", "/app/models"]
+    profiles: ["rasa-train"]
+    networks:
+      - nijar-net
+
+volumes:
+  db_data:
+  redis_data:
+  mqtt_data:
+  mqtt_log:
+  rasa_models:
+
+networks:
+  nijar-net:
+    driver: bridge

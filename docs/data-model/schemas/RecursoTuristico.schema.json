@@ -1,0 +1,140 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nijar.es/schemas/RecursoTuristico.schema.json",
+  "title": "RecursoTuristico",
+  "description": "Recurso turístico georreferenciado del destino Níjar. Compatible con FIWARE PointOfInterest y TouristAttraction.",
+  "type": "object",
+  "required": ["urn", "nombre", "categoria", "municipio"],
+  "properties": {
+    "urn": {
+      "type": "string",
+      "pattern": "^urn:ngsi-ld:RecursoTuristico:nijar:[a-z0-9-]+$",
+      "description": "Identificador URN único conforme a NGSI-LD"
+    },
+    "nombre": {
+      "type": "string",
+      "maxLength": 255
+    },
+    "categoria": {
+      "type": "string",
+      "enum": [
+        "playa",
+        "monumento",
+        "ruta",
+        "mirador",
+        "centro_visitantes",
+        "parque_natural",
+        "museo",
+        "yacimiento",
+        "punto_interes",
+        "oficina_turismo"
+      ]
+    },
+    "descripcion_corta": {
+      "type": ["string", "null"],
+      "maxLength": 2000
+    },
+    "nombre_i18n": {
+      "type": ["object", "null"],
+      "properties": {
+        "es": { "type": "string" },
+        "en": { "type": "string" },
+        "de": { "type": "string" },
+        "fr": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "descripcion_i18n": {
+      "type": ["object", "null"],
+      "properties": {
+        "es": { "type": "string" },
+        "en": { "type": "string" },
+        "de": { "type": "string" },
+        "fr": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "ubicacion": {
+      "type": ["object", "null"],
+      "description": "Punto GeoJSON en WGS84",
+      "properties": {
+        "type": { "const": "Point" },
+        "coordinates": {
+          "type": "array",
+          "items": { "type": "number" },
+          "minItems": 2,
+          "maxItems": 2,
+          "description": "[longitud, latitud]"
+        }
+      },
+      "required": ["type", "coordinates"]
+    },
+    "direccion": { "type": ["string", "null"], "maxLength": 500 },
+    "municipio": { "type": "string", "default": "Níjar" },
+    "codigo_postal": { "type": ["string", "null"], "pattern": "^[0-9]{5}$" },
+    "telefono": { "type": ["string", "null"] },
+    "email": { "type": ["string", "null"], "format": "email" },
+    "web": { "type": ["string", "null"], "format": "uri" },
+    "horario": {
+      "type": ["object", "null"],
+      "description": "Horarios de apertura por día de la semana"
+    },
+    "accesibilidad": {
+      "type": ["object", "null"],
+      "properties": {
+        "silla_ruedas": { "type": ["boolean", "null"] },
+        "bucle_magnetico": { "type": ["boolean", "null"] },
+        "lectura_facil": { "type": ["boolean", "null"] },
+        "audioguía": { "type": ["boolean", "null"] }
+      }
+    },
+    "servicios_disponibles": {
+      "type": ["array", "null"],
+      "items": { "type": "string" }
+    },
+    "etiquetas": {
+      "type": ["array", "null"],
+      "items": { "type": "string" }
+    },
+    "imagenes": {
+      "type": ["array", "null"],
+      "items": { "type": "string", "format": "uri" }
+    },
+    "enlaces_externos": {
+      "type": ["object", "null"],
+      "description": "URLs a recursos externos: web turística, mapa OpenStreetMap, etc."
+    },
+    "activo": { "type": "boolean", "default": true },
+    "publicado": { "type": "boolean", "default": false },
+    "metadata_adicional": {
+      "type": ["object", "null"],
+      "description": "Atributos extensibles para integraciones futuras"
+    }
+  },
+  "additionalProperties": false,
+  "examples": [
+    {
+      "urn": "urn:ngsi-ld:RecursoTuristico:nijar:playa-monsul",
+      "nombre": "Playa de Mónsul",
+      "categoria": "playa",
+      "descripcion_corta": "Una de las playas más emblemáticas del Parque Natural Cabo de Gata-Níjar.",
+      "nombre_i18n": {
+        "es": "Playa de Mónsul",
+        "en": "Mónsul Beach",
+        "de": "Strand Mónsul",
+        "fr": "Plage de Mónsul"
+      },
+      "ubicacion": {
+        "type": "Point",
+        "coordinates": [-2.139, 36.752]
+      },
+      "municipio": "Níjar",
+      "accesibilidad": {
+        "silla_ruedas": false
+      },
+      "etiquetas": ["cabo-de-gata", "parque-natural", "playa-virgen"],
+      "activo": true,
+      "publicado": true
+    }
+  ]
+}

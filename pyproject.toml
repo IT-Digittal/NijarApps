@@ -1,0 +1,129 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "nijar-dti"
+version = "0.1.0"
+description = "Plataforma DTI Smart City del Ayuntamiento de Níjar (Exp. 18962/2025)"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "Proprietary - Ayuntamiento de Níjar" }
+authors = [
+    { name = "IT DIGITTAL" }
+]
+
+dependencies = [
+    # Web framework
+    "fastapi>=0.110.0",
+    "uvicorn[standard]>=0.27.0",
+    # Validation
+    "pydantic>=2.6.0",
+    "pydantic-settings>=2.2.0",
+    "email-validator>=2.1.0",
+    # Database (async)
+    "sqlalchemy[asyncio]>=2.0.25",
+    "asyncpg>=0.29.0",
+    "alembic>=1.13.0",
+    "geoalchemy2>=0.14.0",  # PostGIS support
+    # Security
+    "passlib[bcrypt]>=1.7.4",
+    "bcrypt>=3.2,<4",
+    "python-jose[cryptography]>=3.3.0",
+    "python-multipart>=0.0.9",
+    # Cache and pub/sub
+    "redis>=5.0.0",
+    # MQTT (IoT ingestion)
+    "paho-mqtt>=2.0.0",
+    "asyncio-mqtt>=0.16.2",
+    # HTTP client
+    "httpx>=0.27.0",
+    # Logging and observability
+    "structlog>=24.1.0",
+    "prometheus-client>=0.20.0",
+    # Utilities
+    "python-dateutil>=2.9.0",
+    "orjson>=3.9.0",
+    "PyYAML>=6.0.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    # Testing
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "pytest-cov>=4.1.0",
+    "httpx>=0.27.0",
+    # Quality
+    "ruff>=0.3.0",
+    "mypy>=1.9.0",
+    "types-python-dateutil",
+    # Pre-commit
+    "pre-commit>=3.6.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/nijar_dti"]
+
+# ----------------- Tooling -----------------
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade
+    "N",   # pep8-naming
+    "S",   # flake8-bandit
+    "SIM", # flake8-simplify
+]
+ignore = [
+    "S101",  # Use of assert (allowed in tests)
+    "B008",  # Function call in default argument (FastAPI Depends pattern)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101", "S105", "S106"]
+"alembic/*" = ["E501"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+plugins = ["pydantic.mypy"]
+exclude = ["alembic/", "tests/"]
+
+[[tool.mypy.overrides]]
+module = ["geoalchemy2.*", "paho.*", "asyncio_mqtt.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+asyncio_mode = "auto"
+testpaths = ["tests"]
+addopts = [
+    "-ra",
+    "--strict-markers",
+    "--cov=nijar_dti",
+    "--cov-report=term-missing",
+    "--cov-report=html",
+]
+
+[tool.coverage.run]
+branch = true
+source = ["src/nijar_dti"]
+
+[tool.coverage.report]
+fail_under = 50
+exclude_lines = [
+    "pragma: no cover",
+    "raise NotImplementedError",
+    "if TYPE_CHECKING:",
+]

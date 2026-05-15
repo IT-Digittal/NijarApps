@@ -1,0 +1,89 @@
+# Generado automáticamente desde nijar_dti.data.seeds.faqs
+# NO EDITAR A MANO — ejecutar `python -m nijar_dti.workers.rasa_generator`
+
+version: '3.1'
+rules:
+- rule: Responder a playas_destacadas
+  steps:
+  - intent: playas_destacadas
+  - action: utter_playas_destacadas
+- rule: Responder a acceso_playa_monsul
+  steps:
+  - intent: acceso_playa_monsul
+  - action: utter_acceso_playa_monsul
+- rule: Responder a playas_perro
+  steps:
+  - intent: playas_perro
+  - action: utter_playas_perro
+- rule: Responder a horario_amoladeras
+  steps:
+  - intent: horario_amoladeras
+  - action: utter_horario_amoladeras
+- rule: Responder a normativa_parque
+  steps:
+  - intent: normativa_parque
+  - action: utter_normativa_parque
+- rule: Responder a ruta_rodalquilar_albaricoques
+  steps:
+  - intent: ruta_rodalquilar_albaricoques
+  - action: utter_ruta_rodalquilar_albaricoques
+- rule: Responder a ruta_faro_vela_blanca
+  steps:
+  - intent: ruta_faro_vela_blanca
+  - action: utter_ruta_faro_vela_blanca
+- rule: Responder a donde_dormir
+  steps:
+  - intent: donde_dormir
+  - action: utter_donde_dormir
+- rule: Responder a donde_comer
+  steps:
+  - intent: donde_comer
+  - action: utter_donde_comer
+- rule: Responder a transporte_publico
+  steps:
+  - intent: transporte_publico
+  - action: utter_transporte_publico
+- rule: Responder a eventos_proximos
+  steps:
+  - intent: eventos_proximos
+  - action: utter_eventos_proximos
+- rule: Responder a emergencias
+  steps:
+  - intent: emergencias
+  - action: utter_emergencias
+- rule: Responder a centro_salud
+  steps:
+  - intent: centro_salud
+  - action: utter_centro_salud
+- rule: Responder a accesibilidad_playas
+  steps:
+  - intent: accesibilidad_playas
+  - action: utter_accesibilidad_playas
+- rule: Responder a oficina_turismo
+  steps:
+  - intent: oficina_turismo
+  - action: utter_oficina_turismo
+- rule: Responder a artesania_jarapas
+  steps:
+  - intent: artesania_jarapas
+  - action: utter_artesania_jarapas
+- rule: Responder a mejor_epoca_visita
+  steps:
+  - intent: mejor_epoca_visita
+  - action: utter_mejor_epoca_visita
+- rule: Responder a lugares_fotografia
+  steps:
+  - intent: lugares_fotografia
+  - action: utter_lugares_fotografia
+- rule: Responder a saludo
+  steps:
+  - intent: saludo
+  - action: utter_saludo
+- rule: Responder a despedida
+  steps:
+  - intent: despedida
+  - action: utter_despedida
+- rule: Fallback fuera de dominio
+  steps:
+  - intent: nlu_fallback
+  - action: utter_default

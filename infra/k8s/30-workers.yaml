@@ -1,0 +1,129 @@
+# =============================================================================
+# Worker MQTT — subscriber para ingesta IoT en tiempo real
+# =============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nijar-mqtt-subscriber
+  namespace: nijar-dti
+  labels:
+    app: nijar-mqtt-subscriber
+    component: worker
+spec:
+  replicas: 1   # singleton: el broker garantiza ordenación por sesión persistente
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: nijar-mqtt-subscriber
+  template:
+    metadata:
+      labels:
+        app: nijar-mqtt-subscriber
+        component: worker
+    spec:
+      serviceAccountName: nijar-api
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: subscriber
+          image: ECR_REPO_URL:latest
+          command: ["python", "-m", "nijar_dti.workers.mqtt_worker"]
+          envFrom:
+            - configMapRef: { name: nijar-api-config }
+            - secretRef: { name: nijar-api-secrets }
+          resources:
+            requests: { cpu: 100m, memory: 256Mi }
+            limits:   { cpu: 500m, memory: 512Mi }
+          livenessProbe:
+            exec:
+              command: ["pgrep", "-f", "mqtt_worker"]
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+
+---
+# =============================================================================
+# Worker Social Listening — polling X / Facebook / Instagram
+# =============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nijar-social-worker
+  namespace: nijar-dti
+  labels:
+    app: nijar-social-worker
+    component: worker
+spec:
+  replicas: 1
+  strategy: { type: Recreate }
+  selector:
+    matchLabels:
+      app: nijar-social-worker
+  template:
+    metadata:
+      labels:
+        app: nijar-social-worker
+        component: worker
+    spec:
+      serviceAccountName: nijar-api
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: worker
+          image: ECR_REPO_URL:latest
+          command: ["python", "-m", "nijar_dti.workers.social_worker"]
+          envFrom:
+            - configMapRef: { name: nijar-api-config }
+            - secretRef: { name: nijar-api-secrets }
+          resources:
+            requests: { cpu: 50m, memory: 256Mi }
+            limits:   { cpu: 300m, memory: 512Mi }
+          livenessProbe:
+            exec:
+              command: ["pgrep", "-f", "social_worker"]
+            initialDelaySeconds: 30
+            periodSeconds: 60
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+
+---
+# =============================================================================
+# Job de migraciones Alembic — se ejecuta en cada despliegue como pre-install
+# =============================================================================
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: nijar-migrate
+  namespace: nijar-dti
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "-5"
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: 3
+  template:
+    metadata:
+      labels:
+        app: nijar-migrate
+    spec:
+      serviceAccountName: nijar-api
+      restartPolicy: OnFailure
+      containers:
+        - name: alembic
+          image: ECR_REPO_URL:latest
+          command: ["alembic", "upgrade", "head"]
+          envFrom:
+            - secretRef: { name: nijar-api-secrets }
+          resources:
+            requests: { cpu: 100m, memory: 256Mi }
+            limits:   { cpu: 500m, memory: 512Mi }

@@ -1,0 +1,154 @@
+# =============================================================================
+# Eclipse Mosquitto — broker MQTT interno
+# =============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mosquitto-config
+  namespace: nijar-dti
+data:
+  mosquitto.conf: |
+    listener 1883
+    protocol mqtt
+    allow_anonymous false
+    password_file /mosquitto/config/passwd
+    persistence true
+    persistence_location /mosquitto/data/
+    log_dest stdout
+    log_type error
+    log_type warning
+    log_type notice
+    connection_messages true
+    max_connections 500
+    max_queued_messages 5000
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mqtt
+  namespace: nijar-dti
+spec:
+  serviceName: mqtt
+  replicas: 1
+  selector:
+    matchLabels: { app: mqtt }
+  template:
+    metadata:
+      labels: { app: mqtt }
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1883
+        fsGroup: 1883
+      containers:
+        - name: mosquitto
+          image: eclipse-mosquitto:2.0.18
+          ports:
+            - { name: mqtt, containerPort: 1883 }
+          volumeMounts:
+            - { name: config, mountPath: /mosquitto/config }
+            - { name: data, mountPath: /mosquitto/data }
+            - { name: passwd, mountPath: /mosquitto/config/passwd, subPath: passwd, readOnly: true }
+          resources:
+            requests: { cpu: 100m, memory: 128Mi }
+            limits:   { cpu: 500m, memory: 256Mi }
+      volumes:
+        - { name: config, configMap: { name: mosquitto-config } }
+        - name: passwd
+          secret:
+            secretName: mqtt-credentials
+  volumeClaimTemplates:
+    - metadata: { name: data }
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: gp3
+        resources:
+          requests:
+            storage: 5Gi
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mqtt
+  namespace: nijar-dti
+spec:
+  clusterIP: None
+  selector: { app: mqtt }
+  ports:
+    - { name: mqtt, port: 1883, targetPort: 1883 }
+
+---
+# =============================================================================
+# Rasa — chatbot avanzado
+# =============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rasa
+  namespace: nijar-dti
+spec:
+  replicas: 1
+  strategy: { type: RollingUpdate }
+  selector:
+    matchLabels: { app: rasa }
+  template:
+    metadata:
+      labels: { app: rasa }
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+      containers:
+        - name: rasa
+          image: rasa/rasa:3.6.20-full
+          args:
+            - run
+            - --enable-api
+            - --cors
+            - "*"
+            - --port
+            - "5005"
+          ports:
+            - { name: http, containerPort: 5005 }
+          volumeMounts:
+            - { name: models, mountPath: /app/models }
+            - { name: config, mountPath: /app/config.yml, subPath: config.yml, readOnly: true }
+          resources:
+            requests: { cpu: 250m, memory: 1Gi }
+            limits:   { cpu: 1500m, memory: 3Gi }
+          readinessProbe:
+            httpGet: { path: /, port: http }
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /, port: http }
+            initialDelaySeconds: 60
+            periodSeconds: 30
+      volumes:
+        - { name: models, persistentVolumeClaim: { claimName: rasa-models } }
+        - { name: config, configMap: { name: rasa-config } }
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: rasa-models
+  namespace: nijar-dti
+spec:
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: gp3
+  resources: { requests: { storage: 5Gi } }
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rasa
+  namespace: nijar-dti
+spec:
+  type: ClusterIP
+  selector: { app: rasa }
+  ports:
+    - { name: http, port: 5005, targetPort: 5005 }

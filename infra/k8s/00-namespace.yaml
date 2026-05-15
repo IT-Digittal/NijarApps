@@ -1,0 +1,80 @@
+# =============================================================================
+# Namespace y recursos compartidos
+# =============================================================================
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: nijar-dti
+  labels:
+    name: nijar-dti
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted
+
+---
+# ServiceAccount para los workloads de la plataforma.
+# Asociado a un IAM role con IRSA para acceder a Secrets Manager y S3.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: nijar-api
+  namespace: nijar-dti
+  annotations:
+    # Sustituir <ACCOUNT-ID> tras `terraform apply`. El runbook documenta
+    # el comando exacto para vincular IRSA con el cluster EKS.
+    eks.amazonaws.com/role-arn: arn:aws:iam::ACCOUNT-ID:role/nijar-dti-production-irsa
+
+---
+# NetworkPolicy: ingress permitido solo desde el ALB y entre pods del namespace.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny
+  namespace: nijar-dti
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-internal
+  namespace: nijar-dti
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: nijar-dti
+        - namespaceSelector:
+            matchLabels:
+              name: ingress-nginx
+        - namespaceSelector:
+            matchLabels:
+              name: monitoring
+  egress:
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - protocol: TCP
+        - protocol: UDP
+
+---
+# PodDisruptionBudget para garantizar disponibilidad mínima durante upgrades.
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: nijar-api-pdb
+  namespace: nijar-dti
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: nijar-api

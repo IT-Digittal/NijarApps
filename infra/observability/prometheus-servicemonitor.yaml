@@ -1,0 +1,23 @@
+# =============================================================================
+# ServiceMonitor — instruye a Prometheus a scrapear /metrics de nijar-api
+# =============================================================================
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: nijar-api
+  namespace: monitoring
+  labels:
+    release: kube-prom
+spec:
+  namespaceSelector:
+    matchNames:
+      - nijar-dti
+  selector:
+    matchLabels:
+      app: nijar-api
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 30s
+      scrapeTimeout: 10s
+      honorLabels: true

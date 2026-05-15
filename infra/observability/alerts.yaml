@@ -1,0 +1,202 @@
+# =============================================================================
+# Alertas Prometheus — SLA del contrato C.1 (4 años)
+# =============================================================================
+# SLA contractual: disponibilidad mínima 99% (mejorable a 99.5% si la oferta
+# de mejora se aceptó). Las alertas que disparan a los pocos minutos de
+# degradación protegen los SLOs y permiten cumplir el SLA mensual.
+# =============================================================================
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: nijar-dti-alerts
+  namespace: monitoring
+  labels:
+    release: kube-prom
+spec:
+  groups:
+    # ---------- Disponibilidad ----------
+    - name: nijar-availability
+      interval: 30s
+      rules:
+        - alert: NijarApiDown
+          expr: |
+            up{job=~".*nijar-api.*"} == 0
+          for: 2m
+          labels:
+            severity: critical
+            component: api
+          annotations:
+            summary: "API DTI Níjar caída ({{ $labels.instance }})"
+            description: "La API REST no responde en {{ $labels.instance }} desde hace 2 minutos. Riesgo SLA mensual."
+            runbook_url: "https://docs.dti.nijar.es/runbook/api-down"
+
+        - alert: NijarApiHighErrorRate
+          expr: |
+            sum(rate(nijar_http_requests_total{status=~"5.."}[5m]))
+              /
+            sum(rate(nijar_http_requests_total[5m])) > 0.05
+          for: 5m
+          labels:
+            severity: warning
+            component: api
+          annotations:
+            summary: "Tasa de errores 5xx >5% en la API"
+            description: "Más del 5% de las peticiones HTTP devuelven 5xx en los últimos 5 minutos."
+
+        - alert: NijarApiHighLatency
+          expr: |
+            histogram_quantile(0.95,
+              sum by (le, path) (rate(nijar_http_request_duration_seconds_bucket[5m]))
+            ) > 1.0
+          for: 10m
+          labels:
+            severity: warning
+            component: api
+          annotations:
+            summary: "Latencia p95 > 1s en la API"
+            description: "El percentil 95 de latencia supera 1 segundo en {{ $labels.path }}."
+
+    # ---------- Base de datos ----------
+    - name: nijar-database
+      interval: 30s
+      rules:
+        - alert: NijarDbDown
+          expr: nijar_db_up == 0
+          for: 2m
+          labels:
+            severity: critical
+            component: database
+          annotations:
+            summary: "BBDD no responde a la API"
+            description: "La API no consigue conectarse con la BBDD. Crítico para todos los servicios."
+
+        - alert: RDSConnectionsHigh
+          expr: |
+            aws_rds_database_connections_average > 80
+          for: 10m
+          labels:
+            severity: warning
+            component: database
+          annotations:
+            summary: "Conexiones RDS altas (>80% del pool)"
+            description: "El número de conexiones activas a RDS está por encima del 80%."
+
+        - alert: RDSStorageLow
+          expr: |
+            (aws_rds_free_storage_space_average / aws_rds_allocated_storage_average) < 0.20
+          for: 30m
+          labels:
+            severity: warning
+            component: database
+          annotations:
+            summary: "Espacio libre en RDS <20%"
+            description: "Menos del 20% del almacenamiento RDS libre. Considerar ampliar."
+
+    # ---------- Sensores IoT (Smart Office y tótems) ----------
+    - name: nijar-iot
+      interval: 60s
+      rules:
+        - alert: SensorsOfflineMassive
+          expr: |
+            (
+              sum(nijar_sensores_total{estado="offline"})
+                /
+              sum(nijar_sensores_total)
+            ) > 0.5
+          for: 10m
+          labels:
+            severity: critical
+            component: iot
+          annotations:
+            summary: "Más del 50% de sensores offline"
+            description: "Hay un fallo masivo de conectividad. Revisar broker MQTT y red de los tótems."
+
+        - alert: ObservacionesInvalidasAltas
+          expr: |
+            (
+              nijar_observaciones_invalidas_ultima_hora_total
+                /
+              clamp_min(nijar_observaciones_ultima_hora_total, 1)
+            ) > 0.10
+          for: 30m
+          labels:
+            severity: warning
+            component: iot
+          annotations:
+            summary: "Observaciones inválidas >10% en la última hora"
+            description: "Sensores con valores fuera de rango. Revisar calibración."
+
+        - alert: NoObservacionesEn24h
+          expr: |
+            nijar_observaciones_ultima_hora_total == 0
+          for: 1h
+          labels:
+            severity: warning
+            component: iot
+          annotations:
+            summary: "Sin ingesta IoT en la última hora"
+            description: "El subscriber MQTT no recibe observaciones desde hace al menos 1 hora."
+
+    # ---------- Chatbot ----------
+    - name: nijar-chatbot
+      interval: 60s
+      rules:
+        - alert: ChatbotResolutionLow
+          expr: |
+            (
+              sum(nijar_chatbot_interacciones_ultimas_24h_total{nivel_confianza=~"alta|media"})
+                /
+              clamp_min(sum(nijar_chatbot_interacciones_ultimas_24h_total), 1)
+            ) < 0.70
+          for: 6h
+          labels:
+            severity: warning
+            component: chatbot
+          annotations:
+            summary: "Resolución autónoma del chatbot <70%"
+            description: "El objetivo del C.1 es ≥80%. Revisar FAQs y modelo Rasa."
+
+        - alert: ChatbotInactividad
+          expr: |
+            sum(nijar_chatbot_interacciones_ultimas_24h_total) == 0
+          for: 12h
+          labels:
+            severity: warning
+            component: chatbot
+          annotations:
+            summary: "Sin interacciones del chatbot en 12h"
+            description: "Posible fallo de los tótems o de la web. Verificar tráfico."
+
+    # ---------- Métricas operativas (refresco) ----------
+    - name: nijar-meta
+      interval: 60s
+      rules:
+        - alert: MetricsRefreshStale
+          expr: |
+            time() - nijar_metrics_last_refresh_timestamp > 600
+          for: 5m
+          labels:
+            severity: warning
+            component: observability
+          annotations:
+            summary: "Refresco de métricas de dominio estancado >10 min"
+            description: "El loop de métricas no consigue completar el refresco. Revisar BBDD."
+
+    # ---------- Disponibilidad SLA mensual ----------
+    - name: nijar-sla
+      interval: 5m
+      rules:
+        # Disponibilidad cumulativa mensual: si baja del 99%, alerta crítica
+        # porque pone en riesgo la facturación mensual del C.1.
+        - alert: SlaMensualEnRiesgo
+          expr: |
+            (
+              avg_over_time(up{job=~".*nijar-api.*"}[30d])
+            ) < 0.995
+          for: 1h
+          labels:
+            severity: critical
+            component: sla
+          annotations:
+            summary: "SLA mensual en riesgo (<99.5%)"
+            description: "Disponibilidad acumulada en 30 días <99.5% (oferta de mejora). Revisar incidencias."
