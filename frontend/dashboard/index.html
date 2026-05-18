@@ -50,6 +50,37 @@
   <!-- Login backdrop overlay -->
   <div id="login-overlay" class="login-overlay"></div>
 
+  <!-- ========== INVITE USER DIALOG ========== -->
+  <dialog id="invite-dialog" class="invite-dialog" aria-labelledby="invite-title">
+    <form id="invite-form" class="login-form" novalidate>
+      <h2 id="invite-title" class="login-form__title">Invitar usuario</h2>
+      <p class="login-form__subtitle">Envía una invitación al equipo del CMS de Níjar.</p>
+      <div class="form-field">
+        <label for="invite-email">Correo electrónico</label>
+        <input type="email" id="invite-email" name="email" required placeholder="usuario@nijar.es" autocomplete="off" />
+      </div>
+      <div class="form-field">
+        <label for="invite-nombre">Nombre completo</label>
+        <input type="text" id="invite-nombre" name="nombre" placeholder="Nombre y apellidos" autocomplete="off" />
+      </div>
+      <div class="form-field">
+        <label for="invite-rol">Rol</label>
+        <select id="invite-rol" class="form-field__select">
+          <option value="gestor_contenidos">Gestor de contenidos</option>
+          <option value="analista_datos">Analista de datos</option>
+          <option value="operador_smart_office">Operador Smart Office</option>
+          <option value="auditor">Auditor</option>
+          <option value="administrador_tic">Administrador TIC</option>
+        </select>
+      </div>
+      <div id="invite-error" class="login-error hidden" role="alert"></div>
+      <div class="invite-actions">
+        <button type="button" class="btn btn--secondary" id="invite-cancel">Cancelar</button>
+        <button type="submit" class="btn btn--primary">Enviar invitación</button>
+      </div>
+    </form>
+  </dialog>
+
   <!-- ========== APP SHELL ========== -->
   <div class="app-shell">
 

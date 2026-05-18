@@ -1225,11 +1225,43 @@ function showUserMenu(anchor, user) {
   setTimeout(() => document.addEventListener("click", () => menu.remove(), { once: true }), 10);
 }
 
+// Invite user modal
+const inviteDialog = document.getElementById("invite-dialog");
+const inviteForm = document.getElementById("invite-form");
+
 document.getElementById("btn-invite-user")?.addEventListener("click", () => {
-  const email = prompt("Correo electrónico del nuevo usuario:");
-  if (email && email.includes("@")) {
-    setBanner(`Invitación enviada a: ${email}`, "success");
+  inviteForm.reset();
+  document.getElementById("invite-error").classList.add("hidden");
+  inviteDialog.showModal();
+});
+
+document.getElementById("invite-cancel")?.addEventListener("click", () => {
+  inviteDialog.close();
+});
+
+inviteDialog?.addEventListener("click", (e) => {
+  if (e.target === inviteDialog) inviteDialog.close();
+});
+
+inviteForm?.addEventListener("submit", (e) => {
+  e.preventDefault();
+  const email = document.getElementById("invite-email").value.trim();
+  const nombre = document.getElementById("invite-nombre").value.trim();
+  const rol = document.getElementById("invite-rol").value;
+  const errEl = document.getElementById("invite-error");
+
+  if (!email || !email.includes("@")) {
+    errEl.textContent = "Introduce un correo electrónico válido.";
+    errEl.classList.remove("hidden");
+    return;
   }
+
+  errEl.classList.add("hidden");
+  inviteDialog.close();
+
+  const rolLabel = rol.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+  const quien = nombre || email;
+  setBanner(`Invitación enviada a ${quien} como ${rolLabel}`, "success");
 });
 
 // ============================================================
