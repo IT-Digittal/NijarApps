@@ -86,6 +86,8 @@
 
 ## Documentación de gobernanza (Memoria Técnica §8.5)
 
+> Plantillas listas para rellenar y firmar en **`docs/actas/`**.
+
 | Documento | Frecuencia | Estado |
 |-----------|------------|--------|
 | Acta de kick-off | Única (S1) | 🗂️ Pendiente |
