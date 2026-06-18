@@ -141,6 +141,7 @@ function switchSection(name) {
     "mapa": loadMap,
     "totems": loadTotems,
     "mantenimiento": loadMantenimiento,
+    "prediccion": loadPrediccion,
     "usuarios": loadUsuarios,
     "config": loadConfig,
   };
@@ -1038,6 +1039,25 @@ async function loadBigData() {
       `;
       list.appendChild(li);
     }
+
+    // Índice NPS (proxy de satisfacción)
+    try {
+      const nps = await api.nps();
+      setKPI("bd-nps", nps.nps != null ? nps.nps.toFixed(0) : "—");
+    } catch { setKPI("bd-nps", "—"); }
+
+    // Composición lingüística de visitantes
+    try {
+      const comp = await api.composicionLinguistica();
+      const idiomas = comp.idiomas || [];
+      renderChart("chart-composicion", "doughnut", {
+        labels: idiomas.map(i => i.idioma.toUpperCase()),
+        datasets: [{
+          data: idiomas.map(i => i.porcentaje),
+          backgroundColor: ["#003B7A", "#00A6C0", "#F4C430", "#2D8F4F", "#E58A40", "#9CA3AF"],
+        }],
+      });
+    } catch { /* sin datos suficientes */ }
   } catch (err) {
     setBanner(`Error Big Data: ${err.message}`, "error");
   }
@@ -1224,6 +1244,78 @@ document.getElementById("mant-descargar")?.addEventListener("click", () => {
   a.click();
   URL.revokeObjectURL(a.href);
 });
+
+// ============================================================
+// PREDICCIÓN Y CONTEXTO section (A.2/A.3)
+// ============================================================
+async function loadPrediccion() {
+  const metrica = document.getElementById("pred-metrica")?.value || "totem";
+  try {
+    const [afl, val, anom, factor] = await Promise.all([
+      api.prediccionAfluencia({ metrica, horizonte_dias: 14 }),
+      api.prediccionValidacion({ metrica }),
+      api.prediccionAnomalias({ metrica }),
+      api.factorExpansion(),
+    ]);
+
+    setKPI("pred-mape", val.mape != null ? `${val.mape}%` : "s/datos");
+    setKPI("pred-anom", String((anom.anomalias || []).length));
+    setKPI("pred-factor", factor.factor != null ? `×${factor.factor}` : "—");
+
+    const puntos = afl.puntos || [];
+    renderChart("chart-prediccion", "line", {
+      labels: puntos.map(p => p.fecha),
+      datasets: [
+        {
+          label: "Estimación",
+          data: puntos.map(p => p.valor_estimado),
+          borderColor: "#003B7A",
+          backgroundColor: "rgba(0,59,122,0.1)",
+          fill: false,
+          tension: 0.3,
+        },
+        {
+          label: "Banda superior",
+          data: puntos.map(p => p.banda_superior),
+          borderColor: "rgba(0,166,192,0.4)",
+          borderDash: [4, 4],
+          pointRadius: 0,
+          fill: false,
+        },
+        {
+          label: "Banda inferior",
+          data: puntos.map(p => p.banda_inferior),
+          borderColor: "rgba(0,166,192,0.4)",
+          borderDash: [4, 4],
+          pointRadius: 0,
+          fill: false,
+        },
+      ],
+    });
+  } catch (err) {
+    setBanner(`Error predicción: ${err.message}`, "error");
+  }
+
+  // Contexto histórico — pernoctaciones INE EOH (provincia de Almería)
+  try {
+    const serie = await api.contextoSerie("ine_eoh", "pernoctaciones", "provincia_almeria");
+    const puntos = serie.puntos || [];
+    renderChart("chart-contexto", "line", {
+      labels: puntos.map(p => p.periodo),
+      datasets: [{
+        label: "Pernoctaciones",
+        data: puntos.map(p => p.valor),
+        borderColor: "#2D8F4F",
+        backgroundColor: "rgba(45,143,79,0.1)",
+        fill: true,
+        tension: 0.3,
+        pointRadius: 0,
+      }],
+    });
+  } catch { /* contexto aún no cargado (ejecutar backfill) */ }
+}
+
+document.getElementById("pred-metrica")?.addEventListener("change", loadPrediccion);
 
 // ============================================================
 // MAP section

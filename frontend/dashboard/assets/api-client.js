@@ -128,6 +128,36 @@ export const api = {
   topTopics(limit = 10) {
     return _doFetch(`/data/social/topics?limit=${limit}`);
   },
+  nps() { return _doFetch("/data/social/kpis/nps"); },
+  composicionLinguistica() {
+    return _doFetch("/data/social/kpis/composicion-linguistica");
+  },
+
+  // Predicción (A.2/A.3)
+  prediccionAfluencia(params = {}) {
+    const q = new URLSearchParams(params).toString();
+    return _doFetch(`/prediccion/afluencia${q ? `?${q}` : ""}`);
+  },
+  prediccionValidacion(params = {}) {
+    const q = new URLSearchParams(params).toString();
+    return _doFetch(`/prediccion/validacion${q ? `?${q}` : ""}`);
+  },
+  prediccionAnomalias(params = {}) {
+    const q = new URLSearchParams(params).toString();
+    return _doFetch(`/prediccion/anomalias${q ? `?${q}` : ""}`);
+  },
+
+  // Contexto histórico (backfill INE/Junta/AENA)
+  contextoSerie(fuente, indicador, ambito) {
+    const params = { fuente, indicador };
+    if (ambito) params.ambito = ambito;
+    const q = new URLSearchParams(params).toString();
+    return _doFetch(`/data/contexto/series?${q}`);
+  },
+  factorExpansion(params = {}) {
+    const q = new URLSearchParams(params).toString();
+    return _doFetch(`/data/contexto/factor-expansion${q ? `?${q}` : ""}`);
+  },
 
   // Tótems
   totemsUsage() { return _doFetch("/dashboards/totems/usage"); },

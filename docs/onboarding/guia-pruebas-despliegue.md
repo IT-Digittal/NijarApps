@@ -83,27 +83,30 @@ Login OAuth2 y navega por las secciones (`data-section` en `frontend/dashboard/i
 
 ---
 
-## 4. ⚠️ Lo que queda por hacer en el PANEL (frontend)
+## 4. Endpoints nuevos en el PANEL — todos cableados
 
-Hay **endpoints nuevos del backend que aún no tienen UI** en el dashboard (`api-client.js` no los invoca todavía). Esto es el trabajo de frontend pendiente:
+Todos los endpoints nuevos del backend están ya integrados en el dashboard:
 
-| Funcionalidad (backend ✅) | Endpoint | Estado en el panel |
-|----------------------------|----------|--------------------|
-| **Incidencias / ANS + Informe mensual (C.1)** | `/incidencias`, `/incidencias/ans`, `/dashboards/monthly-report` | ✅ **Cableado** — sección «Mantenimiento · ANS» (referencia) |
-| Índice tipo NPS | `GET /data/social/kpis/nps` | ⏳ Tarjeta/gráfico en sección Big Data |
-| Composición lingüística de visitantes | `GET /data/social/kpis/composicion-linguistica` | ⏳ Gráfico (barras/donut) en Big Data |
-| Predicción de afluencia | `GET /prediccion/afluencia` | ⏳ Serie + banda de confianza (Smart Office o Big Data) |
-| Validación MAPE / anomalías | `GET /prediccion/validacion`, `/prediccion/anomalias` | ⏳ Indicador de calidad del modelo |
-| Contexto histórico (INE/Junta/AENA) | `GET /data/contexto/series`, `/factor-expansion` | ⏳ Serie comparativa + factor de expansión |
+| Funcionalidad | Endpoint | Dónde en el panel |
+|---------------|----------|-------------------|
+| Incidencias / ANS + Informe mensual (C.1) | `/incidencias`, `/incidencias/ans`, `/dashboards/monthly-report` | Sección «Mantenimiento · ANS» |
+| Índice tipo NPS | `/data/social/kpis/nps` | KPI en sección Social Listening |
+| Composición lingüística de visitantes | `/data/social/kpis/composicion-linguistica` | Gráfico donut en Social Listening |
+| Predicción de afluencia | `/prediccion/afluencia` | Sección «Predicción y contexto» (línea + bandas) |
+| Validación MAPE / anomalías | `/prediccion/validacion`, `/prediccion/anomalias` | KPIs en «Predicción y contexto» |
+| Contexto histórico (INE/Junta/AENA) | `/data/contexto/series`, `/factor-expansion` | Sección «Predicción y contexto» |
 
-**Patrón de referencia ya implementado** — usa la sección «Mantenimiento · ANS» como ejemplo completo de extremo a extremo:
-1. **api-client.js** → métodos `monthlyReport`, `incidencias`, `incidenciasANS`.
-2. **index.html** → ítem de nav `data-section="mantenimiento"` + `<section data-section-content="mantenimiento">` con KPIs, `<canvas>`, tablas (`.data-table`) y botones (`.btn`).
-3. **dashboard.js** → `loadMantenimiento()` registrada en el mapa `loaders` de `switchSection`; usa `setKPI`, `renderChart` (Chart.js), `escapeHtml`, `setBanner`. Incluye selector de mes y descarga del informe en `.md` (Blob).
+**Patrón usado** (replicable para futuras secciones):
+1. **api-client.js** → método por endpoint (`monthlyReport`, `nps`, `prediccionAfluencia`, `contextoSerie`…).
+2. **index.html** → ítem de nav `data-section="..."` + `<section data-section-content="...">` con KPIs (`data-kpi`), `<canvas>`, tablas (`.data-table`), botones (`.btn`).
+3. **dashboard.js** → función `loadX()` registrada en el mapa `loaders` de `switchSection`; usa `setKPI`, `renderChart` (Chart.js), `escapeHtml`, `setBanner`.
 
-Replica ese patrón para las filas ⏳ restantes. Respeta los design tokens (`frontend/shared/design-tokens.css`) y la accesibilidad (roles ARIA, contraste).
+**A verificar al desplegar** (con datos demo cargados):
+- *Social Listening*: aparece el KPI **NPS** y el donut de **composición lingüística**.
+- *Predicción y contexto*: la curva de afluencia con bandas, el **MAPE**, el nº de **anomalías** y el **factor de expansión**; la serie de **pernoctaciones INE** requiere haber ejecutado el backfill (`POST /data/contexto/ingest`; si está vacía, el gráfico queda en blanco sin error).
+- *Mantenimiento · ANS*: disponibilidad por componente, cumplimiento ANS, incidencias y descarga del informe `.md`.
 
-> El backend de todo esto está implementado y probado; lo pendiente es **cableado de UI**, sin tocar la API.
+> Respeta los design tokens (`frontend/shared/design-tokens.css`) y la accesibilidad (roles ARIA, contraste).
 
 ---
 
