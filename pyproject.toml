@@ -93,6 +93,9 @@ ignore = [
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["S101", "S105", "S106"]
 "alembic/*" = ["E501"]
+# Los seeds contienen textos largos legibles (respuestas del chatbot en 4
+# idiomas, descripciones); las líneas largas son intencionadas.
+"src/nijar_dti/data/seeds/*" = ["E501"]
 
 [tool.mypy]
 python_version = "3.11"

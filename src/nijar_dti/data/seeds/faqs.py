@@ -9,6 +9,8 @@ Memoria Técnica (≥100 FAQs en producción).
 
 from __future__ import annotations
 
+from nijar_dti.data.seeds.faqs_ampliacion import FAQS_AMPLIACION
+from nijar_dti.data.seeds.faqs_ampliacion2 import FAQS_AMPLIACION_2
 
 FAQS_SEED: list[dict] = [
     # ============ PLAYAS ============
@@ -324,3 +326,8 @@ FAQS_SEED: list[dict] = [
         "nivel_confianza": "alta",
     },
 ]
+
+
+# Ampliación hasta el mínimo contractual de ≥100 FAQs en los 4 idiomas.
+# El generador de Rasa y el motor lexical consumen la lista completa.
+FAQS_SEED = FAQS_SEED + FAQS_AMPLIACION + FAQS_AMPLIACION_2
