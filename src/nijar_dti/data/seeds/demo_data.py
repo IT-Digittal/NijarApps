@@ -401,3 +401,101 @@ def generar_interacciones_chatbot_seed() -> list[dict]:
             "latencia_ms": random.randint(50, 400),
         })
     return interacciones
+
+
+# ---------- Incidencias del mantenimiento (mes natural anterior) ----------
+
+def _mes_anterior(ref: datetime) -> tuple[datetime, datetime]:
+    """Devuelve (inicio, fin) del último mes natural completo respecto a ``ref``."""
+    primero_actual = ref.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    fin = primero_actual
+    ultimo_mes = primero_actual - timedelta(days=1)
+    inicio = ultimo_mes.replace(day=1)
+    return inicio, fin
+
+
+def generar_incidencias_seed() -> list[dict]:
+    """Incidencias y acciones preventivas realistas del mes natural anterior.
+
+    Pensadas para que el informe mensual del C.1 muestre cifras coherentes:
+    disponibilidad alta (>=99 %), cumplimiento ANS mayoritario con algún caso
+    de incumplimiento, acciones preventivas y un evento de seguridad contenido.
+    """
+    inicio, _ = _mes_anterior(_NOW)
+
+    def en(dia: int, hora: int = 9) -> datetime:
+        return inicio + timedelta(days=dia - 1, hours=hora)
+
+    incidencias = [
+        # Crítica resuelta dentro de ANS (respuesta <1h, resolución <8h)
+        {
+            "severidad": "critica", "titulo": "Caída temporal de la API de la plataforma",
+            "componente": "plataforma", "origen": "monitorizacion",
+            "descripcion": "Errores 5xx por saturación de conexiones a BBDD durante un pico.",
+            "detectada_en": en(6, 11), "respondida_en": en(6, 11) + timedelta(minutes=25),
+            "resuelta_en": en(6, 11) + timedelta(hours=3, minutes=40),
+            "estado": "resuelta", "afecta_disponibilidad": True, "incidente_confirmado": False,
+        },
+        # Alta resuelta en ANS
+        {
+            "severidad": "alta", "titulo": "Tótem de Rodalquilar sin conexión",
+            "componente": "totem_1", "origen": "monitorizacion",
+            "descripcion": "Pérdida de enlace 4G; conmutación a modo local degradado.",
+            "detectada_en": en(12, 8), "respondida_en": en(12, 8) + timedelta(hours=1),
+            "resuelta_en": en(12, 8) + timedelta(hours=6),
+            "estado": "resuelta", "afecta_disponibilidad": True,
+        },
+        # Alta que INCUMPLE resolución (para mostrar cumplimiento <100 %)
+        {
+            "severidad": "alta", "titulo": "Retraso en sincronización del CMS al tótem",
+            "componente": "totem_2", "origen": "usuario",
+            "descripcion": "Contenido publicado tardó en propagarse por incidencia en caché.",
+            "detectada_en": en(18, 17), "respondida_en": en(18, 17) + timedelta(hours=2),
+            "resuelta_en": en(18, 17) + timedelta(hours=20),
+            "estado": "resuelta", "afecta_disponibilidad": True,
+        },
+        # Media resuelta
+        {
+            "severidad": "media", "titulo": "Sensor de ruido con lecturas erráticas",
+            "componente": "smart_office", "origen": "monitorizacion",
+            "descripcion": "Calibración desviada; sustituido y recalibrado.",
+            "detectada_en": en(9, 10), "respondida_en": en(9, 12),
+            "resuelta_en": en(10, 10), "estado": "resuelta", "afecta_disponibilidad": False,
+        },
+        # Baja resuelta
+        {
+            "severidad": "baja", "titulo": "Ajuste de copy en una FAQ del chatbot",
+            "componente": "chatbot", "origen": "ticketing",
+            "descripcion": "Corrección menor de redacción en respuesta de horarios.",
+            "detectada_en": en(22, 9), "respondida_en": en(22, 15),
+            "resuelta_en": en(23, 12), "estado": "resuelta", "afecta_disponibilidad": False,
+        },
+        # Evento de seguridad contenido (WAF), confirmado, sin impacto
+        {
+            "severidad": "alta", "titulo": "Intento de inyección bloqueado por WAF",
+            "componente": "plataforma", "origen": "monitorizacion",
+            "descripcion": "Patrón SQLi bloqueado por el WAF; sin acceso a datos.",
+            "detectada_en": en(15, 3), "respondida_en": en(15, 3) + timedelta(minutes=20),
+            "resuelta_en": en(15, 3) + timedelta(hours=2),
+            "estado": "resuelta", "afecta_disponibilidad": False,
+            "es_evento_seguridad": True, "incidente_confirmado": True,
+        },
+        # Acciones preventivas ejecutadas
+        {
+            "severidad": "baja", "titulo": "Patching mensual en ventana nocturna",
+            "componente": "plataforma", "origen": "preventivo",
+            "descripcion": "Actualización de dependencias con verificación de regresión.",
+            "detectada_en": en(2, 2), "respondida_en": en(2, 2),
+            "resuelta_en": en(2, 4), "estado": "resuelta",
+            "afecta_disponibilidad": False, "es_preventiva": True,
+        },
+        {
+            "severidad": "baja", "titulo": "Inspección de tótems (protocolo costero)",
+            "componente": "totem_1", "origen": "preventivo",
+            "descripcion": "Revisión de juntas IP65, filtros y brillo; sin incidencias.",
+            "detectada_en": en(20, 9), "respondida_en": en(20, 9),
+            "resuelta_en": en(20, 13), "estado": "resuelta",
+            "afecta_disponibilidad": False, "es_preventiva": True,
+        },
+    ]
+    return incidencias

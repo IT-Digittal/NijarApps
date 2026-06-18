@@ -137,11 +137,12 @@ def resumen_incidencias(incidencias: list[Incidencia]) -> dict[str, int]:
     }
 
 
-async def informe_ans(db: AsyncSession, inicio: datetime, fin: datetime) -> InformeANS:
-    incidencias = [i for i in await _incidencias_periodo(db, inicio, fin) if not i.es_preventiva]
+def agregar_cumplimiento_ans(incidencias: list, inicio: datetime, fin: datetime) -> InformeANS:
+    """Agrega el cumplimiento ANS de una lista de incidencias (función pura)."""
+    reactivas = [i for i in incidencias if not i.es_preventiva]
     por_sev: list[CumplimientoANSSeveridad] = []
     for sev in ("critica", "alta", "media", "baja"):
-        grupo = [i for i in incidencias if i.severidad == sev]
+        grupo = [i for i in reactivas if i.severidad == sev]
         if not grupo:
             por_sev.append(CumplimientoANSSeveridad(severidad=sev))
             continue
@@ -168,9 +169,14 @@ async def informe_ans(db: AsyncSession, inicio: datetime, fin: datetime) -> Info
         desde=inicio,
         hasta=fin,
         por_severidad=por_sev,
-        incidencias_totales=len(incidencias),
+        incidencias_totales=len(reactivas),
         sla_disponibilidad_porc=SLA_DISPONIBILIDAD_PORC,
     )
+
+
+async def informe_ans(db: AsyncSession, inicio: datetime, fin: datetime) -> InformeANS:
+    incidencias = await _incidencias_periodo(db, inicio, fin)
+    return agregar_cumplimiento_ans(incidencias, inicio, fin)
 
 
 def tiempo_medio_resolucion_h(incidencias: list[Incidencia]) -> float | None:

@@ -20,25 +20,26 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from nijar_dti.core.database import AsyncSessionLocal
 from nijar_dti.data.seeds.admin_user import ADMIN_USER_SEED, admin_password_hash
-from nijar_dti.data.seeds.faqs import FAQS_SEED
-from nijar_dti.data.seeds.recursos_turisticos import RECURSOS_SEED
-from nijar_dti.data.seeds.sensores import SENSORES_SEED
 from nijar_dti.data.seeds.demo_data import (
     generar_eventos_seed,
+    generar_incidencias_seed,
     generar_interacciones_chatbot_seed,
     generar_observaciones_seed,
     generar_opiniones_seed,
     generar_visitas_totem_seed,
 )
+from nijar_dti.data.seeds.faqs import FAQS_SEED
+from nijar_dti.data.seeds.recursos_turisticos import RECURSOS_SEED
+from nijar_dti.data.seeds.sensores import SENSORES_SEED
 from nijar_dti.models.evento_turistico import EventoTuristico
 from nijar_dti.models.faq import FAQ, InteraccionChatbot, NivelConfianza
+from nijar_dti.models.incidencia import Incidencia
 from nijar_dti.models.observacion import Observacion
 from nijar_dti.models.opinion import Opinion
 from nijar_dti.models.recurso_turistico import RecursoTuristico
 from nijar_dti.models.sensor import Sensor
 from nijar_dti.models.usuario import Usuario
 from nijar_dti.models.visita import Visita
-
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
 log = logging.getLogger("nijar_dti.seed")
@@ -243,6 +244,19 @@ async def seed_demo_chatbot(db: AsyncSession) -> None:
     log.info("Interacciones chatbot demo creadas: %d", len(datos))
 
 
+async def seed_demo_incidencias(db: AsyncSession) -> None:
+    """Carga incidencias de mantenimiento de demo (mes anterior) si no existen."""
+    from sqlalchemy import func as sqlfunc
+    count = int((await db.execute(select(sqlfunc.count()).select_from(Incidencia))).scalar_one() or 0)
+    if count > 0:
+        log.info("Ya hay %d incidencias — saltando demo C.1", count)
+        return
+    datos = generar_incidencias_seed()
+    for d in datos:
+        db.add(Incidencia(**d))
+    log.info("Incidencias demo creadas: %d", len(datos))
+
+
 async def run() -> None:
     async with AsyncSessionLocal() as db:
         try:
@@ -257,6 +271,7 @@ async def run() -> None:
             await seed_demo_opiniones(db)
             await seed_demo_visitas_totem(db)
             await seed_demo_chatbot(db)
+            await seed_demo_incidencias(db)
             await db.commit()
             log.info("Seeds aplicados correctamente")
         except Exception:  # noqa: BLE001
