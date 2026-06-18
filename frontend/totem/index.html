@@ -42,7 +42,7 @@
   El sistema de gestión de contenido alimenta dinámicamente las tarjetas
   desde GET /api/v1/cms/content?canal=totem.
 -->
-<body data-totem-id="urn:ngsi-ld:Totem:nijar:rodalquilar">
+<body data-totem-id="urn:ngsi-ld:Totem:nijar:rodalquilar" data-totem-lat="36.847" data-totem-lon="-2.041">
 
   <a href="#main" class="skip-link">
     Saltar al contenido principal
@@ -107,6 +107,7 @@
       <button class="cat-btn" data-cat="playas" aria-pressed="false"><span aria-hidden="true">🏖️</span><span data-i18n="categorias.playas">Playas</span></button>
       <button class="cat-btn" data-cat="patrimonio" aria-pressed="false"><span aria-hidden="true">🏛️</span><span data-i18n="categorias.patrimonio">Patrimonio</span></button>
       <button class="cat-btn" data-cat="servicios" aria-pressed="false"><span aria-hidden="true">🍽️</span><span data-i18n="categorias.servicios">Servicios</span></button>
+      <button class="cat-btn" data-cat="eventos" aria-pressed="false"><span aria-hidden="true">🎉</span><span data-i18n="categorias.eventos">Eventos</span></button>
       <button class="cat-btn" data-cat="emergencias" aria-pressed="false"><span aria-hidden="true">🆘</span><span data-i18n="categorias.emergencias">Emergencias</span></button>
     </div>
   </nav>
@@ -124,6 +125,16 @@
       aria-busy="true"
     >
       <p class="content-loading" data-i18n="loading.contenido">Cargando contenidos…</p>
+    </section>
+
+    <!-- Planificador de rutas y recomendaciones -->
+    <section class="planner-section" aria-labelledby="planner-title">
+      <h2 id="planner-title" class="planner-title" data-i18n="rutas.title">Planifica tu visita</h2>
+      <div class="planner-actions">
+        <button type="button" id="plan-route-btn" class="planner-btn" data-i18n="rutas.plan">Sugerir ruta cercana</button>
+        <button type="button" id="recommend-btn" class="planner-btn" data-i18n="rutas.recomend">¿Qué visitar hoy?</button>
+      </div>
+      <div id="planner-output" class="planner-output" aria-live="polite"></div>
     </section>
 
     <!-- Asistente de turismo (chatbot) -->
@@ -145,13 +156,29 @@
           required
         />
         <button
+          type="button"
+          id="chatbot-voice"
+          class="chatbot-voice is-hidden"
+          aria-label="Preguntar por voz"
+          data-i18n-aria="chatbot.voice_aria"
+        ><span aria-hidden="true">🎤</span></button>
+        <button
           type="submit"
           class="chatbot-submit"
           data-i18n="chatbot.send"
         >Preguntar</button>
       </form>
 
-      <output id="chatbot-output" class="chatbot-output" aria-live="polite"></output>
+      <div class="chatbot-output-row">
+        <output id="chatbot-output" class="chatbot-output" aria-live="polite"></output>
+        <button
+          type="button"
+          id="chatbot-speak"
+          class="chatbot-speak is-hidden"
+          aria-label="Escuchar la respuesta"
+          data-i18n-aria="chatbot.speak_aria"
+        ><span aria-hidden="true">🔊</span></button>
+      </div>
     </section>
 
     <!-- Pie del tótem -->

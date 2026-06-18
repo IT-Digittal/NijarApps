@@ -481,6 +481,85 @@ button, a, input, [role="button"] {
   border-radius: var(--radius-xl);
 }
 
+/* Botones de voz del chatbot (STT/TTS) — área táctil >= 44px */
+.chatbot-voice,
+.chatbot-speak {
+  background: rgba(255,255,255,0.15);
+  color: white;
+  border: 0;
+  border-radius: var(--radius-2xl);
+  min-width: 56px;
+  min-height: 56px;
+  font-size: var(--text-lg);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+.chatbot-voice:hover,
+.chatbot-speak:hover { background: rgba(255,255,255,0.3); }
+.chatbot-voice[aria-pressed="true"] { background: var(--nijar-coral, #e06b5a); }
+
+.chatbot-output-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+.chatbot-output-row .chatbot-output { margin-top: 0; flex: 1; }
+.chatbot-speak { align-self: flex-start; }
+
+.chatbot-suggestions {
+  margin-top: var(--space-3);
+  font-size: var(--text-sm);
+  opacity: 0.85;
+}
+
+/* ============================================================
+ * PLANIFICADOR DE RUTAS Y RECOMENDACIONES
+ * ============================================================ */
+
+.planner-section {
+  margin-top: var(--space-8);
+  padding: var(--space-6);
+  background: rgba(255,255,255,0.08);
+  border-radius: var(--radius-2xl);
+}
+.planner-title {
+  font-family: var(--font-display, var(--font-body));
+  font-size: var(--text-xl);
+  color: white;
+  margin: 0 0 var(--space-4);
+}
+.planner-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+}
+.planner-btn {
+  background: var(--nijar-teal);
+  color: white;
+  border: 0;
+  padding: var(--space-4) var(--space-6);
+  border-radius: var(--radius-2xl);
+  font-family: var(--font-body);
+  font-weight: var(--weight-semibold);
+  font-size: var(--text-lg);
+  min-height: 56px;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+.planner-btn:hover { background: var(--nijar-teal-deep); }
+.planner-output { color: white; margin-top: var(--space-5); }
+.planner-output:not(:empty) {
+  background: rgba(255,255,255,0.1);
+  padding: var(--space-5);
+  border-radius: var(--radius-xl);
+}
+.planner-summary { font-weight: var(--weight-semibold); margin: 0 0 var(--space-3); }
+.planner-subtitle { font-size: var(--text-lg); margin: var(--space-4) 0 var(--space-2); }
+.planner-list { margin: 0; padding-left: var(--space-6); line-height: var(--leading-relaxed); }
+.planner-cat { opacity: 0.75; font-size: var(--text-sm); }
+.event-card .event-date { font-weight: var(--weight-semibold); margin: var(--space-2) 0; }
+
 /* ============================================================
  * PIE DE PÁGINA
  * ============================================================ */

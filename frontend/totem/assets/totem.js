@@ -24,7 +24,12 @@ const API_BASE = window.NIJAR_API_BASE
   || `${window.location.protocol}//${window.location.hostname}:8000/api/v1`;
 
 const TOTEM_ID = document.body.dataset.totemId || "urn:ngsi-ld:Totem:nijar:rodalquilar";
+const TOTEM_LAT = parseFloat(document.body.dataset.totemLat || "36.847");
+const TOTEM_LON = parseFloat(document.body.dataset.totemLon || "-2.041");
 const IDLE_MS = 60_000; // 1 minuto sin interacción
+
+// Códigos de idioma BCP-47 para los APIs de voz del navegador
+const VOICE_LOCALE = { es: "es-ES", en: "en-GB", de: "de-DE", fr: "fr-FR" };
 
 // Mapeo categoría → categoría URN del recurso
 const CAT_MAP = {
@@ -125,6 +130,12 @@ async function loadCategory(cat) {
     return;
   }
 
+  if (cat === "eventos") {
+    await loadEvents(grid);
+    grid.setAttribute("aria-busy", "false");
+    return;
+  }
+
   try {
     const items = [];
     for (const c of CAT_MAP[cat] || []) {
@@ -209,6 +220,44 @@ function renderEmergencies(grid) {
   `).join("");
 }
 
+async function loadEvents(grid) {
+  try {
+    const res = await fetch(`${API_BASE}/tourism/events?publicado=true&page_size=12`);
+    if (!res.ok) throw new Error("Error al cargar eventos");
+    const data = await res.json();
+    const items = data.items || [];
+    if (items.length === 0) {
+      grid.innerHTML = `<p class="content-loading">${
+        I18N[currentLang]?.["empty.contenido"] || "Sin contenidos disponibles"
+      }</p>`;
+      return;
+    }
+    grid.innerHTML = "";
+    for (const ev of items) {
+      const nombre = ev.nombre_i18n?.[currentLang] || ev.nombre;
+      const desc = ev.descripcion_i18n?.[currentLang] || ev.descripcion || "";
+      const fecha = ev.fecha_inicio
+        ? new Date(ev.fecha_inicio).toLocaleDateString(currentLang, {
+            day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit",
+          })
+        : "";
+      const card = document.createElement("article");
+      card.className = "poi-card event-card";
+      card.innerHTML = `
+        <div class="poi-body">
+          <span class="poi-tag">${escapeHtml(capitalize(String(ev.tipo || "")))}</span>
+          <h3>${escapeHtml(nombre)}</h3>
+          <p class="event-date">📅 ${escapeHtml(fecha)}</p>
+          <p>${escapeHtml(desc)}</p>
+          ${ev.direccion ? `<p class="poi-dialog-meta">📍 ${escapeHtml(ev.direccion)}</p>` : ""}
+        </div>`;
+      grid.appendChild(card);
+    }
+  } catch (err) {
+    grid.innerHTML = `<p class="content-loading content-error">${escapeHtml(err.message)}</p>`;
+  }
+}
+
 // ============================================================
 // Modal detalle POI
 // ============================================================
@@ -231,35 +280,168 @@ dialog.addEventListener("click", (e) => {
 });
 
 // ============================================================
-// Chatbot
+// Chatbot (endpoint /chatbot/query)
 // ============================================================
+const speakBtn = document.getElementById("chatbot-speak");
+let lastAnswer = "";
+
 document.getElementById("chatbot-form").addEventListener("submit", async (e) => {
   e.preventDefault();
+  await askChatbot(document.getElementById("chatbot-input").value.trim());
+});
+
+async function askChatbot(message) {
   const input = document.getElementById("chatbot-input");
   const output = document.getElementById("chatbot-output");
-  const message = input.value.trim();
   if (!message) return;
   output.textContent = I18N[currentLang]?.["chatbot.thinking"] || "Pensando…";
+  speakBtn?.classList.add("is-hidden");
   try {
-    const res = await fetch(`${API_BASE}/chatbot/message`, {
+    const res = await fetch(`${API_BASE}/chatbot/query`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        session_id: sessionId,
+        sesion_id: sessionId,
         canal: "totem",
-        mensaje: message,
         idioma: currentLang,
+        pregunta: message,
       }),
     });
     if (!res.ok) throw new Error("Error en el chatbot");
     const data = await res.json();
-    output.textContent = data.respuesta || "—";
+    lastAnswer = data.respuesta || "—";
+    output.textContent = lastAnswer;
+    if (Array.isArray(data.sugerencias) && data.sugerencias.length) {
+      const sug = document.createElement("p");
+      sug.className = "chatbot-suggestions";
+      sug.textContent = "💡 " + data.sugerencias.join(" · ");
+      output.appendChild(sug);
+    }
     input.value = "";
+    // Texto a voz (TTS) — si el navegador lo soporta
+    if ("speechSynthesis" in window) {
+      speakBtn?.classList.remove("is-hidden");
+      hablar(lastAnswer);
+    }
   } catch (err) {
     output.textContent = `⚠️ ${err.message}`;
   }
   resetIdle();
+}
+
+// --- Texto a voz (TTS) ---
+function hablar(texto) {
+  try {
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(texto);
+    u.lang = VOICE_LOCALE[currentLang] || "es-ES";
+    window.speechSynthesis.speak(u);
+  } catch { /* TTS no disponible */ }
+}
+speakBtn?.addEventListener("click", () => { if (lastAnswer) hablar(lastAnswer); });
+
+// --- Voz a texto (STT) — Web Speech API ---
+const voiceBtn = document.getElementById("chatbot-voice");
+const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+if (SpeechRec && voiceBtn) {
+  voiceBtn.classList.remove("is-hidden");
+  const recognition = new SpeechRec();
+  recognition.continuous = false;
+  recognition.interimResults = false;
+  let escuchando = false;
+
+  voiceBtn.addEventListener("click", () => {
+    if (escuchando) { recognition.stop(); return; }
+    recognition.lang = VOICE_LOCALE[currentLang] || "es-ES";
+    try { recognition.start(); } catch { /* ya iniciado */ }
+  });
+  recognition.addEventListener("start", () => {
+    escuchando = true;
+    voiceBtn.setAttribute("aria-pressed", "true");
+    document.getElementById("chatbot-input").placeholder =
+      I18N[currentLang]?.["chatbot.listening"] || "Escuchando…";
+  });
+  recognition.addEventListener("end", () => {
+    escuchando = false;
+    voiceBtn.setAttribute("aria-pressed", "false");
+  });
+  recognition.addEventListener("result", (ev) => {
+    const texto = ev.results?.[0]?.[0]?.transcript || "";
+    if (texto) {
+      document.getElementById("chatbot-input").value = texto;
+      askChatbot(texto);
+    }
+  });
+}
+
+// ============================================================
+// Planificador de rutas y recomendaciones
+// ============================================================
+const plannerOut = document.getElementById("planner-output");
+
+document.getElementById("plan-route-btn")?.addEventListener("click", async () => {
+  plannerOut.textContent = I18N[currentLang]?.["rutas.loading"] || "Calculando…";
+  try {
+    const res = await fetch(`${API_BASE}/rutas/planificar`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        lat: TOTEM_LAT, lon: TOTEM_LON, max_paradas: 5, modo: "bici", idioma: currentLang,
+      }),
+    });
+    if (!res.ok) throw new Error("Error al planificar la ruta");
+    renderRuta(await res.json());
+  } catch (err) {
+    plannerOut.textContent = `⚠️ ${err.message}`;
+  }
+  resetIdle();
 });
+
+document.getElementById("recommend-btn")?.addEventListener("click", async () => {
+  plannerOut.textContent = I18N[currentLang]?.["rutas.loading"] || "Calculando…";
+  try {
+    const res = await fetch(`${API_BASE}/rutas/recomendaciones?idioma=${currentLang}`);
+    if (!res.ok) throw new Error("Error al cargar recomendaciones");
+    renderRecomendaciones(await res.json());
+  } catch (err) {
+    plannerOut.textContent = `⚠️ ${err.message}`;
+  }
+  resetIdle();
+});
+
+function renderRuta(data) {
+  const t = I18N[currentLang] || I18N.es;
+  if (!data.paradas || data.paradas.length === 0) {
+    plannerOut.textContent = t["rutas.empty"] || "No hay propuestas disponibles.";
+    return;
+  }
+  const km = (data.distancia_total_m / 1000).toFixed(1);
+  const pasos = data.paradas.map(p =>
+    `<li><strong>${p.orden}. ${escapeHtml(p.nombre)}</strong> <span class="planner-cat">${escapeHtml(capitalize(p.categoria.replace(/_/g, " ")))}</span></li>`
+  ).join("");
+  plannerOut.innerHTML = `
+    <p class="planner-summary">${t["rutas.distancia"]}: ${km} km · ${t["rutas.duracion"]}: ${data.duracion_desplazamiento_min} min</p>
+    <ol class="planner-list">${pasos}</ol>`;
+}
+
+function renderRecomendaciones(data) {
+  const t = I18N[currentLang] || I18N.es;
+  const partes = [];
+  if (data.eventos?.length) {
+    const evs = data.eventos.map(e => {
+      const f = e.fecha_inicio ? new Date(e.fecha_inicio).toLocaleDateString(currentLang, { day: "2-digit", month: "short" }) : "";
+      return `<li><strong>${escapeHtml(e.nombre)}</strong> <span class="planner-cat">${escapeHtml(f)}</span></li>`;
+    }).join("");
+    partes.push(`<h3 class="planner-subtitle">${t["rutas.eventos"]}</h3><ul class="planner-list">${evs}</ul>`);
+  }
+  if (data.recursos?.length) {
+    const recs = data.recursos.map(r =>
+      `<li><strong>${escapeHtml(r.nombre)}</strong> <span class="planner-cat">${escapeHtml(capitalize(r.categoria.replace(/_/g, " ")))}</span></li>`
+    ).join("");
+    partes.push(`<h3 class="planner-subtitle">${t["rutas.recursos"]}</h3><ul class="planner-list">${recs}</ul>`);
+  }
+  plannerOut.innerHTML = partes.join("") || `<p>${t["rutas.empty"]}</p>`;
+}
 
 // ============================================================
 // Inactividad
