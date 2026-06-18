@@ -14,6 +14,7 @@ from nijar_dti.models.contenido import Contenido
 from nijar_dti.models.contexto import ContextoTuristico
 from nijar_dti.models.evento_turistico import EventoTuristico
 from nijar_dti.models.faq import FAQ, InteraccionChatbot
+from nijar_dti.models.incidencia import Incidencia
 from nijar_dti.models.observacion import Observacion
 from nijar_dti.models.opinion import Opinion
 from nijar_dti.models.recurso_turistico import RecursoTuristico
@@ -27,6 +28,7 @@ __all__ = [
     "Contenido",
     "ContextoTuristico",
     "EventoTuristico",
+    "Incidencia",
     "InteraccionChatbot",
     "Observacion",
     "Opinion",

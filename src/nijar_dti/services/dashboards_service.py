@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections import Counter
 from datetime import datetime, timedelta, timezone
 
-from sqlalchemy import case, func, select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from nijar_dti.models.faq import InteraccionChatbot
@@ -21,7 +21,6 @@ from nijar_dti.schemas.dashboards import (
     SmartOfficeOverview,
     TotemUsageStats,
 )
-
 
 # -------------------------- Smart Office --------------------------
 
@@ -42,7 +41,7 @@ async def smart_office_overview(db: AsyncSession) -> SmartOfficeOverview:
     sensores_offline = sum(1 for s in sensores if s.estado in {"offline", "averia", "desconocido"})
 
     # última observación de cada tipo ambiental
-    overview: dict[str, float | None] = {v: None for v in _TIPOS_AMBIENTAL.values()}
+    overview: dict[str, float | None] = dict.fromkeys(_TIPOS_AMBIENTAL.values())
     for tipo, campo in _TIPOS_AMBIENTAL.items():
         sensor_ids = [s.id for s in sensores if s.tipo == tipo and s.activo]
         if not sensor_ids:
@@ -276,6 +275,13 @@ async def informe_mensual(db: AsyncSession, year: int, month: int) -> MonthlyRep
         or 0
     )
 
+    # Incidencias reales del periodo (ticketing C.1) — disponibilidad y recuentos
+    from nijar_dti.services import incidencias_service as inc_svc
+
+    incidencias_periodo = await inc_svc._incidencias_periodo(db, inicio, fin)
+    disponibilidad = inc_svc.calcular_disponibilidad(incidencias_periodo, inicio, fin)
+    resumen = inc_svc.resumen_incidencias(incidencias_periodo)
+
     # Eficacia digital — GA4 (con fallback a datos sintéticos en dry-run)
     eficacia_digital = await _ga4_overview_seguro()
 
@@ -303,23 +309,16 @@ async def informe_mensual(db: AsyncSession, year: int, month: int) -> MonthlyRep
     return MonthlyReport(
         year=year,
         month=month,
-        disponibilidad_por_componente={
-            "plataforma": 99.95,
-            "totem_1": 99.80,
-            "totem_2": 99.85,
-            "chatbot": 99.90,
-            "smart_office": 99.99,
-            "big_data": 99.95,
-        },
+        disponibilidad_por_componente=disponibilidad,
         interacciones_totems=interacciones_totems,
         sesiones_chatbot=sesiones_chatbot,
         visitas_web_estimadas=visitas_web,
-        incidencias_criticas=0,
-        incidencias_altas=0,
-        incidencias_resueltas=0,
-        eventos_seguridad=0,
-        incidentes_confirmados=0,
-        acciones_preventivas_ejecutadas=0,
+        incidencias_criticas=resumen["criticas"],
+        incidencias_altas=resumen["altas"],
+        incidencias_resueltas=resumen["resueltas"],
+        eventos_seguridad=resumen["eventos_seguridad"],
+        incidentes_confirmados=resumen["incidentes_confirmados"],
+        acciones_preventivas_ejecutadas=resumen["preventivas"],
         sentimiento_medio=float(sent_medio_val) if sent_medio_val is not None else None,
         menciones_periodo=menciones,
         eficacia_digital=eficacia_digital,
