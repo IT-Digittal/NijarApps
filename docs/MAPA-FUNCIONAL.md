@@ -27,6 +27,8 @@ Bloques añadidos tras la auditoría del proyecto frente al Pliego:
 | Plan Director de Transformación Digital | `docs/plan-director/` | ✅ |
 | Metodología y limitaciones + Plan de Mejora Continua | `docs/big-data/` | ✅ |
 | DPIA de movilidad | `docs/security/dpia-observatorio-movilidad.md` | ✅ |
+| Ticketing de incidencias (C.1) | `models/incidencia.py` + `/api/v1/incidencias/*` | ✅ |
+| Informe mensual con disponibilidad/incidencias reales | `dashboards_service.informe_mensual` + `core/ans.py` | ✅ |
 
 Pendiente para C.1 (fuera del alcance Pre-SAT): conectores de reviews
 (TripAdvisor/Google/HolidayCheck) y visualizaciones de flujo (heatmap/Sankey),
@@ -154,6 +156,29 @@ que requieren claves externas y datos reales de movilidad.
 - `GET /dashboards/big-data/overview`
 - `GET /dashboards/totems/usage`
 - `GET /dashboards/monthly-report`
+
+### Analítica (A.3)
+- `GET /data/social/kpis/nps` (índice tipo NPS proxy)
+- `GET /data/social/kpis/composicion-linguistica`
+
+### Contexto histórico (A.3)
+- `POST /data/contexto/ingest`
+- `GET /data/contexto/series`
+- `GET /data/contexto/factor-expansion`
+
+### Predicción (A.2/A.3)
+- `GET /prediccion/afluencia`
+- `GET /prediccion/validacion` (MAPE / holdout)
+- `GET /prediccion/anomalias`
+
+### Rutas y recomendaciones (A.1/B.2)
+- `POST /rutas/planificar`
+- `GET /rutas/recomendaciones`
+
+### Incidencias / ticketing (C.1)
+- `POST /incidencias`, `GET /incidencias`
+- `PATCH /incidencias/{id}/resolver`
+- `GET /incidencias/ans` (cumplimiento ANS)
 
 ### Health
 - `GET /health`, `GET /ready`
