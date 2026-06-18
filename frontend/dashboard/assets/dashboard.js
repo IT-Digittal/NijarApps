@@ -140,6 +140,7 @@ function switchSection(name) {
     "chatbot": loadChatbot,
     "mapa": loadMap,
     "totems": loadTotems,
+    "mantenimiento": loadMantenimiento,
     "usuarios": loadUsuarios,
     "config": loadConfig,
   };
@@ -1107,6 +1108,122 @@ async function loadTotems() {
     setBanner(`Error tótems: ${err.message}`, "error");
   }
 }
+
+// ============================================================
+// MANTENIMIENTO / ANS section (C.1)
+// ============================================================
+let _mantInformeMd = "";
+
+function _mesAnteriorYYYYMM() {
+  const d = new Date();
+  d.setDate(1);
+  d.setMonth(d.getMonth() - 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function _rangoMesISO(yyyymm) {
+  const [y, m] = yyyymm.split("-").map(Number);
+  const inicio = new Date(Date.UTC(y, m - 1, 1));
+  const fin = new Date(Date.UTC(y, m, 1));
+  return { y, m, desde: inicio.toISOString(), hasta: fin.toISOString() };
+}
+
+function _informeAMarkdown(rep, ans) {
+  const L = [];
+  L.push(`# Informe mensual de servicio — ${rep.month}/${rep.year}`, "");
+  L.push("## Disponibilidad por componente");
+  for (const [c, v] of Object.entries(rep.disponibilidad_por_componente || {})) {
+    L.push(`- ${c}: ${v.toFixed(3)}% ${v >= 99 ? "(✓ SLA)" : "(✗ SLA)"}`);
+  }
+  L.push("", "## Incidencias");
+  L.push(`- Críticas: ${rep.incidencias_criticas} · Altas: ${rep.incidencias_altas} · Resueltas: ${rep.incidencias_resueltas}`);
+  L.push(`- Acciones preventivas: ${rep.acciones_preventivas_ejecutadas}`);
+  L.push(`- Eventos de seguridad: ${rep.eventos_seguridad} · Incidentes confirmados: ${rep.incidentes_confirmados}`);
+  if (ans) {
+    L.push("", "## Cumplimiento ANS (resolución)");
+    for (const s of ans.por_severidad || []) {
+      const pct = s.porcentaje_cumplimiento != null ? `${s.porcentaje_cumplimiento}%` : "—";
+      L.push(`- ${s.severidad}: ${s.cumplen_resolucion}/${s.total} (${pct})`);
+    }
+  }
+  L.push("", "## KPIs de uso");
+  L.push(`- Interacciones tótems: ${rep.interacciones_totems} · Sesiones chatbot: ${rep.sesiones_chatbot} · Visitas web: ${rep.visitas_web_estimadas}`);
+  return L.join("\n");
+}
+
+async function loadMantenimiento() {
+  const mesInput = document.getElementById("mant-mes");
+  if (mesInput && !mesInput.value) mesInput.value = _mesAnteriorYYYYMM();
+  const yyyymm = mesInput?.value || _mesAnteriorYYYYMM();
+  const { y, m, desde, hasta } = _rangoMesISO(yyyymm);
+
+  try {
+    const [rep, ans, incs] = await Promise.all([
+      api.monthlyReport(y, m),
+      api.incidenciasANS(desde, hasta),
+      api.incidencias({ desde, hasta }),
+    ]);
+
+    // KPIs
+    const disp = Object.values(rep.disponibilidad_por_componente || {});
+    const media = disp.length ? disp.reduce((a, b) => a + b, 0) / disp.length : 0;
+    setKPI("mant-disp", `${media.toFixed(2)} %`);
+    setKPI("mant-inc", `${rep.incidencias_criticas} / ${rep.incidencias_altas}`);
+    const totAns = (ans.por_severidad || []).reduce((acc, s) => {
+      acc.cumplen += s.cumplen_resolucion; acc.total += s.total; return acc;
+    }, { cumplen: 0, total: 0 });
+    setKPI("mant-ans", totAns.total ? `${Math.round(totAns.cumplen * 100 / totAns.total)} %` : "—");
+
+    // Chart disponibilidad por componente
+    renderChart("chart-disponibilidad", "bar", {
+      labels: Object.keys(rep.disponibilidad_por_componente || {}),
+      datasets: [{
+        label: "Disponibilidad %",
+        data: disp,
+        backgroundColor: disp.map(v => (v >= 99 ? "#2D8F4F" : "#DC2626")),
+      }],
+    }, { scales: { y: { min: 95, max: 100 } } });
+
+    // Tabla ANS
+    const tbAns = document.querySelector("#tabla-ans tbody");
+    tbAns.innerHTML = "";
+    for (const s of (ans.por_severidad || [])) {
+      const pct = s.porcentaje_cumplimiento != null ? `${s.porcentaje_cumplimiento}%` : "—";
+      const tre = s.tiempo_medio_resolucion_h != null ? s.tiempo_medio_resolucion_h : "—";
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>${escapeHtml(s.severidad)}</td><td>${s.total}</td><td>${s.cumplen_resolucion}</td><td>${pct}</td><td>${tre}</td>`;
+      tbAns.appendChild(tr);
+    }
+
+    // Tabla incidencias
+    const tbInc = document.querySelector("#tabla-incidencias tbody");
+    tbInc.innerHTML = "";
+    for (const i of (incs || [])) {
+      const fecha = i.detectada_en ? i.detectada_en.substring(0, 10) : "—";
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>${escapeHtml(i.severidad)}</td><td>${escapeHtml(i.componente)}</td><td>${escapeHtml(i.titulo)}</td><td>${escapeHtml(i.estado)}</td><td>${fecha}</td>`;
+      tbInc.appendChild(tr);
+    }
+
+    // Informe en texto + preparar descarga
+    _mantInformeMd = _informeAMarkdown(rep, ans);
+    document.getElementById("mant-informe").textContent = _mantInformeMd;
+  } catch (err) {
+    setBanner(`Error mantenimiento: ${err.message}`, "error");
+  }
+}
+
+document.getElementById("mant-generar")?.addEventListener("click", loadMantenimiento);
+document.getElementById("mant-descargar")?.addEventListener("click", () => {
+  if (!_mantInformeMd) return;
+  const mes = document.getElementById("mant-mes")?.value || "informe";
+  const blob = new Blob([_mantInformeMd], { type: "text/markdown;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `informe-mensual-${mes}.md`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
 
 // ============================================================
 // MAP section

@@ -122,6 +122,9 @@
         <button class="nav-item" data-section="totems">
           <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18.01"/></svg></span> Tótems
         </button>
+        <button class="nav-item" data-section="mantenimiento">
+          <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 00-5.4 5.4l-6 6a2 2 0 102.8 2.8l6-6a4 4 0 005.4-5.4l-2.3 2.3-2.1-2.1z"/></svg></span> Mantenimiento · ANS
+        </button>
         <button class="nav-item" data-section="config">
           <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></span> Configuración
         </button>
@@ -447,6 +450,64 @@
         <article class="card">
           <h3 class="card__title">Top temas mencionados</h3>
           <ul id="topics-list" class="topics-grid"></ul>
+        </article>
+      </section>
+
+      <!-- ============== SECTION: MANTENIMIENTO / ANS (C.1) ============== -->
+      <section data-section-content="mantenimiento" class="section hidden">
+        <div class="section__header">
+          <span class="section__label">MANTENIMIENTO · C.1</span>
+          <h2 class="section__title">Disponibilidad e incidencias (ANS)</h2>
+          <p class="section__subtitle">Informe mensual de servicio a partir del ticketing real.</p>
+        </div>
+        <div class="kpi-grid kpi-grid--3">
+          <article class="kpi-card">
+            <span class="kpi-card__label">DISPONIBILIDAD MEDIA</span>
+            <span class="kpi-card__value kpi-card__value--teal" data-kpi="mant-disp">—</span>
+          </article>
+          <article class="kpi-card">
+            <span class="kpi-card__label">INCIDENCIAS CRÍTICAS / ALTAS</span>
+            <span class="kpi-card__value kpi-card__value--navy" data-kpi="mant-inc">—</span>
+          </article>
+          <article class="kpi-card">
+            <span class="kpi-card__label">CUMPLIMIENTO ANS (RESOL.)</span>
+            <span class="kpi-card__value kpi-card__value--navy" data-kpi="mant-ans">—</span>
+          </article>
+        </div>
+        <div class="dashboard-columns">
+          <article class="card">
+            <h3 class="card__title">Disponibilidad por componente</h3>
+            <div class="chart-container"><canvas id="chart-disponibilidad" aria-label="Disponibilidad por componente"></canvas></div>
+          </article>
+          <article class="card">
+            <h3 class="card__title">Cumplimiento ANS por severidad</h3>
+            <div class="table-wrap">
+              <table class="data-table" id="tabla-ans">
+                <thead><tr><th>Severidad</th><th>Total</th><th>Cumplen</th><th>% cumpl.</th><th>T. resol. (h)</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </article>
+        </div>
+        <article class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;">
+            <h3 class="card__title">Informe mensual de servicio</h3>
+            <div style="display:flex;gap:.5rem;align-items:center;">
+              <input type="month" id="mant-mes" aria-label="Mes del informe" />
+              <button id="mant-generar" class="btn btn--primary" type="button">Generar</button>
+              <button id="mant-descargar" class="btn btn--secondary" type="button">Descargar .md</button>
+            </div>
+          </div>
+          <pre id="mant-informe" style="white-space:pre-wrap;margin-top:1rem;font-size:.85rem;line-height:1.5;"></pre>
+        </article>
+        <article class="card">
+          <h3 class="card__title">Incidencias recientes</h3>
+          <div class="table-wrap">
+            <table class="data-table" id="tabla-incidencias">
+              <thead><tr><th>Severidad</th><th>Componente</th><th>Título</th><th>Estado</th><th>Detectada</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
         </article>
       </section>
 

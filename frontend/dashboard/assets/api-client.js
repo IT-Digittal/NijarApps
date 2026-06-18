@@ -135,6 +135,19 @@ export const api = {
   // Chatbot
   chatbotTelemetry() { return _doFetch("/chatbot/telemetry"); },
 
+  // Mantenimiento / ANS (C.1)
+  monthlyReport(year, month) {
+    return _doFetch(`/dashboards/monthly-report?year=${year}&month=${month}`);
+  },
+  incidencias(params = {}) {
+    const q = new URLSearchParams(params).toString();
+    return _doFetch(`/incidencias${q ? `?${q}` : ""}`);
+  },
+  incidenciasANS(desde, hasta) {
+    const q = new URLSearchParams({ desde, hasta }).toString();
+    return _doFetch(`/incidencias/ans?${q}`);
+  },
+
   // Sensores y recursos (para el mapa)
   listSensors(params = { page: 1, page_size: 200 }) {
     const q = new URLSearchParams(params).toString();

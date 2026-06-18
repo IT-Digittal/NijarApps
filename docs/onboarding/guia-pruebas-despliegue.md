@@ -87,22 +87,23 @@ Login OAuth2 y navega por las secciones (`data-section` en `frontend/dashboard/i
 
 Hay **endpoints nuevos del backend que aún no tienen UI** en el dashboard (`api-client.js` no los invoca todavía). Esto es el trabajo de frontend pendiente:
 
-| Funcionalidad (backend ✅) | Endpoint | Falta en el panel |
-|----------------------------|----------|-------------------|
-| Índice tipo NPS | `GET /data/social/kpis/nps` | Tarjeta/gráfico en sección Big Data |
-| Composición lingüística de visitantes | `GET /data/social/kpis/composicion-linguistica` | Gráfico (barras/donut) en Big Data |
-| Predicción de afluencia | `GET /prediccion/afluencia` | Serie + banda de confianza (Smart Office o Big Data) |
-| Validación MAPE / anomalías | `GET /prediccion/validacion`, `/prediccion/anomalias` | Indicador de calidad del modelo |
-| Contexto histórico (INE/Junta/AENA) | `GET /data/contexto/series`, `/factor-expansion` | Serie comparativa + factor de expansión |
-| Incidencias / ANS (C.1) | `/incidencias`, `/incidencias/ans` | **Sección nueva** "Mantenimiento/ANS" |
-| Informe mensual | `GET /dashboards/monthly-report` | Botón de generación/descarga del informe |
+| Funcionalidad (backend ✅) | Endpoint | Estado en el panel |
+|----------------------------|----------|--------------------|
+| **Incidencias / ANS + Informe mensual (C.1)** | `/incidencias`, `/incidencias/ans`, `/dashboards/monthly-report` | ✅ **Cableado** — sección «Mantenimiento · ANS» (referencia) |
+| Índice tipo NPS | `GET /data/social/kpis/nps` | ⏳ Tarjeta/gráfico en sección Big Data |
+| Composición lingüística de visitantes | `GET /data/social/kpis/composicion-linguistica` | ⏳ Gráfico (barras/donut) en Big Data |
+| Predicción de afluencia | `GET /prediccion/afluencia` | ⏳ Serie + banda de confianza (Smart Office o Big Data) |
+| Validación MAPE / anomalías | `GET /prediccion/validacion`, `/prediccion/anomalias` | ⏳ Indicador de calidad del modelo |
+| Contexto histórico (INE/Junta/AENA) | `GET /data/contexto/series`, `/factor-expansion` | ⏳ Serie comparativa + factor de expansión |
 
-**Cómo añadirlos** (patrón existente):
-1. Añade el método en `frontend/dashboard/assets/api-client.js` (sigue el patrón de `getSmartOfficeOverview`, etc.).
-2. Añade la sección/tarjeta en `frontend/dashboard/index.html` (`data-section="..."`) y su render en `dashboard.js` (Chart.js ya está disponible).
-3. Respeta los design tokens (`frontend/shared/design-tokens.css`) y la accesibilidad (roles ARIA, contraste).
+**Patrón de referencia ya implementado** — usa la sección «Mantenimiento · ANS» como ejemplo completo de extremo a extremo:
+1. **api-client.js** → métodos `monthlyReport`, `incidencias`, `incidenciasANS`.
+2. **index.html** → ítem de nav `data-section="mantenimiento"` + `<section data-section-content="mantenimiento">` con KPIs, `<canvas>`, tablas (`.data-table`) y botones (`.btn`).
+3. **dashboard.js** → `loadMantenimiento()` registrada en el mapa `loaders` de `switchSection`; usa `setKPI`, `renderChart` (Chart.js), `escapeHtml`, `setBanner`. Incluye selector de mes y descarga del informe en `.md` (Blob).
 
-> El backend de todo esto está implementado y probado; es trabajo de **cableado de UI**, sin tocar la API.
+Replica ese patrón para las filas ⏳ restantes. Respeta los design tokens (`frontend/shared/design-tokens.css`) y la accesibilidad (roles ARIA, contraste).
+
+> El backend de todo esto está implementado y probado; lo pendiente es **cableado de UI**, sin tocar la API.
 
 ---
 
