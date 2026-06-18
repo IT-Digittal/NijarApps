@@ -75,14 +75,23 @@ class Settings(BaseSettings):
 
     # --- Social Listening (X / Twitter) ---
     twitter_bearer_token: str = ""
-    twitter_search_query: str = "Cabo de Gata OR Níjar OR \"Playa de Mónsul\""
+    twitter_search_query: str = (
+        "Cabo de Gata OR Níjar OR \"Playa de Mónsul\" OR \"Parque Natural Cabo de Gata\" "
+        "OR Rodalquilar OR \"San José Almería\""
+    )
     twitter_max_results_per_poll: int = 50
 
     # --- Social Listening (Facebook / Instagram Graph API) ---
     facebook_access_token: str = ""
     facebook_page_id: str = ""
+    # Alias público de la página oficial; sirve de fallback cuando no se conoce
+    # el ID numérico (la Graph API acepta el usuario en la ruta con token válido).
+    facebook_page_handle: str = ""
     instagram_business_account_id: str = ""
-    instagram_hashtags: str = "cabodegata,nijar,playamonsul"
+    instagram_handle: str = ""
+    instagram_hashtags: str = (
+        "cabodegata,nijar,playamonsul,parquenaturalcabodegata,rodalquilar,sanjosenijar"
+    )
 
     # --- Social Listening (común) ---
     social_polling_interval_minutes: int = 15

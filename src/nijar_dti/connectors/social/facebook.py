@@ -34,8 +34,13 @@ class FacebookConnector(SocialListeningConnector):
         self.settings = settings or get_settings()
 
     @property
+    def _page_ref(self) -> str:
+        """ID numérico de la página o, en su defecto, el alias público."""
+        return self.settings.facebook_page_id or self.settings.facebook_page_handle
+
+    @property
     def is_configured(self) -> bool:
-        return bool(self.settings.facebook_access_token and self.settings.facebook_page_id)
+        return bool(self.settings.facebook_access_token and self._page_ref)
 
     async def fetch_mentions(self, since: datetime | None = None) -> list[MentionRaw]:
         if self.settings.social_dry_run:
@@ -43,7 +48,7 @@ class FacebookConnector(SocialListeningConnector):
 
         if not self.is_configured:
             raise SocialConnectorError(
-                "FACEBOOK_ACCESS_TOKEN o FACEBOOK_PAGE_ID no configurados"
+                "FACEBOOK_ACCESS_TOKEN o FACEBOOK_PAGE_ID/HANDLE no configurados"
             )
 
         params: dict[str, str | int] = {
@@ -59,7 +64,7 @@ class FacebookConnector(SocialListeningConnector):
 
         async with httpx.AsyncClient(timeout=15) as client:
             resp = await client.get(
-                f"{_GRAPH_API_BASE}/{self.settings.facebook_page_id}/feed",
+                f"{_GRAPH_API_BASE}/{self._page_ref}/feed",
                 params=params,
             )
         if resp.status_code >= 400:
