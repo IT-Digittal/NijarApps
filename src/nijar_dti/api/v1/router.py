@@ -10,6 +10,7 @@ from nijar_dti.api.v1 import (
     dashboards,
     health,
     iot,
+    prediccion,
     social,
     tourism,
 )
@@ -22,6 +23,7 @@ api_router.include_router(tourism.router, prefix="/tourism", tags=["tourism"])
 api_router.include_router(iot.router, prefix="/data/iot", tags=["iot"])
 api_router.include_router(social.router, prefix="/data/social", tags=["social-listening"])
 api_router.include_router(contexto.router, prefix="/data/contexto", tags=["contexto"])
+api_router.include_router(prediccion.router, prefix="/prediccion", tags=["prediccion"])
 api_router.include_router(cms.router, prefix="/cms", tags=["cms"])
 api_router.include_router(chatbot.router, prefix="/chatbot", tags=["chatbot"])
 api_router.include_router(dashboards.router, prefix="/dashboards", tags=["dashboards"])

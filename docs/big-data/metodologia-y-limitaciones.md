@@ -61,7 +61,7 @@ Implementado en `analitica_service.banda_confianza_pp`. El dashboard muestra la 
 | **Análisis de sentimiento** | Precision / Recall / F1 / Exactitud | ≥ 80 % / ≥ 75 % / ≥ 77 % / ≥ 80 % | Gold standard ≥ 100 menciones reales (ES con modismos almerienses, EN, DE, FR) clasificadas por evaluadores independientes |
 | **Modelos predictivos de flujo** | **MAPE** (Mean Absolute Percentage Error) con *holdout* temporal | MAPE ≤ 20 % (objetivo); recalibración si se supera | Se reserva el último tramo temporal como test; se compara predicción vs real; se vigila deriva |
 
-> El PCAP evalúa explícitamente la *«validación del modelo de análisis incluyendo métricas de precisión, recall o equivalentes»*. Para predicción, el equivalente formal es **MAPE con holdout**. El procedimiento queda documentado aquí; su ejecución sobre los modelos predictivos reales se realiza cuando exista serie propia suficiente (ver Plan de Mejora Continua, M3).
+> El PCAP evalúa explícitamente la *«validación del modelo de análisis incluyendo métricas de precisión, recall o equivalentes»*. Para predicción, el equivalente formal es **MAPE con holdout**, ya implementado: el modelo estacional de afluencia y su validación se exponen en `/api/v1/prediccion/{afluencia,validacion,anomalias}` (`connectors/analytics/forecasting.py`). El MAPE se calcula sobre el tramo de test reservado y solo sobre días con afluencia real > 0. Con poca serie propia se reporta como orientativo hasta acumular histórico.
 
 **Criterio de aceptación**: ninguna versión de un modelo se despliega en producción si no supera sus umbrales sobre el conjunto de validación. La primera validación tras la puesta en marcha se presenta al responsable municipal para conformidad.
 

@@ -48,8 +48,8 @@ Implementado y operativo:
 |----|--------|---------|----------|-----------|--------|
 | **M1** | Composición lingüística multiseñal | Alto | Medio | Pre-SAT | ✅ Implementada (KPI + API) |
 | **M2** | Backfill de fuentes públicas (INE/Junta/AENA) | Alto | Medio | Pre-SAT | ✅ Implementada (conector + ingesta) |
-| **M3** | Validación predictiva con MAPE / holdout | Medio | Medio | Pre-SAT | ◑ Documentada; falta ejecutar backtesting sobre modelo real |
-| **M4** | k-anonimato ≥ 5 + DPIA reforzada | Alto | Bajo | Pre-SAT | ◑ Regla implementada en código; falta sección DPIA |
+| **M3** | Modelo predictivo de afluencia + validación MAPE / holdout | Medio | Medio | Pre-SAT | ✅ Implementada (modelo estacional + MAPE + anomalías; API `/prediccion/*`) |
+| **M4** | k-anonimato ≥ 5 + DPIA reforzada | Alto | Bajo | Pre-SAT | ✅ Implementada (regla en código + `docs/security/dpia-observatorio-movilidad.md`) |
 | **M5** | Índice NPS proxy | Medio | Medio | Pre-SAT | ✅ Implementada (KPI + API) |
 | **M6** | Metodología y limitaciones documentada | Alto | Bajo | Pre-SAT | ✅ Implementada (documento) |
 | **M7** | Conectores de reviews (TripAdvisor, Google, HolidayCheck) | Medio | Medio | C.1 | ☐ Pendiente (requiere claves API) |
@@ -61,9 +61,9 @@ Leyenda: ✅ completa · ◑ parcial · ☐ pendiente
 
 ### 6.1 Pre-SAT (refuerzan la valoración técnica B.3 del PCAP)
 
-- **M3**: ejecutar el backtesting MAPE en cuanto exista serie propia suficiente; documentar resultado y umbral de recalibración.
-- **M4**: añadir a la DPIA la sección específica de movilidad (k-anonimato, minimización, retención).
-- **M1, M2, M5, M6**: ya entregadas; verificar en el SAT con datos cargados.
+- **M1–M6 entregadas**. En el SAT se verifican con datos cargados: la predicción y el MAPE se recalculan sobre la serie real disponible (con poca serie, el MAPE se reporta como orientativo hasta acumular histórico).
+- **M3**: modelo estacional de afluencia + detección de anomalías + validación MAPE/holdout, expuestos en `/api/v1/prediccion/{afluencia,validacion,anomalias}`. Modelos más sofisticados (ARIMA/Prophet/boosting) quedan para C.1.
+- **M4**: regla k-anonimato ≥ 5 en el pipeline y DPIA de movilidad (`docs/security/dpia-observatorio-movilidad.md`).
 
 ### 6.2 C.1 (Plan de Mejora Continua, 48 meses)
 
