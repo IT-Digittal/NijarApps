@@ -28,6 +28,11 @@ La plataforma integra los componentes **A.2 (Smart Office DTI)**, **A.3 (Big Dat
 | `chatbot · lexical` | Motor de matching multilingüe ES/EN/DE/FR (Hito 1) | ✅ Operativo |
 | `chatbot · rasa` | Servidor Rasa Open Source con modelo entrenado (Hito 2) | ✅ Operativo |
 | `dashboards` | Smart Office, Big Data, uso de tótems, informe mensual C.1 | ✅ Operativo |
+| `analitica` | KPI índice tipo NPS y composición lingüística (k-anonimato ≥5) | ✅ Operativo |
+| `contexto` | Backfill de fuentes públicas (INE/Junta/AENA) + factor de expansión | ✅ Operativo |
+| `prediccion` | Predicción de afluencia (estacional), validación MAPE y anomalías | ✅ Operativo |
+| `rutas` | Planificador de itinerarios y recomendaciones de visitas/eventos | ✅ Operativo |
+| `chatbot · 105 FAQs` | Base de conocimiento ES/EN/DE/FR (≥100), voz en tótem (STT/TTS) | ✅ Operativo |
 
 ---
 
@@ -255,7 +260,7 @@ pass:  CambiarEnPrimerArranque#2026
 - **1 usuario administrador** con 2FA obligatorio.
 - **14 recursos turísticos** con coordenadas GPS reales y descripciones en 4 idiomas.
 - **9 sensores** del Smart Office y los 2 tótems.
-- **22 FAQs base del chatbot** en ES/EN/DE/FR cubriendo todas las categorías obligatorias.
+- **105 FAQs base del chatbot** en ES/EN/DE/FR (≥100 contractual) cubriendo todas las categorías obligatorias.
 
 ---
 

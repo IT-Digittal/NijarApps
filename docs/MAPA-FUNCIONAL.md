@@ -10,6 +10,30 @@ Documento de referencia rápida que mapea cada actuación del Pliego con las fun
 
 ---
 
+## Novedades — cierre de pendientes A.3 / B.2
+
+Bloques añadidos tras la auditoría del proyecto frente al Pliego:
+
+| Entregable | Componente | Estado |
+|------------|------------|--------|
+| KPI índice tipo NPS (proxy satisfacción) | `GET /api/v1/data/social/kpis/nps` | ✅ |
+| Composición lingüística de visitantes | `GET /api/v1/data/social/kpis/composicion-linguistica` | ✅ |
+| k-anonimato ≥5 | `core/anonimizacion.py` | ✅ |
+| Backfill de contexto histórico (INE/Junta/AENA) | `connectors/contexto/` + `/api/v1/data/contexto/*` | ✅ |
+| Modelo predictivo de afluencia + MAPE + anomalías | `connectors/analytics/forecasting.py` + `/api/v1/prediccion/*` | ✅ |
+| Planificador de rutas y recomendaciones | `core/geo.py` + `/api/v1/rutas/*` | ✅ |
+| Tótem: voz (STT/TTS), eventos y planificador | `frontend/totem/` | ✅ |
+| Chatbot: base de conocimiento a 105 FAQs (≥100) | `data/seeds/faqs*.py` | ✅ |
+| Plan Director de Transformación Digital | `docs/plan-director/` | ✅ |
+| Metodología y limitaciones + Plan de Mejora Continua | `docs/big-data/` | ✅ |
+| DPIA de movilidad | `docs/security/dpia-observatorio-movilidad.md` | ✅ |
+
+Pendiente para C.1 (fuera del alcance Pre-SAT): conectores de reviews
+(TripAdvisor/Google/HolidayCheck) y visualizaciones de flujo (heatmap/Sankey),
+que requieren claves externas y datos reales de movilidad.
+
+---
+
 ## Actuaciones del contrato
 
 ### A.1 — Tótems digitales interactivos (2 unidades)
