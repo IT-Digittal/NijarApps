@@ -95,6 +95,10 @@ class Settings(BaseSettings):
     rasa_timeout_seconds: int = 8
     rasa_fallback_to_lexical: bool = True
 
+    # --- Contexto histórico (backfill fuentes públicas INE/Junta/AENA) ---
+    contexto_backfill_dry_run: bool = True  # True = series sintéticas sin llamar a APIs
+    contexto_backfill_anios: int = 3
+
     # --- Google Analytics 4 ---
     ga4_property_id: str = ""
     # Ruta a un fichero JSON de service-account o JSON inline

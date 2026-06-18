@@ -11,6 +11,7 @@ Entidades del modelo semántico de la plataforma DTI Níjar:
 """
 
 from nijar_dti.models.contenido import Contenido
+from nijar_dti.models.contexto import ContextoTuristico
 from nijar_dti.models.evento_turistico import EventoTuristico
 from nijar_dti.models.faq import FAQ, InteraccionChatbot
 from nijar_dti.models.observacion import Observacion
@@ -24,6 +25,7 @@ from nijar_dti.models.visita import Visita
 __all__ = [
     "FAQ",
     "Contenido",
+    "ContextoTuristico",
     "EventoTuristico",
     "InteraccionChatbot",
     "Observacion",

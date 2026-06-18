@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from nijar_dti.api.v1.dependencies import get_current_user
 from nijar_dti.core.database import get_db
+from nijar_dti.schemas.analitica import ComposicionLinguistica, NPSProxy
 from nijar_dti.schemas.auth import CurrentUser
 from nijar_dti.schemas.common import PageParams, Paginated
 from nijar_dti.schemas.social import (
@@ -17,6 +18,7 @@ from nijar_dti.schemas.social import (
     ShareOfVoice,
     TopicItem,
 )
+from nijar_dti.services import analitica_service as analitica
 from nijar_dti.services import social_service as svc
 
 router = APIRouter()
@@ -109,3 +111,31 @@ async def topics(
     user: CurrentUser = Depends(get_current_user),
 ) -> list[TopicItem]:
     return await svc.top_topics(db, desde, hasta, limit)
+
+
+@router.get(
+    "/kpis/nps",
+    response_model=NPSProxy,
+    summary="Índice tipo NPS (proxy de satisfacción del destino)",
+)
+async def kpi_nps(
+    desde: datetime | None = Query(None),
+    hasta: datetime | None = Query(None),
+    db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(get_current_user),
+) -> NPSProxy:
+    return await analitica.nps_proxy(db, desde, hasta)
+
+
+@router.get(
+    "/kpis/composicion-linguistica",
+    response_model=ComposicionLinguistica,
+    summary="Composición lingüística de visitantes (aproximación al origen)",
+)
+async def kpi_composicion_linguistica(
+    desde: datetime | None = Query(None),
+    hasta: datetime | None = Query(None),
+    db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(get_current_user),
+) -> ComposicionLinguistica:
+    return await analitica.composicion_linguistica(db, desde, hasta)
