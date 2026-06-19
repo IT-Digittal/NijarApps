@@ -38,6 +38,16 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         version=settings.app_version,
         env=settings.app_env,
     )
+    # Carga idempotente de datos seed (recursos, sensores, FAQs, demo C.1).
+    # Solo añade lo que falte; no toca filas existentes.
+    if settings.run_seeds_on_startup:
+        logger.info("Ejecutando seed_loader idempotente al arranque")
+        try:
+            from nijar_dti.data.seed_loader import run as seed_run
+            await seed_run()
+            logger.info("seed_loader completado")
+        except Exception as exc:  # noqa: BLE001
+            logger.error("Fallo en seed_loader durante el arranque", error=str(exc))
     # Refresco periódico de métricas Prometheus de dominio
     metrics_task = asyncio.create_task(metrics_loop(interval_seconds=60))
     try:

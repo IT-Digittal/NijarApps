@@ -114,10 +114,10 @@ testpaths = ["tests"]
 addopts = [
     "-ra",
     "--strict-markers",
-    "--cov=nijar_dti",
-    "--cov-report=term-missing",
-    "--cov-report=html",
 ]
+# Para coverage usa explícitamente:
+#   pytest --cov=nijar_dti --cov-report=term-missing --cov-report=html
+# Mantenerlo opt-in evita fallos cuando se ejecuta en cwd de solo lectura.
 
 [tool.coverage.run]
 branch = true

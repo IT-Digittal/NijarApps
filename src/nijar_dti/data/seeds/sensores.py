@@ -9,6 +9,8 @@ from __future__ import annotations
 
 # Smart Office: 4 sensores ambientales (CO₂, temperatura, humedad, ruido).
 # Tótems: meteo + aforo en cada uno de los 2 emplazamientos.
+# Plaza La Glorieta: 1 punto WiFi público para conteo de dispositivos únicos.
+# Total: 9 sensores.
 
 SENSORES_SEED: list[dict] = [
     # ---------- Smart Office ----------
@@ -139,5 +141,24 @@ SENSORES_SEED: list[dict] = [
         "estado": "operativo",
         "topic_mqtt": "nijar/sensors/totem-albaricoques/aforo",
         "etiquetas": ["totem", "aforo", "turismo"],
+    },
+
+    # ---------- WiFi público Plaza La Glorieta ----------
+    {
+        "urn": "urn:ngsi-ld:Device:nijar:wifi:plaza-glorieta",
+        "nombre": "WiFi público - Plaza La Glorieta",
+        "tipo": "wifi_publico",
+        "fabricante": "Cambium Networks",
+        "modelo": "cnPilot E410",
+        "lon": -2.207, "lat": 36.966,
+        "descripcion_ubicacion": "Plaza La Glorieta (centro histórico de Níjar)",
+        "unidades_medida": "dispositivos_unicos",
+        "rango_minimo": 0.0,
+        "rango_maximo": 500.0,
+        "umbrales_alerta": {"warning_max": 300},
+        "frecuencia_muestreo_seg": 300,
+        "estado": "operativo",
+        "topic_mqtt": "nijar/sensors/plaza-glorieta/wifi",
+        "etiquetas": ["wifi", "afluencia", "centro-historico"],
     },
 ]

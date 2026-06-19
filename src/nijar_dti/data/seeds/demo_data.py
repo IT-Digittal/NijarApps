@@ -235,6 +235,18 @@ _EVENTOS_SEED = [
         "nombre": "Concierto Noche de las Salinas",
         "tipo": "musical",
         "descripcion": "Concierto de flamenco fusión al aire libre en el entorno de las antiguas salinas de Cabo de Gata. Entrada gratuita.",
+        "nombre_i18n": {
+            "es": "Concierto Noche de las Salinas",
+            "en": "Salt Flats Night Concert",
+            "de": "Konzert Nacht der Salinen",
+            "fr": "Concert Nuit des Salines",
+        },
+        "descripcion_i18n": {
+            "es": "Concierto de flamenco fusión al aire libre en el entorno de las antiguas salinas de Cabo de Gata. Entrada gratuita.",
+            "en": "Open-air flamenco fusion concert in the historic Cabo de Gata salt flats. Free admission.",
+            "de": "Open-Air-Flamenco-Fusion-Konzert in den historischen Salinen von Cabo de Gata. Eintritt frei.",
+            "fr": "Concert de flamenco fusion en plein air dans les anciennes salines de Cabo de Gata. Entrée libre.",
+        },
         "direccion": "Salinas de Cabo de Gata",
         "organizador": "Ayuntamiento de Níjar",
         "precio": "Gratuito",
@@ -249,6 +261,18 @@ _EVENTOS_SEED = [
         "nombre": "Ruta guiada a Vela Blanca",
         "tipo": "naturaleza",
         "descripcion": "Senderismo guiado por el espectacular sendero costero del Faro de Cabo de Gata a Vela Blanca. 8 km, dificultad media. Inscripción previa obligatoria.",
+        "nombre_i18n": {
+            "es": "Ruta guiada a Vela Blanca",
+            "en": "Guided hike to Vela Blanca",
+            "de": "Geführte Wanderung nach Vela Blanca",
+            "fr": "Randonnée guidée à Vela Blanca",
+        },
+        "descripcion_i18n": {
+            "es": "Senderismo guiado por el espectacular sendero costero del Faro de Cabo de Gata a Vela Blanca. 8 km, dificultad media. Inscripción previa obligatoria.",
+            "en": "Guided hike along the coastal trail from Cabo de Gata Lighthouse to Vela Blanca. 8 km, medium difficulty. Pre-registration required.",
+            "de": "Geführte Wanderung auf dem spektakulären Küstenpfad vom Leuchtturm Cabo de Gata nach Vela Blanca. 8 km, mittel. Voranmeldung erforderlich.",
+            "fr": "Randonnée guidée le long du sentier côtier du phare de Cabo de Gata à Vela Blanca. 8 km, difficulté moyenne. Inscription préalable obligatoire.",
+        },
         "direccion": "Centro de Visitantes Las Amoladeras",
         "organizador": "Junta de Andalucía",
         "precio": "Gratuito · inscripción previa",
@@ -263,6 +287,18 @@ _EVENTOS_SEED = [
         "nombre": "Mercado de cerámica y artesanía",
         "tipo": "cultural",
         "descripcion": "Mercado artesanal con puestos de cerámica, jarapas y productos locales en la Plaza La Glorieta de Níjar.",
+        "nombre_i18n": {
+            "es": "Mercado de cerámica y artesanía",
+            "en": "Pottery and crafts market",
+            "de": "Keramik- und Handwerksmarkt",
+            "fr": "Marché de poterie et d'artisanat",
+        },
+        "descripcion_i18n": {
+            "es": "Mercado artesanal con puestos de cerámica, jarapas y productos locales en la Plaza La Glorieta de Níjar.",
+            "en": "Craft market with pottery, traditional rugs (jarapas) and local products at Plaza La Glorieta in Níjar.",
+            "de": "Kunsthandwerksmarkt mit Keramik, traditionellen Teppichen (jarapas) und regionalen Produkten am Plaza La Glorieta in Níjar.",
+            "fr": "Marché artisanal avec poterie, tapis traditionnels (jarapas) et produits locaux à Plaza La Glorieta de Níjar.",
+        },
         "direccion": "Plaza La Glorieta, Níjar",
         "organizador": "Asociación de Artesanos de Níjar",
         "precio": "Entrada libre",
@@ -276,6 +312,18 @@ _EVENTOS_SEED = [
         "nombre": "Cine al aire libre — Cortometrajes",
         "tipo": "cultural",
         "descripcion": "Proyección de cortometrajes del Festival Cortos en Femenino en el Centro de Visitantes. Entrada gratuita.",
+        "nombre_i18n": {
+            "es": "Cine al aire libre — Cortometrajes",
+            "en": "Open-air cinema — Short films",
+            "de": "Freiluftkino — Kurzfilme",
+            "fr": "Cinéma en plein air — Courts-métrages",
+        },
+        "descripcion_i18n": {
+            "es": "Proyección de cortometrajes del Festival Cortos en Femenino en el Centro de Visitantes. Entrada gratuita.",
+            "en": "Screening of short films from the Cortos en Femenino festival at the Visitors Centre. Free admission.",
+            "de": "Vorführung von Kurzfilmen des Festivals Cortos en Femenino im Besucherzentrum. Eintritt frei.",
+            "fr": "Projection de courts-métrages du festival Cortos en Femenino au Centre des visiteurs. Entrée libre.",
+        },
         "direccion": "Centro de Visitantes Las Amoladeras",
         "organizador": "Ayuntamiento de Níjar",
         "precio": "Gratuito",
@@ -290,6 +338,18 @@ _EVENTOS_SEED = [
         "nombre": "Taller de fotografía de paisaje",
         "tipo": "educativo",
         "descripcion": "Taller práctico de fotografía de paisaje volcánico y costero. Nivel intermedio. Punto de encuentro en el Mirador de la Amatista.",
+        "nombre_i18n": {
+            "es": "Taller de fotografía de paisaje",
+            "en": "Landscape photography workshop",
+            "de": "Workshop Landschaftsfotografie",
+            "fr": "Atelier de photographie de paysage",
+        },
+        "descripcion_i18n": {
+            "es": "Taller práctico de fotografía de paisaje volcánico y costero. Nivel intermedio. Punto de encuentro en el Mirador de la Amatista.",
+            "en": "Hands-on workshop on volcanic and coastal landscape photography. Intermediate level. Meeting point at Mirador de la Amatista.",
+            "de": "Praktischer Workshop zur Fotografie von Vulkan- und Küstenlandschaften. Mittleres Niveau. Treffpunkt am Aussichtspunkt Amatista.",
+            "fr": "Atelier pratique de photographie de paysages volcaniques et côtiers. Niveau intermédiaire. Point de rencontre au Mirador de la Amatista.",
+        },
         "direccion": "Mirador de la Amatista, Rodalquilar",
         "organizador": "Club Fotográfico Almería",
         "precio": "15 €",
@@ -304,6 +364,18 @@ _EVENTOS_SEED = [
         "nombre": "Charla: Turismo sostenible en Cabo de Gata",
         "tipo": "educativo",
         "descripcion": "Mesa redonda sobre buenas prácticas de turismo sostenible en espacios naturales protegidos.",
+        "nombre_i18n": {
+            "es": "Charla: Turismo sostenible en Cabo de Gata",
+            "en": "Talk: Sustainable tourism in Cabo de Gata",
+            "de": "Vortrag: Nachhaltiger Tourismus in Cabo de Gata",
+            "fr": "Conférence : Tourisme durable à Cabo de Gata",
+        },
+        "descripcion_i18n": {
+            "es": "Mesa redonda sobre buenas prácticas de turismo sostenible en espacios naturales protegidos.",
+            "en": "Round table on best practices for sustainable tourism in protected natural areas.",
+            "de": "Podiumsdiskussion über bewährte Praktiken für nachhaltigen Tourismus in Naturschutzgebieten.",
+            "fr": "Table ronde sur les bonnes pratiques du tourisme durable dans les espaces naturels protégés.",
+        },
         "direccion": "Sala de actos del Ayuntamiento de Níjar",
         "organizador": "Ayuntamiento de Níjar",
         "precio": "Gratuito",
@@ -318,6 +390,18 @@ _EVENTOS_SEED = [
         "nombre": "Excursión en kayak — Mónsul a Genoveses",
         "tipo": "deportivo",
         "descripcion": "Travesía en kayak por la costa volcánica entre las playas de Mónsul y Genoveses. Incluye equipo y guía certificado.",
+        "nombre_i18n": {
+            "es": "Excursión en kayak — Mónsul a Genoveses",
+            "en": "Kayak trip — Mónsul to Genoveses",
+            "de": "Kajaktour — Mónsul nach Genoveses",
+            "fr": "Excursion en kayak — Mónsul à Genoveses",
+        },
+        "descripcion_i18n": {
+            "es": "Travesía en kayak por la costa volcánica entre las playas de Mónsul y Genoveses. Incluye equipo y guía certificado.",
+            "en": "Kayak crossing along the volcanic coast between Mónsul and Genoveses beaches. Equipment and certified guide included.",
+            "de": "Kajaktour entlang der vulkanischen Küste zwischen den Stränden Mónsul und Genoveses. Ausrüstung und zertifizierter Guide inklusive.",
+            "fr": "Traversée en kayak le long de la côte volcanique entre les plages de Mónsul et Genoveses. Équipement et guide certifié inclus.",
+        },
         "direccion": "Playa de Mónsul, San José",
         "organizador": "Cabo de Gata Activo",
         "precio": "35 €/persona",
@@ -332,6 +416,18 @@ _EVENTOS_SEED = [
         "nombre": "Degustación de vinos del desierto",
         "tipo": "gastronomico",
         "descripcion": "Cata comentada de vinos ecológicos producidos en la zona semiárida de Níjar, con maridaje de tapas locales.",
+        "nombre_i18n": {
+            "es": "Degustación de vinos del desierto",
+            "en": "Desert wine tasting",
+            "de": "Wüstenweinverkostung",
+            "fr": "Dégustation de vins du désert",
+        },
+        "descripcion_i18n": {
+            "es": "Cata comentada de vinos ecológicos producidos en la zona semiárida de Níjar, con maridaje de tapas locales.",
+            "en": "Guided tasting of organic wines from Níjar's semi-arid region, paired with local tapas.",
+            "de": "Geführte Verkostung von Bio-Weinen aus der halbtrockenen Region Níjar, kombiniert mit lokalen Tapas.",
+            "fr": "Dégustation commentée de vins biologiques produits dans la zone semi-aride de Níjar, accompagnés de tapas locales.",
+        },
         "direccion": "Bodega Las Albinas, San Isidro",
         "organizador": "Bodega Las Albinas",
         "precio": "20 €",
@@ -346,6 +442,18 @@ _EVENTOS_SEED = [
         "nombre": "Noche de San Juan en Las Negras",
         "tipo": "festivo",
         "descripcion": "Celebración de la Noche de San Juan en la playa de Las Negras con hoguera, música en vivo y chiringuito.",
+        "nombre_i18n": {
+            "es": "Noche de San Juan en Las Negras",
+            "en": "Saint John's Eve at Las Negras",
+            "de": "Johannisnacht in Las Negras",
+            "fr": "Nuit de la Saint-Jean à Las Negras",
+        },
+        "descripcion_i18n": {
+            "es": "Celebración de la Noche de San Juan en la playa de Las Negras con hoguera, música en vivo y chiringuito.",
+            "en": "Saint John's Eve celebration on Las Negras beach with bonfire, live music and beach bar.",
+            "de": "Johannisnacht-Feier am Strand von Las Negras mit Lagerfeuer, Live-Musik und Strandbar.",
+            "fr": "Célébration de la nuit de la Saint-Jean sur la plage de Las Negras avec feu de joie, musique live et bar de plage.",
+        },
         "direccion": "Playa de Las Negras",
         "organizador": "Ayuntamiento de Níjar",
         "precio": "Gratuito",
@@ -357,10 +465,11 @@ _EVENTOS_SEED = [
 ]
 
 
-def generar_eventos_seed() -> list[dict]:
+def generar_eventos_seed(ref: datetime | None = None) -> list[dict]:
+    base = ref or datetime.now(timezone.utc)
     eventos = []
     for ev in _EVENTOS_SEED:
-        inicio = _NOW + timedelta(days=ev["delta_dias"])
+        inicio = base + timedelta(days=ev["delta_dias"])
         inicio = inicio.replace(hour=ev["hora_inicio"], minute=0, second=0, microsecond=0)
         fin = inicio + timedelta(hours=ev["duracion_h"])
         eventos.append({
@@ -368,6 +477,8 @@ def generar_eventos_seed() -> list[dict]:
             "nombre": ev["nombre"],
             "tipo": ev["tipo"],
             "descripcion": ev.get("descripcion"),
+            "nombre_i18n": ev.get("nombre_i18n"),
+            "descripcion_i18n": ev.get("descripcion_i18n"),
             "direccion": ev.get("direccion"),
             "organizador": ev.get("organizador"),
             "precio": ev.get("precio"),

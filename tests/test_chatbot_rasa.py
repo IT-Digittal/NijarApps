@@ -60,7 +60,9 @@ class TestNivelDesdeConfianza:
 class TestSelectorMotor:
     """Comprueba que el selector cambia según CHATBOT_ENGINE."""
 
-    def test_default_es_lexical(self):
+    def test_default_es_lexical(self, monkeypatch):
+        # Aislar del entorno: en dev/local CHATBOT_ENGINE puede estar a "rasa".
+        monkeypatch.delenv("CHATBOT_ENGINE", raising=False)
         from nijar_dti.config import Settings
         s = Settings(
             secret_key="test-secret-key-with-enough-entropy-1234567890",

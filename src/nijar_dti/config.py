@@ -51,6 +51,9 @@ class Settings(BaseSettings):
     database_pool_size: int = 10
     database_max_overflow: int = 20
     database_echo: bool = False
+    # Ejecuta seed_loader (idempotente) en el arranque. True en dev/staging,
+    # False en producción para no tocar datos reales sin querer.
+    run_seeds_on_startup: bool = True
 
     # --- Redis ---
     redis_url: str = "redis://redis:6379/0"

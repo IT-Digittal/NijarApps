@@ -31,6 +31,7 @@ from nijar_dti.data.seeds.demo_data import (
 from nijar_dti.data.seeds.faqs import FAQS_SEED
 from nijar_dti.data.seeds.recursos_turisticos import RECURSOS_SEED
 from nijar_dti.data.seeds.sensores import SENSORES_SEED
+from nijar_dti.models.contexto import ContextoTuristico
 from nijar_dti.models.evento_turistico import EventoTuristico
 from nijar_dti.models.faq import FAQ, InteraccionChatbot, NivelConfianza
 from nijar_dti.models.incidencia import Incidencia
@@ -171,16 +172,48 @@ async def seed_faqs(db: AsyncSession) -> None:
 
 
 async def seed_demo_eventos(db: AsyncSession) -> None:
-    """Carga eventos turísticos de demo si no existen."""
+    """Carga o refresca eventos turísticos demo.
+
+    - Si la tabla está vacía: inserta los 9 eventos.
+    - Si todos los eventos demo (por URN) tienen fecha pasada: refresca
+      fechas e i18n para que la demo siga teniendo eventos futuros.
+    - Si hay al menos un evento futuro entre los demo: salta.
+    """
+    from datetime import datetime, timezone
     from sqlalchemy import func as sqlfunc
-    count = int((await db.execute(select(sqlfunc.count()).select_from(EventoTuristico))).scalar_one() or 0)
-    if count > 0:
-        log.info("Ya hay %d eventos — saltando demo eventos", count)
-        return
     datos = generar_eventos_seed()
+    urns_demo = [d["urn"] for d in datos]
+    count = int((await db.execute(select(sqlfunc.count()).select_from(EventoTuristico))).scalar_one() or 0)
+    if count == 0:
+        for d in datos:
+            db.add(EventoTuristico(**d))
+        log.info("Eventos demo creados: %d", len(datos))
+        return
+    existentes = (
+        await db.execute(select(EventoTuristico).where(EventoTuristico.urn.in_(urns_demo)))
+    ).scalars().all()
+    if not existentes:
+        # Hay eventos pero no son los demo: no tocar
+        log.info("Ya hay %d eventos no-demo — saltando", count)
+        return
+    ahora = datetime.now(timezone.utc)
+    if any(e.fecha_fin > ahora for e in existentes):
+        log.info("Eventos demo tienen futuros (%d/%d) — saltando", sum(1 for e in existentes if e.fecha_fin > ahora), len(existentes))
+        return
+    # Refresco: actualizar fechas e i18n manteniendo IDs
+    por_urn = {e.urn: e for e in existentes}
+    actualizados = 0
     for d in datos:
-        db.add(EventoTuristico(**d))
-    log.info("Eventos demo creados: %d", len(datos))
+        e = por_urn.get(d["urn"])
+        if e is None:
+            db.add(EventoTuristico(**d))
+            continue
+        e.fecha_inicio = d["fecha_inicio"]
+        e.fecha_fin = d["fecha_fin"]
+        e.nombre_i18n = d.get("nombre_i18n")
+        e.descripcion_i18n = d.get("descripcion_i18n")
+        actualizados += 1
+    log.info("Eventos demo refrescados: %d (fechas + i18n)", actualizados)
 
 
 async def seed_demo_observaciones(db: AsyncSession) -> None:
@@ -244,6 +277,29 @@ async def seed_demo_chatbot(db: AsyncSession) -> None:
     log.info("Interacciones chatbot demo creadas: %d", len(datos))
 
 
+async def seed_contexto_backfill(db: AsyncSession) -> None:
+    """Backfill de contexto (INE/Junta/AENA) en dry-run si la tabla está vacía."""
+    from sqlalchemy import func as sqlfunc
+    count = int(
+        (await db.execute(select(sqlfunc.count()).select_from(ContextoTuristico))).scalar_one() or 0
+    )
+    if count > 0:
+        log.info("Ya hay %d registros de contexto — saltando backfill", count)
+        return
+    from nijar_dti.schemas.contexto import ContextoRecordIn
+    from nijar_dti.services.contexto_service import ingerir_registros
+    from nijar_dti.workers.contexto_backfill import generar_dataset
+
+    dataset = generar_dataset(dry_run=True, anios=3)
+    registros = [ContextoRecordIn(**r) for r in dataset["registros"]]
+    result = await ingerir_registros(db, registros)
+    log.info(
+        "Contexto backfill: insertados=%d actualizados=%d",
+        result.insertados,
+        result.actualizados,
+    )
+
+
 async def seed_demo_incidencias(db: AsyncSession) -> None:
     """Carga incidencias de mantenimiento de demo (mes anterior) si no existen."""
     from sqlalchemy import func as sqlfunc
@@ -272,6 +328,7 @@ async def run() -> None:
             await seed_demo_visitas_totem(db)
             await seed_demo_chatbot(db)
             await seed_demo_incidencias(db)
+            await seed_contexto_backfill(db)
             await db.commit()
             log.info("Seeds aplicados correctamente")
         except Exception:  # noqa: BLE001
