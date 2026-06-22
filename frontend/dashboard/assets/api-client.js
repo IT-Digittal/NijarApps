@@ -167,7 +167,7 @@ export const api = {
 
   // Mantenimiento / ANS (C.1)
   monthlyReport(year, month) {
-    return _doFetch(`/dashboards/monthly-report?year=${year}&month=${month}`);
+    return _doFetch(`/dashboards/reports/monthly?year=${year}&month=${month}`);
   },
   incidencias(params = {}) {
     const q = new URLSearchParams(params).toString();
