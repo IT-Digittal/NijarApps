@@ -40,7 +40,9 @@ La plataforma integra los componentes **A.2 (Smart Office DTI)**, **A.3 (Big Dat
 
 ### 1. Infraestructura como código (Terraform)
 
-Despliegue completo en **AWS eu-central-1 (Frankfurt)** definido en `infra/terraform/` (7 archivos, 1051 líneas):
+> **Estado:** la plataforma está **desplegada y operativa en producción** sobre infraestructura cloud en la Unión Europea.
+
+Despliegue definido en `infra/terraform/` (7 archivos, 1051 líneas):
 
 - **Red:** VPC con 3 AZ, subnets públicas y privadas, NAT Gateway, VPC Flow Logs (365 días).
 - **Compute:** EKS managed Kubernetes 1.30 con node group `t3.large` (2-6 nodos).

@@ -20,9 +20,9 @@ El presente documento resume el **estado actual de cada hito** del contrato, con
 | **H1** | Planificación y diseños | **95 %** | Prácticamente completado |
 | **H2** | Implementación intermedia | **75 %** | En curso (pendiente instalación física de tótems) |
 | **H3** | Integración y pruebas | **60 %** | En curso |
-| **H4** | Puesta en producción y aceptación (SAT) | **30 %** | Preparado, pendiente de ejecutar |
+| **H4** | Puesta en producción y aceptación (SAT) | **60 %** | Plataforma desplegada en producción; pendiente la aceptación (SAT) |
 | **C.1** | Mantenimiento y hosting (48 meses) | **Listo para iniciar** | Comienza tras la recepción |
-| | **Avance global (actuaciones subvencionadas)** | **≈ 65 %** | |
+| | **Avance global (actuaciones subvencionadas)** | **≈ 70 %** | |
 
 ---
 
@@ -50,18 +50,17 @@ El presente documento resume el **estado actual de cada hito** del contrato, con
 - **Formación al personal (≥ 10 h)** y su acta.
 - Simulacro de copia de seguridad y restauración.
 
-## H4 — Puesta en producción y aceptación (SAT) · 30 %
+## H4 — Puesta en producción y aceptación (SAT) · 60 %
 
-**Hecho:** infraestructura de despliegue preparada, telemetría inicial, guion de la prueba de aceptación y documentación técnica.
+**Hecho:** **plataforma desplegada y operativa en el entorno de producción** (infraestructura cloud en la Unión Europea), telemetría inicial, guion de la prueba de aceptación y documentación técnica.
 
 **Falta para cerrarlo:**
-- **Despliegue en producción** (requiere decisión de hosting y dominios).
 - **Prueba de aceptación (SAT)** presencial y firma del **acta de recepción**.
-- Consolidación de la documentación final «as-built» e inicio del soporte.
+- Consolidación de la documentación final «as-built» e inicio formal del soporte.
 
 ## C.1 — Mantenimiento y hosting (48 meses) · Listo para iniciar
 
-Las herramientas de mantenimiento ya están operativas: **informe mensual de servicio**, control de **niveles de servicio (ANS)**, gestión de incidencias, copias de seguridad y monitorización. Este periodo comienza formalmente tras la recepción (H4).
+El **hosting de producción ya está operativo** (infraestructura cloud en la UE). Las herramientas de mantenimiento están disponibles: **informe mensual de servicio**, control de **niveles de servicio (ANS)**, gestión de incidencias, copias de seguridad y monitorización. Este periodo comienza formalmente tras la recepción (H4).
 
 ---
 
@@ -75,9 +74,11 @@ Para completar los hitos pendientes solicitamos la siguiente colaboración (deta
 | 2 | **Accesos / documentación de la plataforma DTI actual** y de los sistemas municipales (web, app, sensores, WiFi) | H3 |
 | 3 | **Credenciales de redes sociales** (Facebook, Instagram, X) y **Google Analytics** del destino | H3 |
 | 4 | **Contenidos y datos iniciales** (recursos, eventos, preguntas frecuentes de la Oficina de Turismo, material gráfico) | H2–H3 |
-| 5 | **Decisión de hosting/dominios** y, si procede, integración con el acceso interno municipal (SSO) | H4 |
+| 5 | **Dominio(s) del Ayuntamiento** para publicar los servicios y, si procede, integración con el acceso interno municipal (SSO) | H4 |
 | 6 | **Contacto del Delegado de Protección de Datos** y textos legales/privacidad; autorización para el pentest | H3–H4 |
 | 7 | **Designación de interlocutores** y **fechas** para formación y prueba de aceptación (SAT) | H3–H4 |
+
+> Nota: el **alojamiento y el despliegue en producción ya están resueltos** por IT DIGITTAL; no se requiere decisión de hosting por parte del Ayuntamiento.
 
 > Por seguridad, las credenciales y tokens **no deben enviarse por correo en texto plano**; facilitaremos un canal seguro.
 
@@ -86,7 +87,7 @@ Para completar los hitos pendientes solicitamos la siguiente colaboración (deta
 1. Confirmar **ubicaciones y autorizaciones** de los tótems (desbloquea el H2).
 2. Facilitar **accesos e integraciones** y **credenciales** (desbloquea el H3).
 3. Acordar **fechas** de formación, pentest y **SAT** (cierre del H3 y H4).
-4. Decidir **hosting/dominios** para el despliegue en producción.
+4. Facilitar el/los **dominio(s)** del Ayuntamiento para publicar los servicios ya desplegados en producción.
 
 Quedamos a su disposición para una breve reunión de coordinación y agradecemos de antemano su colaboración.
 

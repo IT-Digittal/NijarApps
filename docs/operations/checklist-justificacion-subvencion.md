@@ -65,7 +65,7 @@
 
 | Entregable exigido | Estado | Evidencia / documento | Acción para justificar |
 |--------------------|--------|-----------------------|------------------------|
-| Puesta en marcha en producción | 🟡 | `infra/terraform/`, `infra/k8s/` (IaC lista) | Desplegar en cloud municipal |
+| Puesta en marcha en producción | ✅ | **Desplegado y operativo** en producción (cloud UE); `infra/terraform/`, `infra/k8s/` | — |
 | **Pruebas de aceptación (SAT) con el Ayuntamiento** | 🗂️ | `docs/operations/checklist-evidencias-sat.md` (guion) | Ejecutar SAT y firmar **acta de recepción** |
 | Documentación **as-built** | 🟡 | `docs/` (arquitectura, manuales, operaciones) | Consolidar versión as-built final |
 | Inicio del periodo de soporte | 🟡 | Helpdesk/ANS (`/incidencias`), monitorización | Activar soporte tras SAT |
@@ -118,7 +118,7 @@
 | H1 | Diseños, arquitectura, Plan TD preliminar | Actas kick-off y Go/No-Go S2 | — |
 | H2 | Chatbot, plataforma, Plan TD definitivo | Actas de demo y Go/No-Go S5 | Instalación física de tótems |
 | H3 | Pruebas func., accesibilidad, dashboards | Acta formación, Go/No-Go S7 | Pentest, integración verticales reales |
-| H4 | IaC, telemetría, guion SAT, as-built | **Acta de recepción (SAT)** | Despliegue producción |
+| H4 | Producción desplegada, telemetría, guion SAT, as-built | **Acta de recepción (SAT)** | — |
 | C.1 | Informe mensual, ANS, DR, ticketing | — | Reportes recurrentes |
 
 ### Acciones prioritarias para cerrar la justificación
@@ -127,7 +127,7 @@
 3. **Impartir la formación ≥10 h** y firmar acta (H3).
 4. **Ejecutar el SAT** y firmar el **acta de recepción** (H4).
 5. **Emitir las actas de gobernanza** (kick-off, seguimiento, Go/No-Go).
-6. **Desplegar en producción** (depende de hosting/dominios — ver correo de solicitud §5).
+6. **Facilitar el dominio municipal** para publicar los servicios ya desplegados en producción.
 7. **Aplicar la publicidad PRTR/UE** y las referencias en facturas/certificaciones.
 
 > Documentos de apoyo ya disponibles: `checklist-evidencias-sat.md`, `MAPA-FUNCIONAL.md`, `plan-director/`, `big-data/` (metodología + plan de mejora), `security/` (pentest + DPIA), `operations/` (runbook, DR, SLA, continuidad, informe mensual de ejemplo) y `correo-solicitud-ayuntamiento.md`.

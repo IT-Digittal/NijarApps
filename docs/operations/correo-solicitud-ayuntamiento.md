@@ -61,12 +61,12 @@ Camino crítico del proyecto.
 - **Acometidas** eléctricas y de datos (o conformidad para su ejecución) en los puntos de instalación.
 - Contacto del **órgano gestor del Parque** y del área municipal de obras/urbanismo.
 
-## 5. Infraestructura, hosting y dominios
+## 5. Dominios e integración de acceso
 
-- Decisión sobre el **proveedor cloud** (UE) y si se usa la cuenta municipal o la gestionamos como administradores delegados.
-- **Dominio(s)** y gestión de **DNS** para los servicios (panel, API, tótems) y emisión de certificados.
+> El **alojamiento y el despliegue en producción ya están resueltos y operativos** (infraestructura cloud en la UE, gestionada por IT DIGITTAL). Solo necesitamos lo siguiente:
+
+- **Dominio(s)** del Ayuntamiento y gestión de **DNS** para publicar los servicios (panel, API, tótems) y emitir los certificados.
 - **SSO / Directorio Activo** municipal, si desean integrar el acceso de los usuarios internos.
-- Confirmación de la **titularidad municipal de las credenciales** (cloud, dominios, certificados).
 
 ## 6. Seguridad, ENS y protección de datos (RGPD)
 
@@ -96,7 +96,7 @@ Camino crítico del proyecto.
 | 🔴 Alta | API/acceso del DTI actual (§1) | Integración del panel central |
 | 🔴 Alta | Tokens de RRSS + GA4 (§2) | Activar observatorio y eficacia digital reales |
 | 🟠 Media | Contenidos y FAQs oficiales (§3) | Carga inicial y validación del chatbot |
-| 🟠 Media | Hosting, dominios, DNS, SSO (§5) | Puesta en producción |
+| 🟠 Media | Dominios, DNS, SSO (§5) — hosting ya resuelto | Publicación en el dominio municipal |
 | 🟠 Media | DPD, privacidad, ventana de pentest (§6) | Cumplimiento ENS/RGPD y SAT |
 | 🟢 Normal | Formularios (§7), interlocución y formación (§8) | Operativa y cierre de hitos |
 

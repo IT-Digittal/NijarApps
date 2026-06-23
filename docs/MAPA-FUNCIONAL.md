@@ -99,10 +99,10 @@ que requieren claves externas y datos reales de movilidad.
 
 | Funcionalidad | Componente | Estado |
 |---------------|------------|--------|
-| Hosting AWS UE Multi-AZ | `infra/terraform/` | ✅ Definido |
-| EKS managed Kubernetes | `infra/k8s/` | ✅ Definido |
-| Backups multinivel | RDS + AWS Backup vault + S3 | ✅ Definido |
-| Monitoring 24/7 | Prometheus + Grafana + Loki | ✅ Definido |
+| Hosting AWS UE Multi-AZ | `infra/terraform/` | ✅ Desplegado en producción |
+| EKS managed Kubernetes | `infra/k8s/` | ✅ Desplegado en producción |
+| Backups multinivel | RDS + AWS Backup vault + S3 | ✅ Operativo |
+| Monitoring 24/7 | Prometheus + Grafana + Loki | ✅ Operativo |
 | 9 alertas alineadas a SLAs | `infra/observability/alerts.yaml` | ✅ |
 | Pentest pre-SAT + anual | `docs/security/plan-pentest-sat.md` | ✅ |
 | Plan DR (RTO 4h / RPO 1h) | `docs/operations/disaster-recovery.md` | ✅ |
