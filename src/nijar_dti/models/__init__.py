@@ -10,6 +10,8 @@ Entidades del modelo semántico de la plataforma DTI Níjar:
 - Usuario (RBAC)
 """
 
+from nijar_dti.models.campana import Campana
+from nijar_dti.models.cliente import Cliente
 from nijar_dti.models.contenido import Contenido
 from nijar_dti.models.contexto import ContextoTuristico
 from nijar_dti.models.evento_turistico import EventoTuristico
@@ -25,6 +27,8 @@ from nijar_dti.models.visita import Visita
 
 __all__ = [
     "FAQ",
+    "Campana",
+    "Cliente",
     "Contenido",
     "ContextoTuristico",
     "EventoTuristico",

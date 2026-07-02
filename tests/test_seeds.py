@@ -2,6 +2,12 @@
 
 from __future__ import annotations
 
+from nijar_dti.data.seeds.campanas import CAMPANAS_SEED, generar_campanas_seed
+from nijar_dti.data.seeds.cliente import CLIENTE_SEED
+from nijar_dti.data.seeds.demo_data import (
+    generar_contenidos_seed,
+    generar_visitas_web_app_seed,
+)
 from nijar_dti.data.seeds.faqs import FAQS_SEED
 from nijar_dti.data.seeds.recursos_turisticos import RECURSOS_SEED
 from nijar_dti.data.seeds.sensores import SENSORES_SEED
@@ -94,3 +100,87 @@ class TestFAQsSeed:
                 assert f.get("nivel_confianza", "alta") == "alta", (
                     f"FAQ de emergencia {f['intent']} no es de alta confianza"
                 )
+
+
+class TestClienteSeed:
+    """Ficha general del cliente / Ayuntamiento (bloque 1 del pliego)."""
+
+    def test_campos_identificacion(self):
+        assert CLIENTE_SEED["nombre"]
+        assert CLIENTE_SEED["proyecto"]
+        assert CLIENTE_SEED["responsable_municipal"].get("email")
+
+    def test_idiomas_pliego(self):
+        # El pliego exige ES/EN/FR/DE activos
+        assert set(CLIENTE_SEED["idiomas_activos"]) >= {"es", "en", "fr", "de"}
+
+    def test_canales_oficiales(self):
+        canales = CLIENTE_SEED["canales_oficiales"]
+        for clave in ("web", "app", "facebook", "instagram"):
+            assert canales.get(clave), f"Falta canal oficial: {clave}"
+
+    def test_responsables_tecnicos(self):
+        areas = {r["area"] for r in CLIENTE_SEED["responsables_tecnicos"]}
+        # TI, turismo, comunicación y mantenimiento (bloque 1)
+        assert len(areas) >= 4
+
+
+class TestCampanasSeed:
+    """Campañas de promoción turística (bloque 9 del pliego)."""
+
+    def test_minimo_campanas(self):
+        assert len(CAMPANAS_SEED) >= 3
+
+    def test_slugs_unicos(self):
+        slugs = [c["slug"] for c in CAMPANAS_SEED]
+        assert len(slugs) == len(set(slugs))
+
+    def test_estados_validos(self):
+        validos = {"planificada", "activa", "finalizada", "cancelada"}
+        for c in CAMPANAS_SEED:
+            assert c["estado"] in validos, f"Estado inválido en {c['slug']}"
+
+    def test_cubre_pasada_activa_planificada(self):
+        estados = {c["estado"] for c in CAMPANAS_SEED}
+        # La demo debe tener al menos una finalizada (con resultados) y una activa
+        assert "finalizada" in estados
+        assert "activa" in estados
+
+    def test_finalizadas_tienen_resultados(self):
+        for c in CAMPANAS_SEED:
+            if c["estado"] == "finalizada":
+                assert c.get("resultados"), f"Campaña finalizada sin resultados: {c['slug']}"
+
+    def test_generar_produce_fechas_coherentes(self):
+        for c in generar_campanas_seed():
+            assert c["fecha_inicio"] < c["fecha_fin"]
+
+
+class TestDemoAnaliticaSeed:
+    """Analítica web/app + movilidad y contenidos del CMS."""
+
+    def test_visitas_cubre_web_app_wifi_ble(self):
+        tipos = {v["tipo"] for v in generar_visitas_web_app_seed(["rid-1", "rid-2"])}
+        assert {"web_vista", "app_vista", "wifi_conexion", "proximidad_ble"} <= tipos
+
+    def test_visitas_web_tienen_dispositivo_y_origen(self):
+        visitas = generar_visitas_web_app_seed([])
+        web = [v for v in visitas if v["tipo"] == "web_vista"]
+        assert web
+        for v in web:
+            attrs = v["atributos"]
+            assert "dispositivo" in attrs
+            assert "pais" in attrs
+            assert "rebote" in attrs
+
+    def test_contenidos_cubren_ciclo_editorial(self):
+        estados = {c["estado"] for c in generar_contenidos_seed([])}
+        # El flujo editorial completo alimenta el KPI de tiempo de publicación
+        assert {"borrador", "pendiente_aprobacion", "aprobado", "publicado", "archivado"} <= estados
+
+    def test_publicados_tienen_fechas_para_kpi(self):
+        for c in generar_contenidos_seed([]):
+            if c["estado"] == "publicado":
+                assert c["fecha_aprobacion"] is not None
+                assert c["fecha_publicacion"] is not None
+                assert c["fecha_publicacion"] >= c["fecha_aprobacion"]

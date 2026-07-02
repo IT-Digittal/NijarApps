@@ -326,6 +326,76 @@ CREATE INDEX IF NOT EXISTS ix_opiniones_temas_gin           ON opiniones USING G
 CREATE INDEX IF NOT EXISTS ix_opiniones_externo             ON opiniones(fuente_id_externo);
 
 -- =============================================================================
+-- CLIENTE / AYUNTAMIENTO (ficha general — bloque 1 del pliego)
+-- =============================================================================
+CREATE TABLE IF NOT EXISTS clientes (
+    id                        UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    nombre                    VARCHAR(255) NOT NULL,
+    area_responsable          VARCHAR(255),
+    proyecto                  VARCHAR(255),
+    descripcion               TEXT,
+    cif                       VARCHAR(20),
+    direccion                 VARCHAR(500),
+    municipio                 VARCHAR(100) NOT NULL DEFAULT 'Níjar',
+    provincia                 VARCHAR(100) NOT NULL DEFAULT 'Almería',
+    responsable_municipal     JSONB,     -- {nombre, cargo, email, telefono}
+    responsables_tecnicos     JSONB,     -- [{area, nombre, email, telefono}]
+    canales_oficiales         JSONB,     -- {web, app, facebook, instagram, otros[]}
+    idiomas_activos           TEXT[],    -- ['es','en','fr','de']
+    fecha_inicio_explotacion  TIMESTAMPTZ,
+    fecha_fin_mantenimiento   TIMESTAMPTZ,
+    hitos                     JSONB,     -- [{nombre, fecha, estado}]
+    activo                    BOOLEAN NOT NULL DEFAULT TRUE,
+    metadata_adicional        JSONB,
+    created_at                TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at                TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_by                UUID,
+    updated_by                UUID,
+    deleted_at                TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS ix_clientes_nombre ON clientes(nombre);
+
+-- =============================================================================
+-- CAMPAÑAS DE PROMOCIÓN TURÍSTICA (bloque 9 del pliego)
+-- =============================================================================
+CREATE TABLE IF NOT EXISTS campanas (
+    id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    nombre              VARCHAR(255) NOT NULL,
+    fecha_inicio        TIMESTAMPTZ NOT NULL,
+    fecha_fin           TIMESTAMPTZ NOT NULL,
+    slug                VARCHAR(120) UNIQUE,
+    descripcion         TEXT,
+    objetivo            VARCHAR(30) NOT NULL DEFAULT 'difusion',
+    publico_objetivo    VARCHAR(255),
+    canales             TEXT[],
+    presupuesto         NUMERIC(12,2),
+    landing_url         VARCHAR(500),
+    recurso_id          UUID REFERENCES recursos_turisticos(id) ON DELETE SET NULL,
+    estado              VARCHAR(20) NOT NULL DEFAULT 'planificada',
+    kpis_objetivo       JSONB,     -- objetivos numéricos de la campaña
+    resultados          JSONB,     -- resultados agregados calculados
+    etiquetas           TEXT[],
+    metadata_adicional  JSONB,
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_by          UUID,
+    updated_by          UUID,
+    deleted_at          TIMESTAMPTZ,
+    CONSTRAINT chk_campanas_estado CHECK (
+        estado IN ('planificada','activa','finalizada','cancelada')
+    )
+);
+CREATE INDEX IF NOT EXISTS ix_campanas_fechas        ON campanas(fecha_inicio, fecha_fin);
+CREATE INDEX IF NOT EXISTS ix_campanas_estado_inicio ON campanas(estado, fecha_inicio);
+CREATE INDEX IF NOT EXISTS ix_campanas_recurso_id    ON campanas(recurso_id);
+
+-- Nota: la tabla `contenidos` (CMS) incorpora además las columnas
+--   fecha_aprobacion TIMESTAMPTZ  y  fecha_publicacion TIMESTAMPTZ
+-- para medir el KPI de tiempo de publicación (≤ 24 h desde la aprobación),
+-- junto con el estado ampliado del flujo editorial
+-- (borrador → pendiente_aprobacion → aprobado → programado → publicado → archivado).
+
+-- =============================================================================
 -- VISTAS Y ROLES (referencia — implementación opcional)
 -- =============================================================================
 -- Vista materializada para KPI de sentimiento diario (refresco vía cron):

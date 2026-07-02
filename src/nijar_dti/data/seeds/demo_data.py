@@ -156,18 +156,102 @@ _OPINION_TEMPLATES = [
         "idioma": "es",
         "temas": ["chatbot", "tecnologia", "turismo"],
     },
+    {
+        "fuente": "tripadvisor",
+        "texto": "Great visit to San José. Beautiful beaches and good restaurants, though parking is a challenge in August.",
+        "sentimiento": "positivo",
+        "score": 0.74,
+        "idioma": "en",
+        "temas": ["playa", "gastronomia", "transporte"],
+    },
+    {
+        "fuente": "google_reviews",
+        "texto": "Oficina de turismo de Níjar muy atenta, nos dieron mapas y rutas en varios idiomas. Recomendable.",
+        "sentimiento": "positivo",
+        "score": 0.86,
+        "idioma": "es",
+        "temas": ["informacion", "servicios", "atencion"],
+    },
+    {
+        "fuente": "tripadvisor",
+        "texto": "Las Negras is lovely but the beach could be cleaner after busy weekends. More bins needed.",
+        "sentimiento": "negativo",
+        "score": 0.28,
+        "idioma": "en",
+        "temas": ["limpieza", "playa", "servicios"],
+    },
+    {
+        "fuente": "google_reviews",
+        "texto": "Rodalquilar mine area is amazing but signage on the trails is poor, we got a bit lost.",
+        "sentimiento": "neutro",
+        "score": 0.48,
+        "idioma": "en",
+        "temas": ["ruta", "senalizacion", "patrimonio"],
+    },
+    {
+        "fuente": "facebook",
+        "texto": "Nos encantó la Noche de las Salinas, gran ambiente y organización. ¡Repetiremos! #ViveNíjar",
+        "sentimiento": "positivo",
+        "score": 0.9,
+        "idioma": "es",
+        "temas": ["evento", "musica", "cultura"],
+    },
+    {
+        "fuente": "twitter_x",
+        "texto": "Der Bus nach San José war überfüllt und unpünktlich. Der öffentliche Verkehr muss besser werden.",
+        "sentimiento": "negativo",
+        "score": 0.24,
+        "idioma": "de",
+        "temas": ["transporte", "movilidad"],
+    },
 ]
 
-_NUM_OPINIONES = 60
+# Reparto de fuentes para el alcance estimado (seguidores medios por plataforma)
+_ALCANCE_BASE = {
+    "twitter_x": 1800,
+    "instagram": 3200,
+    "facebook": 2500,
+    "tripadvisor": 900,
+    "google_reviews": 600,
+}
+
+# Menciones etiquetadas dentro de la ventana de una campaña (para KPI de eficacia).
+# slug -> (dias_desde, dias_hasta) relativo a _NOW; alineado con campanas.py.
+_CAMPANA_VENTANAS = {
+    "primavera-2026": (75, 120),
+    "artesania-2026": (40, 70),
+    "verano-2026": (0, 10),
+}
+
+_NUM_OPINIONES = 90
+
+
+def _campana_para(dias_atras: int) -> str | None:
+    for slug, (desde, hasta) in _CAMPANA_VENTANAS.items():
+        if desde <= dias_atras <= hasta:
+            return slug
+    return None
 
 
 def generar_opiniones_seed() -> list[dict]:
     opiniones = []
     for i in range(_NUM_OPINIONES):
         tmpl = _OPINION_TEMPLATES[i % len(_OPINION_TEMPLATES)]
-        dias_atras = random.randint(0, 30)
+        # Repartir en 120 días para cubrir las ventanas de campaña.
+        dias_atras = random.randint(0, 120)
         horas_atras = random.randint(0, 23)
         ts = _NOW - timedelta(days=dias_atras, hours=horas_atras)
+        base_alcance = _ALCANCE_BASE.get(tmpl["fuente"], 800)
+        likes = random.randint(2, 120)
+        metricas = {
+            "likes": likes,
+            "comentarios": random.randint(0, 25),
+            "compartidos": random.randint(0, 40),
+            "alcance_estimado": base_alcance + random.randint(-400, 1200),
+        }
+        campana = _campana_para(dias_atras)
+        if campana:
+            metricas["campana"] = campana
         opiniones.append({
             "fuente": tmpl["fuente"],
             "fuente_id_externo": f"demo-{i:04d}",
@@ -175,9 +259,10 @@ def generar_opiniones_seed() -> list[dict]:
             "publicado_en": ts,
             "idioma": tmpl["idioma"],
             "sentimiento": tmpl["sentimiento"],
-            "score_sentimiento": tmpl["score"] + random.uniform(-0.05, 0.05),
+            "score_sentimiento": round(tmpl["score"] + random.uniform(-0.05, 0.05), 4),
             "temas": tmpl["temas"],
-            "autor_handle": f"@demo_user_{i % 20}",
+            "metricas": metricas,
+            "autor_handle": f"@demo_user_{i % 25}",
             "capturado_en": ts + timedelta(minutes=random.randint(1, 30)),
         })
     return opiniones
@@ -224,7 +309,18 @@ _CHATBOT_SAMPLES = [
     ("normativa_parque", "es", "¿Qué está prohibido en el parque?", "Está prohibido hacer fuego, acampar fuera de zonas habilitadas...", "alta", 0.91),
 ]
 
-_NUM_INTERACCIONES_CHATBOT = 45
+# Preguntas fuera de dominio / no cubiertas (KPI de "preguntas sin respuesta").
+_CHATBOT_NO_RESUELTAS = [
+    ("es", "¿Puedo pagar el parking con bizum en Mónsul?"),
+    ("en", "Is there a direct bus from Almería airport to San José at night?"),
+    ("fr", "Peut-on louer des vélos électriques à Rodalquilar ?"),
+    ("de", "Gibt es einen Hundestrand in der Nähe von Las Negras?"),
+    ("es", "¿Hay wifi gratis en la playa de los Genoveses?"),
+]
+
+_NUM_INTERACCIONES_CHATBOT = 60
+# ~15 % de las consultas quedan sin resolver (derivación / base de conocimiento)
+_NUM_CHATBOT_NO_RESUELTAS = 9
 
 
 # ---------- Eventos turísticos (próximas 2 semanas) ----------
@@ -494,22 +590,46 @@ def generar_eventos_seed(ref: datetime | None = None) -> list[dict]:
 
 def generar_interacciones_chatbot_seed() -> list[dict]:
     interacciones = []
+    # Consultas resueltas
     for i in range(_NUM_INTERACCIONES_CHATBOT):
         sample = _CHATBOT_SAMPLES[i % len(_CHATBOT_SAMPLES)]
         intent, idioma, pregunta, respuesta, nivel, score = sample
-        dias_atras = random.randint(0, 14)
+        dias_atras = random.randint(0, 30)
         ts = _NOW - timedelta(days=dias_atras, hours=random.randint(0, 23))
         interacciones.append({
-            "sesion_id": f"demo-session-{i % 25:03d}",
-            "canal": random.choice(["web", "totem"]),
+            "sesion_id": f"demo-session-{i % 30:03d}",
+            "canal": random.choice(["web", "web", "app", "totem"]),
             "idioma": idioma,
             "pregunta": pregunta,
             "respuesta": respuesta,
             "intent_detectado": intent,
             "nivel_confianza": nivel,
-            "score_confianza": score + random.uniform(-0.03, 0.03),
-            "util": random.choice([True, True, True, None]),  # 75% positivo
+            "score_confianza": round(score + random.uniform(-0.03, 0.03), 3),
+            # ~82 % útil, algo de feedback negativo y sin feedback
+            "util": random.choice([True, True, True, True, False, None]),
             "latencia_ms": random.randint(50, 400),
+        })
+    # Consultas no resueltas (fuera de dominio → derivación a humano)
+    for j in range(_NUM_CHATBOT_NO_RESUELTAS):
+        idioma, pregunta = _CHATBOT_NO_RESUELTAS[j % len(_CHATBOT_NO_RESUELTAS)]
+        derivada = j % 3 == 0
+        interacciones.append({
+            "sesion_id": f"demo-session-nr-{j % 20:03d}",
+            "canal": random.choice(["web", "app", "totem"]),
+            "idioma": idioma,
+            "pregunta": pregunta,
+            "respuesta": (
+                "No dispongo de información suficiente sobre eso. Te derivo con la "
+                "oficina de turismo de Níjar (turismo@nijar.es)."
+                if derivada
+                else "Lo siento, todavía no tengo una respuesta para esa consulta."
+            ),
+            "intent_detectado": None,
+            "nivel_confianza": "fuera_de_dominio",
+            "score_confianza": round(random.uniform(0.1, 0.45), 3),
+            "util": random.choice([False, False, None]),
+            "comentario": "derivada_a_humano" if derivada else "pregunta_no_cubierta",
+            "latencia_ms": random.randint(60, 500),
         })
     return interacciones
 
@@ -610,3 +730,267 @@ def generar_incidencias_seed() -> list[dict]:
         },
     ]
     return incidencias
+
+
+# ---------- Analítica web/app "Vive Níjar" y movilidad (últimos 30 días) ----------
+
+# Origen geográfico (procedencia del visitante) con peso aproximado.
+_ORIGENES = [
+    ("ES", "Almería", 0.28), ("ES", "Madrid", 0.14), ("ES", "Granada", 0.08),
+    ("ES", "Barcelona", 0.07), ("GB", "Londres", 0.09), ("DE", "Múnich", 0.08),
+    ("FR", "París", 0.07), ("NL", "Ámsterdam", 0.05), ("BE", "Bruselas", 0.03),
+    ("IT", "Milán", 0.03), ("US", "Nueva York", 0.02),
+]
+_DISPOSITIVOS = [("movil", 0.68), ("escritorio", 0.22), ("tablet", 0.10)]
+_PANTALLAS_WEB = [
+    "inicio", "playas", "rutas", "eventos", "mapa", "recurso-detalle",
+    "servicios", "como-llegar", "chatbot", "buscador",
+]
+_BUSQUEDAS = [
+    "mónsul aparcamiento", "rutas senderismo", "playas nudistas", "san josé restaurantes",
+    "cabo de gata mapa", "eventos julio", "cala de enmedio", "rodalquilar mina",
+    "horario oficina turismo", "alojamiento rural",
+]
+_IDIOMAS_APP = [("es", 0.55), ("en", 0.22), ("de", 0.12), ("fr", 0.11)]
+
+
+def _elegir_pesado(opciones: list[tuple]) -> tuple:
+    """Elige una tupla (…, peso) según su peso (último elemento)."""
+    r = random.random()
+    acum = 0.0
+    for op in opciones:
+        acum += op[-1]
+        if r <= acum:
+            return op
+    return opciones[-1]
+
+
+_NUM_VISITAS_WEB = 260
+_NUM_VISITAS_APP = 140
+_NUM_CONEXIONES_WIFI = 90
+_NUM_PROXIMIDAD_BLE = 70
+
+
+def generar_visitas_web_app_seed(recursos_ids: list[str] | None = None) -> list[dict]:
+    """Genera visitas web/app, conexiones WiFi y detecciones BLE (anonimizadas).
+
+    Alimenta los KPIs del pliego de uso de web/app (usuarios, sesiones, páginas
+    vistas, origen, idioma, dispositivo, rebote, búsquedas, errores) y de
+    movilidad/afluencia (WiFi único, proximidad a POIs).
+
+    Args:
+        recursos_ids: lista de UUID (str) de recursos para asociar algunas
+            visitas a POIs concretos.
+    """
+    recursos_ids = recursos_ids or []
+    visitas: list[dict] = []
+
+    def _hash(n: int) -> str:
+        return hashlib.sha256(f"visitor-web-{n}".encode()).hexdigest()
+
+    # Web (páginas vistas, sesiones, rebote, errores, búsquedas)
+    for i in range(_NUM_VISITAS_WEB):
+        dias = random.randint(0, 30)
+        ts = _NOW - timedelta(days=dias, hours=random.randint(6, 23), minutes=random.randint(0, 59))
+        pais, ciudad, _ = _elegir_pesado(_ORIGENES)
+        disp, _ = _elegir_pesado(_DISPOSITIVOS)
+        idioma, _ = _elegir_pesado(_IDIOMAS_APP)
+        pantalla = random.choice(_PANTALLAS_WEB)
+        atributos = {
+            "pantalla": pantalla,
+            "dispositivo": disp,
+            "pais": pais,
+            "ciudad": ciudad,
+            "duracion_seg": random.randint(5, 480),
+            "rebote": random.random() < 0.34,  # tasa de rebote ~34 %
+            "error": random.random() < 0.02,  # 2 % errores técnicos (SLA)
+        }
+        if random.random() < 0.25:
+            atributos["busqueda"] = random.choice(_BUSQUEDAS)
+        if pantalla == "recurso-detalle" and recursos_ids:
+            recurso_id = random.choice(recursos_ids)
+        else:
+            recurso_id = None
+        visitas.append({
+            "tipo": "web_vista",
+            "ocurrido_en": ts,
+            "visitante_hash": _hash(i % 130),
+            "recurso_id": recurso_id,
+            "idioma": idioma,
+            "canal": "web",
+            "atributos": atributos,
+        })
+
+    # App Vive Níjar (pantallas, clics en rutas/POIs, descargas de mapas)
+    eventos_app = ["ver_ruta", "abrir_mapa", "descargar_mapa", "clic_poi", "ver_evento", "abrir_chatbot"]
+    for i in range(_NUM_VISITAS_APP):
+        dias = random.randint(0, 30)
+        ts = _NOW - timedelta(days=dias, hours=random.randint(7, 22), minutes=random.randint(0, 59))
+        pais, ciudad, _ = _elegir_pesado(_ORIGENES)
+        idioma, _ = _elegir_pesado(_IDIOMAS_APP)
+        recurso_id = random.choice(recursos_ids) if recursos_ids and random.random() < 0.6 else None
+        visitas.append({
+            "tipo": "app_vista",
+            "ocurrido_en": ts,
+            "visitante_hash": _hash(1000 + i % 80),
+            "recurso_id": recurso_id,
+            "idioma": idioma,
+            "canal": "app",
+            "atributos": {
+                "evento": random.choice(eventos_app),
+                "dispositivo": random.choice(["movil", "tablet"]),
+                "pais": pais,
+                "ciudad": ciudad,
+                "duracion_seg": random.randint(10, 360),
+            },
+        })
+
+    # WiFi público (dispositivos únicos diarios — afluencia aproximada)
+    for i in range(_NUM_CONEXIONES_WIFI):
+        dias = random.randint(0, 30)
+        ts = _NOW - timedelta(days=dias, hours=random.randint(9, 21), minutes=random.randint(0, 59))
+        visitas.append({
+            "tipo": "wifi_conexion",
+            "ocurrido_en": ts,
+            "visitante_hash": _hash(2000 + i % 60),
+            "canal": "wifi_plaza_glorieta",
+            "idioma": None,
+            "atributos": {
+                "tiempo_conexion_seg": random.randint(120, 5400),
+                "zona": "plaza_glorieta",
+            },
+        })
+
+    # Proximidad BLE (beacons en POIs — visitas a puntos de interés)
+    for i in range(_NUM_PROXIMIDAD_BLE):
+        dias = random.randint(0, 30)
+        ts = _NOW - timedelta(days=dias, hours=random.randint(9, 20), minutes=random.randint(0, 59))
+        recurso_id = random.choice(recursos_ids) if recursos_ids else None
+        visitas.append({
+            "tipo": "proximidad_ble",
+            "ocurrido_en": ts,
+            "visitante_hash": _hash(3000 + i % 50),
+            "recurso_id": recurso_id,
+            "canal": "beacon",
+            "idioma": None,
+            "atributos": {
+                "permanencia_seg": random.randint(30, 1800),
+                "rssi": random.randint(-90, -55),
+            },
+        })
+
+    return visitas
+
+
+# ---------- Contenidos del CMS con ciclo editorial (KPI tiempo de publicación) ----------
+
+_CONTENIDOS_SEED = [
+    {
+        "titulo": "Guía de playas vírgenes de Cabo de Gata",
+        "cuerpo": "Recorrido por las calas y playas más singulares del Parque Natural: Mónsul, "
+                  "Genoveses, Cala de Enmedio y el Playazo de Rodalquilar, con consejos de acceso "
+                  "responsable y aforo.",
+        "canales": ["web", "app", "totem"],
+        "etiquetas": ["playas", "guia", "naturaleza"],
+        "estado": "publicado",
+        "delta_creado_dias": 20, "horas_a_aprobacion": 30, "horas_aprob_a_pub": 6,
+    },
+    {
+        "titulo": "Rutas de senderismo para el otoño",
+        "cuerpo": "Selección de senderos de dificultad baja y media ideales para los meses de "
+                  "temporada media, con desniveles, duración y puntos de interés.",
+        "canales": ["web", "app"],
+        "etiquetas": ["rutas", "senderismo", "otono"],
+        "estado": "publicado",
+        "delta_creado_dias": 14, "horas_a_aprobacion": 18, "horas_aprob_a_pub": 20,
+    },
+    {
+        "titulo": "La artesanía de Níjar: cerámica y jarapas",
+        "cuerpo": "Historia y talleres vivos de la cerámica nijareña y las jarapas, un textil "
+                  "tradicional tejido a mano en el casco histórico.",
+        "canales": ["web", "totem"],
+        "etiquetas": ["artesania", "cultura", "compras"],
+        "estado": "publicado",
+        "delta_creado_dias": 10, "horas_a_aprobacion": 40, "horas_aprob_a_pub": 12,
+    },
+    {
+        "titulo": "Agenda de eventos del verano",
+        "cuerpo": "Conciertos, mercados artesanales, cine al aire libre y actividades náuticas "
+                  "programadas para la temporada estival.",
+        "canales": ["web", "app", "totem"],
+        "etiquetas": ["eventos", "agenda", "verano"],
+        "estado": "programado",
+        "delta_creado_dias": 5, "horas_a_aprobacion": 10, "horas_aprob_a_pub": None,
+    },
+    {
+        "titulo": "Consejos de turismo sostenible en el Parque Natural",
+        "cuerpo": "Buenas prácticas para disfrutar del espacio protegido: gestión de residuos, "
+                  "respeto a la fauna y uso del transporte público.",
+        "canales": ["web", "app"],
+        "etiquetas": ["sostenibilidad", "parque", "concienciacion"],
+        "estado": "aprobado",
+        "delta_creado_dias": 3, "horas_a_aprobacion": 22, "horas_aprob_a_pub": None,
+    },
+    {
+        "titulo": "Astroturismo: cielos de Cabo de Gata",
+        "cuerpo": "Los mejores miradores para la observación de estrellas y consejos para la "
+                  "fotografía nocturna en el Parque Natural.",
+        "canales": ["web"],
+        "etiquetas": ["astroturismo", "naturaleza", "fotografia"],
+        "estado": "pendiente_aprobacion",
+        "delta_creado_dias": 2, "horas_a_aprobacion": None, "horas_aprob_a_pub": None,
+    },
+    {
+        "titulo": "Gastronomía del mar: recetas de Níjar",
+        "cuerpo": "Borrador sobre platos típicos de pescado y marisco, gurullos y ajoblanco de "
+                  "la cocina local. Pendiente de completar imágenes.",
+        "canales": ["web", "app"],
+        "etiquetas": ["gastronomia", "cultura"],
+        "estado": "borrador",
+        "delta_creado_dias": 1, "horas_a_aprobacion": None, "horas_aprob_a_pub": None,
+    },
+    {
+        "titulo": "Campaña Primavera 2026 (cerrada)",
+        "cuerpo": "Contenido de la campaña de primavera ya finalizada, archivado para consulta "
+                  "histórica y trazabilidad.",
+        "canales": ["web", "app"],
+        "etiquetas": ["primavera", "campana", "archivo"],
+        "estado": "archivado",
+        "delta_creado_dias": 110, "horas_a_aprobacion": 24, "horas_aprob_a_pub": 8,
+    },
+]
+
+
+def generar_contenidos_seed(recursos_ids: list[str] | None = None) -> list[dict]:
+    """Genera piezas de contenido del CMS en distintos estados del flujo editorial.
+
+    Incluye ``fecha_aprobacion`` y ``fecha_publicacion`` para poder medir el KPI
+    del pliego "tiempo de publicación de contenidos" (≤ 24 h desde la aprobación).
+    """
+    recursos_ids = recursos_ids or []
+    contenidos = []
+    for i, c in enumerate(_CONTENIDOS_SEED):
+        creado = _NOW - timedelta(days=c["delta_creado_dias"])
+        fecha_aprobacion = None
+        fecha_publicacion = None
+        publicar_desde = None
+        if c["horas_a_aprobacion"] is not None:
+            fecha_aprobacion = creado + timedelta(hours=c["horas_a_aprobacion"])
+        if fecha_aprobacion is not None and c["horas_aprob_a_pub"] is not None:
+            fecha_publicacion = fecha_aprobacion + timedelta(hours=c["horas_aprob_a_pub"])
+            publicar_desde = fecha_publicacion
+        if c["estado"] == "programado":
+            # Programado a futuro
+            publicar_desde = _NOW + timedelta(days=random.randint(2, 10))
+        contenidos.append({
+            "titulo": c["titulo"],
+            "cuerpo": c["cuerpo"],
+            "canales": c["canales"],
+            "etiquetas": c["etiquetas"],
+            "estado": c["estado"],
+            "recurso_id": (recursos_ids[i % len(recursos_ids)] if recursos_ids else None),
+            "fecha_aprobacion": fecha_aprobacion,
+            "fecha_publicacion": fecha_publicacion,
+            "publicar_desde": publicar_desde,
+        })
+    return contenidos

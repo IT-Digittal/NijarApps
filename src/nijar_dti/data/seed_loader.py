@@ -20,17 +20,24 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from nijar_dti.core.database import AsyncSessionLocal
 from nijar_dti.data.seeds.admin_user import ADMIN_USER_SEED, admin_password_hash
+from nijar_dti.data.seeds.campanas import generar_campanas_seed
+from nijar_dti.data.seeds.cliente import CLIENTE_SEED
 from nijar_dti.data.seeds.demo_data import (
+    generar_contenidos_seed,
     generar_eventos_seed,
     generar_incidencias_seed,
     generar_interacciones_chatbot_seed,
     generar_observaciones_seed,
     generar_opiniones_seed,
     generar_visitas_totem_seed,
+    generar_visitas_web_app_seed,
 )
 from nijar_dti.data.seeds.faqs import FAQS_SEED
 from nijar_dti.data.seeds.recursos_turisticos import RECURSOS_SEED
 from nijar_dti.data.seeds.sensores import SENSORES_SEED
+from nijar_dti.models.campana import Campana
+from nijar_dti.models.cliente import Cliente
+from nijar_dti.models.contenido import Contenido
 from nijar_dti.models.contexto import ContextoTuristico
 from nijar_dti.models.evento_turistico import EventoTuristico
 from nijar_dti.models.faq import FAQ, InteraccionChatbot, NivelConfianza
@@ -313,19 +320,101 @@ async def seed_demo_incidencias(db: AsyncSession) -> None:
     log.info("Incidencias demo creadas: %d", len(datos))
 
 
+async def seed_cliente(db: AsyncSession) -> None:
+    """Carga la ficha general del cliente / Ayuntamiento (bloque 1)."""
+    nombre = CLIENTE_SEED["nombre"]
+    existente = (
+        await db.execute(select(Cliente).where(Cliente.nombre == nombre))
+    ).scalar_one_or_none()
+    if existente is not None:
+        log.info("Ficha de cliente '%s' ya existe — saltando", nombre)
+        return
+    db.add(Cliente(**CLIENTE_SEED))
+    log.info("Ficha de cliente creada: %s", nombre)
+
+
+async def _recursos_por_urn(db: AsyncSession) -> dict[str, str]:
+    """Devuelve un mapa urn -> id (str) de los recursos turísticos vivos."""
+    recursos = (
+        await db.execute(select(RecursoTuristico).where(RecursoTuristico.deleted_at.is_(None)))
+    ).scalars().all()
+    return {r.urn: str(r.id) for r in recursos}
+
+
+async def seed_campanas(db: AsyncSession) -> None:
+    """Carga las campañas de promoción turística (bloque 9)."""
+    por_urn = await _recursos_por_urn(db)
+    creadas = 0
+    for c in generar_campanas_seed():
+        slug = c["slug"]
+        existente = (
+            await db.execute(select(Campana).where(Campana.slug == slug))
+        ).scalar_one_or_none()
+        if existente is not None:
+            continue
+        recurso_urn = c.pop("recurso_urn", None)
+        recurso_id = por_urn.get(recurso_urn) if recurso_urn else None
+        db.add(Campana(recurso_id=recurso_id, **c))
+        creadas += 1
+    log.info("Campañas creadas: %d", creadas)
+
+
+async def seed_demo_visitas_web_app(db: AsyncSession) -> None:
+    """Carga visitas web/app, WiFi y BLE de demo si no existen."""
+    from sqlalchemy import func as sqlfunc
+    count = int(
+        (
+            await db.execute(
+                select(sqlfunc.count()).select_from(Visita).where(Visita.tipo == "web_vista")
+            )
+        ).scalar_one()
+        or 0
+    )
+    if count > 0:
+        log.info("Ya hay %d visitas web — saltando demo web/app", count)
+        return
+    por_urn = await _recursos_por_urn(db)
+    recursos_ids = list(por_urn.values())
+    datos = generar_visitas_web_app_seed(recursos_ids)
+    for d in datos:
+        db.add(Visita(**d))
+    log.info("Visitas web/app/WiFi/BLE demo creadas: %d", len(datos))
+
+
+async def seed_demo_contenidos(db: AsyncSession) -> None:
+    """Carga contenidos del CMS en distintos estados del flujo editorial."""
+    from sqlalchemy import func as sqlfunc
+    count = int(
+        (await db.execute(select(sqlfunc.count()).select_from(Contenido))).scalar_one() or 0
+    )
+    if count > 0:
+        log.info("Ya hay %d contenidos — saltando demo CMS", count)
+        return
+    por_urn = await _recursos_por_urn(db)
+    recursos_ids = list(por_urn.values())
+    datos = generar_contenidos_seed(recursos_ids)
+    for d in datos:
+        db.add(Contenido(**d))
+    log.info("Contenidos CMS demo creados: %d", len(datos))
+
+
 async def run() -> None:
     async with AsyncSessionLocal() as db:
         try:
             await seed_admin_user(db)
+            await seed_cliente(db)
             await seed_recursos(db)
             await seed_sensores(db)
             await seed_faqs(db)
             await db.flush()
+            await seed_campanas(db)
             # Demo data (solo si las tablas están vacías)
             await seed_demo_eventos(db)
             await seed_demo_observaciones(db)
             await seed_demo_opiniones(db)
             await seed_demo_visitas_totem(db)
+            await seed_demo_visitas_web_app(db)
+            await seed_demo_contenidos(db)
             await seed_demo_chatbot(db)
             await seed_demo_incidencias(db)
             await seed_contexto_backfill(db)

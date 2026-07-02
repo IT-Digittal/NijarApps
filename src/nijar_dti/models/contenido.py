@@ -14,9 +14,17 @@ from nijar_dti.models._mixins import AuditMixin
 
 
 class EstadoContenido(StrEnum):
-    """Ciclo de vida del contenido."""
+    """Ciclo de vida del contenido.
+
+    El flujo editorial completo (borrador → pendiente_aprobacion → aprobado →
+    publicado → archivado) permite medir el KPI del pliego "tiempo de
+    publicación de contenidos" (≤ 24 h desde la aprobación) a partir de
+    ``fecha_aprobacion`` y ``fecha_publicacion``.
+    """
 
     BORRADOR = "borrador"
+    PENDIENTE_APROBACION = "pendiente_aprobacion"
+    APROBADO = "aprobado"
     PROGRAMADO = "programado"
     PUBLICADO = "publicado"
     ARCHIVADO = "archivado"
@@ -60,6 +68,14 @@ class Contenido(Base, AuditMixin):
         DateTime(timezone=True), default=None, index=True
     )
     publicar_hasta: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), default=None
+    )
+
+    # Trazabilidad del flujo editorial (KPI de tiempo de publicación ≤ 24 h)
+    fecha_aprobacion: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), default=None
+    )
+    fecha_publicacion: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), default=None
     )
 
