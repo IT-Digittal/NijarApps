@@ -91,11 +91,10 @@
       </div>
     </div>
 
-    <!-- Reloj y temperatura ambiente -->
+    <!-- Reloj (alineado al margen de la cabecera) -->
     <div class="totem-status-bar">
       <div class="totem-status-row">
         <span id="clock" aria-live="polite">--:--</span>
-        <span id="weather" aria-live="polite" data-i18n="header.loading">Cargando…</span>
       </div>
     </div>
   </header>
@@ -183,9 +182,9 @@
 
     <!-- Pie del tótem -->
     <footer class="totem-footer" role="contentinfo">
-      <p data-i18n="footer.legal">
-        Plataforma DTI Níjar · Servicio público gratuito ·
-        <a href="#" data-i18n="footer.privacy">Aviso legal y privacidad</a>
+      <p>
+        <span data-i18n="footer.legal">Plataforma DTI Níjar · Servicio público gratuito</span>
+        · <a href="#" data-i18n="footer.privacy">Aviso legal y privacidad</a>
       </p>
       <p data-i18n="footer.accessibility">
         Pantalla accesible WCAG 2.1 AA · Bucle magnético disponible · Texto ampliable
@@ -200,12 +199,14 @@
   <!-- Modal detalle (poi seleccionado) -->
   <dialog id="poi-dialog" class="poi-dialog" aria-labelledby="poi-title">
     <article class="poi-dialog-content">
-      <header class="poi-dialog-header">
+      <button id="poi-close" class="poi-dialog-close" aria-label="Cerrar">×</button>
+      <div id="poi-image" class="poi-dialog-image" aria-hidden="true"></div>
+      <div class="poi-dialog-body-wrap">
+        <span id="poi-tag" class="poi-dialog-tag" hidden></span>
         <h2 id="poi-title" class="poi-dialog-title">—</h2>
-        <button id="poi-close" class="poi-dialog-close" aria-label="Cerrar">×</button>
-      </header>
-      <p id="poi-body" class="poi-dialog-body"></p>
-      <p id="poi-direccion" class="poi-dialog-meta"></p>
+        <p id="poi-body" class="poi-dialog-body"></p>
+        <dl class="poi-dialog-meta" id="poi-meta"></dl>
+      </div>
     </article>
   </dialog>
 

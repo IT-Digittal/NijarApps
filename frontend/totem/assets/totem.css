@@ -189,19 +189,23 @@ button, a, input, [role="button"] {
   color: white;
 }
 
-/* Barra de estado con acento teal (v3) */
+/* Barra de estado con acento teal (v3) — el padding horizontal va en
+   la fila interior para que el reloj quede alineado con el margen de
+   la cabecera (totem-header-row), también con max-width 1280 y
+   padding --space-6 dentro. */
 .totem-status-bar {
   background: var(--nijar-teal);
   color: white;
-  padding: var(--space-2) var(--space-6);
+  padding: var(--space-2) 0;
   font-size: var(--text-sm);
   font-weight: var(--weight-medium);
 }
 .totem-status-row {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   max-width: 1280px;
   margin: 0 auto;
+  padding: 0 var(--space-6);
 }
 
 /* ============================================================
@@ -589,11 +593,15 @@ button, a, input, [role="button"] {
  * ============================================================ */
 
 .poi-dialog {
+  /* margin: auto restablece el centrado nativo de <dialog>+showModal()
+     que el reset universal (* { margin: 0 }) anulaba. */
+  margin: auto;
   border: 3px solid var(--nijar-marino);
   border-radius: var(--radius-3xl);
   padding: 0;
-  width: 92%;
-  max-width: 720px;
+  width: min(88%, 560px);
+  max-height: 86vh;
+  overflow: hidden;
   box-shadow: var(--shadow-2xl);
   background: white;
 }
@@ -602,51 +610,119 @@ button, a, input, [role="button"] {
 }
 
 .poi-dialog-content {
-  padding: var(--space-8);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  max-height: 86vh;
+  overflow-y: auto;
 }
 
-.poi-dialog-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--space-4);
-  margin-bottom: var(--space-4);
+.poi-dialog-image {
+  height: 110px;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, var(--nijar-teal-soft) 0%, var(--nijar-arena-warm) 100%);
+  background-size: cover;
+  background-position: center;
 }
+
+.poi-dialog-body-wrap {
+  padding: var(--space-5) var(--space-6) var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.poi-dialog-tag {
+  align-self: flex-start;
+  background: var(--nijar-marino);
+  color: white;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+}
+.poi-dialog-tag[hidden] { display: none; }
+.poi-dialog-tag.is-playa { background: var(--nijar-teal); color: white; }
+.poi-dialog-tag.is-ruta { background: var(--nijar-marino); color: white; }
+.poi-dialog-tag.is-monumento,
+.poi-dialog-tag.is-yacimiento { background: var(--nijar-marino); color: white; }
+.poi-dialog-tag.is-centro_visitantes,
+.poi-dialog-tag.is-oficina_turismo { background: var(--nijar-dorado); color: var(--nijar-marino); }
+.poi-dialog-tag.is-punto_interes { background: var(--nijar-teal); color: white; }
 
 .poi-dialog-title {
-  font-size: var(--text-3xl);
+  font-size: var(--text-2xl);
   font-weight: var(--weight-bold);
   color: var(--nijar-marino);
   margin: 0;
+  line-height: var(--leading-tight);
 }
 
 .poi-dialog-close {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-4);
+  z-index: 2;
   width: 44px;
   height: 44px;
   border-radius: var(--radius-full);
-  background: var(--nijar-arena);
+  background: rgba(255, 255, 255, 0.92);
   color: var(--nijar-negro);
   border: none;
   font-size: var(--text-2xl);
   font-weight: var(--weight-bold);
+  line-height: 1;
   cursor: pointer;
   flex-shrink: 0;
+  box-shadow: var(--shadow-md);
   transition: background var(--transition-fast);
 }
-.poi-dialog-close:hover { background: var(--nijar-arena-warm); }
+.poi-dialog-close:hover { background: white; }
 
 .poi-dialog-body {
-  font-size: var(--text-lg);
+  font-size: var(--text-base);
   line-height: var(--leading-relaxed);
   color: var(--nijar-negro);
+  margin: 0;
 }
 
 .poi-dialog-meta {
-  font-size: var(--text-sm);
-  color: var(--nijar-gris);
-  margin-top: var(--space-4);
-  padding-top: var(--space-4);
+  font-size: var(--text-base);
+  color: var(--nijar-negro);
+  margin: 0;
+  padding-top: var(--space-3);
   border-top: 1px solid #E0DDD2;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2) var(--space-4);
+}
+.poi-dialog-meta:empty { display: none; padding: 0; border: 0; }
+.poi-dialog-meta-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: 4px 0;
+}
+.poi-dialog-meta-row.is-wide { grid-column: 1 / -1; }
+.poi-dialog-meta-row[hidden] { display: none; }
+.poi-dialog-meta-row dt {
+  font-size: var(--text-base);
+  line-height: 1.4;
+  width: 22px;
+  flex-shrink: 0;
+}
+.poi-dialog-meta-row dd {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--nijar-negro);
+  line-height: var(--leading-snug);
+}
+.poi-dialog-meta-row dd strong {
+  color: var(--nijar-marino);
+  font-weight: var(--weight-semibold);
+  margin-right: 4px;
 }
 
 /* ============================================================
@@ -705,3 +781,109 @@ body.idle::after {
   .poi-card { min-height: 380px; }
   .poi-image { height: 240px; }
 }
+
+/* ============================================================
+ * ACCESIBILIDAD: TAMAÑO DE TEXTO (A+) Y ALTO CONTRASTE (◐)
+ * ============================================================
+ * El botón A+ y el botón ◐ del cabecero togglan estas clases en
+ * <body>. La escala de texto usa :has() en <html> para que todas
+ * las medidas en rem (la mayoría de tokens) se reescalen a la vez.
+ */
+
+html:has(body.text-lg-mode) { font-size: 26px; }
+body.text-lg-mode .totem-title { font-size: var(--text-4xl); }
+body.text-lg-mode .chatbot-input,
+body.text-lg-mode .chatbot-submit,
+body.text-lg-mode .planner-btn,
+body.text-lg-mode .cat-btn,
+body.text-lg-mode .lang-btn,
+body.text-lg-mode .poi-card h3 { font-size: 1.15em; }
+
+/* Alto contraste (texto blanco sobre fondo negro, acentos amarillo
+   AAA — combinación recomendada por WCAG 1.4.6 contraste 7:1). */
+body.high-contrast {
+  background: #000;
+  color: #fff;
+}
+body.high-contrast h1,
+body.high-contrast h2,
+body.high-contrast h3,
+body.high-contrast h4,
+body.high-contrast p,
+body.high-contrast span,
+body.high-contrast li,
+body.high-contrast label,
+body.high-contrast output { color: #fff; }
+
+body.high-contrast .totem-header { background: #000; border-bottom: 3px solid #ffe600; }
+body.high-contrast .totem-status-bar { background: #000; border-top: 2px solid #ffe600; }
+body.high-contrast .totem-eyebrow { color: #ffe600; }
+body.high-contrast .totem-brand-icon { background: #ffe600; color: #000; }
+
+body.high-contrast .totem-icon-btn,
+body.high-contrast .lang-btn,
+body.high-contrast .cat-btn {
+  background: #000;
+  color: #fff;
+  border: 2px solid #ffe600;
+}
+body.high-contrast .totem-icon-btn[aria-pressed="true"],
+body.high-contrast .lang-btn[aria-pressed="true"],
+body.high-contrast .cat-btn[aria-pressed="true"] {
+  background: #ffe600;
+  color: #000;
+}
+
+body.high-contrast .cat-nav { background: #000; border-bottom: 2px solid #ffe600; }
+body.high-contrast .totem-main { background: #000; }
+
+body.high-contrast .poi-card,
+body.high-contrast .chatbot-section,
+body.high-contrast .planner-section,
+body.high-contrast .featured-banner {
+  background: #111;
+  color: #fff;
+  border: 2px solid #ffe600;
+}
+body.high-contrast .poi-card h3,
+body.high-contrast .poi-card p,
+body.high-contrast .planner-summary { color: #fff; }
+body.high-contrast .poi-tag { background: #ffe600; color: #000; }
+body.high-contrast .poi-cta { color: #ffe600; }
+body.high-contrast .emergency-number { color: #ffe600; }
+
+body.high-contrast .planner-btn,
+body.high-contrast .chatbot-submit {
+  background: #ffe600;
+  color: #000;
+  border: 2px solid #fff;
+}
+body.high-contrast .chatbot-input {
+  background: #000;
+  color: #fff;
+  border: 2px solid #ffe600;
+}
+body.high-contrast .chatbot-input::placeholder { color: #cccccc; }
+body.high-contrast .chatbot-voice,
+body.high-contrast .chatbot-speak {
+  background: #000;
+  color: #ffe600;
+  border: 2px solid #ffe600;
+}
+
+body.high-contrast .totem-footer { background: #000; color: #fff; }
+body.high-contrast .totem-footer a,
+body.high-contrast a { color: #ffe600; text-decoration: underline; }
+body.high-contrast .prtr-line { color: #cccccc; }
+
+body.high-contrast .poi-dialog {
+  background: #000;
+  color: #fff;
+  border: 3px solid #ffe600;
+}
+body.high-contrast .poi-dialog-title,
+body.high-contrast .poi-dialog-body,
+body.high-contrast .poi-dialog-meta { color: #fff; }
+body.high-contrast .poi-dialog-close { color: #ffe600; }
+
+body.high-contrast *:focus-visible { outline-color: #ffe600; }

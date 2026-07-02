@@ -16,6 +16,7 @@
  */
 
 import { I18N, translateAll } from "./i18n.js";
+import { DEMO_RESOURCES, DEMO_EVENTS, answerChatbotDemo } from "./demo-data.js";
 
 // ============================================================
 // Configuración
@@ -86,7 +87,7 @@ contrastBtn.addEventListener("click", () => {
 });
 
 // ============================================================
-// Reloj y meteo (lectura del último sensor meteo del propio tótem)
+// Reloj
 // ============================================================
 function updateClock() {
   const now = new Date();
@@ -95,13 +96,6 @@ function updateClock() {
 }
 setInterval(updateClock, 1000);
 updateClock();
-
-async function loadWeather() {
-  // Meteo endpoint requires auth; totem is public, so we show a static label.
-  document.getElementById("weather").textContent = "Cabo de Gata-Níjar";
-}
-loadWeather();
-setInterval(loadWeather, 5 * 60_000); // cada 5 min
 
 // ============================================================
 // Categorías y carga de contenidos
@@ -136,8 +130,8 @@ async function loadCategory(cat) {
     return;
   }
 
+  let items = [];
   try {
-    const items = [];
     for (const c of CAT_MAP[cat] || []) {
       const res = await fetch(
         `${API_BASE}/tourism/resources?categoria=${encodeURIComponent(c)}&publicado=true&page_size=10`
@@ -147,10 +141,13 @@ async function loadCategory(cat) {
       items.push(...(data.items || []));
       if (items.length >= 12) break;
     }
-    renderCards(grid, items.slice(0, 12));
-  } catch (err) {
-    grid.innerHTML = `<p class="content-loading content-error">${escapeHtml(err.message)}</p>`;
+  } catch {
+    // Backend no disponible: caemos al dataset demo (siguiente paso).
   }
+  if (items.length === 0) {
+    items = DEMO_RESOURCES[cat] || [];
+  }
+  renderCards(grid, items.slice(0, 12));
   grid.setAttribute("aria-busy", "false");
 }
 
@@ -221,55 +218,188 @@ function renderEmergencies(grid) {
 }
 
 async function loadEvents(grid) {
+  let items = [];
   try {
     const res = await fetch(`${API_BASE}/tourism/events?publicado=true&page_size=12`);
-    if (!res.ok) throw new Error("Error al cargar eventos");
-    const data = await res.json();
-    const items = data.items || [];
-    if (items.length === 0) {
-      grid.innerHTML = `<p class="content-loading">${
-        I18N[currentLang]?.["empty.contenido"] || "Sin contenidos disponibles"
-      }</p>`;
-      return;
+    if (res.ok) {
+      const data = await res.json();
+      items = data.items || [];
     }
-    grid.innerHTML = "";
-    for (const ev of items) {
-      const nombre = ev.nombre_i18n?.[currentLang] || ev.nombre;
-      const desc = ev.descripcion_i18n?.[currentLang] || ev.descripcion || "";
-      const fecha = ev.fecha_inicio
-        ? new Date(ev.fecha_inicio).toLocaleDateString(currentLang, {
-            day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit",
-          })
-        : "";
-      const card = document.createElement("article");
-      card.className = "poi-card event-card";
-      card.innerHTML = `
-        <div class="poi-body">
-          <span class="poi-tag">${escapeHtml(capitalize(String(ev.tipo || "")))}</span>
-          <h3>${escapeHtml(nombre)}</h3>
-          <p class="event-date">📅 ${escapeHtml(fecha)}</p>
-          <p>${escapeHtml(desc)}</p>
-          ${ev.direccion ? `<p class="poi-dialog-meta">📍 ${escapeHtml(ev.direccion)}</p>` : ""}
-        </div>`;
-      grid.appendChild(card);
-    }
-  } catch (err) {
-    grid.innerHTML = `<p class="content-loading content-error">${escapeHtml(err.message)}</p>`;
+  } catch {
+    // Backend no disponible: usamos el dataset demo más abajo.
+  }
+  if (items.length === 0) {
+    items = DEMO_EVENTS;
+  }
+  grid.innerHTML = "";
+  for (const ev of items) {
+    const nombre = ev.nombre_i18n?.[currentLang] || ev.nombre;
+    const desc = ev.descripcion_i18n?.[currentLang] || ev.descripcion || "";
+    const fecha = ev.fecha_inicio
+      ? new Date(ev.fecha_inicio).toLocaleDateString(currentLang, {
+          day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit",
+        })
+      : "";
+    const card = document.createElement("article");
+    card.className = "poi-card event-card";
+    card.setAttribute("tabindex", "0");
+    card.setAttribute("role", "button");
+    card.setAttribute("aria-label", nombre);
+    card.innerHTML = `
+      <div class="poi-body">
+        <span class="poi-tag">${escapeHtml(capitalize(String(ev.tipo || "")))}</span>
+        <h3>${escapeHtml(nombre)}</h3>
+        <p class="event-date">📅 ${escapeHtml(fecha)}</p>
+        <p>${escapeHtml(desc)}</p>
+        ${ev.direccion ? `<p class="event-place">📍 ${escapeHtml(ev.direccion)}</p>` : ""}
+      </div>`;
+    card.addEventListener("click", () => openDetail(ev));
+    card.addEventListener("keypress", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        openDetail(ev);
+      }
+    });
+    grid.appendChild(card);
   }
 }
 
 // ============================================================
-// Modal detalle POI
+// Modal detalle POI — renderiza dinámicamente todos los campos
+// presentes en el recurso/evento, con etiquetas i18n.
 // ============================================================
 const dialog = document.getElementById("poi-dialog");
 const dialogTitle = document.getElementById("poi-title");
 const dialogBody = document.getElementById("poi-body");
-const dialogDir = document.getElementById("poi-direccion");
+const dialogMeta = document.getElementById("poi-meta");
+const dialogTag = document.getElementById("poi-tag");
+const dialogImage = document.getElementById("poi-image");
+
+// Lista declarativa: orden, icono, clave i18n del label y formato.
+// "wide" indica filas que ocupan las dos columnas (texto largo).
+const META_FIELDS = [
+  { key: "fecha_inicio", icon: "📅", label: "info.fecha", format: "datetime" },
+  { key: "direccion", icon: "📍", label: "info.direccion", wide: true },
+  { key: "distancia_km", icon: "📏", label: "info.distancia", format: "km" },
+  { key: "duracion_min", icon: "⏱", label: "info.duracion", format: "duration" },
+  { key: "desnivel_m", icon: "⛰️", label: "info.desnivel", format: "m" },
+  { key: "dificultad", icon: "💪", label: "info.dificultad", format: "i18nVal", prefix: "val.dif_" },
+  { key: "modalidad", icon: "🚴", label: "info.modalidad", format: "i18nArr", prefix: "val.mod_" },
+  { key: "longitud_m", icon: "📏", label: "info.longitud", format: "m" },
+  { key: "tipo_arena", icon: "🏖️", label: "info.tipo_arena", format: "i18n" },
+  { key: "bandera_azul", icon: "🏁", label: "info.bandera_azul", format: "bool" },
+  { key: "epoca", icon: "🏛️", label: "info.epoca", format: "i18n" },
+  { key: "estilo", icon: "🎨", label: "info.estilo", format: "i18n" },
+  { key: "bic", icon: "⭐", label: "info.bic", format: "bool" },
+  { key: "horario", icon: "🕒", label: "info.horario", format: "i18n", wide: true },
+  { key: "precio", icon: "💶", label: "info.precio", format: "i18n" },
+  { key: "telefono", icon: "📞", label: "info.telefono" },
+  { key: "web", icon: "🌐", label: "info.web" },
+  { key: "idiomas", icon: "🌍", label: "info.idiomas", format: "langs" },
+  { key: "organizador", icon: "🏢", label: "info.organizador", format: "i18n" },
+  { key: "aforo", icon: "👥", label: "info.aforo", format: "people" },
+  { key: "temporada", icon: "🌤️", label: "info.temporada", format: "i18n", wide: true },
+  { key: "servicios", icon: "🛎️", label: "info.servicios", format: "i18nList", wide: true },
+  { key: "accesibilidad", icon: "♿", label: "info.accesibilidad", format: "i18n", wide: true },
+  { key: "recomendaciones", icon: "💡", label: "info.recomendaciones", format: "i18n", wide: true },
+];
+
+function formatMeta(field, value) {
+  const dict = I18N[currentLang] || I18N.es;
+  const i18nVal = (v) => (v && typeof v === "object" && v[currentLang]) ? v[currentLang] : v;
+  switch (field.format) {
+    case "datetime": {
+      const opts = { day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" };
+      return new Date(value).toLocaleString(currentLang, opts);
+    }
+    case "km":
+      return `${value} km`;
+    case "m":
+      return `${value} m`;
+    case "duration": {
+      const h = Math.floor(value / 60);
+      const m = value % 60;
+      return h ? `${h} h ${m ? `${m} min` : ""}`.trim() : `${m} min`;
+    }
+    case "bool":
+      return dict[value ? "val.si" : "val.no"];
+    case "i18n":
+      return i18nVal(value);
+    case "i18nVal":
+      return dict[`${field.prefix}${value}`] || capitalize(String(value));
+    case "i18nArr":
+      return value.map(v => dict[`${field.prefix}${v}`] || capitalize(String(v))).join(" · ");
+    case "i18nList": {
+      const arr = i18nVal(value);
+      return Array.isArray(arr) ? arr.join(" · ") : arr;
+    }
+    case "langs":
+      return value.map(l => String(l).toUpperCase()).join(" · ");
+    case "people":
+      return `${value}`;
+    default:
+      return String(value);
+  }
+}
+
+function renderMeta(item) {
+  dialogMeta.innerHTML = "";
+  const dict = I18N[currentLang] || I18N.es;
+
+  for (const field of META_FIELDS) {
+    const value = item[field.key];
+    if (value === undefined || value === null || value === "") continue;
+    if (Array.isArray(value) && value.length === 0) continue;
+    const label = dict[field.label] || field.label;
+    const formatted = formatMeta(field, value);
+    if (!formatted) continue;
+    const row = document.createElement("div");
+    row.className = "poi-dialog-meta-row" + (field.wide ? " is-wide" : "");
+    row.innerHTML = `<dt aria-hidden="true">${field.icon}</dt><dd><strong>${escapeHtml(label)}:</strong> ${escapeHtml(formatted)}</dd>`;
+    dialogMeta.appendChild(row);
+  }
+
+  // Coordenadas (siempre ancho completo si están)
+  const lat = item.latitud ?? item.lat;
+  const lon = item.longitud ?? item.lon;
+  if (typeof lat === "number" && typeof lon === "number") {
+    const label = dict["info.coordenadas"] || "Coordenadas";
+    const row = document.createElement("div");
+    row.className = "poi-dialog-meta-row is-wide";
+    row.innerHTML = `<dt aria-hidden="true">🧭</dt><dd><strong>${escapeHtml(label)}:</strong> ${lat.toFixed(4)}, ${lon.toFixed(4)}</dd>`;
+    dialogMeta.appendChild(row);
+  }
+}
 
 function openDetail(r) {
-  dialogTitle.textContent = r.nombre_i18n?.[currentLang] || r.nombre;
-  dialogBody.textContent = r.descripcion_i18n?.[currentLang] || r.descripcion_corta || "";
-  dialogDir.textContent = r.direccion || "";
+  // Título y descripción (usa la versión larga si está, si no la corta).
+  dialogTitle.textContent = r.nombre_i18n?.[currentLang] || r.nombre || "—";
+  dialogBody.textContent =
+    r.descripcion_i18n?.[currentLang] ||
+    r.descripcion ||
+    r.descripcion_corta ||
+    "";
+
+  // Etiqueta de categoría / tipo de evento
+  const cat = r.categoria || r.tipo || "";
+  if (cat) {
+    dialogTag.textContent = capitalize(String(cat).replace(/_/g, " "));
+    dialogTag.className = `poi-dialog-tag is-${cat}`;
+    dialogTag.hidden = false;
+  } else {
+    dialogTag.hidden = true;
+  }
+
+  // Imagen principal o degradado por defecto
+  const heroUrl = r.imagenes?.[0] || r.imagen || "";
+  dialogImage.style.backgroundImage = heroUrl ? `url('${heroUrl}')` : "";
+
+  // Metadatos dinámicos
+  renderMeta(r);
+
+  // Reset scroll del contenido cuando se reutiliza el diálogo
+  dialog.querySelector(".poi-dialog-content")?.scrollTo({ top: 0 });
+
   dialog.showModal();
   resetIdle();
 }
@@ -296,6 +426,8 @@ async function askChatbot(message) {
   if (!message) return;
   output.textContent = I18N[currentLang]?.["chatbot.thinking"] || "Pensando…";
   speakBtn?.classList.add("is-hidden");
+
+  let data = null;
   try {
     const res = await fetch(`${API_BASE}/chatbot/query`, {
       method: "POST",
@@ -307,24 +439,29 @@ async function askChatbot(message) {
         pregunta: message,
       }),
     });
-    if (!res.ok) throw new Error("Error en el chatbot");
-    const data = await res.json();
-    lastAnswer = data.respuesta || "—";
-    output.textContent = lastAnswer;
-    if (Array.isArray(data.sugerencias) && data.sugerencias.length) {
-      const sug = document.createElement("p");
-      sug.className = "chatbot-suggestions";
-      sug.textContent = "💡 " + data.sugerencias.join(" · ");
-      output.appendChild(sug);
+    if (res.ok) {
+      data = await res.json();
     }
-    input.value = "";
-    // Texto a voz (TTS) — si el navegador lo soporta
-    if ("speechSynthesis" in window) {
-      speakBtn?.classList.remove("is-hidden");
-      hablar(lastAnswer);
-    }
-  } catch (err) {
-    output.textContent = `⚠️ ${err.message}`;
+  } catch {
+    // Sin backend: caemos al matcher demo más abajo (sin error en pantalla).
+  }
+  if (!data || !data.respuesta) {
+    data = answerChatbotDemo(message, currentLang);
+  }
+
+  lastAnswer = data.respuesta || "—";
+  output.textContent = lastAnswer;
+  if (Array.isArray(data.sugerencias) && data.sugerencias.length) {
+    const sug = document.createElement("p");
+    sug.className = "chatbot-suggestions";
+    sug.textContent = "💡 " + data.sugerencias.join(" · ");
+    output.appendChild(sug);
+  }
+  input.value = "";
+  // Texto a voz (TTS) — si el navegador lo soporta
+  if ("speechSynthesis" in window) {
+    speakBtn?.classList.remove("is-hidden");
+    hablar(lastAnswer);
   }
   resetIdle();
 }
@@ -444,17 +581,49 @@ function renderRecomendaciones(data) {
 }
 
 // ============================================================
-// Inactividad
+// Inactividad — vuelve al estado inicial tras IDLE_MS sin uso
 // ============================================================
+function goToIdleState() {
+  if (dialog.open) dialog.close();
+
+  // Categoría por defecto (Rutas) sin disparar listeners globales
+  currentCat = "rutas";
+  document.querySelectorAll(".cat-btn").forEach(b =>
+    b.setAttribute("aria-pressed", String(b.dataset.cat === currentCat))
+  );
+
+  // Limpia salidas de chatbot, planificador y aviso destacado
+  document.getElementById("chatbot-output").textContent = "";
+  lastAnswer = "";
+  speakBtn?.classList.add("is-hidden");
+  if (plannerOut) plannerOut.innerHTML = "";
+  document.getElementById("featured")?.classList.add("is-hidden");
+
+  // Idioma a ES (default) y recarga categoría inicial
+  if (currentLang !== "es") {
+    applyLanguage("es"); // ya llama a loadCategory
+  } else {
+    loadCategory(currentCat);
+  }
+
+  // Resetea modos de accesibilidad (siguiente usuario empieza limpio)
+  if (document.body.classList.contains("text-lg-mode")) {
+    document.body.classList.remove("text-lg-mode");
+    textBtn?.setAttribute("aria-pressed", "false");
+  }
+  if (document.body.classList.contains("high-contrast")) {
+    document.body.classList.remove("high-contrast");
+    contrastBtn?.setAttribute("aria-pressed", "false");
+  }
+
+  // Overlay tenue de "en reposo" (se quita en la próxima interacción)
+  document.body.classList.add("idle");
+}
+
 function resetIdle() {
   if (idleTimer) clearTimeout(idleTimer);
   document.body.classList.remove("idle");
-  idleTimer = setTimeout(() => {
-    if (dialog.open) dialog.close();
-    document.body.classList.add("idle");
-    document.querySelector('.cat-btn[data-cat="rutas"]')?.click();
-    document.getElementById("chatbot-output").textContent = "";
-  }, IDLE_MS);
+  idleTimer = setTimeout(goToIdleState, IDLE_MS);
 }
 
 ["click", "keydown", "touchstart", "scroll"].forEach(evt =>
