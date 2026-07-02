@@ -19,6 +19,8 @@ from nijar_dti.schemas.dashboards import (
     EnvironmentSeries,
     MonthlyReport,
     SmartOfficeOverview,
+    TotemHealth,
+    TotemsHealthOverview,
     TotemUsageStats,
 )
 
@@ -227,6 +229,77 @@ async def totems_usage(
         duracion_media_seg=duracion_media,
         secciones_top=top_secciones,
     )
+
+
+async def totems_health(db: AsyncSession) -> TotemsHealthOverview:
+    """Disponibilidad y telemetría por tótem (bloque 7 del pliego).
+
+    Calcula, por cada sensor de tipo ``totem``, la disponibilidad (muestras
+    online / muestras totales), la temperatura interna media/máxima, los
+    reinicios y la conectividad media a partir de sus observaciones.
+    """
+    sensores = list(
+        (
+            await db.execute(
+                select(Sensor).where(Sensor.tipo == "totem", Sensor.deleted_at.is_(None))
+            )
+        )
+        .scalars()
+        .all()
+    )
+    totems: list[TotemHealth] = []
+    disponibilidades: list[float] = []
+    for s in sensores:
+        obs = list(
+            (
+                await db.execute(
+                    select(Observacion)
+                    .where(Observacion.sensor_id == s.id)
+                    .order_by(Observacion.observado_en)
+                )
+            )
+            .scalars()
+            .all()
+        )
+        muestras = len(obs)
+        online = 0
+        temps: list[float] = []
+        conect: list[float] = []
+        reinicios = 0
+        ultima_com: datetime | None = None
+        for o in obs:
+            valores = o.valores or {}
+            if valores.get("online") == 1:
+                online += 1
+            t = valores.get("temperatura_interna")
+            if isinstance(t, (int, float)):
+                temps.append(float(t))
+            c = valores.get("conectividad_pct")
+            if isinstance(c, (int, float)):
+                conect.append(float(c))
+            reinicios = max(reinicios, int(valores.get("reinicios_acumulados", 0) or 0))
+            ultima_com = o.observado_en
+        disponibilidad = round(online / muestras * 100, 2) if muestras else None
+        if disponibilidad is not None:
+            disponibilidades.append(disponibilidad)
+        totems.append(
+            TotemHealth(
+                urn=s.urn,
+                nombre=s.nombre,
+                estado=s.estado,
+                disponibilidad_pct=disponibilidad,
+                temperatura_interna_media=round(sum(temps) / len(temps), 1) if temps else None,
+                temperatura_interna_max=round(max(temps), 1) if temps else None,
+                reinicios=reinicios,
+                conectividad_media_pct=round(sum(conect) / len(conect), 1) if conect else None,
+                ultima_comunicacion=ultima_com,
+                muestras=muestras,
+            )
+        )
+    media = (
+        round(sum(disponibilidades) / len(disponibilidades), 2) if disponibilidades else None
+    )
+    return TotemsHealthOverview(disponibilidad_media_pct=media, totems=totems)
 
 
 # -------------------------- Informe mensual (C.1) --------------------------

@@ -31,6 +31,7 @@ class TipoSensor(StrEnum):
     WIFI_PUBLICO = "wifi_publico"
     VIDEOCAMARA = "videocamara"
     ALUMBRADO = "alumbrado"
+    TOTEM = "totem"  # salud/telemetría del dispositivo tótem (online, temperatura, reinicios)
     OTRO = "otro"
 
 

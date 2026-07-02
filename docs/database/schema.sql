@@ -222,7 +222,7 @@ CREATE TABLE IF NOT EXISTS sensores (
     CONSTRAINT chk_sensores_tipo CHECK (
         tipo IN ('ambiental_co2','ambiental_temperatura','ambiental_humedad',
                  'ambiental_ruido','meteo','aforo','beacon_ble','wifi_publico',
-                 'videocamara','alumbrado','otro')
+                 'videocamara','alumbrado','totem','otro')
     ),
     CONSTRAINT chk_sensores_estado CHECK (
         estado IN ('operativo','offline','mantenimiento','averia','bateria_baja','desconocido')

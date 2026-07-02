@@ -53,6 +53,28 @@ class TotemUsageStats(BaseModel):
     secciones_top: list[dict]
 
 
+class TotemHealth(BaseModel):
+    """Salud/telemetría de un tótem (bloque 7 del pliego)."""
+
+    urn: str
+    nombre: str
+    estado: str
+    disponibilidad_pct: float | None = None
+    temperatura_interna_media: float | None = None
+    temperatura_interna_max: float | None = None
+    reinicios: int = 0
+    conectividad_media_pct: float | None = None
+    ultima_comunicacion: datetime | None = None
+    muestras: int = 0
+
+
+class TotemsHealthOverview(BaseModel):
+    """Disponibilidad agregada y salud por tótem."""
+
+    disponibilidad_media_pct: float | None = None
+    totems: list[TotemHealth]
+
+
 class MonthlyReport(BaseModel):
     """Datos del informe mensual de servicio (C.1)."""
 

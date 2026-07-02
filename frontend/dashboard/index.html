@@ -16,7 +16,7 @@
   <!-- Leaflet -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
 
-  <link rel="stylesheet" href="./assets/dashboard.css?v=15" />
+  <link rel="stylesheet" href="./assets/dashboard.css?v=16" />
 </head>
 <body>
 
@@ -95,6 +95,9 @@
         <button class="nav-item nav-item--active" data-section="dashboard">
           <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span> Dashboard
         </button>
+        <button class="nav-item" data-section="cliente">
+          <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/><line x1="9" y1="9" x2="9" y2="9.01"/><line x1="15" y1="9" x2="15" y2="9.01"/></svg></span> Ficha del cliente
+        </button>
         <button class="nav-item" data-section="catalogo">
           <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg></span> Recursos turísticos
           <span class="nav-badge" data-badge="recursos">—</span>
@@ -108,6 +111,9 @@
         </button>
         <button class="nav-item" data-section="big-data">
           <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 00-7.07 17.07"/><path d="M12 2a10 10 0 017.07 17.07"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="5"/></svg></span> Social Listening
+        </button>
+        <button class="nav-item" data-section="campanas">
+          <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 11-5.8-1.6"/></svg></span> Campañas
         </button>
         <button class="nav-item" data-section="chatbot">
           <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/><line x1="9" y1="10" x2="9" y2="10.01"/><line x1="15" y1="10" x2="15" y2="10.01"/></svg></span> Chatbot · FAQs
@@ -770,9 +776,101 @@
             <span class="kpi-card__meta">segundos</span>
           </article>
         </div>
-        <article class="card">
-          <h3 class="card__title">Secciones más consultadas</h3>
-          <ol id="totems-secciones" class="activity-feed"></ol>
+        <div class="kpi-grid kpi-grid--3" style="margin-top:var(--space-4)">
+          <article class="kpi-card">
+            <span class="kpi-card__label">DISPONIBILIDAD MEDIA</span>
+            <span class="kpi-card__value kpi-card__value--teal" data-kpi="tot-disp">—</span>
+            <span class="kpi-card__meta">objetivo ≥ 99 % · últimos 7 días</span>
+          </article>
+        </div>
+        <div class="dashboard-columns" style="margin-top:var(--space-4)">
+          <article class="card">
+            <h3 class="card__title">Secciones más consultadas</h3>
+            <ol id="totems-secciones" class="activity-feed"></ol>
+          </article>
+          <article class="card">
+            <h3 class="card__title">Estado de los tótems</h3>
+            <div id="totems-health" class="info-grid"></div>
+          </article>
+        </div>
+      </section>
+
+      <!-- ============== SECTION: FICHA DEL CLIENTE ============== -->
+      <section data-section-content="cliente" class="section hidden">
+        <div class="section__header">
+          <span class="section__label">FICHA DEL CLIENTE / AYUNTAMIENTO</span>
+          <h2 class="section__title">Ficha general del proyecto</h2>
+          <div class="section__actions">
+            <button class="btn btn--secondary hidden" id="cliente-edit-btn">Editar ficha</button>
+          </div>
+        </div>
+        <div id="cliente-content"><p class="placeholder-text">Cargando ficha…</p></div>
+
+        <!-- Formulario de edición (oculto por defecto) -->
+        <form id="cliente-form" class="card hidden" style="margin-top:var(--space-4)" novalidate>
+          <h3 class="card__title">Editar ficha del cliente</h3>
+          <div class="form-grid">
+            <label class="form-field"><span>Cliente / Ayuntamiento</span><input type="text" id="cl-nombre" /></label>
+            <label class="form-field"><span>Área responsable</span><input type="text" id="cl-area" /></label>
+            <label class="form-field"><span>Proyecto</span><input type="text" id="cl-proyecto" /></label>
+            <label class="form-field"><span>CIF</span><input type="text" id="cl-cif" /></label>
+            <label class="form-field form-field--wide"><span>Dirección</span><input type="text" id="cl-direccion" /></label>
+            <label class="form-field"><span>Responsable · nombre</span><input type="text" id="cl-resp-nombre" /></label>
+            <label class="form-field"><span>Responsable · cargo</span><input type="text" id="cl-resp-cargo" /></label>
+            <label class="form-field"><span>Responsable · email</span><input type="email" id="cl-resp-email" /></label>
+            <label class="form-field"><span>Responsable · teléfono</span><input type="text" id="cl-resp-tel" /></label>
+            <label class="form-field"><span>Web turística</span><input type="text" id="cl-web" /></label>
+            <label class="form-field"><span>App</span><input type="text" id="cl-app" /></label>
+            <label class="form-field"><span>Facebook</span><input type="text" id="cl-facebook" /></label>
+            <label class="form-field"><span>Instagram</span><input type="text" id="cl-instagram" /></label>
+            <label class="form-field"><span>Idiomas activos (coma)</span><input type="text" id="cl-idiomas" placeholder="es, en, fr, de" /></label>
+          </div>
+          <div id="cliente-form-error" class="login-error hidden" role="alert" style="margin-top:var(--space-3)"></div>
+          <div class="form-actions" style="margin-top:var(--space-4)">
+            <button type="button" class="btn btn--secondary" id="cliente-cancel">Cancelar</button>
+            <button type="submit" class="btn btn--primary">Guardar cambios</button>
+          </div>
+        </form>
+      </section>
+
+      <!-- ============== SECTION: CAMPAÑAS ============== -->
+      <section data-section-content="campanas" class="section hidden">
+        <div class="section__header">
+          <span class="section__label">CAMPAÑAS DE PROMOCIÓN TURÍSTICA</span>
+          <h2 class="section__title">Campañas y medición de eficacia</h2>
+          <div class="section__actions">
+            <button class="btn btn--primary hidden" id="btn-new-campana">+ Nueva campaña</button>
+          </div>
+        </div>
+        <div class="kpi-grid kpi-grid--3">
+          <article class="kpi-card">
+            <span class="kpi-card__label">CAMPAÑAS TOTALES</span>
+            <span class="kpi-card__value kpi-card__value--navy" data-kpi="camp-total">—</span>
+          </article>
+          <article class="kpi-card">
+            <span class="kpi-card__label">ACTIVAS</span>
+            <span class="kpi-card__value kpi-card__value--teal" data-kpi="camp-activas">—</span>
+          </article>
+          <article class="kpi-card">
+            <span class="kpi-card__label">PRESUPUESTO TOTAL</span>
+            <span class="kpi-card__value kpi-card__value--gold" data-kpi="camp-presupuesto">—</span>
+            <span class="kpi-card__meta">€ acumulado</span>
+          </article>
+        </div>
+        <div class="table-container">
+          <table class="data-table" id="campanas-table">
+            <thead>
+              <tr>
+                <th>Campaña</th><th>Estado</th><th>Objetivo</th><th>Periodo</th>
+                <th>Canales</th><th>Presupuesto</th><th></th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <article class="card hidden" id="campana-kpis-card" style="margin-top:var(--space-4)">
+          <h3 class="card__title" id="campana-kpis-title">Eficacia de la campaña</h3>
+          <div id="campana-kpis-body"></div>
         </article>
       </section>
 
@@ -1004,6 +1102,6 @@
   </footer>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script type="module" src="./assets/dashboard.js?v=15"></script>
+  <script type="module" src="./assets/dashboard.js?v=16"></script>
 </body>
 </html>

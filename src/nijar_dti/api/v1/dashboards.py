@@ -16,6 +16,7 @@ from nijar_dti.schemas.dashboards import (
     EnvironmentSeries,
     MonthlyReport,
     SmartOfficeOverview,
+    TotemsHealthOverview,
     TotemUsageStats,
 )
 from nijar_dti.services import dashboards_service as svc
@@ -74,6 +75,18 @@ async def totems_usage(
     user: CurrentUser = Depends(get_current_user),
 ) -> TotemUsageStats:
     return await svc.totems_usage(db, desde, hasta)
+
+
+@router.get(
+    "/totems/health",
+    response_model=TotemsHealthOverview,
+    summary="Salud y disponibilidad de los tótems",
+)
+async def totems_health(
+    db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(get_current_user),
+) -> TotemsHealthOverview:
+    return await svc.totems_health(db)
 
 
 @router.get(

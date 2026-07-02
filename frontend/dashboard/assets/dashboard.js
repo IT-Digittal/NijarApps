@@ -4,7 +4,7 @@
  * Diseño "Salinas y Sal corporativa" v3.
  */
 
-import { api, tokens, getCachedUser } from "./api-client.js?v=15";
+import { api, tokens, getCachedUser } from "./api-client.js?v=16";
 
 // ============================================================
 // State
@@ -133,8 +133,10 @@ function switchSection(name) {
   // Lazy load sections
   const loaders = {
     "dashboard": loadDashboard,
+    "cliente": loadCliente,
     "catalogo": loadCatalog,
     "eventos": loadEvents,
+    "campanas": loadCampanas,
     "smart-office": loadSmartOffice,
     "big-data": loadBigData,
     "chatbot": loadChatbot,
@@ -1102,6 +1104,262 @@ async function loadChatbot() {
 }
 
 // ============================================================
+// FICHA DEL CLIENTE section (bloque 1)
+// ============================================================
+let _clienteActual = null;
+
+function _infoRow(label, value) {
+  return `<div class="info-row"><span class="info-row__label">${escapeHtml(label)}</span>` +
+    `<span class="info-row__value">${escapeHtml(value ?? "—")}</span></div>`;
+}
+
+function _fmtFecha(iso) {
+  if (!iso) return "—";
+  try { return new Date(iso).toLocaleDateString("es-ES"); } catch { return iso; }
+}
+
+async function loadCliente() {
+  const cont = document.getElementById("cliente-content");
+  const editBtn = document.getElementById("cliente-edit-btn");
+  const me = getCachedUser();
+  const isAdmin = me?.rol === "administrador_tic";
+  editBtn.classList.toggle("hidden", !isAdmin);
+  try {
+    const c = await api.getCliente();
+    _clienteActual = c;
+    const resp = c.responsable_municipal || {};
+    const canales = c.canales_oficiales || {};
+    const tecnicos = c.responsables_tecnicos || [];
+    const idiomas = (c.idiomas_activos || []).map(i => i.toUpperCase());
+    const hitos = c.hitos || [];
+
+    cont.innerHTML = `
+      <div class="info-grid">
+        <article class="info-card">
+          <h3 class="info-card__title">Identificación</h3>
+          ${_infoRow("Cliente", c.nombre)}
+          ${_infoRow("Área responsable", c.area_responsable)}
+          ${_infoRow("Proyecto", c.proyecto)}
+          ${_infoRow("CIF", c.cif)}
+          ${_infoRow("Dirección", c.direccion)}
+          ${_infoRow("Municipio", `${c.municipio || ""}${c.provincia ? " · " + c.provincia : ""}`)}
+        </article>
+        <article class="info-card">
+          <h3 class="info-card__title">Responsable municipal</h3>
+          ${_infoRow("Nombre", resp.nombre)}
+          ${_infoRow("Cargo", resp.cargo)}
+          ${_infoRow("Email", resp.email)}
+          ${_infoRow("Teléfono", resp.telefono)}
+        </article>
+        <article class="info-card">
+          <h3 class="info-card__title">Canales oficiales</h3>
+          ${_infoRow("Web turística", canales.web)}
+          ${_infoRow("App", canales.app)}
+          ${_infoRow("Facebook", canales.facebook)}
+          ${_infoRow("Instagram", canales.instagram)}
+        </article>
+        <article class="info-card">
+          <h3 class="info-card__title">Idiomas activos</h3>
+          <div class="info-chips">
+            ${idiomas.length ? idiomas.map(i => `<span class="info-chip">${escapeHtml(i)}</span>`).join("") : "—"}
+          </div>
+        </article>
+        <article class="info-card">
+          <h3 class="info-card__title">Periodo de explotación</h3>
+          ${_infoRow("Inicio", _fmtFecha(c.fecha_inicio_explotacion))}
+          ${_infoRow("Fin mantenimiento", _fmtFecha(c.fecha_fin_mantenimiento))}
+        </article>
+        <article class="info-card">
+          <h3 class="info-card__title">Responsables técnicos</h3>
+          ${tecnicos.length
+            ? tecnicos.map(t => _infoRow(t.area || "—", t.email || t.nombre || "—")).join("")
+            : '<p class="placeholder-text">Sin responsables técnicos</p>'}
+        </article>
+      </div>
+      ${hitos.length ? `
+      <article class="card" style="margin-top:var(--space-4)">
+        <h3 class="card__title">Hitos del proyecto</h3>
+        <ol class="activity-feed">
+          ${hitos.map(h => `
+            <li class="activity-item">
+              <div class="activity-item__bar activity-item__bar--teal"></div>
+              <div class="activity-item__text">
+                <div class="activity-item__title">${escapeHtml(h.nombre)}</div>
+                <div class="activity-item__meta">${escapeHtml(_fmtFecha(h.fecha))}</div>
+              </div>
+              <span class="activity-item__value">${escapeHtml(h.estado || "")}</span>
+            </li>`).join("")}
+        </ol>
+      </article>` : ""}
+    `;
+  } catch (err) {
+    if (String(err.message).includes("404")) {
+      cont.innerHTML = '<p class="placeholder-text">Aún no se ha registrado la ficha del cliente.</p>';
+    } else {
+      cont.innerHTML = "";
+      setBanner(`Error ficha cliente: ${err.message}`, "error");
+    }
+  }
+}
+
+function _fillClienteForm(c) {
+  const resp = c?.responsable_municipal || {};
+  const canales = c?.canales_oficiales || {};
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v ?? ""; };
+  set("cl-nombre", c?.nombre);
+  set("cl-area", c?.area_responsable);
+  set("cl-proyecto", c?.proyecto);
+  set("cl-cif", c?.cif);
+  set("cl-direccion", c?.direccion);
+  set("cl-resp-nombre", resp.nombre);
+  set("cl-resp-cargo", resp.cargo);
+  set("cl-resp-email", resp.email);
+  set("cl-resp-tel", resp.telefono);
+  set("cl-web", canales.web);
+  set("cl-app", canales.app);
+  set("cl-facebook", canales.facebook);
+  set("cl-instagram", canales.instagram);
+  set("cl-idiomas", (c?.idiomas_activos || []).join(", "));
+}
+
+document.getElementById("cliente-edit-btn")?.addEventListener("click", () => {
+  _fillClienteForm(_clienteActual);
+  document.getElementById("cliente-form").classList.remove("hidden");
+  document.getElementById("cliente-content").classList.add("hidden");
+});
+document.getElementById("cliente-cancel")?.addEventListener("click", () => {
+  document.getElementById("cliente-form").classList.add("hidden");
+  document.getElementById("cliente-content").classList.remove("hidden");
+});
+document.getElementById("cliente-form")?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const val = (id) => document.getElementById(id).value.trim();
+  const errEl = document.getElementById("cliente-form-error");
+  errEl.classList.add("hidden");
+  const idiomas = val("cl-idiomas").split(",").map(s => s.trim().toLowerCase()).filter(Boolean);
+  const payload = {
+    nombre: val("cl-nombre") || (_clienteActual?.nombre ?? "Ayuntamiento de Níjar"),
+    area_responsable: val("cl-area") || null,
+    proyecto: val("cl-proyecto") || null,
+    cif: val("cl-cif") || null,
+    direccion: val("cl-direccion") || null,
+    responsable_municipal: {
+      nombre: val("cl-resp-nombre"), cargo: val("cl-resp-cargo"),
+      email: val("cl-resp-email"), telefono: val("cl-resp-tel"),
+    },
+    canales_oficiales: {
+      web: val("cl-web"), app: val("cl-app"),
+      facebook: val("cl-facebook"), instagram: val("cl-instagram"),
+    },
+    idiomas_activos: idiomas.length ? idiomas : null,
+  };
+  try {
+    await api.patchCliente(payload);
+    document.getElementById("cliente-form").classList.add("hidden");
+    document.getElementById("cliente-content").classList.remove("hidden");
+    setBanner("Ficha del cliente actualizada", "success");
+    await loadCliente();
+  } catch (err) {
+    errEl.textContent = `No se pudo guardar: ${err.message}`;
+    errEl.classList.remove("hidden");
+  }
+});
+
+// ============================================================
+// CAMPAÑAS section (bloque 9)
+// ============================================================
+async function loadCampanas() {
+  const me = getCachedUser();
+  const canEdit = me && ["administrador_tic", "gestor_contenidos"].includes(me.rol);
+  document.getElementById("btn-new-campana")?.classList.toggle("hidden", !canEdit);
+  const tbody = document.querySelector("#campanas-table tbody");
+  try {
+    const campanas = await api.listCampanas();
+    const activas = campanas.filter(c => c.estado === "activa").length;
+    const presupuesto = campanas.reduce((s, c) => s + (Number(c.presupuesto) || 0), 0);
+    setKPI("camp-total", String(campanas.length));
+    setKPI("camp-activas", String(activas));
+    setKPI("camp-presupuesto", presupuesto ? presupuesto.toLocaleString("es-ES") : "—");
+
+    tbody.innerHTML = "";
+    for (const c of campanas) {
+      const tr = document.createElement("tr");
+      tr.className = "row-clickable";
+      const periodo = `${_fmtFecha(c.fecha_inicio)} – ${_fmtFecha(c.fecha_fin)}`;
+      const canales = (c.canales || []).join(", ");
+      tr.innerHTML = `
+        <td><strong>${escapeHtml(c.nombre)}</strong></td>
+        <td><span class="estado-badge estado-badge--${escapeHtml(c.estado)}">${escapeHtml(c.estado)}</span></td>
+        <td>${escapeHtml(c.objetivo)}</td>
+        <td>${escapeHtml(periodo)}</td>
+        <td>${escapeHtml(canales)}</td>
+        <td>${c.presupuesto != null ? Number(c.presupuesto).toLocaleString("es-ES") + " €" : "—"}</td>
+        <td><button class="btn btn--secondary" data-action="kpis">Eficacia</button></td>`;
+      tr.querySelector('[data-action="kpis"]').addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        showCampanaKpis(c);
+      });
+      tr.addEventListener("click", () => showCampanaKpis(c));
+      tbody.appendChild(tr);
+    }
+    if (!campanas.length) {
+      tbody.innerHTML = '<tr><td colspan="7" class="placeholder-text">No hay campañas registradas.</td></tr>';
+    }
+  } catch (err) {
+    setBanner(`Error campañas: ${err.message}`, "error");
+  }
+}
+
+async function showCampanaKpis(campana) {
+  const card = document.getElementById("campana-kpis-card");
+  const title = document.getElementById("campana-kpis-title");
+  const body = document.getElementById("campana-kpis-body");
+  card.classList.remove("hidden");
+  title.textContent = `Eficacia · ${campana.nombre}`;
+  body.innerHTML = '<p class="placeholder-text">Calculando KPIs…</p>';
+  card.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  try {
+    const k = await api.campanaKpis(campana.id);
+    const pct = (v) => (v == null ? "—" : `${v > 0 ? "+" : ""}${Number(v).toFixed(1)} %`);
+    const num = (v) => (v == null ? "—" : Number(v).toLocaleString("es-ES"));
+    body.innerHTML = `
+      <div class="kpi-grid kpi-grid--4">
+        <article class="kpi-card"><span class="kpi-card__label">MENCIONES</span>
+          <span class="kpi-card__value kpi-card__value--navy">${num(k.menciones)}</span>
+          <span class="kpi-card__meta">${pct(k.incremento_menciones_pct)} vs periodo anterior</span></article>
+        <article class="kpi-card"><span class="kpi-card__label">SENTIMIENTO POSITIVO</span>
+          <span class="kpi-card__value kpi-card__value--teal">${k.sentimiento_positivo_pct != null ? k.sentimiento_positivo_pct.toFixed(0) + " %" : "—"}</span>
+          <span class="kpi-card__meta">${num(k.menciones_positivas)} pos · ${num(k.menciones_negativas)} neg</span></article>
+        <article class="kpi-card"><span class="kpi-card__label">ALCANCE ESTIMADO</span>
+          <span class="kpi-card__value kpi-card__value--navy">${num(k.alcance_estimado)}</span>
+          <span class="kpi-card__meta">${num(k.interacciones)} interacciones</span></article>
+        <article class="kpi-card"><span class="kpi-card__label">VISITAS WEB/APP</span>
+          <span class="kpi-card__value kpi-card__value--gold">${num(k.visitas_web + k.visitas_app)}</span>
+          <span class="kpi-card__meta">${pct(k.incremento_visitas_pct)} vs periodo anterior</span></article>
+      </div>`;
+  } catch (err) {
+    body.innerHTML = `<p class="placeholder-text">Error al calcular KPIs: ${escapeHtml(err.message)}</p>`;
+  }
+}
+
+document.getElementById("btn-new-campana")?.addEventListener("click", () => {
+  const nombre = prompt("Nombre de la nueva campaña:");
+  if (!nombre) return;
+  const hoy = new Date();
+  const fin = new Date(hoy.getTime() + 30 * 86400000);
+  api.createCampana({
+    nombre,
+    fecha_inicio: hoy.toISOString(),
+    fecha_fin: fin.toISOString(),
+    estado: "planificada",
+    objetivo: "difusion",
+  }).then(() => {
+    setBanner("Campaña creada", "success");
+    loadCampanas();
+  }).catch(err => setBanner(`No se pudo crear: ${err.message}`, "error"));
+});
+
+// ============================================================
 // TÓTEMS section
 // ============================================================
 async function loadTotems() {
@@ -1126,6 +1384,38 @@ async function loadTotems() {
     }
   } catch (err) {
     setBanner(`Error tótems: ${err.message}`, "error");
+  }
+
+  // Salud / disponibilidad de los tótems
+  try {
+    const health = await api.totemsHealth();
+    setKPI("tot-disp", health.disponibilidad_media_pct != null
+      ? health.disponibilidad_media_pct.toFixed(1) + " %" : "—");
+    const cont = document.getElementById("totems-health");
+    cont.innerHTML = "";
+    for (const t of (health.totems || [])) {
+      const disp = t.disponibilidad_pct != null ? t.disponibilidad_pct.toFixed(1) + " %" : "—";
+      const ok = t.disponibilidad_pct != null && t.disponibilidad_pct >= 99;
+      const card = document.createElement("article");
+      card.className = "info-card";
+      card.innerHTML = `
+        <h3 class="info-card__title">${escapeHtml(t.nombre)}</h3>
+        <div class="info-row"><span class="info-row__label">Disponibilidad</span>
+          <span class="info-row__value" style="color:${ok ? "#0f7b46" : "#a1272f"}">${escapeHtml(disp)}</span></div>
+        <div class="info-row"><span class="info-row__label">Temp. interna media</span>
+          <span class="info-row__value">${t.temperatura_interna_media != null ? t.temperatura_interna_media + " °C" : "—"}</span></div>
+        <div class="info-row"><span class="info-row__label">Temp. interna máx.</span>
+          <span class="info-row__value">${t.temperatura_interna_max != null ? t.temperatura_interna_max + " °C" : "—"}</span></div>
+        <div class="info-row"><span class="info-row__label">Reinicios</span>
+          <span class="info-row__value">${t.reinicios}</span></div>
+        <div class="info-row"><span class="info-row__label">Conectividad</span>
+          <span class="info-row__value">${t.conectividad_media_pct != null ? t.conectividad_media_pct + " %" : "—"}</span></div>
+        <div class="info-row"><span class="info-row__label">Última comunicación</span>
+          <span class="info-row__value">${t.ultima_comunicacion ? new Date(t.ultima_comunicacion).toLocaleString("es-ES") : "—"}</span></div>`;
+      cont.appendChild(card);
+    }
+  } catch (err) {
+    setBanner(`Error salud tótems: ${err.message}`, "error");
   }
 }
 

@@ -161,6 +161,7 @@ export const api = {
 
   // Tótems
   totemsUsage() { return _doFetch("/dashboards/totems/usage"); },
+  totemsHealth() { return _doFetch("/dashboards/totems/health"); },
 
   // Chatbot
   chatbotTelemetry() { return _doFetch("/chatbot/telemetry"); },
@@ -177,6 +178,32 @@ export const api = {
     const q = new URLSearchParams({ desde, hasta }).toString();
     return _doFetch(`/incidencias/ans?${q}`);
   },
+
+  // Ficha del cliente / Ayuntamiento (bloque 1)
+  getCliente() { return _doFetch("/cliente"); },
+  saveCliente(payload) {
+    return _doFetch("/cliente", { method: "PUT", body: payload });
+  },
+  patchCliente(payload) {
+    return _doFetch("/cliente", { method: "PATCH", body: payload });
+  },
+
+  // Campañas de promoción (bloque 9)
+  listCampanas(params = {}) {
+    const q = new URLSearchParams(params).toString();
+    return _doFetch(`/campanas${q ? `?${q}` : ""}`);
+  },
+  getCampana(id) { return _doFetch(`/campanas/${id}`); },
+  createCampana(payload) {
+    return _doFetch("/campanas", { method: "POST", body: payload });
+  },
+  updateCampana(id, payload) {
+    return _doFetch(`/campanas/${id}`, { method: "PUT", body: payload });
+  },
+  deleteCampana(id) {
+    return _doFetch(`/campanas/${id}`, { method: "DELETE" });
+  },
+  campanaKpis(id) { return _doFetch(`/campanas/${id}/kpis`); },
 
   // Sensores y recursos (para el mapa)
   listSensors(params = { page: 1, page_size: 200 }) {

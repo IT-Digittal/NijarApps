@@ -4,7 +4,9 @@ from fastapi import APIRouter
 
 from nijar_dti.api.v1 import (
     auth,
+    campanas,
     chatbot,
+    cliente,
     cms,
     contexto,
     dashboards,
@@ -31,3 +33,5 @@ api_router.include_router(incidencias.router, prefix="/incidencias", tags=["inci
 api_router.include_router(cms.router, prefix="/cms", tags=["cms"])
 api_router.include_router(chatbot.router, prefix="/chatbot", tags=["chatbot"])
 api_router.include_router(dashboards.router, prefix="/dashboards", tags=["dashboards"])
+api_router.include_router(cliente.router, prefix="/cliente", tags=["cliente"])
+api_router.include_router(campanas.router, prefix="/campanas", tags=["campanas"])

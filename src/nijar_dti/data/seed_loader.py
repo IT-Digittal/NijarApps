@@ -28,6 +28,7 @@ from nijar_dti.data.seeds.demo_data import (
     generar_incidencias_seed,
     generar_interacciones_chatbot_seed,
     generar_observaciones_seed,
+    generar_observaciones_totem_seed,
     generar_opiniones_seed,
     generar_visitas_totem_seed,
     generar_visitas_web_app_seed,
@@ -245,6 +246,38 @@ async def seed_demo_observaciones(db: AsyncSession) -> None:
     log.info("Observaciones IoT demo creadas: %d", len(datos))
 
 
+async def seed_demo_observaciones_totem(db: AsyncSession) -> None:
+    """Carga telemetría de salud de los tótems si no existe."""
+    from sqlalchemy import func as sqlfunc
+    sensores = (
+        await db.execute(
+            select(Sensor).where(Sensor.tipo == "totem", Sensor.deleted_at.is_(None))
+        )
+    ).scalars().all()
+    if not sensores:
+        log.info("No hay sensores de tótem — saltando telemetría de tótems")
+        return
+    ids = [s.id for s in sensores]
+    existentes = int(
+        (
+            await db.execute(
+                select(sqlfunc.count())
+                .select_from(Observacion)
+                .where(Observacion.sensor_id.in_(ids))
+            )
+        ).scalar_one()
+        or 0
+    )
+    if existentes > 0:
+        log.info("Ya hay %d observaciones de tótem — saltando telemetría", existentes)
+        return
+    sensores_totem = {s.urn: str(s.id) for s in sensores}
+    datos = generar_observaciones_totem_seed(sensores_totem)
+    for d in datos:
+        db.add(Observacion(**d))
+    log.info("Telemetría de tótems demo creada: %d", len(datos))
+
+
 async def seed_demo_opiniones(db: AsyncSession) -> None:
     """Carga opiniones de social listening de demo si no existen."""
     from sqlalchemy import func as sqlfunc
@@ -411,6 +444,7 @@ async def run() -> None:
             # Demo data (solo si las tablas están vacías)
             await seed_demo_eventos(db)
             await seed_demo_observaciones(db)
+            await seed_demo_observaciones_totem(db)
             await seed_demo_opiniones(db)
             await seed_demo_visitas_totem(db)
             await seed_demo_visitas_web_app(db)

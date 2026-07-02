@@ -143,6 +143,38 @@ SENSORES_SEED: list[dict] = [
         "etiquetas": ["totem", "aforo", "turismo"],
     },
 
+    # ---------- Salud/telemetría de los tótems (online, temperatura interna) ----------
+    {
+        "urn": "urn:ngsi-ld:Device:nijar:totem:rodalquilar",
+        "nombre": "Tótem interactivo - Rodalquilar (salud)",
+        "tipo": "totem",
+        "fabricante": "PARTTEAM & OEMKIOSKS",
+        "modelo": "YUBox Outdoor 55\"",
+        "lon": -2.043, "lat": 36.853,
+        "descripcion_ubicacion": "Tótem digital interactivo en Rodalquilar",
+        "unidades_medida": "varios",
+        "umbrales_alerta": {"temperatura_interna_max": 60, "temperatura_interna_critica": 70},
+        "frecuencia_muestreo_seg": 300,
+        "estado": "operativo",
+        "topic_mqtt": "nijar/totems/rodalquilar/salud",
+        "etiquetas": ["totem", "salud", "disponibilidad"],
+    },
+    {
+        "urn": "urn:ngsi-ld:Device:nijar:totem:albaricoques",
+        "nombre": "Tótem interactivo - Los Albaricoques (salud)",
+        "tipo": "totem",
+        "fabricante": "PARTTEAM & OEMKIOSKS",
+        "modelo": "YUBox Outdoor 55\"",
+        "lon": -2.080, "lat": 36.872,
+        "descripcion_ubicacion": "Tótem digital interactivo en Los Albaricoques",
+        "unidades_medida": "varios",
+        "umbrales_alerta": {"temperatura_interna_max": 60, "temperatura_interna_critica": 70},
+        "frecuencia_muestreo_seg": 300,
+        "estado": "operativo",
+        "topic_mqtt": "nijar/totems/albaricoques/salud",
+        "etiquetas": ["totem", "salud", "disponibilidad"],
+    },
+
     # ---------- WiFi público Plaza La Glorieta ----------
     {
         "urn": "urn:ngsi-ld:Device:nijar:wifi:plaza-glorieta",

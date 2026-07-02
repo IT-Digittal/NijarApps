@@ -57,6 +57,54 @@ def generar_observaciones_seed(sensores_por_tipo: dict[str, str]) -> list[dict]:
     return observaciones
 
 
+# ---------- Salud/telemetría de tótems (últimos 7 días, cada hora) ----------
+
+_TOTEM_HORAS_ATRAS = 7 * 24  # 168 puntos horarios por tótem
+
+
+def generar_observaciones_totem_seed(sensores_totem: dict[str, str]) -> list[dict]:
+    """Genera telemetría de salud de los tótems (online, temperatura, reinicios).
+
+    Alimenta los KPIs del pliego de tótems: disponibilidad (horas online / horas
+    totales), temperatura interna (mantenimiento preventivo) y reinicios.
+
+    Args:
+        sensores_totem: dict de urn -> sensor_id (UUID como string) de los
+            sensores de tipo ``totem``.
+    """
+    observaciones: list[dict] = []
+    for idx, (_urn, sensor_id) in enumerate(sensores_totem.items()):
+        # Ventanas de indisponibilidad simuladas (distintas por tótem)
+        offline_horas = set()
+        # Un corte corto y otro más largo, desfasados por tótem
+        inicio_corte = 30 + idx * 20
+        for h in range(inicio_corte, inicio_corte + 2 + idx):
+            offline_horas.add(h)
+        reinicios_acum = 0
+        for i in range(_TOTEM_HORAS_ATRAS):
+            ts = _NOW - timedelta(hours=(_TOTEM_HORAS_ATRAS - i))
+            online = i not in offline_horas
+            # Un reinicio justo al recuperar el servicio
+            if not online and (i + 1) not in offline_horas:
+                reinicios_acum += 1
+            # Temperatura interna: base 32 °C + ciclo diario + ruido
+            hora_dia = ts.hour
+            temp = 32 + 8 * (1 if 12 <= hora_dia <= 18 else 0) + random.uniform(-3, 4)
+            observaciones.append({
+                "sensor_id": sensor_id,
+                "observado_en": ts,
+                "unidades": "estado",
+                "valores": {
+                    "online": 1 if online else 0,
+                    "temperatura_interna": round(temp, 1),
+                    "reinicios_acumulados": reinicios_acum,
+                    "conectividad_pct": round(random.uniform(96, 100), 1) if online else 0.0,
+                },
+                "valido": True,
+            })
+    return observaciones
+
+
 # ---------- Opiniones Social Listening (últimos 30 días) ----------
 
 _OPINION_TEMPLATES = [

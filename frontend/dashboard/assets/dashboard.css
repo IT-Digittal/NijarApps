@@ -1635,3 +1635,92 @@ h1, h2, h3, h4, h5, h6 {
   .kpi-grid--4, .kpi-grid--3 { grid-template-columns: 1fr; }
   .topics-grid { grid-template-columns: 1fr; }
 }
+
+/* ============================================================
+ * FICHA DEL CLIENTE + CAMPAÑAS (bloques 1 y 9 del pliego)
+ * ============================================================ */
+.section__header { position: relative; }
+.section__actions {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  gap: var(--space-2);
+}
+
+/* Tarjetas de información (ficha del cliente) */
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--space-4);
+}
+.info-card {
+  background: var(--color-surface, #fff);
+  border: 1px solid var(--color-border, #E0DDD2);
+  border-radius: var(--radius-lg, 12px);
+  padding: var(--space-5);
+}
+.info-card__title {
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--color-text-muted, #6b6b6b);
+  margin: 0 0 var(--space-3);
+}
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--color-bg-soft, #f2f0e9);
+  font-size: 0.9rem;
+}
+.info-row:last-child { border-bottom: none; }
+.info-row__label { color: var(--color-text-muted, #6b6b6b); }
+.info-row__value { font-weight: 600; text-align: right; }
+.info-chips { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.info-chip {
+  background: var(--color-bg-soft, #f2f0e9);
+  border: 1px solid var(--color-border, #E0DDD2);
+  border-radius: var(--radius-full, 999px);
+  padding: 2px 10px;
+  font-size: 0.8rem;
+}
+
+/* Formularios en cuadrícula */
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: var(--space-3) var(--space-4);
+}
+.form-grid .form-field { display: flex; flex-direction: column; }
+.form-grid .form-field span {
+  font-size: 0.8rem;
+  color: var(--color-text-muted, #6b6b6b);
+  margin-bottom: var(--space-1);
+}
+.form-field--wide { grid-column: 1 / -1; }
+.form-actions { display: flex; justify-content: flex-end; gap: var(--space-3); }
+
+/* Tabla / contenedor */
+.table-container {
+  background: var(--color-surface, #fff);
+  border: 1px solid var(--color-border, #E0DDD2);
+  border-radius: var(--radius-lg, 12px);
+  overflow: hidden;
+}
+
+/* Chips de estado de campaña */
+.estado-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: var(--radius-full, 999px);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.estado-badge--activa { background: #d8f3e3; color: #0f7b46; }
+.estado-badge--finalizada { background: #e5e7eb; color: #4b5563; }
+.estado-badge--planificada { background: #fdeecd; color: #92651a; }
+.estado-badge--cancelada { background: #f8d7da; color: #a1272f; }
+.row-clickable { cursor: pointer; }
+.row-clickable:hover { background: var(--color-bg-soft, #f7f5ee); }
