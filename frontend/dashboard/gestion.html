@@ -1,0 +1,1107 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Panel CMS — Plataforma DTI Níjar</title>
+  <meta name="description" content="Panel administrativo del CMS de la Plataforma DTI Níjar." />
+
+  <!-- Tipografías corporativas aprobadas "Salinas y Sal" v3 -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+
+  <link rel="stylesheet" href="./assets/dashboard.css?v=16" />
+</head>
+<body>
+
+  <!-- Skip link WCAG 2.1 AA -->
+  <a href="#main-content" class="skip-link">Saltar al contenido principal</a>
+
+  <!-- ========== TOP HEADER BAR ========== -->
+  <header class="top-header" role="banner">
+    <h1 class="top-header__title">Panel administrativo del CMS · Plataforma DTI Níjar</h1>
+  </header>
+  <div class="top-header__accent"></div>
+
+  <!-- ========== LOGIN DIALOG ========== -->
+  <dialog id="login-dialog" class="login-dialog" aria-labelledby="login-title">
+    <form id="login-form" class="login-form" novalidate>
+      <h2 id="login-title" class="login-form__title">Acceso al panel</h2>
+      <p class="login-form__subtitle">Introduce las credenciales del Ayuntamiento de Níjar.</p>
+      <div class="form-field">
+        <label for="email">Correo electrónico</label>
+        <input type="email" id="email" name="email" required autocomplete="username" />
+      </div>
+      <div class="form-field">
+        <label for="password">Contraseña</label>
+        <input type="password" id="password" name="password" required minlength="8" autocomplete="current-password" />
+      </div>
+      <div id="login-error" class="login-error hidden" role="alert"></div>
+      <button type="submit" class="btn btn--primary btn--full">Iniciar sesión</button>
+    </form>
+  </dialog>
+
+  <!-- Login backdrop overlay -->
+  <div id="login-overlay" class="login-overlay"></div>
+
+  <!-- ========== INVITE USER DIALOG ========== -->
+  <dialog id="invite-dialog" class="invite-dialog" aria-labelledby="invite-title">
+    <form id="invite-form" class="login-form" novalidate>
+      <h2 id="invite-title" class="login-form__title">Invitar usuario</h2>
+      <p class="login-form__subtitle">Envía una invitación al equipo del CMS de Níjar.</p>
+      <div class="form-field">
+        <label for="invite-email">Correo electrónico</label>
+        <input type="email" id="invite-email" name="email" required placeholder="usuario@nijar.es" autocomplete="off" />
+      </div>
+      <div class="form-field">
+        <label for="invite-nombre">Nombre completo</label>
+        <input type="text" id="invite-nombre" name="nombre" placeholder="Nombre y apellidos" autocomplete="off" />
+      </div>
+      <div class="form-field">
+        <label for="invite-rol">Rol</label>
+        <select id="invite-rol" class="form-field__select">
+          <option value="gestor_contenidos">Gestor de contenidos</option>
+          <option value="analista_datos">Analista de datos</option>
+          <option value="operador_smart_office">Operador Smart Office</option>
+          <option value="auditor">Auditor</option>
+          <option value="administrador_tic">Administrador TIC</option>
+        </select>
+      </div>
+      <div id="invite-error" class="login-error hidden" role="alert"></div>
+      <div class="invite-actions">
+        <button type="button" class="btn btn--secondary" id="invite-cancel">Cancelar</button>
+        <button type="submit" class="btn btn--primary">Enviar invitación</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- ========== APP SHELL ========== -->
+  <div class="app-shell">
+
+    <!-- ===== SIDEBAR ===== -->
+    <aside class="sidebar" role="navigation" aria-label="Navegación del CMS">
+      <div class="sidebar__brand">
+        <span class="sidebar__logo">VIVE NÍJAR</span>
+        <span class="sidebar__version">v 1.0 · CMS</span>
+      </div>
+
+      <nav class="sidebar__nav">
+        <button class="nav-item nav-item--active" data-section="dashboard">
+          <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span> Dashboard
+        </button>
+        <button class="nav-item" data-section="cliente">
+          <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/><line x1="9" y1="9" x2="9" y2="9.01"/><line x1="15" y1="9" x2="15" y2="9.01"/></svg></span> Ficha del cliente
+        </button>
+        <button class="nav-item" data-section="catalogo">
+          <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg></span> Recursos turísticos
+          <span class="nav-badge" data-badge="recursos">—</span>
+        </button>
+        <button class="nav-item" data-section="eventos">
+          <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span> Eventos
+          <span class="nav-badge nav-badge--gold" data-badge="eventos">—</span>
+        </button>
+        <button class="nav-item" data-section="smart-office">
+          <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="9" y1="6" x2="9" y2="6.01"/><line x1="15" y1="6" x2="15" y2="6.01"/><line x1="9" y1="10" x2="9" y2="10.01"/><line x1="15" y1="10" x2="15" y2="10.01"/><line x1="9" y1="14" x2="9" y2="14.01"/><line x1="15" y1="14" x2="15" y2="14.01"/><line x1="9" y1="18" x2="15" y2="18"/></svg></span> Smart Office
+        </button>
+        <button class="nav-item" data-section="big-data">
+          <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 00-7.07 17.07"/><path d="M12 2a10 10 0 017.07 17.07"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="5"/></svg></span> Social Listening
+        </button>
+        <button class="nav-item" data-section="campanas">
+          <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 11-5.8-1.6"/></svg></span> Campañas
+        </button>
+        <button class="nav-item" data-section="chatbot">
+          <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/><line x1="9" y1="10" x2="9" y2="10.01"/><line x1="15" y1="10" x2="15" y2="10.01"/></svg></span> Chatbot · FAQs
+        </button>
+        <button class="nav-item" data-section="mapa">
+          <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg></span> Mapa
+        </button>
+        <div class="nav-divider"></div>
+        <button class="nav-item" data-section="usuarios">
+          <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg></span> Usuarios y permisos
+        </button>
+        <button class="nav-item" data-section="totems">
+          <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18.01"/></svg></span> Tótems
+        </button>
+        <button class="nav-item" data-section="mantenimiento">
+          <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 00-5.4 5.4l-6 6a2 2 0 102.8 2.8l6-6a4 4 0 005.4-5.4l-2.3 2.3-2.1-2.1z"/></svg></span> Mantenimiento · ANS
+        </button>
+        <button class="nav-item" data-section="prediccion">
+          <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M19 9l-5 5-4-4-3 3"/></svg></span> Predicción y contexto
+        </button>
+        <button class="nav-item" data-section="config">
+          <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></span> Configuración
+        </button>
+      </nav>
+
+      <div class="sidebar__user">
+        <div class="sidebar__avatar" id="user-avatar">—</div>
+        <div class="sidebar__user-info">
+          <span class="sidebar__user-name" id="user-name">—</span>
+          <span class="sidebar__user-role" id="user-role">—</span>
+        </div>
+        <button id="logout-btn" class="sidebar__logout hidden" title="Cerrar sesión"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      </div>
+    </aside>
+
+    <!-- ===== MAIN CONTENT ===== -->
+    <main id="main-content" class="main-content" role="main">
+
+      <!-- Banner de estado -->
+      <div id="conn-banner" class="banner hidden" role="status" aria-live="polite"></div>
+
+      <!-- ============== SECTION: DASHBOARD ============== -->
+      <section data-section-content="dashboard" class="section">
+        <div class="section__header">
+          <span class="section__label">VISTA · DASHBOARD</span>
+          <h2 class="section__title" id="greeting">Bienvenido al panel</h2>
+          <p class="section__subtitle">Aquí tienes el estado del catálogo turístico de Níjar</p>
+        </div>
+
+        <!-- KPIs row -->
+        <div class="kpi-grid kpi-grid--4">
+          <article class="kpi-card">
+            <span class="kpi-card__label">RECURSOS</span>
+            <span class="kpi-card__value kpi-card__value--navy" data-kpi="dash-recursos">—</span>
+            <div class="kpi-card__bar"><div class="kpi-card__bar-fill kpi-card__bar-fill--teal" data-kpi-bar="recursos" style="width:0%"></div></div>
+            <span class="kpi-card__meta" data-kpi="dash-recursos-meta"></span>
+          </article>
+          <article class="kpi-card">
+            <span class="kpi-card__label">PENDIENTES DE REVISIÓN</span>
+            <span class="kpi-card__value kpi-card__value--gold" data-kpi="dash-pendientes">—</span>
+            <span class="kpi-card__meta kpi-card__meta--gold" data-kpi="dash-pendientes-meta">Requieren acción</span>
+          </article>
+          <article class="kpi-card">
+            <span class="kpi-card__label">PUBLICADOS HOY</span>
+            <span class="kpi-card__value kpi-card__value--navy" data-kpi="dash-publicados">—</span>
+            <span class="kpi-card__meta"><span class="dot dot--green"></span> en el catálogo activo</span>
+          </article>
+          <article class="kpi-card">
+            <span class="kpi-card__label">VISITAS TÓTEMS HOY</span>
+            <span class="kpi-card__value kpi-card__value--navy" data-kpi="tot-int">—</span>
+            <span class="kpi-card__meta"><span class="dot dot--green"></span> <span data-kpi="tot-ses">—</span> sesiones únicas</span>
+          </article>
+        </div>
+
+        <!-- Smart Office KPIs -->
+        <div class="kpi-grid kpi-grid--4" style="margin-top: var(--space-4);">
+          <article class="kpi-card kpi-card--colored kpi-card--navy">
+            <span class="kpi-card__label">CO₂ ACTUAL</span>
+            <span class="kpi-card__value" data-kpi="co2">—</span>
+            <span class="kpi-card__unit">ppm</span>
+          </article>
+          <article class="kpi-card kpi-card--colored kpi-card--teal">
+            <span class="kpi-card__label">TEMPERATURA</span>
+            <span class="kpi-card__value" data-kpi="temp">—</span>
+            <span class="kpi-card__unit">°C</span>
+          </article>
+          <article class="kpi-card kpi-card--colored kpi-card--gold">
+            <span class="kpi-card__label">HUMEDAD</span>
+            <span class="kpi-card__value" data-kpi="hum">—</span>
+            <span class="kpi-card__unit">%</span>
+          </article>
+          <article class="kpi-card kpi-card--colored kpi-card--dark">
+            <span class="kpi-card__label">RUIDO</span>
+            <span class="kpi-card__value" data-kpi="noise">—</span>
+            <span class="kpi-card__unit">dB</span>
+          </article>
+        </div>
+
+        <!-- Two-column: Catalog status + Activity -->
+        <div class="dashboard-columns">
+          <article class="card">
+            <h3 class="card__title">Estado del catálogo por categoría</h3>
+            <div id="catalog-status" class="catalog-bars"></div>
+          </article>
+          <article class="card">
+            <h3 class="card__title">Actividad reciente</h3>
+            <ol id="activity-feed" class="activity-feed"></ol>
+          </article>
+        </div>
+      </section>
+
+      <!-- ============== SECTION: CATÁLOGO ============== -->
+      <section data-section-content="catalogo" class="section hidden">
+        <div class="section__header" style="display:flex;justify-content:space-between;align-items:flex-start;">
+          <div>
+            <span class="section__label">RECURSOS TURÍSTICOS</span>
+            <h2 class="section__title">Catálogo turístico</h2>
+            <p class="section__subtitle"><span data-kpi="cat-total">—</span> recursos · <span data-kpi="cat-borradores">0</span> borradores · última actualización hoy</p>
+          </div>
+          <button class="btn btn--primary" id="btn-new-recurso">+ Añadir recurso</button>
+        </div>
+        <div class="toolbar">
+          <input type="search" id="catalog-search" class="search-input" placeholder="Buscar en el catálogo..." />
+          <div class="filter-pills" id="catalog-filters"></div>
+        </div>
+        <div class="card">
+          <div class="table-wrap">
+            <table class="data-table" id="recursos-table">
+              <caption class="sr-only">Listado de recursos turísticos</caption>
+              <thead>
+                <tr>
+                  <th>ESTADO</th>
+                  <th>NOMBRE</th>
+                  <th>CATEGORÍA</th>
+                  <th>UBICACIÓN</th>
+                  <th>IDIOMAS</th>
+                  <th>ACCESIBLE</th>
+                  <th>ACTUALIZADO</th>
+                  <th>ACCIONES</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============== SECTION: EDITOR DE RECURSO ============== -->
+      <section data-section-content="editor" class="section hidden">
+        <div class="section__header" style="display:flex;justify-content:space-between;align-items:flex-start;">
+          <div>
+            <span class="section__label">EDITOR DE RECURSO</span>
+            <h2 class="section__title" id="ed-title">Nuevo recurso</h2>
+            <p class="section__subtitle" id="ed-subtitle"></p>
+          </div>
+          <div class="ed-actions">
+            <span class="ed-saved hidden" id="ed-saved"><span class="dot dot--green"></span> Guardado</span>
+            <button type="button" class="btn btn--secondary" id="ed-btn-cancel">Volver al catálogo</button>
+            <button type="button" class="btn btn--gold" id="ed-btn-draft">Guardar borrador</button>
+            <button type="button" class="btn btn--primary" id="ed-btn-publish">Publicar en tótems</button>
+          </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="ed-tabs">
+          <button class="ed-tab ed-tab--active" data-edtab="contenido">Contenido</button>
+          <button class="ed-tab" data-edtab="multimedia">Multimedia</button>
+          <button class="ed-tab" data-edtab="ubicacion">Ubicación</button>
+          <button class="ed-tab" data-edtab="accesibilidad">Accesibilidad</button>
+          <button class="ed-tab" data-edtab="seo">SEO y publicación</button>
+        </div>
+
+        <!-- Tab: Contenido -->
+        <div class="card ed-panel" id="ed-panel-contenido">
+          <h3 class="card__title" style="margin-bottom:var(--space-5)">Información básica</h3>
+
+          <!-- Row 1: categoría + estado -->
+          <div class="ed-row ed-row--3">
+            <div class="form-field">
+              <label for="ed-categoria">CATEGORÍA *</label>
+              <select id="ed-categoria">
+                <option value="playa">Playa</option><option value="mirador">Mirador</option>
+                <option value="ruta">Ruta</option><option value="monumento">Monumento</option>
+                <option value="yacimiento">Yacimiento</option><option value="punto_interes">Punto de interés</option>
+                <option value="centro_visitantes">Centro visitantes</option><option value="oficina_turismo">Oficina turismo</option>
+              </select>
+            </div>
+            <div class="form-field">
+              <label for="ed-subcategoria">SUBCATEGORÍA</label>
+              <input type="text" id="ed-subcategoria" placeholder="Panorámico costero" />
+            </div>
+            <div class="form-field">
+              <label>ESTADO PUBLICACIÓN</label>
+              <div class="ed-status-pill" id="ed-pub-status"><span class="dot dot--green"></span> Publicado en los 2 tótems</div>
+            </div>
+          </div>
+
+          <!-- Row 2: nombre multilingüe -->
+          <div class="form-field" style="margin-top:var(--space-5)">
+            <label>NOMBRE DEL RECURSO · MULTILINGÜE</label>
+            <div class="ed-lang-tabs">
+              <button type="button" class="ed-lang ed-lang--active" data-elang="es">ES</button>
+              <button type="button" class="ed-lang" data-elang="en">EN</button>
+              <button type="button" class="ed-lang" data-elang="de">DE</button>
+              <button type="button" class="ed-lang" data-elang="fr">FR</button>
+            </div>
+            <div class="ed-row ed-row--4">
+              <input type="text" id="ed-nombre-es" placeholder="Nombre en español" />
+              <input type="text" id="ed-nombre-en" placeholder="Name in English" />
+              <input type="text" id="ed-nombre-de" placeholder="Name auf Deutsch" />
+              <input type="text" id="ed-nombre-fr" placeholder="Nom en français" />
+            </div>
+          </div>
+
+          <!-- Row 3: descripción -->
+          <div class="ed-row ed-row--2" style="margin-top:var(--space-5)">
+            <div class="form-field">
+              <label for="ed-desc-corta">DESCRIPCIÓN CORTA · MULTILINGÜE</label>
+              <textarea id="ed-desc-corta" rows="4" placeholder="Descripción breve del recurso..."></textarea>
+            </div>
+            <div class="form-field">
+              <label for="ed-desc-larga">DESCRIPCIÓN LARGA</label>
+              <textarea id="ed-desc-larga" rows="4" placeholder="Descripción detallada..."></textarea>
+            </div>
+          </div>
+
+          <!-- Row 4: horarios, contacto, confianza -->
+          <div class="ed-row ed-row--3" style="margin-top:var(--space-5)">
+            <div class="form-field">
+              <label for="ed-horarios">HORARIOS</label>
+              <input type="text" id="ed-horarios" placeholder="24 horas · todo el año" />
+            </div>
+            <div class="form-field">
+              <label for="ed-contacto">CONTACTO</label>
+              <input type="text" id="ed-contacto" placeholder="turismo@nijar.es" />
+            </div>
+            <div class="form-field">
+              <label>CONFIANZA CHATBOT</label>
+              <div class="ed-status-pill ed-status-pill--green"><span class="dot dot--green"></span> Alta · información oficial verificable</div>
+            </div>
+          </div>
+
+          <!-- Row 5: coordenadas -->
+          <div class="ed-row ed-row--2" style="margin-top:var(--space-5)">
+            <div class="form-field">
+              <label for="ed-lat">LATITUD *</label>
+              <input type="number" id="ed-lat" step="0.000001" placeholder="36.85" />
+            </div>
+            <div class="form-field">
+              <label for="ed-lon">LONGITUD *</label>
+              <input type="number" id="ed-lon" step="0.000001" placeholder="-2.10" />
+            </div>
+          </div>
+
+          <!-- Row 6: visible en -->
+          <div class="form-field" style="margin-top:var(--space-5)">
+            <label>VISIBLE EN</label>
+            <div class="ed-channels">
+              <button type="button" class="ed-channel ed-channel--active">✓ Tótem ruta</button>
+              <button type="button" class="ed-channel ed-channel--active">✓ Tótem portuaria</button>
+              <button type="button" class="ed-channel ed-channel--active">✓ Asistente IA</button>
+              <button type="button" class="ed-channel">○ Web turística</button>
+              <button type="button" class="ed-channel">○ App Vive Níjar</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Placeholder panels for other tabs -->
+        <div class="card ed-panel hidden" id="ed-panel-multimedia"><p class="placeholder-text">Gestión de fotografías e imágenes del recurso.</p></div>
+        <div class="card ed-panel hidden" id="ed-panel-ubicacion"><p class="placeholder-text">Mapa interactivo y coordenadas GPS del recurso.</p></div>
+        <div class="card ed-panel hidden" id="ed-panel-accesibilidad"><p class="placeholder-text">Información de accesibilidad PMR del recurso.</p></div>
+        <div class="card ed-panel hidden" id="ed-panel-seo"><p class="placeholder-text">Configuración SEO, metadatos y opciones de publicación.</p></div>
+
+        <!-- Footer sync bar -->
+        <div class="ed-sync-bar">Los cambios se publicarán en menos de 5 minutos en los canales activos · Sincronización automática</div>
+
+        <div id="ed-form-error" class="login-error hidden" role="alert" style="margin-top:var(--space-4)"></div>
+      </section>
+
+      <!-- ============== SECTION: SMART OFFICE ============== -->
+      <section data-section-content="smart-office" class="section hidden">
+        <div class="section__header">
+          <span class="section__label">SMART OFFICE</span>
+          <h2 class="section__title">Indicadores ambientales</h2>
+        </div>
+        <div class="card">
+          <div class="env-controls">
+            <label>Granularidad
+              <select id="env-granularity">
+                <option value="minuto">minuto</option>
+                <option value="hora" selected>hora</option>
+                <option value="dia">día</option>
+              </select>
+            </label>
+            <label>Desde <input type="datetime-local" id="env-from" /></label>
+            <label>Hasta <input type="datetime-local" id="env-to" /></label>
+            <button id="env-refresh" class="btn btn--primary">Actualizar</button>
+          </div>
+          <div class="chart-container"><canvas id="chart-environment" aria-label="Series ambientales"></canvas></div>
+        </div>
+        <article class="card" style="margin-top:var(--space-4)">
+          <h3 class="card__title">Catálogo de sensores</h3>
+          <div class="table-wrap">
+            <table class="data-table" id="sensores-table">
+              <caption class="sr-only">Listado de sensores del Smart Office</caption>
+              <thead><tr><th>NOMBRE</th><th>TIPO</th><th>ESTADO</th><th>UBICACIÓN</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </article>
+      </section>
+
+      <!-- ============== SECTION: BIG DATA ============== -->
+      <section data-section-content="big-data" class="section hidden">
+        <div class="section__header">
+          <span class="section__label">SOCIAL LISTENING</span>
+          <h2 class="section__title">Big Data turístico</h2>
+        </div>
+        <div class="kpi-grid kpi-grid--3">
+          <article class="kpi-card">
+            <span class="kpi-card__label">MENCIONES TOTALES</span>
+            <span class="kpi-card__value kpi-card__value--navy" data-kpi="bd-total2">—</span>
+          </article>
+          <article class="kpi-card">
+            <span class="kpi-card__label">ÚLTIMO MES</span>
+            <span class="kpi-card__value kpi-card__value--navy" data-kpi="bd-mes">—</span>
+          </article>
+          <article class="kpi-card">
+            <span class="kpi-card__label">SENTIMIENTO MEDIO</span>
+            <span class="kpi-card__value kpi-card__value--teal" data-kpi="bd-sent2">—</span>
+          </article>
+          <article class="kpi-card">
+            <span class="kpi-card__label">ÍNDICE NPS (PROXY)</span>
+            <span class="kpi-card__value kpi-card__value--navy" data-kpi="bd-nps">—</span>
+          </article>
+        </div>
+        <div class="dashboard-columns">
+          <article class="card">
+            <h3 class="card__title">Sentimiento (últimos 30 días)</h3>
+            <div class="chart-container"><canvas id="chart-sentiment" aria-label="Serie de sentimiento"></canvas></div>
+          </article>
+          <article class="card">
+            <h3 class="card__title">Share of voice</h3>
+            <div class="chart-container"><canvas id="chart-sov" aria-label="Share of voice"></canvas></div>
+          </article>
+        </div>
+        <div class="dashboard-columns">
+          <article class="card">
+            <h3 class="card__title">Composición lingüística de visitantes</h3>
+            <p class="section__subtitle">Aproximación al origen por convergencia de señales (k-anonimato ≥5).</p>
+            <div class="chart-container"><canvas id="chart-composicion" aria-label="Composición lingüística"></canvas></div>
+          </article>
+          <article class="card">
+            <h3 class="card__title">Top temas mencionados</h3>
+            <ul id="topics-list" class="topics-grid"></ul>
+          </article>
+        </div>
+      </section>
+
+      <!-- ============== SECTION: MANTENIMIENTO / ANS (C.1) ============== -->
+      <section data-section-content="mantenimiento" class="section hidden">
+        <div class="section__header">
+          <span class="section__label">MANTENIMIENTO · C.1</span>
+          <h2 class="section__title">Disponibilidad e incidencias (ANS)</h2>
+          <p class="section__subtitle">Informe mensual de servicio a partir del ticketing real.</p>
+        </div>
+        <div class="kpi-grid kpi-grid--3">
+          <article class="kpi-card">
+            <span class="kpi-card__label">DISPONIBILIDAD MEDIA</span>
+            <span class="kpi-card__value kpi-card__value--teal" data-kpi="mant-disp">—</span>
+          </article>
+          <article class="kpi-card">
+            <span class="kpi-card__label">INCIDENCIAS CRÍTICAS / ALTAS</span>
+            <span class="kpi-card__value kpi-card__value--navy" data-kpi="mant-inc">—</span>
+          </article>
+          <article class="kpi-card">
+            <span class="kpi-card__label">CUMPLIMIENTO ANS (RESOL.)</span>
+            <span class="kpi-card__value kpi-card__value--navy" data-kpi="mant-ans">—</span>
+          </article>
+        </div>
+        <div class="dashboard-columns">
+          <article class="card">
+            <h3 class="card__title">Disponibilidad por componente</h3>
+            <div class="chart-container"><canvas id="chart-disponibilidad" aria-label="Disponibilidad por componente"></canvas></div>
+          </article>
+          <article class="card">
+            <h3 class="card__title">Cumplimiento ANS por severidad</h3>
+            <div class="table-wrap">
+              <table class="data-table" id="tabla-ans">
+                <thead><tr><th>Severidad</th><th>Total</th><th>Cumplen</th><th>% cumpl.</th><th>T. resol. (h)</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </article>
+        </div>
+        <article class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;">
+            <h3 class="card__title">Informe mensual de servicio</h3>
+            <div style="display:flex;gap:.5rem;align-items:center;">
+              <input type="month" id="mant-mes" aria-label="Mes del informe" />
+              <button id="mant-generar" class="btn btn--primary" type="button">Generar</button>
+              <button id="mant-descargar" class="btn btn--secondary" type="button">Descargar .md</button>
+            </div>
+          </div>
+          <pre id="mant-informe" style="white-space:pre-wrap;margin-top:1rem;font-size:.85rem;line-height:1.5;"></pre>
+        </article>
+        <article class="card">
+          <h3 class="card__title">Incidencias recientes</h3>
+          <div class="table-wrap">
+            <table class="data-table" id="tabla-incidencias">
+              <thead><tr><th>Severidad</th><th>Componente</th><th>Título</th><th>Estado</th><th>Detectada</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </article>
+      </section>
+
+      <!-- ============== SECTION: PREDICCIÓN Y CONTEXTO (A.2/A.3) ============== -->
+      <section data-section-content="prediccion" class="section hidden">
+        <div class="section__header">
+          <span class="section__label">ANALÍTICA AVANZADA</span>
+          <h2 class="section__title">Predicción de afluencia y contexto histórico</h2>
+          <p class="section__subtitle">Modelo estacional con validación MAPE; backfill de fuentes públicas (INE/Junta/AENA).</p>
+        </div>
+        <div class="kpi-grid kpi-grid--3">
+          <article class="kpi-card">
+            <span class="kpi-card__label">MAPE VALIDACIÓN</span>
+            <span class="kpi-card__value kpi-card__value--navy" data-kpi="pred-mape">—</span>
+          </article>
+          <article class="kpi-card">
+            <span class="kpi-card__label">ANOMALÍAS DETECTADAS</span>
+            <span class="kpi-card__value kpi-card__value--navy" data-kpi="pred-anom">—</span>
+          </article>
+          <article class="kpi-card">
+            <span class="kpi-card__label">FACTOR DE EXPANSIÓN</span>
+            <span class="kpi-card__value kpi-card__value--teal" data-kpi="pred-factor">—</span>
+          </article>
+        </div>
+        <article class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;">
+            <h3 class="card__title">Predicción de afluencia (próximos 14 días)</h3>
+            <div style="display:flex;gap:.5rem;align-items:center;">
+              <label for="pred-metrica" class="section__label">Métrica</label>
+              <select id="pred-metrica" aria-label="Métrica de afluencia">
+                <option value="totem">Tótems</option>
+                <option value="chatbot">Chatbot</option>
+                <option value="web">Web</option>
+                <option value="app">App</option>
+              </select>
+            </div>
+          </div>
+          <div class="chart-container"><canvas id="chart-prediccion" aria-label="Predicción de afluencia"></canvas></div>
+        </article>
+        <article class="card">
+          <h3 class="card__title">Contexto histórico — Pernoctaciones (INE EOH, provincia de Almería)</h3>
+          <p class="section__subtitle">Series oficiales que dan «fondo poblacional» al observatorio y calibran el factor de expansión.</p>
+          <div class="chart-container"><canvas id="chart-contexto" aria-label="Contexto histórico INE"></canvas></div>
+        </article>
+      </section>
+
+      <!-- ============== SECTION: EVENTOS ============== -->
+      <section data-section-content="eventos" class="section hidden">
+        <div class="section__header" style="display:flex;justify-content:space-between;align-items:flex-start;">
+          <div>
+            <span class="section__label">AGENDA DE EVENTOS</span>
+            <h2 class="section__title" id="ev-month-title">Eventos · Mayo 2026</h2>
+          </div>
+          <button class="btn btn--primary" id="btn-new-event">+ Nuevo evento</button>
+        </div>
+
+        <!-- Toolbar: view toggles + week nav -->
+        <div class="card" style="padding:var(--space-3) var(--space-5);margin-bottom:var(--space-4);">
+          <div class="ev-toolbar">
+            <div class="ev-view-toggles">
+              <button class="ev-view-btn ev-view-btn--active" data-view="semana">Semana</button>
+              <button class="ev-view-btn" data-view="mes">Mes</button>
+              <button class="ev-view-btn" data-view="lista">Lista</button>
+            </div>
+            <div class="ev-week-nav">
+              <button class="ev-nav-arrow" id="ev-prev" aria-label="Semana anterior">◀</button>
+              <span class="ev-week-label" id="ev-week-label">—</span>
+              <button class="ev-nav-arrow" id="ev-next" aria-label="Semana siguiente">▶</button>
+            </div>
+            <button class="ev-filter-btn">Filtrar ▾</button>
+          </div>
+        </div>
+
+        <!-- Weekly calendar grid -->
+        <div class="card" style="padding:0;overflow:hidden;">
+          <div class="ev-calendar">
+            <div class="ev-day-headers" id="ev-day-headers"></div>
+            <div class="ev-day-grid" id="ev-day-grid"></div>
+          </div>
+        </div>
+
+        <!-- Selected event detail -->
+        <div class="card ev-detail hidden" id="ev-detail">
+          <div class="ev-detail__header">
+            <div>
+              <span class="ev-detail__sel" id="ev-detail-sel">Selección · —</span>
+              <p class="ev-detail__sub">Vista del evento seleccionado</p>
+            </div>
+            <button class="btn btn--primary" style="padding:8px 20px;min-height:38px;font-size:14px;" id="btn-edit-event">Editar evento</button>
+          </div>
+          <div class="ev-detail__divider"></div>
+          <div class="ev-detail__grid">
+            <div>
+              <span class="ev-detail__label">TÍTULO</span>
+              <span class="ev-detail__value ev-detail__value--title" id="ev-d-titulo">—</span>
+            </div>
+            <div>
+              <span class="ev-detail__label">DURACIÓN</span>
+              <span class="ev-detail__value" id="ev-d-duracion">—</span>
+            </div>
+            <div>
+              <span class="ev-detail__label">IDIOMAS</span>
+              <span class="ev-detail__value" id="ev-d-idiomas">ES · EN · DE · FR ✓</span>
+            </div>
+            <div>
+              <span class="ev-detail__label">UBICACIÓN</span>
+              <span class="ev-detail__value" id="ev-d-ubicacion">—</span>
+            </div>
+            <div>
+              <span class="ev-detail__label">PRECIO</span>
+              <span class="ev-detail__value" id="ev-d-precio">—</span>
+            </div>
+            <div>
+              <span class="ev-detail__label">PUNTOS DE INTERÉS</span>
+              <span class="ev-detail__value" id="ev-d-poi">—</span>
+            </div>
+            <div>
+              <span class="ev-detail__label">CAPACIDAD</span>
+              <div id="ev-d-capacidad">—</div>
+            </div>
+            <div>
+              <span class="ev-detail__label">VISIBLE EN</span>
+              <div class="ev-detail__pills" id="ev-d-visible">
+                <span class="ev-pill ev-pill--navy">Tótems</span>
+                <span class="ev-pill ev-pill--navy">Asistente</span>
+              </div>
+            </div>
+            <div>
+              <span class="ev-detail__label">ESTADO</span>
+              <span class="ev-detail__status" id="ev-d-estado"><span class="dot dot--green"></span> Publicado · sincronizado</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============== SECTION: CHATBOT ============== -->
+      <section data-section-content="chatbot" class="section hidden">
+        <div class="section__header">
+          <span class="section__label">CHATBOT · FAQs</span>
+          <h2 class="section__title">Telemetría del chatbot</h2>
+        </div>
+        <div class="kpi-grid kpi-grid--4">
+          <article class="kpi-card">
+            <span class="kpi-card__label">SESIONES</span>
+            <span class="kpi-card__value kpi-card__value--navy" data-kpi="cb-ses">—</span>
+          </article>
+          <article class="kpi-card">
+            <span class="kpi-card__label">INTERACCIONES</span>
+            <span class="kpi-card__value kpi-card__value--navy" data-kpi="cb-int">—</span>
+          </article>
+          <article class="kpi-card">
+            <span class="kpi-card__label">RESOLUCIÓN AUTÓNOMA</span>
+            <span class="kpi-card__value kpi-card__value--green" data-kpi="cb-res">—</span>
+            <span class="kpi-card__meta">objetivo ≥ 80%</span>
+          </article>
+          <article class="kpi-card">
+            <span class="kpi-card__label">SATISFACCIÓN</span>
+            <span class="kpi-card__value kpi-card__value--navy" data-kpi="cb-sat">—</span>
+            <span class="kpi-card__meta">% feedback útil</span>
+          </article>
+        </div>
+        <div class="dashboard-columns">
+          <article class="card">
+            <h3 class="card__title">Distribución por idioma</h3>
+            <div class="chart-container"><canvas id="chart-idiomas"></canvas></div>
+          </article>
+          <article class="card">
+            <h3 class="card__title">Top intents</h3>
+            <ol id="chatbot-intents" class="activity-feed"></ol>
+          </article>
+        </div>
+      </section>
+
+      <!-- ============== SECTION: MAPA ============== -->
+      <section data-section-content="mapa" class="section hidden">
+        <div class="section__header">
+          <span class="section__label">MAPA</span>
+          <h2 class="section__title">Recursos turísticos en el mapa</h2>
+        </div>
+        <div class="card">
+          <div id="map" class="map-container" role="application" aria-label="Mapa de Níjar"></div>
+        </div>
+      </section>
+
+      <!-- ============== SECTION: USUARIOS Y PERMISOS ============== -->
+      <section data-section-content="usuarios" class="section hidden">
+        <div class="section__header" style="display:flex;justify-content:space-between;align-items:flex-start;">
+          <div>
+            <span class="section__label">USUARIOS Y PERMISOS</span>
+            <h2 class="section__title">Equipo del CMS · Níjar</h2>
+          </div>
+          <button class="btn btn--primary" id="btn-invite-user">+ Invitar usuario</button>
+        </div>
+
+        <!-- Resumen -->
+        <div class="card usr-summary" id="usr-summary">
+          <span class="usr-summary__label">RESUMEN</span>
+          <span class="usr-summary__text" id="usr-summary-text">Cargando…</span>
+        </div>
+
+        <!-- User cards -->
+        <div id="usr-list" class="usr-list"></div>
+
+        <!-- Permisos por rol -->
+        <article class="card" style="margin-top:var(--space-4);">
+          <h3 class="card__title" style="font-size:20px;">Permisos por rol</h3>
+          <div class="usr-perms-grid">
+            <div>
+              <span class="usr-perms__role">ADMINISTRADOR TIC</span>
+              <ul class="usr-perms__list">
+                <li>Gestión completa · usuarios · configuración</li>
+                <li>Acceso a auditoría y logs del sistema</li>
+                <li>Despliegues y sincronización con tótems</li>
+              </ul>
+            </div>
+            <div>
+              <span class="usr-perms__role">GESTOR DE CONTENIDOS</span>
+              <ul class="usr-perms__list">
+                <li>Crear y editar recursos · eventos · FAQs</li>
+                <li>Publicar contenidos en tótems y chatbot</li>
+                <li>Sin acceso a configuración del sistema</li>
+              </ul>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <!-- ============== SECTION: TÓTEMS ============== -->
+      <section data-section-content="totems" class="section hidden">
+        <div class="section__header">
+          <span class="section__label">TÓTEMS INTERACTIVOS</span>
+          <h2 class="section__title">Uso de los tótems</h2>
+        </div>
+        <div class="kpi-grid kpi-grid--3">
+          <article class="kpi-card">
+            <span class="kpi-card__label">INTERACCIONES</span>
+            <span class="kpi-card__value kpi-card__value--navy" data-kpi="tot-int2">—</span>
+          </article>
+          <article class="kpi-card">
+            <span class="kpi-card__label">SESIONES ÚNICAS</span>
+            <span class="kpi-card__value kpi-card__value--navy" data-kpi="tot-ses2">—</span>
+          </article>
+          <article class="kpi-card">
+            <span class="kpi-card__label">DURACIÓN MEDIA</span>
+            <span class="kpi-card__value kpi-card__value--navy" data-kpi="tot-dur">—</span>
+            <span class="kpi-card__meta">segundos</span>
+          </article>
+        </div>
+        <div class="kpi-grid kpi-grid--3" style="margin-top:var(--space-4)">
+          <article class="kpi-card">
+            <span class="kpi-card__label">DISPONIBILIDAD MEDIA</span>
+            <span class="kpi-card__value kpi-card__value--teal" data-kpi="tot-disp">—</span>
+            <span class="kpi-card__meta">objetivo ≥ 99 % · últimos 7 días</span>
+          </article>
+        </div>
+        <div class="dashboard-columns" style="margin-top:var(--space-4)">
+          <article class="card">
+            <h3 class="card__title">Secciones más consultadas</h3>
+            <ol id="totems-secciones" class="activity-feed"></ol>
+          </article>
+          <article class="card">
+            <h3 class="card__title">Estado de los tótems</h3>
+            <div id="totems-health" class="info-grid"></div>
+          </article>
+        </div>
+      </section>
+
+      <!-- ============== SECTION: FICHA DEL CLIENTE ============== -->
+      <section data-section-content="cliente" class="section hidden">
+        <div class="section__header">
+          <span class="section__label">FICHA DEL CLIENTE / AYUNTAMIENTO</span>
+          <h2 class="section__title">Ficha general del proyecto</h2>
+          <div class="section__actions">
+            <button class="btn btn--secondary hidden" id="cliente-edit-btn">Editar ficha</button>
+          </div>
+        </div>
+        <div id="cliente-content"><p class="placeholder-text">Cargando ficha…</p></div>
+
+        <!-- Formulario de edición (oculto por defecto) -->
+        <form id="cliente-form" class="card hidden" style="margin-top:var(--space-4)" novalidate>
+          <h3 class="card__title">Editar ficha del cliente</h3>
+          <div class="form-grid">
+            <label class="form-field"><span>Cliente / Ayuntamiento</span><input type="text" id="cl-nombre" /></label>
+            <label class="form-field"><span>Área responsable</span><input type="text" id="cl-area" /></label>
+            <label class="form-field"><span>Proyecto</span><input type="text" id="cl-proyecto" /></label>
+            <label class="form-field"><span>CIF</span><input type="text" id="cl-cif" /></label>
+            <label class="form-field form-field--wide"><span>Dirección</span><input type="text" id="cl-direccion" /></label>
+            <label class="form-field"><span>Responsable · nombre</span><input type="text" id="cl-resp-nombre" /></label>
+            <label class="form-field"><span>Responsable · cargo</span><input type="text" id="cl-resp-cargo" /></label>
+            <label class="form-field"><span>Responsable · email</span><input type="email" id="cl-resp-email" /></label>
+            <label class="form-field"><span>Responsable · teléfono</span><input type="text" id="cl-resp-tel" /></label>
+            <label class="form-field"><span>Web turística</span><input type="text" id="cl-web" /></label>
+            <label class="form-field"><span>App</span><input type="text" id="cl-app" /></label>
+            <label class="form-field"><span>Facebook</span><input type="text" id="cl-facebook" /></label>
+            <label class="form-field"><span>Instagram</span><input type="text" id="cl-instagram" /></label>
+            <label class="form-field"><span>Idiomas activos (coma)</span><input type="text" id="cl-idiomas" placeholder="es, en, fr, de" /></label>
+          </div>
+          <div id="cliente-form-error" class="login-error hidden" role="alert" style="margin-top:var(--space-3)"></div>
+          <div class="form-actions" style="margin-top:var(--space-4)">
+            <button type="button" class="btn btn--secondary" id="cliente-cancel">Cancelar</button>
+            <button type="submit" class="btn btn--primary">Guardar cambios</button>
+          </div>
+        </form>
+      </section>
+
+      <!-- ============== SECTION: CAMPAÑAS ============== -->
+      <section data-section-content="campanas" class="section hidden">
+        <div class="section__header">
+          <span class="section__label">CAMPAÑAS DE PROMOCIÓN TURÍSTICA</span>
+          <h2 class="section__title">Campañas y medición de eficacia</h2>
+          <div class="section__actions">
+            <button class="btn btn--primary hidden" id="btn-new-campana">+ Nueva campaña</button>
+          </div>
+        </div>
+        <div class="kpi-grid kpi-grid--3">
+          <article class="kpi-card">
+            <span class="kpi-card__label">CAMPAÑAS TOTALES</span>
+            <span class="kpi-card__value kpi-card__value--navy" data-kpi="camp-total">—</span>
+          </article>
+          <article class="kpi-card">
+            <span class="kpi-card__label">ACTIVAS</span>
+            <span class="kpi-card__value kpi-card__value--teal" data-kpi="camp-activas">—</span>
+          </article>
+          <article class="kpi-card">
+            <span class="kpi-card__label">PRESUPUESTO TOTAL</span>
+            <span class="kpi-card__value kpi-card__value--gold" data-kpi="camp-presupuesto">—</span>
+            <span class="kpi-card__meta">€ acumulado</span>
+          </article>
+        </div>
+        <div class="table-container">
+          <table class="data-table" id="campanas-table">
+            <thead>
+              <tr>
+                <th>Campaña</th><th>Estado</th><th>Objetivo</th><th>Periodo</th>
+                <th>Canales</th><th>Presupuesto</th><th></th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <article class="card hidden" id="campana-kpis-card" style="margin-top:var(--space-4)">
+          <h3 class="card__title" id="campana-kpis-title">Eficacia de la campaña</h3>
+          <div id="campana-kpis-body"></div>
+        </article>
+      </section>
+
+      <!-- ============== SECTION: CONFIG ============== -->
+      <section data-section-content="config" class="section hidden">
+        <div class="section__header">
+          <span class="section__label">CONFIGURACIÓN</span>
+          <h2 class="section__title">Configuración del sistema</h2>
+          <p class="section__subtitle">Estado de la plataforma, usuario y permisos</p>
+        </div>
+
+        <!-- User profile + system info -->
+        <div class="dashboard-columns">
+          <!-- Perfil del usuario -->
+          <article class="card">
+            <h3 class="card__title">Tu perfil</h3>
+            <div class="config-profile">
+              <div class="config-profile__avatar" id="config-avatar">—</div>
+              <div class="config-profile__info">
+                <span class="config-profile__name" id="config-name">—</span>
+                <span class="config-profile__email" id="config-email">—</span>
+                <span class="config-profile__role" id="config-role-badge">—</span>
+              </div>
+            </div>
+            <div class="config-fields">
+              <div class="config-field">
+                <span class="config-field__label">Rol</span>
+                <span class="config-field__value" id="config-rol">—</span>
+              </div>
+              <div class="config-field">
+                <span class="config-field__label">Estado</span>
+                <span class="config-field__value"><span class="dot dot--green"></span> Activo</span>
+              </div>
+              <div class="config-field">
+                <span class="config-field__label">2FA</span>
+                <span class="config-field__value" id="config-2fa">—</span>
+              </div>
+            </div>
+          </article>
+
+          <!-- Info del sistema -->
+          <article class="card">
+            <h3 class="card__title">Estado del sistema</h3>
+            <div class="config-fields">
+              <div class="config-field">
+                <span class="config-field__label">Plataforma</span>
+                <span class="config-field__value" id="config-app-name">—</span>
+              </div>
+              <div class="config-field">
+                <span class="config-field__label">Versión</span>
+                <span class="config-field__value" id="config-version">—</span>
+              </div>
+              <div class="config-field">
+                <span class="config-field__label">Entorno</span>
+                <span class="config-field__value" id="config-env">—</span>
+              </div>
+              <div class="config-field">
+                <span class="config-field__label">Motor chatbot</span>
+                <span class="config-field__value" id="config-chatbot-engine">—</span>
+              </div>
+              <div class="config-field">
+                <span class="config-field__label">Base de datos</span>
+                <span class="config-field__value" id="config-db-status">—</span>
+              </div>
+              <div class="config-field">
+                <span class="config-field__label">API</span>
+                <span class="config-field__value" id="config-api-status">—</span>
+              </div>
+              <div class="config-field">
+                <span class="config-field__label">Expediente</span>
+                <span class="config-field__value" id="config-expediente">—</span>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <!-- Permisos por rol -->
+        <article class="card" style="margin-top: var(--space-4);">
+          <h3 class="card__title">Permisos por rol</h3>
+          <div class="config-roles-grid">
+            <div class="config-role-card config-role-card--navy">
+              <span class="config-role-card__title">Administrador TIC</span>
+              <ul class="config-role-card__perms">
+                <li>Gestión completa · usuarios · configuración</li>
+                <li>Acceso a auditoría y logs del sistema</li>
+                <li>Despliegues y sincronización con tótems</li>
+                <li>CRUD de todos los recursos y eventos</li>
+              </ul>
+            </div>
+            <div class="config-role-card config-role-card--teal">
+              <span class="config-role-card__title">Gestor de contenidos</span>
+              <ul class="config-role-card__perms">
+                <li>Crear y editar recursos · eventos · FAQs</li>
+                <li>Publicar contenidos en tótems y chatbot</li>
+                <li>Sin acceso a configuración del sistema</li>
+                <li>Sin acceso a gestión de usuarios</li>
+              </ul>
+            </div>
+            <div class="config-role-card config-role-card--gold">
+              <span class="config-role-card__title">Analista de datos</span>
+              <ul class="config-role-card__perms">
+                <li>Lectura de Big Data y Social Listening</li>
+                <li>Acceso a telemetría del chatbot</li>
+                <li>Informes mensuales y dashboards</li>
+                <li>Sin permisos de escritura</li>
+              </ul>
+            </div>
+            <div class="config-role-card config-role-card--dark">
+              <span class="config-role-card__title">Operador Smart Office</span>
+              <ul class="config-role-card__perms">
+                <li>Ingesta IoT y sensores</li>
+                <li>Consulta dashboards Smart Office</li>
+                <li>Sin acceso a contenidos turísticos</li>
+              </ul>
+            </div>
+            <div class="config-role-card config-role-card--outline">
+              <span class="config-role-card__title">Auditor</span>
+              <ul class="config-role-card__perms">
+                <li>Lectura de logs y eventos de seguridad</li>
+                <li>Informes mensuales del C.1</li>
+                <li>Acceso de solo lectura a todo el sistema</li>
+              </ul>
+            </div>
+          </div>
+        </article>
+
+        <!-- Servicios conectados -->
+        <article class="card" style="margin-top: var(--space-4);">
+          <h3 class="card__title">Servicios conectados</h3>
+          <div class="config-services" id="config-services">
+            <div class="config-service">
+              <span class="config-service__icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></span>
+              <span class="config-service__name">API FastAPI</span>
+              <span class="config-service__status config-service__status--ok" id="svc-api">Verificando…</span>
+            </div>
+            <div class="config-service">
+              <span class="config-service__icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg></span>
+              <span class="config-service__name">PostgreSQL + PostGIS</span>
+              <span class="config-service__status config-service__status--ok" id="svc-db">Verificando…</span>
+            </div>
+            <div class="config-service">
+              <span class="config-service__icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></span>
+              <span class="config-service__name">Redis (cache)</span>
+              <span class="config-service__status" id="svc-redis">No monitorizado</span>
+            </div>
+            <div class="config-service">
+              <span class="config-service__icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0114.08 0"/><path d="M1.42 9a16 16 0 0121.16 0"/><path d="M8.53 16.11a6 6 0 016.95 0"/><circle cx="12" cy="20" r="1"/></svg></span>
+              <span class="config-service__name">MQTT (Mosquitto)</span>
+              <span class="config-service__status" id="svc-mqtt">No monitorizado</span>
+            </div>
+            <div class="config-service">
+              <span class="config-service__icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M2 12h6"/><path d="M14 12h8"/><circle cx="12" cy="12" r="2"/></svg></span>
+              <span class="config-service__name">Rasa (chatbot NLU)</span>
+              <span class="config-service__status" id="svc-rasa">No conectado</span>
+            </div>
+          </div>
+        </article>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ========== EVENT DIALOG ========== -->
+  <dialog id="event-dialog" class="event-dialog" aria-labelledby="event-dialog-title">
+    <form id="event-form" class="event-form" novalidate>
+      <div class="event-form__header">
+        <h2 id="event-dialog-title" class="event-form__title">Nuevo evento</h2>
+        <button type="button" id="event-dialog-close" class="event-form__close" aria-label="Cerrar">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="event-form__grid">
+        <div class="form-field">
+          <label for="ev-nombre">Nombre del evento *</label>
+          <input type="text" id="ev-nombre" required maxlength="255" />
+        </div>
+        <div class="form-field">
+          <label for="ev-tipo">Tipo *</label>
+          <select id="ev-tipo" required>
+            <option value="cultural">Cultural</option>
+            <option value="musical">Musical</option>
+            <option value="naturaleza">Naturaleza</option>
+            <option value="deportivo">Deportivo</option>
+            <option value="gastronomico">Gastronómico</option>
+            <option value="educativo">Educativo</option>
+            <option value="festivo">Festivo</option>
+            <option value="otro">Otro</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="ev-fecha-inicio">Fecha y hora de inicio *</label>
+          <input type="datetime-local" id="ev-fecha-inicio" required />
+        </div>
+        <div class="form-field">
+          <label for="ev-fecha-fin">Fecha y hora de fin *</label>
+          <input type="datetime-local" id="ev-fecha-fin" required />
+        </div>
+        <div class="form-field form-field--full">
+          <label for="ev-descripcion">Descripción</label>
+          <textarea id="ev-descripcion" rows="3"></textarea>
+        </div>
+        <div class="form-field">
+          <label for="ev-direccion">Ubicación / Dirección</label>
+          <input type="text" id="ev-direccion" />
+        </div>
+        <div class="form-field">
+          <label for="ev-organizador">Organizador</label>
+          <input type="text" id="ev-organizador" />
+        </div>
+        <div class="form-field">
+          <label for="ev-precio">Precio</label>
+          <input type="text" id="ev-precio" placeholder="Gratuito" />
+        </div>
+        <div class="form-field">
+          <label for="ev-capacidad">Capacidad (aforo)</label>
+          <input type="number" id="ev-capacidad" min="0" />
+        </div>
+      </div>
+      <div id="event-form-error" class="login-error hidden" role="alert"></div>
+      <div class="event-form__actions">
+        <button type="button" id="event-dialog-cancel" class="btn btn--secondary">Cancelar</button>
+        <button type="submit" class="btn btn--primary" id="event-form-submit">Crear evento</button>
+      </div>
+    </form>
+  </dialog>
+
+  <footer class="app-footer">
+    Plataforma DTI Níjar · Expediente 18962/2025 · Adjudicatario IT DIGITTAL
+  </footer>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script type="module" src="./assets/dashboard.js?v=16"></script>
+</body>
+</html>
