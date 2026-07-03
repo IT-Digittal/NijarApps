@@ -10,6 +10,7 @@ Entidades del modelo semántico de la plataforma DTI Níjar:
 - Usuario (RBAC)
 """
 
+from nijar_dti.models.alumbrado import CuadroMando, Luminaria, ZonaAlumbrado
 from nijar_dti.models.campana import Campana
 from nijar_dti.models.cliente import Cliente
 from nijar_dti.models.contenido import Contenido
@@ -23,22 +24,37 @@ from nijar_dti.models.recurso_turistico import RecursoTuristico
 from nijar_dti.models.sensor import Sensor
 from nijar_dti.models.servicio import Servicio
 from nijar_dti.models.usuario import Usuario
+from nijar_dti.models.verticales import (
+    CamaraCCTV,
+    Contenedor,
+    PuntoMovilidad,
+    SectorAgua,
+    SuministroEnergia,
+)
 from nijar_dti.models.visita import Visita
 
 __all__ = [
     "FAQ",
+    "CamaraCCTV",
     "Campana",
     "Cliente",
+    "Contenedor",
     "Contenido",
     "ContextoTuristico",
+    "CuadroMando",
     "EventoTuristico",
     "Incidencia",
     "InteraccionChatbot",
+    "Luminaria",
     "Observacion",
     "Opinion",
+    "PuntoMovilidad",
     "RecursoTuristico",
+    "SectorAgua",
     "Sensor",
     "Servicio",
+    "SuministroEnergia",
     "Usuario",
     "Visita",
+    "ZonaAlumbrado",
 ]

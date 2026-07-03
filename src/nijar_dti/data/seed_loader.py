@@ -36,6 +36,16 @@ from nijar_dti.data.seeds.demo_data import (
 from nijar_dti.data.seeds.faqs import FAQS_SEED
 from nijar_dti.data.seeds.recursos_turisticos import RECURSOS_SEED
 from nijar_dti.data.seeds.sensores import SENSORES_SEED
+from nijar_dti.data.seeds.verticales import (
+    ZONAS_ALUMBRADO,
+    generar_camaras_seed,
+    generar_contenedores_seed,
+    generar_cuadros_seed,
+    generar_luminarias_seed,
+    generar_movilidad_seed,
+    generar_sectores_agua_seed,
+    generar_suministros_energia_seed,
+)
 from nijar_dti.models.campana import Campana
 from nijar_dti.models.cliente import Cliente
 from nijar_dti.models.contenido import Contenido
@@ -47,7 +57,15 @@ from nijar_dti.models.observacion import Observacion
 from nijar_dti.models.opinion import Opinion
 from nijar_dti.models.recurso_turistico import RecursoTuristico
 from nijar_dti.models.sensor import Sensor
+from nijar_dti.models.alumbrado import CuadroMando, Luminaria, ZonaAlumbrado
 from nijar_dti.models.usuario import Usuario
+from nijar_dti.models.verticales import (
+    CamaraCCTV,
+    Contenedor,
+    PuntoMovilidad,
+    SectorAgua,
+    SuministroEnergia,
+)
 from nijar_dti.models.visita import Visita
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
@@ -431,6 +449,65 @@ async def seed_demo_contenidos(db: AsyncSession) -> None:
     log.info("Contenidos CMS demo creados: %d", len(datos))
 
 
+async def _tabla_vacia(db: AsyncSession, model) -> bool:
+    from sqlalchemy import func as sqlfunc
+    n = int((await db.execute(select(sqlfunc.count()).select_from(model))).scalar_one() or 0)
+    return n == 0
+
+
+async def seed_verticales(db: AsyncSession) -> None:
+    """Carga los activos de las verticales Smart City (idempotente por tabla)."""
+    # Alumbrado
+    if await _tabla_vacia(db, ZonaAlumbrado):
+        for z in ZONAS_ALUMBRADO:
+            db.add(ZonaAlumbrado(
+                id=z["id"], nombre=z["nombre"], luminarias=z["luminarias"],
+                led=z["led"], vsap=z["vsap"], solar=z["solar"],
+                latitud=z["latitud"], longitud=z["longitud"],
+            ))
+        log.info("Alumbrado · zonas creadas: %d", len(ZONAS_ALUMBRADO))
+    if await _tabla_vacia(db, CuadroMando):
+        cuadros = generar_cuadros_seed()
+        for c in cuadros:
+            db.add(CuadroMando(**c))
+        log.info("Alumbrado · cuadros de mando creados: %d", len(cuadros))
+    if await _tabla_vacia(db, Luminaria):
+        lums = generar_luminarias_seed()
+        for x in lums:
+            db.add(Luminaria(**x))
+        log.info("Alumbrado · luminarias creadas: %d", len(lums))
+    # Agua
+    if await _tabla_vacia(db, SectorAgua):
+        secs = generar_sectores_agua_seed()
+        for s in secs:
+            db.add(SectorAgua(**s))
+        log.info("Agua · sectores creados: %d", len(secs))
+    # Residuos
+    if await _tabla_vacia(db, Contenedor):
+        cont = generar_contenedores_seed()
+        for c in cont:
+            db.add(Contenedor(**c))
+        log.info("Residuos · contenedores creados: %d", len(cont))
+    # Movilidad
+    if await _tabla_vacia(db, PuntoMovilidad):
+        pts = generar_movilidad_seed()
+        for p in pts:
+            db.add(PuntoMovilidad(**p))
+        log.info("Movilidad · puntos creados: %d", len(pts))
+    # Seguridad
+    if await _tabla_vacia(db, CamaraCCTV):
+        cams = generar_camaras_seed()
+        for c in cams:
+            db.add(CamaraCCTV(**c))
+        log.info("Seguridad · cámaras creadas: %d", len(cams))
+    # Energía
+    if await _tabla_vacia(db, SuministroEnergia):
+        sums = generar_suministros_energia_seed()
+        for s in sums:
+            db.add(SuministroEnergia(**s))
+        log.info("Energía · suministros (CUPS) creados: %d", len(sums))
+
+
 async def run() -> None:
     async with AsyncSessionLocal() as db:
         try:
@@ -452,6 +529,7 @@ async def run() -> None:
             await seed_demo_chatbot(db)
             await seed_demo_incidencias(db)
             await seed_contexto_backfill(db)
+            await seed_verticales(db)
             await db.commit()
             log.info("Seeds aplicados correctamente")
         except Exception:  # noqa: BLE001

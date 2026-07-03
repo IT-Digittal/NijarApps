@@ -17,6 +17,7 @@ from nijar_dti.api.v1 import (
     rutas,
     social,
     tourism,
+    verticales,
 )
 
 api_router = APIRouter()
@@ -35,3 +36,4 @@ api_router.include_router(chatbot.router, prefix="/chatbot", tags=["chatbot"])
 api_router.include_router(dashboards.router, prefix="/dashboards", tags=["dashboards"])
 api_router.include_router(cliente.router, prefix="/cliente", tags=["cliente"])
 api_router.include_router(campanas.router, prefix="/campanas", tags=["campanas"])
+api_router.include_router(verticales.router, prefix="/verticales", tags=["verticales"])

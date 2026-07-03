@@ -396,6 +396,51 @@ CREATE INDEX IF NOT EXISTS ix_campanas_recurso_id    ON campanas(recurso_id);
 -- (borrador → pendiente_aprobacion → aprobado → programado → publicado → archivado).
 
 -- =============================================================================
+-- VERTICALES SMART CITY (plataforma transversal · migración 005)
+-- =============================================================================
+-- Alumbrado público (gemelo digital: zona → cuadro → luminaria)
+CREATE TABLE IF NOT EXISTS alumbrado_zonas (
+    id          VARCHAR(40) PRIMARY KEY,
+    nombre      VARCHAR(120) NOT NULL,
+    luminarias  INTEGER NOT NULL DEFAULT 0,
+    led         INTEGER NOT NULL DEFAULT 0,
+    vsap        INTEGER NOT NULL DEFAULT 0,
+    solar       INTEGER NOT NULL DEFAULT 0,
+    latitud     NUMERIC(9,6),
+    longitud    NUMERIC(9,6),
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS alumbrado_cuadros (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    codigo VARCHAR(20) NOT NULL UNIQUE, nombre VARCHAR(120) NOT NULL,
+    zona_id VARCHAR(40) NOT NULL, ubicacion VARCHAR(255),
+    circuitos INTEGER NOT NULL DEFAULT 0, potencia_kw NUMERIC(8,2) NOT NULL DEFAULT 0,
+    factor_potencia NUMERIC(4,2), comunicaciones VARCHAR(30) NOT NULL DEFAULT 'online',
+    sla INTEGER NOT NULL DEFAULT 99, estado VARCHAR(30) NOT NULL DEFAULT 'operativo',
+    alarmas TEXT[], latitud NUMERIC(9,6), longitud NUMERIC(9,6), metadatos JSONB,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(), updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS alumbrado_luminarias (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    codigo VARCHAR(20) NOT NULL UNIQUE, zona_id VARCHAR(40) NOT NULL,
+    tecnologia VARCHAR(20) NOT NULL, cuadro_codigo VARCHAR(20), circuito VARCHAR(30),
+    direccion VARCHAR(255), potencia_w INTEGER NOT NULL DEFAULT 0, marca_modelo VARCHAR(120),
+    anio_instalacion INTEGER, vida_util_h INTEGER, estado VARCHAR(30) NOT NULL DEFAULT 'operativo',
+    nivel_regulacion INTEGER NOT NULL DEFAULT 100, horas_funcionamiento INTEGER,
+    consumo_mes_kwh NUMERIC(8,2), ultima_comunicacion_min INTEGER,
+    tiene_documentacion BOOLEAN NOT NULL DEFAULT TRUE, latitud NUMERIC(9,6), longitud NUMERIC(9,6),
+    metadatos JSONB, created_at TIMESTAMPTZ NOT NULL DEFAULT now(), updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+-- Agua (sectores/DMA) · Residuos (contenedores) · Movilidad (aforos/parkings/EV) ·
+-- Seguridad (cámaras CCTV) · Energía (CUPS). Ver alembic/versions/005_smart_city_verticales.py
+CREATE TABLE IF NOT EXISTS agua_sectores (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), codigo VARCHAR(20) NOT NULL UNIQUE, nombre VARCHAR(120) NOT NULL, contadores INTEGER NOT NULL DEFAULT 0, contadores_telelectura INTEGER NOT NULL DEFAULT 0, caudal_entrada_ls NUMERIC(8,2) NOT NULL DEFAULT 0, caudal_nocturno_ls NUMERIC(8,2), presion_bar NUMERIC(4,2), rendimiento_pct NUMERIC(5,2), fugas_detectadas INTEGER NOT NULL DEFAULT 0, estado VARCHAR(30) NOT NULL DEFAULT 'operativo', metadatos JSONB, created_at TIMESTAMPTZ NOT NULL DEFAULT now(), updated_at TIMESTAMPTZ NOT NULL DEFAULT now());
+CREATE TABLE IF NOT EXISTS residuos_contenedores (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), codigo VARCHAR(20) NOT NULL UNIQUE, zona_id VARCHAR(40) NOT NULL, fraccion VARCHAR(20) NOT NULL, tiene_sensor BOOLEAN NOT NULL DEFAULT FALSE, llenado_pct INTEGER, ruta VARCHAR(40), estado VARCHAR(30) NOT NULL DEFAULT 'operativo', latitud NUMERIC(9,6), longitud NUMERIC(9,6), created_at TIMESTAMPTZ NOT NULL DEFAULT now(), updated_at TIMESTAMPTZ NOT NULL DEFAULT now());
+CREATE TABLE IF NOT EXISTS movilidad_puntos (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), codigo VARCHAR(20) NOT NULL UNIQUE, nombre VARCHAR(160) NOT NULL, tipo VARCHAR(20) NOT NULL, ubicacion VARCHAR(200), valor_actual INTEGER, capacidad INTEGER, unidad VARCHAR(30), estado VARCHAR(30) NOT NULL DEFAULT 'operativo', latitud NUMERIC(9,6), longitud NUMERIC(9,6), metadatos JSONB, created_at TIMESTAMPTZ NOT NULL DEFAULT now(), updated_at TIMESTAMPTZ NOT NULL DEFAULT now());
+CREATE TABLE IF NOT EXISTS seguridad_camaras (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), codigo VARCHAR(20) NOT NULL UNIQUE, nombre VARCHAR(160) NOT NULL, zona_id VARCHAR(40) NOT NULL, tipo VARCHAR(40), con_analitica BOOLEAN NOT NULL DEFAULT FALSE, retencion_dias INTEGER NOT NULL DEFAULT 30, estado VARCHAR(30) NOT NULL DEFAULT 'operativo', latitud NUMERIC(9,6), longitud NUMERIC(9,6), created_at TIMESTAMPTZ NOT NULL DEFAULT now(), updated_at TIMESTAMPTZ NOT NULL DEFAULT now());
+CREATE TABLE IF NOT EXISTS energia_suministros (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), cups VARCHAR(30) NOT NULL UNIQUE, edificio VARCHAR(160) NOT NULL, tipo VARCHAR(60), potencia_contratada_kw NUMERIC(8,2) NOT NULL DEFAULT 0, consumo_mes_kwh NUMERIC(10,2) NOT NULL DEFAULT 0, autoconsumo_mes_kwh NUMERIC(10,2) NOT NULL DEFAULT 0, coste_mes_eur NUMERIC(10,2) NOT NULL DEFAULT 0, tiene_fotovoltaica BOOLEAN NOT NULL DEFAULT FALSE, estado VARCHAR(30) NOT NULL DEFAULT 'operativo', metadatos JSONB, created_at TIMESTAMPTZ NOT NULL DEFAULT now(), updated_at TIMESTAMPTZ NOT NULL DEFAULT now());
+
+-- =============================================================================
 -- VISTAS Y ROLES (referencia — implementación opcional)
 -- =============================================================================
 -- Vista materializada para KPI de sentimiento diario (refresco vía cron):
