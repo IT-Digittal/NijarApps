@@ -34,6 +34,7 @@ from nijar_dti.data.seeds.demo_data import (
     generar_visitas_web_app_seed,
 )
 from nijar_dti.data.seeds.faqs import FAQS_SEED
+from nijar_dti.data.seeds.fuentes_datos import FUENTES_DATOS_SEED
 from nijar_dti.data.seeds.recursos_turisticos import RECURSOS_SEED
 from nijar_dti.data.seeds.sensores import SENSORES_SEED
 from nijar_dti.data.seeds.verticales import (
@@ -58,6 +59,7 @@ from nijar_dti.models.opinion import Opinion
 from nijar_dti.models.recurso_turistico import RecursoTuristico
 from nijar_dti.models.sensor import Sensor
 from nijar_dti.models.alumbrado import CuadroMando, Luminaria, ZonaAlumbrado
+from nijar_dti.models.fuente_dato import FuenteDato
 from nijar_dti.models.usuario import Usuario
 from nijar_dti.models.verticales import (
     CamaraCCTV,
@@ -508,6 +510,15 @@ async def seed_verticales(db: AsyncSession) -> None:
         log.info("Energía · suministros (CUPS) creados: %d", len(sums))
 
 
+async def seed_fuentes_datos(db: AsyncSession) -> None:
+    """Carga el catálogo de fuentes de datos e integraciones (idempotente)."""
+    if not await _tabla_vacia(db, FuenteDato):
+        return
+    for f in FUENTES_DATOS_SEED:
+        db.add(FuenteDato(**f))
+    log.info("Fuentes de datos / integraciones creadas: %d", len(FUENTES_DATOS_SEED))
+
+
 async def run() -> None:
     async with AsyncSessionLocal() as db:
         try:
@@ -530,6 +541,7 @@ async def run() -> None:
             await seed_demo_incidencias(db)
             await seed_contexto_backfill(db)
             await seed_verticales(db)
+            await seed_fuentes_datos(db)
             await db.commit()
             log.info("Seeds aplicados correctamente")
         except Exception:  # noqa: BLE001
