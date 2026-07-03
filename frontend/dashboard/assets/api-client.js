@@ -49,33 +49,78 @@ export class ApiError extends Error {
   }
 }
 
-async function _doFetch(path, { method = "GET", body, retry = true } = {}) {
-  const headers = { "Content-Type": "application/json" };
-  if (tokens.access) headers["Authorization"] = `Bearer ${tokens.access}`;
+// Cache TTL para GET: evita repetir peticiones idénticas si navegas
+// rápidamente entre secciones. La caché se invalida en mutaciones (POST/PUT/DELETE)
+// y con `api.invalidateCache()`. TTL bajo para no servir datos rancios.
+const _GET_CACHE_TTL_MS = 15_000;
+const _getCache = new Map(); // key: path → { at, promise, data, error }
 
-  const resp = await fetch(`${API_BASE}${path}`, {
-    method,
-    headers,
-    body: body ? JSON.stringify(body) : undefined,
-  });
+export function invalidateCache(prefix) {
+  if (!prefix) { _getCache.clear(); return; }
+  for (const k of _getCache.keys()) {
+    if (k.startsWith(prefix)) _getCache.delete(k);
+  }
+}
 
-  if (resp.status === 401 && retry && tokens.refresh && path !== "/auth/refresh") {
-    // Intento de refresh transparente y reintento
-    const refreshed = await tryRefresh();
-    if (refreshed) return _doFetch(path, { method, body, retry: false });
+async function _doFetch(path, { method = "GET", body, retry = true, cache = true } = {}) {
+  const isGet = method === "GET";
+  const cacheable = isGet && cache;
+
+  if (cacheable) {
+    const entry = _getCache.get(path);
+    if (entry) {
+      const fresh = Date.now() - entry.at < _GET_CACHE_TTL_MS;
+      if (entry.promise) return entry.promise; // colapsa peticiones en vuelo
+      if (fresh && !entry.error) return entry.data;
+    }
   }
 
-  if (!resp.ok) {
-    let payload = null;
-    try { payload = await resp.json(); } catch { /* ignore */ }
-    throw new ApiError(payload?.message || resp.statusText, {
-      status: resp.status,
-      code: payload?.code,
-      body: payload,
+  const doIt = (async () => {
+    const headers = { "Content-Type": "application/json" };
+    if (tokens.access) headers["Authorization"] = `Bearer ${tokens.access}`;
+
+    const resp = await fetch(`${API_BASE}${path}`, {
+      method,
+      headers,
+      body: body ? JSON.stringify(body) : undefined,
     });
+
+    if (resp.status === 401 && retry && tokens.refresh && path !== "/auth/refresh") {
+      const refreshed = await tryRefresh();
+      if (refreshed) return _doFetch(path, { method, body, retry: false, cache: false });
+    }
+
+    if (!resp.ok) {
+      let payload = null;
+      try { payload = await resp.json(); } catch { /* ignore */ }
+      throw new ApiError(payload?.message || resp.statusText, {
+        status: resp.status,
+        code: payload?.code,
+        body: payload,
+      });
+    }
+    if (resp.status === 204) return null;
+    return resp.json();
+  })();
+
+  if (cacheable) {
+    _getCache.set(path, { at: Date.now(), promise: doIt });
+    try {
+      const data = await doIt;
+      _getCache.set(path, { at: Date.now(), data });
+      return data;
+    } catch (err) {
+      _getCache.delete(path);
+      throw err;
+    }
   }
-  if (resp.status === 204) return null;
-  return resp.json();
+
+  // Mutaciones: purga caché del recurso raíz para evitar stale reads
+  if (!isGet) {
+    const root = "/" + path.replace(/^\//, "").split("/")[0];
+    invalidateCache(root);
+  }
+  return doIt;
 }
 
 async function tryRefresh() {
@@ -237,6 +282,14 @@ export const api = {
   deleteResource(id) {
     return _doFetch(`/tourism/resources/${id}`, { method: "DELETE" });
   },
+
+  // ------------------ Usuarios (solo administrador_tic) ------------------
+  listUsuarios() { return _doFetch("/usuarios"); },
+  invitarUsuario(payload) {
+    return _doFetch("/usuarios/invitar", { method: "POST", body: payload });
+  },
+
+  invalidateCache,
 };
 
 export function getCachedUser() {

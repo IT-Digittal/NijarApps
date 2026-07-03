@@ -15,7 +15,7 @@
  * atributos ARIA y clases CSS dedicadas, no por clases utility.
  */
 
-import { I18N, translateAll } from "./i18n.js";
+import { I18N, translateAll } from "./i18n.js?v=3";
 import { DEMO_RESOURCES, DEMO_EVENTS, answerChatbotDemo } from "./demo-data.js";
 
 // ============================================================
@@ -172,7 +172,7 @@ function renderCards(grid, items) {
     const nombre = r.nombre_i18n?.[currentLang] || r.nombre;
     const desc = r.descripcion_i18n?.[currentLang] || r.descripcion_corta || "";
     const cta = I18N[currentLang]?.["card.cta"] || "Ver más";
-    const tag = r.categoria ? capitalize(String(r.categoria).replace(/_/g, " ")) : "";
+    const tag = tagLabel(r.categoria);
 
     card.innerHTML = `
       <div class="poi-image" style="${r.imagenes?.[0] ? `background-image:url('${escapeAttr(r.imagenes[0])}')` : ""}" aria-hidden="true">
@@ -278,12 +278,15 @@ const dialogBody = document.getElementById("poi-body");
 const dialogMeta = document.getElementById("poi-meta");
 const dialogTag = document.getElementById("poi-tag");
 const dialogImage = document.getElementById("poi-image");
+const dialogTags = document.getElementById("poi-tags");
+const dialogActions = document.getElementById("poi-actions");
 
 // Lista declarativa: orden, icono, clave i18n del label y formato.
 // "wide" indica filas que ocupan las dos columnas (texto largo).
 const META_FIELDS = [
   { key: "fecha_inicio", icon: "📅", label: "info.fecha", format: "datetime" },
   { key: "direccion", icon: "📍", label: "info.direccion", wide: true },
+  { key: "municipio", icon: "🏘️", label: "info.municipio" },
   { key: "distancia_km", icon: "📏", label: "info.distancia", format: "km" },
   { key: "duracion_min", icon: "⏱", label: "info.duracion", format: "duration" },
   { key: "desnivel_m", icon: "⛰️", label: "info.desnivel", format: "m" },
@@ -295,15 +298,17 @@ const META_FIELDS = [
   { key: "epoca", icon: "🏛️", label: "info.epoca", format: "i18n" },
   { key: "estilo", icon: "🎨", label: "info.estilo", format: "i18n" },
   { key: "bic", icon: "⭐", label: "info.bic", format: "bool" },
-  { key: "horario", icon: "🕒", label: "info.horario", format: "i18n", wide: true },
+  { key: "horario", icon: "🕒", label: "info.horario", format: "horario", wide: true },
   { key: "precio", icon: "💶", label: "info.precio", format: "i18n" },
   { key: "telefono", icon: "📞", label: "info.telefono" },
+  { key: "email", icon: "✉️", label: "info.email" },
   { key: "web", icon: "🌐", label: "info.web" },
   { key: "idiomas", icon: "🌍", label: "info.idiomas", format: "langs" },
   { key: "organizador", icon: "🏢", label: "info.organizador", format: "i18n" },
   { key: "aforo", icon: "👥", label: "info.aforo", format: "people" },
   { key: "temporada", icon: "🌤️", label: "info.temporada", format: "i18n", wide: true },
   { key: "servicios", icon: "🛎️", label: "info.servicios", format: "i18nList", wide: true },
+  { key: "servicios_disponibles", icon: "🛎️", label: "info.servicios", format: "serviciosList", wide: true },
   { key: "accesibilidad", icon: "♿", label: "info.accesibilidad", format: "i18n", wide: true },
   { key: "recomendaciones", icon: "💡", label: "info.recomendaciones", format: "i18n", wide: true },
 ];
@@ -341,9 +346,32 @@ function formatMeta(field, value) {
       return value.map(l => String(l).toUpperCase()).join(" · ");
     case "people":
       return `${value}`;
+    case "horario":
+      if (typeof value === "string") return value;
+      if (Array.isArray(value)) return value.join(" · ");
+      if (value && typeof value === "object") {
+        // Horario tipo {verano: "10-14", invierno: "10-15"}
+        return Object.entries(value).map(([k, v]) => `${capitalize(k)}: ${v}`).join(" · ");
+      }
+      return "";
+    case "serviciosList":
+      // Traduce servicios como `totem_digital_inicio` a "Tótem digital (inicio)"
+      if (!Array.isArray(value)) return String(value);
+      return value.map(s => capitalize(String(s).replace(/_/g, " "))).join(" · ");
     default:
       return String(value);
   }
+}
+
+// Extrae [lat, lon] desde múltiples posibles formatos de la API.
+function extractLatLon(item) {
+  const lat = item.latitud ?? item.lat;
+  const lon = item.longitud ?? item.lon ?? item.lng;
+  if (typeof lat === "number" && typeof lon === "number") return [lat, lon];
+  // GeoJSON Point: { type: "Point", coordinates: [lon, lat] }
+  const coords = item.ubicacion?.coordinates || item.geometry?.coordinates;
+  if (Array.isArray(coords) && coords.length >= 2) return [coords[1], coords[0]];
+  return null;
 }
 
 function renderMeta(item) {
@@ -364,15 +392,73 @@ function renderMeta(item) {
   }
 
   // Coordenadas (siempre ancho completo si están)
-  const lat = item.latitud ?? item.lat;
-  const lon = item.longitud ?? item.lon;
-  if (typeof lat === "number" && typeof lon === "number") {
+  const latlon = extractLatLon(item);
+  if (latlon) {
+    const [lat, lon] = latlon;
     const label = dict["info.coordenadas"] || "Coordenadas";
     const row = document.createElement("div");
     row.className = "poi-dialog-meta-row is-wide";
     row.innerHTML = `<dt aria-hidden="true">🧭</dt><dd><strong>${escapeHtml(label)}:</strong> ${lat.toFixed(4)}, ${lon.toFixed(4)}</dd>`;
     dialogMeta.appendChild(row);
   }
+}
+
+// Chips de etiquetas informativas (parque-natural, senderismo, etc.).
+function renderTags(item) {
+  const raw = item.etiquetas || item.tags;
+  if (!Array.isArray(raw) || raw.length === 0) {
+    dialogTags.hidden = true;
+    dialogTags.innerHTML = "";
+    return;
+  }
+  // Descarta etiquetas redundantes con la categoría (p. ej. "playa" en un recurso de categoría playa).
+  const cat = String(item.categoria || "").toLowerCase();
+  const chips = raw
+    .filter(t => String(t).toLowerCase() !== cat)
+    .map(t => `<span class="tag-chip">#${escapeHtml(String(t))}</span>`)
+    .join("");
+  if (!chips) { dialogTags.hidden = true; dialogTags.innerHTML = ""; return; }
+  dialogTags.innerHTML = chips;
+  dialogTags.hidden = false;
+}
+
+// Botones de acción: mapa, teléfono, web, email.
+function renderActions(item) {
+  const dict = I18N[currentLang] || I18N.es;
+  const actions = [];
+  const latlon = extractLatLon(item);
+  if (latlon) {
+    const [lat, lon] = latlon;
+    const nombre = encodeURIComponent(item.nombre_i18n?.[currentLang] || item.nombre || "");
+    // OpenStreetMap es genérico y no requiere cuenta.
+    const url = `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lon}#map=15/${lat}/${lon}`;
+    actions.push(
+      `<a class="action-btn" href="${url}" target="_blank" rel="noopener noreferrer" aria-label="${escapeHtml(dict["action.mapa"] || "Ver en el mapa")} ${nombre}">📍 ${escapeHtml(dict["action.mapa"] || "Ver en el mapa")}</a>`
+    );
+  }
+  if (item.telefono) {
+    const tel = String(item.telefono).replace(/\s+/g, "");
+    actions.push(
+      `<a class="action-btn action-btn--secondary" href="tel:${escapeAttr(tel)}">📞 ${escapeHtml(dict["action.llamar"] || "Llamar")}</a>`
+    );
+  }
+  if (item.web) {
+    actions.push(
+      `<a class="action-btn action-btn--secondary" href="${escapeAttr(item.web)}" target="_blank" rel="noopener noreferrer">🌐 ${escapeHtml(dict["action.web"] || "Web")}</a>`
+    );
+  }
+  if (item.email) {
+    actions.push(
+      `<a class="action-btn action-btn--secondary" href="mailto:${escapeAttr(item.email)}">✉️ ${escapeHtml(dict["action.email"] || "Email")}</a>`
+    );
+  }
+  if (actions.length === 0) {
+    dialogActions.hidden = true;
+    dialogActions.innerHTML = "";
+    return;
+  }
+  dialogActions.innerHTML = actions.join("");
+  dialogActions.hidden = false;
 }
 
 function openDetail(r) {
@@ -400,6 +486,8 @@ function openDetail(r) {
 
   // Metadatos dinámicos
   renderMeta(r);
+  renderTags(r);
+  renderActions(r);
 
   // Reset scroll del contenido cuando se reutiliza el diálogo
   dialog.querySelector(".poi-dialog-content")?.scrollTo({ top: 0 });
@@ -558,7 +646,7 @@ function renderRuta(data) {
   }
   const km = (data.distancia_total_m / 1000).toFixed(1);
   const pasos = data.paradas.map(p =>
-    `<li><strong>${p.orden}. ${escapeHtml(p.nombre)}</strong> <span class="planner-cat">${escapeHtml(capitalize(p.categoria.replace(/_/g, " ")))}</span></li>`
+    `<li><strong>${p.orden}. ${escapeHtml(p.nombre)}</strong> <span class="planner-cat">${escapeHtml(tagLabel(p.categoria))}</span></li>`
   ).join("");
   plannerOut.innerHTML = `
     <p class="planner-summary">${t["rutas.distancia"]}: ${km} km · ${t["rutas.duracion"]}: ${data.duracion_desplazamiento_min} min</p>
@@ -577,7 +665,7 @@ function renderRecomendaciones(data) {
   }
   if (data.recursos?.length) {
     const recs = data.recursos.map(r =>
-      `<li><strong>${escapeHtml(r.nombre)}</strong> <span class="planner-cat">${escapeHtml(capitalize(r.categoria.replace(/_/g, " ")))}</span></li>`
+      `<li><strong>${escapeHtml(r.nombre)}</strong> <span class="planner-cat">${escapeHtml(tagLabel(r.categoria))}</span></li>`
     ).join("");
     partes.push(`<h3 class="planner-subtitle">${t["rutas.recursos"]}</h3><ul class="planner-list">${recs}</ul>`);
   }
@@ -653,8 +741,16 @@ function capitalize(s) {
   return String(s || "").charAt(0).toUpperCase() + String(s || "").slice(1);
 }
 
+// Traduce el nombre de una categoría al idioma activo (fallback: ES → texto crudo).
+function tagLabel(categoria) {
+  if (!categoria) return "";
+  return I18N[currentLang]?.[`tag.${categoria}`]
+    || I18N.es?.[`tag.${categoria}`]
+    || capitalize(String(categoria).replace(/_/g, " "));
+}
+
 // ============================================================
 // Inicialización
 // ============================================================
+// applyLanguage() invoca internamente loadCategory(currentCat) — no repetir aquí.
 applyLanguage(currentLang);
-loadCategory(currentCat);
