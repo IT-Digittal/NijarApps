@@ -99,12 +99,27 @@ async def seed_admin_user(db: AsyncSession) -> None:
 
 async def seed_recursos(db: AsyncSession) -> None:
     creados = 0
+    traducciones_actualizadas = 0
     for r in RECURSOS_SEED:
         urn = r["urn"]
         existente = (
             await db.execute(select(RecursoTuristico).where(RecursoTuristico.urn == urn))
         ).scalar_one_or_none()
         if existente is not None:
+            # Refrescar traducciones si el seed las incorpora y faltan/difieren.
+            # Se limita a los campos i18n para evitar sobreescribir contenido
+            # editado desde el CMS.
+            cambios = False
+            nuevo_nombre_i18n = r.get("nombre_i18n")
+            nuevo_desc_i18n = r.get("descripcion_i18n")
+            if nuevo_nombre_i18n and existente.nombre_i18n != nuevo_nombre_i18n:
+                existente.nombre_i18n = nuevo_nombre_i18n
+                cambios = True
+            if nuevo_desc_i18n and existente.descripcion_i18n != nuevo_desc_i18n:
+                existente.descripcion_i18n = nuevo_desc_i18n
+                cambios = True
+            if cambios:
+                traducciones_actualizadas += 1
             continue
         obj = RecursoTuristico(
             urn=urn,
@@ -124,7 +139,11 @@ async def seed_recursos(db: AsyncSession) -> None:
         )
         db.add(obj)
         creados += 1
-    log.info("Recursos turísticos creados: %d", creados)
+    log.info(
+        "Recursos turísticos creados: %d · traducciones actualizadas: %d",
+        creados,
+        traducciones_actualizadas,
+    )
 
 
 async def seed_sensores(db: AsyncSession) -> None:

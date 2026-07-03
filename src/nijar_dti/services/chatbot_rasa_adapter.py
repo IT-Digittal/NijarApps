@@ -22,10 +22,11 @@ import time
 from typing import Any
 
 import httpx
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from nijar_dti.config import Settings, get_settings
-from nijar_dti.models.faq import InteraccionChatbot, NivelConfianza
+from nijar_dti.models.faq import FAQ, InteraccionChatbot, NivelConfianza
 from nijar_dti.schemas.chatbot import (
     ChatQueryIn,
     ChatResponseOut,
@@ -78,6 +79,25 @@ def _nivel_desde_confianza(score: float, fallback_threshold: float = 0.55) -> Ni
     return NivelConfianza.FUERA_DE_DOMINIO
 
 
+async def _respuesta_traducida(
+    db: AsyncSession, intent: str, idioma: str
+) -> str | None:
+    """Devuelve la respuesta de la FAQ del intent en el idioma solicitado.
+
+    Rasa se entrena solo con contenido en español; para servir la misma
+    respuesta al usuario en su idioma sin retrainar el modelo, aprovechamos
+    los campos `respuesta_<idioma>` que ya persiste el seed.
+    Devuelve `None` si la FAQ no existe o no tiene traducción en ese idioma.
+    """
+    if idioma not in {"en", "de", "fr"}:
+        return None
+    result = await db.execute(select(FAQ).where(FAQ.intent == intent))
+    faq = result.scalar_one_or_none()
+    if faq is None:
+        return None
+    return getattr(faq, f"respuesta_{idioma}", None)
+
+
 async def consultar_rasa(
     db: AsyncSession,
     payload: ChatQueryIn,
@@ -111,6 +131,19 @@ async def consultar_rasa(
     respuesta_texto = "\n".join(
         m.get("text", "").strip() for m in mensajes if m.get("text")
     ).strip()
+
+    # i18n: Rasa se entrena solo en español. Si tenemos un intent con confianza
+    # suficiente, sustituimos la respuesta por la traducida al idioma solicitado
+    # (cae al español si no hay traducción para ese idioma).
+    if (
+        intent_name
+        and payload.idioma in {"en", "de", "fr"}
+        and nivel != NivelConfianza.FUERA_DE_DOMINIO
+    ):
+        traducida = await _respuesta_traducida(db, intent_name, payload.idioma)
+        if traducida:
+            respuesta_texto = traducida
+
     if not respuesta_texto:
         # Rasa no produjo respuesta → tratamos como fuera de dominio
         nivel = NivelConfianza.FUERA_DE_DOMINIO

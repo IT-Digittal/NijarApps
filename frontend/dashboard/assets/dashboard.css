@@ -461,6 +461,15 @@ h1, h2, h3, h4, h5, h6 {
 .kpi-card__value--teal { color: var(--nijar-teal); }
 .kpi-card__value--gold { color: var(--nijar-dorado-deep); }
 .kpi-card__value--green { color: #2D8F4F; }
+.kpi-card__hint {
+  display: block;
+  margin-top: var(--space-2);
+  font-size: 12px;
+  color: var(--nijar-gris);
+  font-weight: var(--weight-medium);
+  min-height: 16px;
+}
+.kpi-card__hint--warn { color: var(--nijar-dorado-deep); }
 .kpi-card__unit {
   font-size: 14px;
   opacity: 0.85;

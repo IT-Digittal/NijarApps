@@ -4,7 +4,7 @@
  * Diseño "Salinas y Sal corporativa" v3.
  */
 
-import { api, tokens, getCachedUser } from "./api-client.js?v=16";
+import { api, tokens, getCachedUser } from "./api-client.js?v=20";
 
 // ============================================================
 // State
@@ -592,6 +592,11 @@ function getMonday(d) {
   return dt;
 }
 
+// Fecha local en formato YYYY-MM-DD (evita el bug de toISOString con TZ).
+function localDayKey(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
 function evItems() { return evFilteredItems ?? evAllItems; }
 
 // Week nav
@@ -656,12 +661,20 @@ async function loadEvents() {
     evAllItems = (res.items || []).sort((a, b) => new Date(a.fecha_inicio) - new Date(b.fecha_inicio));
     evFilteredItems = null;
     document.querySelectorAll('[data-badge="eventos"]').forEach(el => el.textContent = evAllItems.length);
+    // Auto-scroll a la semana del primer evento futuro si la semana actual no tiene ninguno.
     if (evAllItems.length > 0) {
-      const firstDate = new Date(evAllItems[0].fecha_inicio);
-      if (firstDate > new Date()) evWeekStart = getMonday(firstDate);
+      const now = new Date();
+      const currentWeekEnd = new Date(evWeekStart); currentWeekEnd.setDate(currentWeekEnd.getDate() + 7);
+      const enSemanaActual = evAllItems.some(e => {
+        const d = new Date(e.fecha_inicio);
+        return d >= evWeekStart && d < currentWeekEnd;
+      });
+      if (!enSemanaActual) {
+        const proximo = evAllItems.find(e => new Date(e.fecha_inicio) >= now)
+          || evAllItems[0];
+        evWeekStart = getMonday(new Date(proximo.fecha_inicio));
+      }
     }
-    document.getElementById("ev-month-title").textContent =
-      `Eventos · ${_MESES[evWeekStart.getMonth()]} ${evWeekStart.getFullYear()}`;
     renderEvView();
   } catch (err) {
     setBanner(`Error cargando eventos: ${err.message}`, "error");
@@ -669,8 +682,19 @@ async function loadEvents() {
 }
 
 function renderEvView() {
-  document.getElementById("ev-month-title").textContent =
-    `Eventos · ${_MESES[evWeekStart.getMonth()]} ${evWeekStart.getFullYear()}`;
+  // Título: para la vista semana muestra ambos meses si cruzan mes; en mes muestra el mes actual.
+  let titulo;
+  if (evCurrentView === "semana") {
+    const weekEnd = new Date(evWeekStart); weekEnd.setDate(weekEnd.getDate() + 6);
+    const startMes = _MESES[evWeekStart.getMonth()];
+    const endMes = _MESES[weekEnd.getMonth()];
+    titulo = (startMes === endMes)
+      ? `Eventos · ${startMes} ${evWeekStart.getFullYear()}`
+      : `Eventos · ${startMes} – ${endMes} ${weekEnd.getFullYear()}`;
+  } else {
+    titulo = `Eventos · ${_MESES[evWeekStart.getMonth()]} ${evWeekStart.getFullYear()}`;
+  }
+  document.getElementById("ev-month-title").textContent = titulo;
   if (evCurrentView === "semana") renderWeekView();
   else if (evCurrentView === "lista") renderListView();
   else if (evCurrentView === "mes") renderMonthView();
@@ -684,8 +708,12 @@ function renderWeekView() {
   headers.style.display = ""; grid.style.display = "";
 
   const weekEnd = new Date(evWeekStart); weekEnd.setDate(weekEnd.getDate() + 6);
-  document.getElementById("ev-week-label").textContent =
-    `${evWeekStart.getDate()} — ${weekEnd.getDate()} ${_MESES[evWeekStart.getMonth()].toLowerCase()}`;
+  const startMes = _MESES[evWeekStart.getMonth()].toLowerCase();
+  const endMes = _MESES[weekEnd.getMonth()].toLowerCase();
+  const label = (startMes === endMes)
+    ? `${evWeekStart.getDate()} — ${weekEnd.getDate()} ${endMes}`
+    : `${evWeekStart.getDate()} ${startMes} — ${weekEnd.getDate()} ${endMes}`;
+  document.getElementById("ev-week-label").textContent = label;
 
   for (let i = 0; i < 7; i++) {
     const d = new Date(evWeekStart); d.setDate(d.getDate() + i);
@@ -698,8 +726,8 @@ function renderWeekView() {
 
     const col = document.createElement("div");
     col.className = `ev-day-col${isWE ? " ev-day-col--weekend" : ""}`;
-    const dayStr = d.toISOString().substring(0, 10);
-    for (const ev of evItems().filter(e => new Date(e.fecha_inicio).toISOString().substring(0, 10) === dayStr)) {
+    const dayStr = localDayKey(d);
+    for (const ev of evItems().filter(e => localDayKey(new Date(e.fecha_inicio)) === dayStr)) {
       col.appendChild(makeEvBlock(ev));
     }
     grid.appendChild(col);
@@ -796,8 +824,8 @@ function renderMonthView() {
       dayLabel.textContent = date.getDate();
       cell.appendChild(dayLabel);
 
-      const dayStr = date.toISOString().substring(0, 10);
-      for (const ev of evItems().filter(e => new Date(e.fecha_inicio).toISOString().substring(0, 10) === dayStr)) {
+      const dayStr = localDayKey(date);
+      for (const ev of evItems().filter(e => localDayKey(new Date(e.fecha_inicio)) === dayStr)) {
         const mini = document.createElement("button");
         const tipo = ev.tipo || "otro";
         mini.className = `ev-block ev-block--${escapeHtml(tipo)}`;
@@ -1011,6 +1039,29 @@ async function loadBigData() {
     setKPI("bd-sent2", ov.sentimiento_medio != null ? ov.sentimiento_medio.toFixed(2) : "—");
 
     const sent = await api.sentimentSeries({ granularidad: "dia" });
+
+    // Hint contextual para "Último mes": aclara qué muestra el KPI y avisa si no hay datos recientes.
+    const hint = document.getElementById("bd-mes-hint");
+    if (hint) {
+      hint.classList.remove("kpi-card__hint--warn");
+      if (ov.menciones_total === 0) {
+        hint.textContent = "sin menciones registradas";
+      } else if (ov.menciones_ultimo_mes > 0) {
+        hint.textContent = "menciones en los últimos 30 días";
+      } else {
+        const puntos = sent.puntos || [];
+        const ultimo = puntos.length ? puntos[puntos.length - 1].timestamp : null;
+        if (ultimo) {
+          const d = new Date(ultimo);
+          const fmt = d.toLocaleDateString("es", { day: "2-digit", month: "short", year: "numeric" });
+          hint.textContent = `sin actividad este mes · última mención: ${fmt}`;
+        } else {
+          hint.textContent = "sin actividad reciente";
+        }
+        hint.classList.add("kpi-card__hint--warn");
+      }
+    }
+
     renderChart("chart-sentiment", "bar", {
       labels: sent.puntos.map(p => p.timestamp.substring(0, 10)),
       datasets: [
@@ -1637,57 +1688,89 @@ async function loadMap() {
 // ============================================================
 // USUARIOS section
 // ============================================================
-const _TEAM = [
-  { initials: "FA", name: "Francisco Aguilar", email: "f.aguilar@nijar.es", area: "Área TIC", rol: "administrador_tic", session: "hace 2h", avatar: "navy" },
-  { initials: "MR", name: "María Ruiz", email: "m.ruiz@nijar.es", area: "Oficina de Turismo", rol: "gestor_contenidos", session: "ahora", avatar: "teal" },
-  { initials: "AL", name: "Antonio López", email: "a.lopez@nijar.es", area: "Oficina de Turismo", rol: "gestor_contenidos", session: "hace 3h", avatar: "teal" },
-  { initials: "JM", name: "Javier Moreno", email: "j.moreno@nijar.es", area: "Área TIC", rol: "administrador_tic", session: "ayer 17:42", avatar: "navy" },
-];
+const _ROL_LABELS = {
+  administrador_tic: "Administrador TIC",
+  gestor_contenidos: "Gestor de contenidos",
+  analista_datos: "Analista de datos",
+  operador_smart_office: "Operador Smart Office",
+  auditor: "Auditor",
+};
 
-function loadUsuarios() {
-  // Add current logged-in user if not in the static list
-  const me = getCachedUser();
-  const team = [..._TEAM];
-  if (me && !team.find(u => u.email === me.email)) {
-    const ini = (me.nombre_completo || me.email).split(" ").map(w => w[0]).join("").substring(0, 2).toUpperCase();
-    const isAdmin = me.rol === "administrador_tic";
-    team.unshift({
-      initials: ini, name: me.nombre_completo || me.email, email: me.email,
-      area: isAdmin ? "Área TIC" : "Oficina de Turismo", rol: me.rol, session: "ahora",
-      avatar: isAdmin ? "navy" : "teal",
-    });
-  }
+function _rolMeta(rol) {
+  const isAdmin = rol === "administrador_tic";
+  return {
+    label: _ROL_LABELS[rol] || rol,
+    area: isAdmin ? "Área TIC" : "Oficina de Turismo",
+    avatar: isAdmin ? "navy" : "teal",
+    css: isAdmin ? "usr-card__role--admin" : "usr-card__role--gestor",
+  };
+}
 
-  const admins = team.filter(u => u.rol === "administrador_tic").length;
-  const gestores = team.filter(u => u.rol === "gestor_contenidos").length;
-  document.getElementById("usr-summary-text").textContent =
-    `${team.length} usuarios activos · ${admins} administradores TIC · ${gestores} gestores de contenidos`;
+function _initials(nombre, email) {
+  const base = (nombre || email || "?").trim();
+  return base.split(/\s+/).map(w => w[0] || "").join("").substring(0, 2).toUpperCase();
+}
 
+function _fmtRelativo(iso) {
+  if (!iso) return "—";
+  const t = new Date(iso).getTime();
+  if (Number.isNaN(t)) return "—";
+  const diffMin = Math.floor((Date.now() - t) / 60000);
+  if (diffMin < 1) return "ahora";
+  if (diffMin < 60) return `hace ${diffMin} min`;
+  const h = Math.floor(diffMin / 60);
+  if (h < 24) return `hace ${h}h`;
+  const d = Math.floor(h / 24);
+  if (d < 7) return `hace ${d}d`;
+  return new Date(iso).toLocaleDateString("es-ES", { day: "2-digit", month: "short" });
+}
+
+async function loadUsuarios() {
+  const summary = document.getElementById("usr-summary-text");
   const list = document.getElementById("usr-list");
   list.innerHTML = "";
-  for (const u of team) {
-    const isAdmin = u.rol === "administrador_tic";
-    const rolLabel = isAdmin ? "Administrador TIC" : "Gestor de contenidos";
-    const rolClass = isAdmin ? "usr-card__role--admin" : "usr-card__role--gestor";
+  summary.textContent = "Cargando usuarios…";
+
+  let usuarios;
+  try {
+    usuarios = await api.listUsuarios();
+  } catch (err) {
+    summary.textContent = "No se ha podido cargar la lista de usuarios.";
+    setBanner("No se ha podido cargar la lista de usuarios.", "error");
+    return;
+  }
+
+  const activos = usuarios.filter(u => u.activo);
+  const admins = activos.filter(u => u.rol === "administrador_tic").length;
+  const gestores = activos.filter(u => u.rol === "gestor_contenidos").length;
+  summary.textContent =
+    `${activos.length} usuarios activos · ${admins} administradores TIC · ${gestores} gestores de contenidos`;
+
+  for (const u of usuarios) {
+    const meta = _rolMeta(u.rol);
+    const iniciales = _initials(u.nombre_completo, u.email);
+    const ultimo = _fmtRelativo(u.updated_at || u.created_at);
 
     const card = document.createElement("div");
     card.className = "usr-card";
     card.innerHTML = `
-      <div class="usr-card__avatar usr-card__avatar--${u.avatar}">${escapeHtml(u.initials)}</div>
+      <div class="usr-card__avatar usr-card__avatar--${meta.avatar}">${escapeHtml(iniciales)}</div>
       <div class="usr-card__info">
-        <div class="usr-card__name">${escapeHtml(u.name)}</div>
-        <div class="usr-card__meta">${escapeHtml(u.email)} · ${escapeHtml(u.area)}</div>
-        <span class="usr-card__role ${rolClass}">${rolLabel}</span>
+        <div class="usr-card__name">${escapeHtml(u.nombre_completo)}</div>
+        <div class="usr-card__meta">${escapeHtml(u.email)} · ${escapeHtml(meta.area)}</div>
+        <span class="usr-card__role ${meta.css}">${escapeHtml(meta.label)}</span>
       </div>
-      <div class="usr-card__session">Última sesión: ${escapeHtml(u.session)}</div>
-      <span class="usr-card__status"><span class="dot dot--green"></span> Activo</span>
+      <div class="usr-card__session">Última actividad: ${escapeHtml(ultimo)}</div>
+      <span class="usr-card__status">
+        <span class="dot ${u.activo ? "dot--green" : "dot--gray"}"></span> ${u.activo ? "Activo" : "Inactivo"}
+      </span>
       <button class="usr-card__more" title="Más acciones">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
       </button>
     `;
     card.querySelector(".usr-card__more").addEventListener("click", (e) => {
       e.stopPropagation();
-      showUserMenu(e.currentTarget, u);
+      showUserMenu(e.currentTarget, { name: u.nombre_completo, email: u.email, rol: u.rol });
     });
     list.appendChild(card);
   }
@@ -1742,25 +1825,59 @@ inviteDialog?.addEventListener("click", (e) => {
   if (e.target === inviteDialog) inviteDialog.close();
 });
 
-inviteForm?.addEventListener("submit", (e) => {
+inviteForm?.addEventListener("submit", async (e) => {
   e.preventDefault();
   const email = document.getElementById("invite-email").value.trim();
   const nombre = document.getElementById("invite-nombre").value.trim();
   const rol = document.getElementById("invite-rol").value;
   const errEl = document.getElementById("invite-error");
+  const submitBtn = inviteForm.querySelector('button[type="submit"]');
 
   if (!email || !email.includes("@")) {
     errEl.textContent = "Introduce un correo electrónico válido.";
     errEl.classList.remove("hidden");
     return;
   }
+  if (!nombre || nombre.length < 2) {
+    errEl.textContent = "Introduce el nombre completo del usuario.";
+    errEl.classList.remove("hidden");
+    return;
+  }
 
   errEl.classList.add("hidden");
-  inviteDialog.close();
+  submitBtn.disabled = true;
+  const textoOriginal = submitBtn.textContent;
+  submitBtn.textContent = "Enviando…";
 
-  const rolLabel = rol.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
-  const quien = nombre || email;
-  setBanner(`Invitación enviada a ${quien} como ${rolLabel}`, "success");
+  try {
+    const usuario = await api.invitarUsuario({
+      email,
+      nombre_completo: nombre,
+      rol,
+    });
+    inviteDialog.close();
+    const meta = _rolMeta(usuario.rol);
+    setBanner(
+      `Invitación enviada a ${usuario.nombre_completo} como ${meta.label}. Recibirá un enlace para configurar su acceso.`,
+      "success",
+    );
+    await loadUsuarios();
+  } catch (err) {
+    const status = err?.status;
+    let msg = "No se ha podido crear la invitación. Vuelve a intentarlo.";
+    if (status === 409) {
+      msg = "Ya existe un usuario con ese correo electrónico.";
+    } else if (status === 403) {
+      msg = "No tienes permisos para invitar usuarios (rol administrador_tic requerido).";
+    } else if (status === 422) {
+      msg = "Los datos introducidos no son válidos.";
+    }
+    errEl.textContent = msg;
+    errEl.classList.remove("hidden");
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = textoOriginal;
+  }
 });
 
 // ============================================================

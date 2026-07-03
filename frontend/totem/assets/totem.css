@@ -524,8 +524,10 @@ button, a, input, [role="button"] {
 .planner-section {
   margin-top: var(--space-8);
   padding: var(--space-6);
-  background: rgba(255,255,255,0.08);
+  background: var(--nijar-marino);
+  color: white;
   border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-md, 0 4px 12px rgba(0,59,122,.15));
 }
 .planner-title {
   font-family: var(--font-display, var(--font-body));
@@ -723,6 +725,71 @@ button, a, input, [role="button"] {
   color: var(--nijar-marino);
   font-weight: var(--weight-semibold);
   margin-right: 4px;
+}
+
+/* Etiquetas informativas (parque-natural, senderismo, etc.) */
+.poi-dialog-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-5);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--nijar-arena);
+}
+.poi-dialog-tags[hidden] { display: none; }
+.poi-dialog-tags .tag-chip {
+  background: var(--nijar-crema, #f7f1e3);
+  color: var(--nijar-marino);
+  border-radius: var(--radius-2xl);
+  padding: 4px 12px;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+}
+
+/* Acciones (Cómo llegar, llamar, web) */
+.poi-dialog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-5);
+}
+.poi-dialog-actions[hidden] { display: none; }
+.poi-dialog-actions .action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: var(--nijar-marino);
+  color: white;
+  text-decoration: none;
+  border: 0;
+  padding: var(--space-3) var(--space-5);
+  border-radius: var(--radius-2xl);
+  font-family: var(--font-body);
+  font-weight: var(--weight-semibold);
+  font-size: var(--text-base);
+  min-height: 48px;
+  cursor: pointer;
+}
+.poi-dialog-actions .action-btn:hover { background: var(--nijar-teal-deep, var(--nijar-teal)); }
+.poi-dialog-actions .action-btn--secondary {
+  background: white;
+  color: var(--nijar-marino);
+  border: 1.5px solid var(--nijar-marino);
+}
+
+body.high-contrast .poi-dialog-tags .tag-chip {
+  background: #000;
+  color: #fff;
+  border: 1px solid #fff;
+}
+body.high-contrast .poi-dialog-actions .action-btn {
+  background: #ffd400;
+  color: #000;
+}
+body.high-contrast .poi-dialog-actions .action-btn--secondary {
+  background: #000;
+  color: #ffd400;
+  border-color: #ffd400;
 }
 
 /* ============================================================
