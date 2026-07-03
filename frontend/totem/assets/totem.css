@@ -194,7 +194,8 @@ button, a, input, [role="button"] {
    la cabecera (totem-header-row), también con max-width 1280 y
    padding --space-6 dentro. */
 .totem-status-bar {
-  background: var(--nijar-teal);
+  /* Teal profundo para que el texto blanco cumpla contraste AA (WCAG 2.1). */
+  background: var(--nijar-teal-deep);
   color: white;
   padding: var(--space-2) 0;
   font-size: var(--text-sm);
@@ -341,11 +342,11 @@ button, a, input, [role="button"] {
   letter-spacing: var(--tracking-wide);
 }
 /* Color-coded tags per category (v3) */
-.poi-tag--playa { background: var(--nijar-teal); color: white; }
+.poi-tag--playa { background: var(--nijar-teal-deep); color: white; }
 .poi-tag--ruta { background: var(--nijar-marino); color: white; }
 .poi-tag--mirador { background: var(--nijar-dorado); color: var(--nijar-marino); }
 .poi-tag--monumento, .poi-tag--yacimiento { background: var(--nijar-marino); color: white; }
-.poi-tag--punto_interes { background: var(--nijar-teal); color: white; }
+.poi-tag--punto_interes { background: var(--nijar-teal-deep); color: white; }
 .poi-tag--centro_visitantes { background: var(--nijar-dorado); color: var(--nijar-marino); }
 .poi-tag--oficina_turismo { background: var(--nijar-dorado); color: var(--nijar-marino); }
 
@@ -889,17 +890,22 @@ body.high-contrast .totem-brand-icon { background: #ffe600; color: #000; }
 
 body.high-contrast .totem-icon-btn,
 body.high-contrast .lang-btn,
-body.high-contrast .cat-btn {
+body.high-contrast .cat-btn,
+body.high-contrast .cat-btn * {
   background: #000;
   color: #fff;
-  border: 2px solid #ffe600;
+  border-color: #ffe600;
 }
+body.high-contrast .cat-btn { border: 2px solid #ffe600; }
+body.high-contrast .cat-btn * { background: transparent; border: 0; }
 body.high-contrast .totem-icon-btn[aria-pressed="true"],
 body.high-contrast .lang-btn[aria-pressed="true"],
-body.high-contrast .cat-btn[aria-pressed="true"] {
+body.high-contrast .cat-btn[aria-pressed="true"],
+body.high-contrast .cat-btn[aria-pressed="true"] * {
   background: #ffe600;
   color: #000;
 }
+body.high-contrast .cat-btn[aria-pressed="true"] * { background: transparent; }
 
 body.high-contrast .cat-nav { background: #000; border-bottom: 2px solid #ffe600; }
 body.high-contrast .totem-main { background: #000; }
@@ -954,3 +960,38 @@ body.high-contrast .poi-dialog-meta { color: #fff; }
 body.high-contrast .poi-dialog-close { color: #ffe600; }
 
 body.high-contrast *:focus-visible { outline-color: #ffe600; }
+
+/* ============================================================
+ * Correcciones de accesibilidad (auditoría axe-core · WCAG 2.1 AA)
+ * No alteran la estructura; solo garantizan contraste ≥ 4.5:1 y
+ * respetan la preferencia de movimiento reducido.
+ * ============================================================ */
+
+/* Sección "Planifica tu visita": fondo sólido oscuro coherente con el
+   asistente (antes blanco translúcido → el texto blanco quedaba invisible
+   sobre el fondo claro del contenido). */
+.planner-section { background: var(--nijar-marino); }
+
+/* Botones de acción: teal oscuro para lograr 4.5:1 con el texto blanco
+   (el teal corporativo #00A6C0 daba 2.9:1). */
+.planner-btn,
+.chatbot-submit { background: var(--nijar-teal-deep); }
+.planner-btn:hover,
+.chatbot-submit:hover { background: #00616f; }
+
+/* Idioma activo: teal oscuro (blanco sobre teal claro no cumplía). */
+.lang-btn[aria-pressed="true"] { background: var(--nijar-teal-deep); }
+
+/* Línea legal del pie: gris con contraste suficiente (antes gris-soft). */
+.totem-footer .prtr-line { color: var(--nijar-gris); }
+
+/* Respeta prefers-reduced-motion (vestibular): desactiva animaciones y
+   transiciones para quien lo tenga configurado. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -7,11 +7,11 @@
 <title>Plataforma DTI · Smart City de Níjar</title>
 <style>
   :root{
-    --navy:#003B7A; --navy-2:#0A4C93; --ink:#16233D; --muted:#67769A; --subtle:#9AA7BF;
+    --navy:#003B7A; --navy-2:#0A4C93; --ink:#16233D; --muted:#515D77; --subtle:#5D6A84;
     --bg:#F3F6FC; --surface:#FFFFFF; --line:#E9EFF8; --line-2:#DCE6F4;
-    --blue:#1F6FE5; --teal:#17BEBB; --teal2:#00A6C0; --mint:#54D6C6;
+    --blue:#1A5FD0; --teal:#17BEBB; --teal2:#00A6C0; --mint:#54D6C6;
     --coral:#F4568E; --orange:#F79E5C; --gold:#F0B429; --violet:#7C6BF0; --sky:#5B8DEF;
-    --ok:#12A150; --ok-bg:#e3f7ec; --warn:#D9930B; --warn-bg:#fdf1d8; --err:#E5484D; --err-bg:#fbe4e5;
+    --ok:#0A7A38; --ok-bg:#e3f7ec; --warn:#8A5E00; --warn-bg:#fdf1d8; --err:#C42A30; --err-bg:#fbe4e5;
     --sh-sm:0 1px 2px rgba(21,40,80,.05);
     --sh:0 2px 4px rgba(21,40,80,.04),0 12px 28px -12px rgba(21,40,80,.16);
     --sh-lg:0 18px 48px -18px rgba(21,40,80,.28);
@@ -152,7 +152,7 @@
   .stat__chip{position:absolute;top:13px;right:13px;width:36px;height:36px;border-radius:10px;display:grid;place-items:center}
   .stat__chip svg{width:18px;height:18px}
   .ic-blue{background:#e7f0ff;color:var(--blue)} .ic-teal{background:#e0f7f5;color:#0e9c99}
-  .ic-coral{background:#fde7ef;color:var(--coral)} .ic-gold{background:#fdf1d8;color:var(--warn)}
+  .ic-coral{background:#fde7ef;color:#B02D5E} .ic-gold{background:#fdf1d8;color:var(--warn)}
   .ic-ok{background:var(--ok-bg);color:var(--ok)} .ic-violet{background:#eee9fe;color:var(--violet)}
   .ic-err{background:var(--err-bg);color:var(--err)} .ic-navy{background:#e4ecf7;color:var(--navy)}
   .ic-sky{background:#e0edfa;color:#3d78c4} .ic-slate{background:#e2e7ee;color:#4b5975}
@@ -338,7 +338,7 @@
   .pres .bval{color:#9db9dd}
   .pres .kv{border-color:rgba(255,255,255,.14)} .pres .kv .k{color:#9db9dd}
   .pres-clock{font-family:var(--fm);font-size:14px;color:#9db9dd}
-  .live{display:inline-flex;align-items:center;gap:7px;color:#7ef0b2;font-size:12px;font-weight:800;letter-spacing:.06em}
+  .live{display:inline-flex;align-items:center;gap:7px;color:#0B7A3B;font-size:12px;font-weight:800;letter-spacing:.06em}
   .live i{width:8px;height:8px;border-radius:50%;background:#39d98a;animation:blink 1.6s infinite}
   @keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
 
@@ -512,7 +512,7 @@
 <aside class="drawer" id="drawer">
   <div class="drawer__h">
     <div><h3 id="drawer-t">Detalle</h3><div class="sub" id="drawer-s"></div></div>
-    <button class="drawer__x" onclick="UI.closeDrawer()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    <button class="drawer__x" aria-label="Cerrar" onclick="UI.closeDrawer()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
   </div>
   <div class="drawer__b" id="drawer-b"></div>
 </aside>
@@ -522,7 +522,7 @@
   <div class="modal__box">
     <div class="modal__h"><h3 id="modal-t" style="font-size:16px">Informe</h3>
       <div class="topbar__sp"></div>
-      <button class="drawer__x" onclick="UI.closeModal()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+      <button class="drawer__x" aria-label="Cerrar" onclick="UI.closeModal()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
     </div>
     <div class="modal__b" id="modal-b"></div>
   </div>
@@ -3832,5 +3832,46 @@ X.renderHome();
 <script type="module" src="./assets/verticales-live.js?v=1"></script>
 <!-- Alertas, visitantes, integraciones e informes con datos reales -->
 <script type="module" src="./assets/panel-extra.js?v=1"></script>
+<!-- Correcciones de accesibilidad (axe-core · WCAG 2.1 AA): contraste de
+     contadores y nombre accesible de los filtros generados por JS. -->
+<style>
+.cnt:not(.ok){color:#B02D5E!important}
+.crumb,.crumb a,.crumb b{color:#3E4A61}
+.crumb a:hover{color:var(--blue)}
+.sb-g{color:#414B5E}
+.bdg-vio{color:#5B3FD6}
+</style>
+<script>
+(function(){
+  function texto(el){return (el.textContent||"").replace(/\s+/g," ").trim();}
+  function etiquetar(){
+    // 1) Asocia cada .fld > label con su control (no llevan for/id enlazado).
+    var flds=document.querySelectorAll(".fld:not([data-a11y])");
+    for(var i=0;i<flds.length;i++){var f=flds[i];f.setAttribute("data-a11y","1");
+      var lab=f.querySelector("label");var ctl=f.querySelector("input,select,textarea");
+      if(lab&&ctl&&!ctl.getAttribute("aria-label"))ctl.setAttribute("aria-label",texto(lab));}
+    // 2) Interruptores (switch) sin texto: nombre + rol accesible.
+    var sw=document.querySelectorAll("button.switch:not([data-a11y])");
+    for(var j=0;j<sw.length;j++){var b=sw[j];b.setAttribute("data-a11y","1");
+      var scn=b.closest(".scn");var tit=scn?scn.querySelector("b"):null;
+      b.setAttribute("role","switch");
+      b.setAttribute("aria-checked",b.classList.contains("on")?"true":"false");
+      b.setAttribute("aria-label","Activar "+(tit?texto(tit):"escenario"));}
+    // 3) Regiones con scroll horizontal (tablas): accesibles por teclado.
+    var wraps=document.querySelectorAll(".tbl-wrap:not([data-a11y])");
+    for(var k=0;k<wraps.length;k++){var w=wraps[k];w.setAttribute("data-a11y","1");
+      w.setAttribute("tabindex","0");w.setAttribute("role","region");
+      var cap=w.querySelector("thead th");
+      w.setAttribute("aria-label","Tabla de datos"+(cap?" · "+texto(cap):"")+" (desplazable)");}
+  }
+  // Mantiene aria-checked de los switch al alternarlos.
+  document.addEventListener("click",function(e){
+    var b=e.target&&e.target.closest?e.target.closest("button.switch"):null;
+    if(b)setTimeout(function(){b.setAttribute("aria-checked",b.classList.contains("on")?"true":"false");},0);
+  },true);
+  try{new MutationObserver(etiquetar).observe(document.body,{childList:true,subtree:true});}catch(e){}
+  document.addEventListener("DOMContentLoaded",etiquetar);etiquetar();
+})();
+</script>
 </body>
 </html>
