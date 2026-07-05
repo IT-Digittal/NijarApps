@@ -17,9 +17,27 @@ Ubuntu 24.04/26.04 LTS, con las opciones *Snapshot* y *Backup automático* activ
 
 ## 1. DNS
 
-Antes de nada, crear un registro `A` del dominio (p. ej. `dti.nijar.es`)
+Antes de nada, crear un registro `A` del dominio (p. ej. `nijar.digittal.es`)
 apuntando a la IP pública del VPS. Caddy lo necesita para emitir el certificado
 TLS en el primer arranque.
+
+### Si el DNS está en Cloudflare
+
+Crear el registro `A` con el **proxy desactivado** (nube gris, "Solo DNS"):
+
+| Tipo | Nombre | Contenido | Proxy |
+|---|---|---|---|
+| A | `nijar` (o el subdominio elegido) | IP del VPS | **Solo DNS** (nube gris) |
+
+Con el proxy de Cloudflare activado (nube naranja), el reto HTTP de Let's
+Encrypt no llega a Caddy y la emisión del certificado falla. El modo "Solo DNS"
+es el recomendado para esta plataforma: el TLS lo gestiona Caddy en el VPS y se
+renueva solo.
+
+Si más adelante se quiere activar el proxy de Cloudflare (WAF/CDN), hacerlo
+**después** de que Caddy tenga el certificado emitido, y configurar en
+Cloudflare → SSL/TLS el modo **Full (strict)**. Nunca usar el modo "Flexible"
+(provoca bucles de redirección).
 
 ## 2. Acceso y endurecimiento básico del VPS
 
