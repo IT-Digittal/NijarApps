@@ -17,8 +17,8 @@ import { api, tokens } from "./api-client.js?v=16";
 const REFRESH_MS = 60_000;
 const NO_DATA = "—";
 
-/* Secciones DTI que siguen sin fuente de datos real */
-const SECCIONES_DEMO = ["alertas", "visitantes", "opendata", "plan", "proyecto", "integraciones", "informes"];
+/* Secciones informativas: documentan el expediente/contrato, no telemetría */
+const SECCIONES_INFO = ["opendata", "plan", "proyecto"];
 
 const COLOR_IDIOMA = { es: "#1F6FE5", en: "#17BEBB", de: "#F0B429", fr: "#7C6BF0" };
 const NOMBRE_IDIOMA = { es: "Español", en: "Inglés", de: "Alemán", fr: "Francés" };
@@ -349,11 +349,11 @@ function renderHomeKpis() {
 }
 
 function marcarDemo(id) {
-  if (!SECCIONES_DEMO.includes(id)) return;
+  if (!SECCIONES_INFO.includes(id)) return;
   const cont = document.getElementById("dv-" + id);
   if (!cont || cont.querySelector(".demo-note")) return;
   cont.prepend(el("div", { className: "demo-note" },
-    "⚠ Esta sección muestra <b>datos de demostración</b>: la fuente de datos real se conectará en una fase posterior."));
+    "ℹ Sección <b>informativa</b>: documenta el expediente y la planificación del contrato, no telemetría en tiempo real."));
 }
 
 function refrescarUI() {

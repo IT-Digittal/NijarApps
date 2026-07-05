@@ -159,11 +159,22 @@ function limpiarRecurso(r) {
 
 function formRecurso(r) {
   const coords = r && r.ubicacion && r.ubicacion.coordinates;
+  const ni = (r && r.nombre_i18n) || {};
+  const di = (r && r.descripcion_i18n) || {};
+  const bloqueIdioma = (lang, etiqueta) =>
+    '<details style="margin-top:10px;border:1.5px solid var(--line);border-radius:10px;padding:8px 12px"' + ((ni[lang] || di[lang]) ? " open" : "") + ">" +
+    '<summary style="font-size:12px;font-weight:800;color:var(--muted);cursor:pointer">' + etiqueta + "</summary>" +
+    campo("Nombre (" + lang.toUpperCase() + ")", '<input name="nombre_' + lang + '" maxlength="255" value="' + esc(ni[lang] || "") + '" ' + INPUT_CSS + ">") +
+    campo("Descripción (" + lang.toUpperCase() + ")", '<textarea name="descripcion_' + lang + '" rows="2" ' + INPUT_CSS + ">" + esc(di[lang] || "") + "</textarea>") +
+    "</details>";
   abrirForm(r ? "Editar recurso" : "Nuevo recurso turístico",
     campo("Nombre", '<input name="nombre" required maxlength="255" value="' + esc(r ? r.nombre : "") + '" ' + INPUT_CSS + ">") +
     campo("Categoría", '<select name="categoria" ' + INPUT_CSS + ">" + CATEGORIAS.map((c) =>
       '<option value="' + c + '"' + (r && r.categoria === c ? " selected" : "") + ">" + c.replace(/_/g, " ") + "</option>").join("") + "</select>") +
     campo("Descripción corta", '<textarea name="descripcion_corta" rows="3" ' + INPUT_CSS + ">" + esc(r ? r.descripcion_corta || "" : "") + "</textarea>") +
+    bloqueIdioma("en", "Traducción · Inglés") +
+    bloqueIdioma("de", "Traducción · Alemán") +
+    bloqueIdioma("fr", "Traducción · Francés") +
     campo("Municipio", '<input name="municipio" value="' + esc(r ? r.municipio : "Níjar") + '" ' + INPUT_CSS + ">") +
     '<div style="display:flex;gap:10px">' +
     '<div style="flex:1">' + campo("Latitud", '<input name="lat" type="number" step="any" value="' + (coords ? coords[1] : "") + '" ' + INPUT_CSS + ">") + "</div>" +
@@ -181,6 +192,13 @@ function formRecurso(r) {
       };
       const lat = parseFloat(fd.get("lat")), lon = parseFloat(fd.get("lon"));
       if (!isNaN(lat) && !isNaN(lon)) payload.ubicacion = { type: "Point", coordinates: [lon, lat] };
+      const nI18n = { es: nombre }, dI18n = { es: payload.descripcion_corta };
+      ["en", "de", "fr"].forEach((lang) => {
+        nI18n[lang] = (fd.get("nombre_" + lang) || "").trim() || null;
+        dI18n[lang] = (fd.get("descripcion_" + lang) || "").trim() || null;
+      });
+      payload.nombre_i18n = nI18n;
+      payload.descripcion_i18n = dI18n;
       if (r) await api.updateResource(r.id, payload);
       else await api.createResource(payload);
       UI.toast(r ? "Recurso actualizado" : "Recurso creado");
