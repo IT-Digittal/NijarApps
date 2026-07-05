@@ -188,6 +188,10 @@ services:
   rasa-trainer:
     image: rasa/rasa:3.6.20-full
     container_name: nijar-dti-rasa-trainer
+    # La imagen de Rasa corre como uid 1001, que no puede escribir ni en el
+    # directorio rasa/ montado desde el host ni en el volumen de modelos.
+    # El entrenamiento necesita escribir la caché (.rasa/) y el modelo.
+    user: root
     volumes:
       - ../../rasa:/app
       - rasa_models:/app/models

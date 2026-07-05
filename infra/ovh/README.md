@@ -113,6 +113,10 @@ nano .env    # rellenar todos los CAMBIAR (SECRET_KEY, contraseñas, dominio…)
 # Credenciales del broker MQTT (usar la misma contraseña en MQTT_PASSWORD del .env)
 docker run --rm -v "$PWD:/work" eclipse-mosquitto:2 \
   mosquitto_passwd -c -b /work/mosquitto_passwd nijar-platform '<CONTRASEÑA_MQTT>'
+
+# El fichero lo crea root, pero dentro del contenedor Mosquitto corre como
+# uid 1883 y debe poder leerlo (si no, el broker entra en bucle de reinicio):
+sudo chown 1883:1883 mosquitto_passwd && sudo chmod 600 mosquitto_passwd
 ```
 
 Generadores de secretos:

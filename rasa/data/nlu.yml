@@ -4,324 +4,673 @@
 version: '3.1'
 nlu:
 - intent: playas_destacadas
-  examples: '|
-
+  examples: |
     - ¿Cuáles son las playas más conocidas del Cabo de Gata?
-
     - qué playas hay
-
     - playas mejores cabo de gata
-
     - playas turísticas níjar
-
     - playas más bonitas
-
     - dónde puedo bañarme
-
     - Which are the most famous beaches of Cabo de Gata?
-
     - best beaches near Níjar
-
     - top beaches Cabo de Gata
-
     - where can I swim
-
     - Welche sind die bekanntesten Strände am Cabo de Gata?
-
     - beste Strände Cabo de Gata
-
     - wo schwimmen
-
     - Quelles sont les plages les plus célèbres de Cabo de Gata?
-
     - meilleures plages Cabo de Gata
-
-    '
 - intent: acceso_playa_monsul
-  examples: '|
-
+  examples: |
     - ¿Cómo se accede a la Playa de Mónsul en verano?
-
     - acceso playa monsul
-
     - como llegar monsul
-
     - monsul restringido
-
     - How do I access Mónsul Beach in summer?
-
     - monsul beach access
-
     - monsul summer access
-
     - Wie komme ich im Sommer zum Strand von Mónsul?
-
     - Comment accéder à la plage de Mónsul en été?
-
-    '
 - intent: playas_perro
-  examples: '|
-
+  examples: |
     - ¿Puedo ir con perro a las playas de Níjar?
-
     - Can I bring my dog to Níjar beaches?
-
     - Darf ich meinen Hund an die Strände von Níjar mitnehmen?
-
     - Puis-je amener mon chien sur les plages de Níjar?
-
-    '
 - intent: horario_amoladeras
-  examples: '|
-
+  examples: |
     - ¿Cuál es el horario del Centro de Visitantes Las Amoladeras?
-
     - horario amoladeras
-
     - centro visitantes hora
-
     - What are Las Amoladeras Visitor Center opening hours?
-
     - Wie sind die Öffnungszeiten des Besucherzentrums Las Amoladeras?
-
     - Quels sont les horaires du Centre des Visiteurs Las Amoladeras?
-
-    '
 - intent: normativa_parque
-  examples: '|
-
+  examples: |
     - ¿Qué está prohibido hacer en el Parque Natural Cabo de Gata-Níjar?
-
     - What is forbidden in Cabo de Gata-Níjar Natural Park?
-
     - Was ist im Naturpark Cabo de Gata-Níjar verboten?
-
-    - Qu''est-ce qui est interdit dans le Parc Naturel Cabo de Gata-Níjar?
-
-    '
+    - Qu'est-ce qui est interdit dans le Parc Naturel Cabo de Gata-Níjar?
 - intent: ruta_rodalquilar_albaricoques
-  examples: '|
-
+  examples: |
     - ¿Cómo es la ruta cicloturista Rodalquilar–Albaricoques?
-
     - ruta bici rodalquilar
-
     - ruta albaricoques
-
     - What is the Rodalquilar–Albaricoques cycling route like?
-
     - Wie ist die Radroute Rodalquilar–Albaricoques?
-
-    - Comment est l''itinéraire cyclable Rodalquilar–Albaricoques?
-
-    '
+    - Comment est l'itinéraire cyclable Rodalquilar–Albaricoques?
 - intent: ruta_faro_vela_blanca
-  examples: '|
-
+  examples: |
     - ¿Qué es el sendero del Faro a Vela Blanca?
-
     - What is the Lighthouse to Vela Blanca trail?
-
     - Was ist der Wanderweg vom Leuchtturm nach Vela Blanca?
-
-    - Qu''est-ce que le sentier du Phare à Vela Blanca?
-
-    '
+    - Qu'est-ce que le sentier du Phare à Vela Blanca?
 - intent: donde_dormir
-  examples: '|
-
+  examples: |
     - ¿Dónde puedo alojarme en Níjar?
-
     - Where can I stay in Níjar?
-
     - Wo kann ich in Níjar übernachten?
-
     - Où puis-je me loger à Níjar?
-
-    '
 - intent: donde_comer
-  examples: '|
-
+  examples: |
     - ¿Dónde puedo comer en Níjar?
-
     - Where can I eat in Níjar?
-
     - Wo kann ich in Níjar essen?
-
     - Où puis-je manger à Níjar?
-
-    '
 - intent: transporte_publico
-  examples: '|
-
+  examples: |
     - ¿Hay transporte público para llegar a las playas?
-
     - Is there public transport to the beaches?
-
     - Gibt es öffentliche Verkehrsmittel zu den Stränden?
-
-    - Y a-t-il des transports publics jusqu''aux plages?
-
-    '
+    - Y a-t-il des transports publics jusqu'aux plages?
 - intent: eventos_proximos
-  examples: '|
-
+  examples: |
     - ¿Qué eventos hay en Níjar este mes?
-
     - What events are there in Níjar this month?
-
     - Welche Veranstaltungen gibt es diesen Monat in Níjar?
-
     - Quels événements y a-t-il à Níjar ce mois-ci?
-
-    '
 - intent: emergencias
-  examples: '|
-
+  examples: |
     - ¿Cuál es el número de emergencias?
-
     - What is the emergency number?
-
     - Was ist die Notrufnummer?
-
-    - Quel est le numéro d''urgence?
-
-    '
+    - Quel est le numéro d'urgence?
 - intent: centro_salud
-  examples: '|
-
+  examples: |
     - ¿Hay centro de salud en Níjar?
-
     - Is there a health centre in Níjar?
-
     - Gibt es in Níjar ein Gesundheitszentrum?
-
     - Y a-t-il un centre de santé à Níjar?
-
-    '
 - intent: accesibilidad_playas
-  examples: '|
-
+  examples: |
     - ¿Hay playas accesibles para personas con movilidad reducida?
-
     - Are there beaches accessible for people with reduced mobility?
-
     - Gibt es Strände für Personen mit eingeschränkter Mobilität?
-
     - Y a-t-il des plages accessibles aux personnes à mobilité réduite?
-
-    '
 - intent: oficina_turismo
-  examples: '|
-
+  examples: |
     - ¿Dónde está la oficina de turismo?
-
     - Where is the tourist information office?
-
     - Wo befindet sich das Touristenbüro?
-
-    - Où se trouve l''office de tourisme?
-
-    '
+    - Où se trouve l'office de tourisme?
 - intent: artesania_jarapas
-  examples: '|
-
+  examples: |
     - ¿Qué es la jarapa de Níjar?
-
     - What is a Níjar jarapa?
-
     - Was ist eine Jarapa aus Níjar?
-
-    - Qu''est-ce qu''une jarapa de Níjar?
-
-    '
+    - Qu'est-ce qu'une jarapa de Níjar?
 - intent: mejor_epoca_visita
-  examples: '|
-
+  examples: |
     - ¿Cuál es la mejor época para visitar Níjar?
-
     - What is the best time to visit Níjar?
-
     - Wann ist die beste Zeit für einen Besuch in Níjar?
-
     - Quelle est la meilleure période pour visiter Níjar?
-
-    '
 - intent: lugares_fotografia
-  examples: '|
-
+  examples: |
     - ¿Cuáles son los mejores lugares para hacer fotos?
-
     - What are the best photography spots?
-
     - Was sind die besten Fotospots?
-
     - Quels sont les meilleurs endroits pour la photographie?
-
-    '
 - intent: saludo
-  examples: '|
-
+  examples: |
     - Hola
-
     - buenos días
-
     - buenas tardes
-
     - buenas noches
-
     - qué tal
-
     - Hello
-
     - hi
-
     - good morning
-
     - good afternoon
-
     - Hallo
-
     - guten tag
-
     - guten morgen
-
     - Bonjour
-
     - salut
-
     - bonsoir
-
-    '
 - intent: despedida
-  examples: '|
-
+  examples: |
     - Adiós
-
     - chao
-
     - hasta luego
-
     - gracias por todo
-
     - Goodbye
-
     - bye
-
     - thanks
-
     - see you
-
     - Auf Wiedersehen
-
     - tschüss
-
     - danke
-
     - Au revoir
-
     - merci
-
     - à bientôt
-
-    '
+- intent: playa_genoveses
+  examples: |
+    - ¿Cómo es la playa de los Genoveses?
+    - What is Genoveses beach like?
+    - Wie ist der Strand Genoveses?
+    - Comment est la plage de Genoveses ?
+- intent: playa_cala_enmedio
+  examples: |
+    - ¿Cómo llego a Cala de Enmedio?
+    - How do I get to Cala de Enmedio?
+    - Wie komme ich zur Cala de Enmedio?
+    - Comment aller à Cala de Enmedio ?
+- intent: playa_playazo
+  examples: |
+    - ¿Qué tiene de especial El Playazo de Rodalquilar?
+    - What is special about El Playazo de Rodalquilar?
+    - Was ist das Besondere am Playazo de Rodalquilar?
+    - Qu'a de spécial El Playazo de Rodalquilar ?
+- intent: playa_agua_amarga
+  examples: |
+    - ¿Cómo es Agua Amarga?
+    - What is Agua Amarga like?
+    - Wie ist Agua Amarga?
+    - Comment est Agua Amarga ?
+- intent: playas_seguridad_medusas
+  examples: |
+    - ¿Hay medusas o banderas de aviso en las playas?
+    - Are there jellyfish or warning flags on the beaches?
+    - Gibt es Quallen oder Warnflaggen an den Stränden?
+    - Y a-t-il des méduses ou des drapeaux d'avertissement sur les plages ?
+- intent: playas_nudismo
+  examples: |
+    - ¿Hay playas nudistas en Cabo de Gata?
+    - Are there nudist beaches in Cabo de Gata?
+    - Gibt es FKK-Strände am Cabo de Gata?
+    - Y a-t-il des plages naturistes à Cabo de Gata ?
+- intent: parque_reserva_biosfera
+  examples: |
+    - ¿Qué figuras de protección tiene Cabo de Gata-Níjar?
+    - What protection status does Cabo de Gata-Níjar have?
+    - Welchen Schutzstatus hat Cabo de Gata-Níjar?
+    - Quels statuts de protection a Cabo de Gata-Níjar ?
+- intent: parque_aves_flamencos
+  examples: |
+    - ¿Dónde puedo ver flamencos?
+    - Where can I see flamingos?
+    - Wo kann ich Flamingos sehen?
+    - Où puis-je voir des flamants roses ?
+- intent: parque_salinas
+  examples: |
+    - ¿Qué son las Salinas de Cabo de Gata?
+    - What are the Cabo de Gata Salt Flats?
+    - Was sind die Salinen von Cabo de Gata?
+    - Que sont les Salines de Cabo de Gata ?
+- intent: parque_faro_cabo_gata
+  examples: |
+    - ¿Merece la pena ir al Faro de Cabo de Gata?
+    - Is the Cabo de Gata Lighthouse worth visiting?
+    - Lohnt sich der Leuchtturm von Cabo de Gata?
+    - Le phare de Cabo de Gata vaut-il la visite ?
+- intent: parque_buceo_normativa
+  examples: |
+    - ¿Se puede bucear en el parque? ¿Hay normas?
+    - Can I dive in the park? Are there rules?
+    - Darf man im Park tauchen? Gibt es Regeln?
+    - Peut-on plonger dans le parc ? Y a-t-il des règles ?
+- intent: ruta_minera_rodalquilar
+  examples: |
+    - ¿Qué puedo ver en Rodalquilar y su zona minera?
+    - What can I see in Rodalquilar and its mining area?
+    - Was kann ich in Rodalquilar und im Bergbaugebiet sehen?
+    - Que voir à Rodalquilar et sa zone minière ?
+- intent: rutas_dificultad
+  examples: |
+    - ¿Las rutas de senderismo son difíciles?
+    - Are the hiking trails difficult?
+    - Sind die Wanderwege schwierig?
+    - Les sentiers de randonnée sont-ils difficiles ?
+- intent: actividad_kayak_snorkel
+  examples: |
+    - ¿Dónde puedo hacer kayak o snorkel?
+    - Where can I do kayaking or snorkelling?
+    - Wo kann ich Kajak fahren oder schnorcheln?
+    - Où puis-je faire du kayak ou du snorkeling ?
+- intent: actividad_bici_alquiler
+  examples: |
+    - ¿Puedo alquilar bicicletas para la ruta ciclista?
+    - Can I rent bikes for the cycle route?
+    - Kann ich Fahrräder für den Radweg mieten?
+    - Puis-je louer des vélos pour la voie cyclable ?
+- intent: astroturismo
+  examples: |
+    - ¿Se pueden ver las estrellas? ¿Hay astroturismo?
+    - Can I stargaze? Is there astrotourism?
+    - Kann man Sterne beobachten? Gibt es Astrotourismus?
+    - Peut-on observer les étoiles ? Y a-t-il de l'astrotourisme ?
+- intent: servicio_wifi
+  examples: |
+    - ¿Hay WiFi público gratuito?
+    - Is there free public WiFi?
+    - Gibt es kostenloses öffentliches WLAN?
+    - Y a-t-il du WiFi public gratuit ?
+- intent: servicio_cajeros
+  examples: |
+    - ¿Dónde hay cajeros automáticos?
+    - Where are there ATMs?
+    - Wo gibt es Geldautomaten?
+    - Où y a-t-il des distributeurs ?
+- intent: servicio_farmacia
+  examples: |
+    - ¿Dónde hay farmacias?
+    - Where are there pharmacies?
+    - Wo gibt es Apotheken?
+    - Où y a-t-il des pharmacies ?
+- intent: servicio_parking_san_jose
+  examples: |
+    - ¿Dónde puedo aparcar en San José?
+    - Where can I park in San José?
+    - Wo kann ich in San José parken?
+    - Où puis-je me garer à San José ?
+- intent: servicio_supermercado
+  examples: |
+    - ¿Hay supermercados cerca de las playas?
+    - Are there supermarkets near the beaches?
+    - Gibt es Supermärkte in Strandnähe?
+    - Y a-t-il des supermarchés près des plages ?
+- intent: servicio_taxi
+  examples: |
+    - ¿Cómo pido un taxi en la zona?
+    - How do I get a taxi in the area?
+    - Wie bekomme ich ein Taxi in der Gegend?
+    - Comment trouver un taxi dans la région ?
+- intent: gastronomia_platos
+  examples: |
+    - ¿Cuáles son los platos típicos de Níjar?
+    - What are the typical dishes of Níjar?
+    - Was sind typische Gerichte aus Níjar?
+    - Quels sont les plats typiques de Níjar ?
+- intent: gastronomia_horarios
+  examples: |
+    - ¿A qué hora se come y se cena aquí?
+    - What are the local lunch and dinner times?
+    - Wann isst man hier zu Mittag und zu Abend?
+    - À quelle heure déjeune-t-on et dîne-t-on ici ?
+- intent: gastronomia_vegetariano
+  examples: |
+    - ¿Hay opciones vegetarianas o veganas?
+    - Are there vegetarian or vegan options?
+    - Gibt es vegetarische oder vegane Optionen?
+    - Y a-t-il des options végétariennes ou véganes ?
+- intent: gastronomia_vino
+  examples: |
+    - ¿Hay vino o productos locales para comprar?
+    - Is there local wine or products to buy?
+    - Gibt es lokalen Wein oder Produkte zu kaufen?
+    - Y a-t-il du vin ou des produits locaux à acheter ?
+- intent: alojamiento_tipos
+  examples: |
+    - ¿Qué tipos de alojamiento hay?
+    - What types of accommodation are there?
+    - Welche Unterkunftsarten gibt es?
+    - Quels types d'hébergement existe-t-il ?
+- intent: alojamiento_camping
+  examples: |
+    - ¿Hay campings en la zona?
+    - Are there campsites in the area?
+    - Gibt es Campingplätze in der Gegend?
+    - Y a-t-il des campings dans la région ?
+- intent: alojamiento_temporada
+  examples: |
+    - ¿Cuándo conviene reservar alojamiento?
+    - When should I book accommodation?
+    - Wann sollte ich eine Unterkunft buchen?
+    - Quand réserver un hébergement ?
+- intent: cultura_ceramica_nijar
+  examples: |
+    - ¿Dónde puedo comprar cerámica de Níjar?
+    - Where can I buy Níjar pottery?
+    - Wo kann ich Keramik aus Níjar kaufen?
+    - Où puis-je acheter de la céramique de Níjar ?
+- intent: cultura_cortijo_fraile
+  examples: |
+    - ¿Qué es el Cortijo del Fraile?
+    - What is the Cortijo del Fraile?
+    - Was ist der Cortijo del Fraile?
+    - Qu'est-ce que le Cortijo del Fraile ?
+- intent: cultura_cine_western
+  examples: |
+    - ¿Dónde se rodaron las películas del oeste?
+    - Where were the western films shot?
+    - Wo wurden die Westernfilme gedreht?
+    - Où ont été tournés les westerns ?
+- intent: cultura_mercadillo
+  examples: |
+    - ¿Hay mercadillos artesanales?
+    - Are there craft markets?
+    - Gibt es Kunsthandwerksmärkte?
+    - Y a-t-il des marchés artisanaux ?
+- intent: eventos_fiestas_san_jose
+  examples: |
+    - ¿Cuándo son las fiestas de San José?
+    - When are the San José festivities?
+    - Wann sind die Feste von San José?
+    - Quand ont lieu les fêtes de San José ?
+- intent: eventos_conciertos_verano
+  examples: |
+    - ¿Hay conciertos o cine de verano?
+    - Are there concerts or summer cinema?
+    - Gibt es Konzerte oder Sommerkino?
+    - Y a-t-il des concerts ou du cinéma d'été ?
+- intent: transporte_aeropuerto
+  examples: |
+    - ¿Cómo llego desde el aeropuerto de Almería?
+    - How do I get here from Almería airport?
+    - Wie komme ich vom Flughafen Almería hierher?
+    - Comment venir depuis l'aéroport d'Almería ?
+- intent: transporte_distancias
+  examples: |
+    - ¿A qué distancia están las playas del pueblo de Níjar?
+    - How far are the beaches from Níjar town?
+    - Wie weit sind die Strände vom Dorf Níjar entfernt?
+    - À quelle distance sont les plages du village de Níjar ?
+- intent: transporte_bus_lanzadera
+  examples: |
+    - ¿Existe bus lanzadera a las playas en verano?
+    - Is there a summer shuttle bus to the beaches?
+    - Gibt es im Sommer einen Pendelbus zu den Stränden?
+    - Y a-t-il une navette estivale vers les plages ?
+- intent: accesibilidad_silla_anfibia
+  examples: |
+    - ¿Hay sillas anfibias o baño asistido para personas con movilidad reducida?
+    - Are there amphibious chairs or assisted bathing for reduced mobility?
+    - Gibt es Amphibienstühle oder Badehilfe für Menschen mit eingeschränkter Mobilität?
+    - Y a-t-il des fauteuils amphibies ou un bain assisté pour mobilité réduite ?
+- intent: accesibilidad_perro_guia
+  examples: |
+    - ¿Puedo acceder con perro guía o de asistencia?
+    - Can I enter with a guide or assistance dog?
+    - Darf ich mit einem Blinden- oder Assistenzhund hinein?
+    - Puis-je entrer avec un chien guide ou d'assistance ?
+- intent: accesibilidad_totem_bucle
+  examples: |
+    - ¿El tótem es accesible para personas con discapacidad auditiva o visual?
+    - Is the totem accessible for people with hearing or visual impairment?
+    - Ist das Totem für Menschen mit Hör- oder Sehbehinderung zugänglich?
+    - Le totem est-il accessible aux personnes malentendantes ou malvoyantes ?
+- intent: practico_clima
+  examples: |
+    - ¿Qué tiempo hace en Cabo de Gata?
+    - What is the weather like in Cabo de Gata?
+    - Wie ist das Wetter am Cabo de Gata?
+    - Quel temps fait-il à Cabo de Gata ?
+- intent: practico_agua_potable
+  examples: |
+    - ¿Hay agua potable en las playas y calas?
+    - Is there drinking water at the beaches and coves?
+    - Gibt es Trinkwasser an den Stränden und Buchten?
+    - Y a-t-il de l'eau potable sur les plages et criques ?
+- intent: practico_idiomas
+  examples: |
+    - ¿Se habla inglés u otros idiomas en la zona?
+    - Is English or other languages spoken in the area?
+    - Wird in der Gegend Englisch oder andere Sprachen gesprochen?
+    - Parle-t-on anglais ou d'autres langues dans la région ?
+- intent: practico_sostenibilidad
+  examples: |
+    - ¿Cómo puedo visitar el parque de forma responsable?
+    - How can I visit the park responsibly?
+    - Wie besuche ich den Park verantwortungsvoll?
+    - Comment visiter le parc de façon responsable ?
+- intent: emergencia_incendio
+  examples: |
+    - ¿Qué hago si veo un incendio forestal?
+    - What do I do if I see a wildfire?
+    - Was tue ich, wenn ich einen Waldbrand sehe?
+    - Que faire si je vois un feu de forêt ?
+- intent: emergencia_rescate_costa
+  examples: |
+    - ¿A quién llamo ante una emergencia en el mar o en una cala?
+    - Who do I call for an emergency at sea or in a cove?
+    - Wen rufe ich bei einem Notfall im Meer oder in einer Bucht an?
+    - Qui appeler en cas d'urgence en mer ou dans une crique ?
+- intent: emergencia_documentos_perdidos
+  examples: |
+    - He perdido la documentación o me han robado, ¿qué hago?
+    - I lost my documents or was robbed, what do I do?
+    - Ich habe meine Dokumente verloren oder wurde bestohlen, was tun?
+    - J'ai perdu mes papiers ou on m'a volé, que faire ?
+- intent: meta_que_puedes_hacer
+  examples: |
+    - ¿Qué puedes hacer por mí?
+    - What can you do for me?
+    - Was kannst du für mich tun?
+    - Que peux-tu faire pour moi ?
+- intent: meta_idiomas_chatbot
+  examples: |
+    - ¿En qué idiomas puedes atenderme?
+    - Which languages can you assist me in?
+    - In welchen Sprachen kannst du mir helfen?
+    - Dans quelles langues peux-tu m'aider ?
+- intent: meta_agradecimiento
+  examples: |
+    - ¡Gracias!
+    - Thank you!
+    - Danke!
+    - Merci !
+- intent: nucleo_san_jose
+  examples: |
+    - ¿Qué ofrece San José?
+    - What does San José offer?
+    - Was bietet San José?
+    - Que propose San José ?
+- intent: nucleo_isleta_moro
+  examples: |
+    - ¿Cómo es La Isleta del Moro?
+    - What is La Isleta del Moro like?
+    - Wie ist La Isleta del Moro?
+    - Comment est La Isleta del Moro ?
+- intent: nucleo_los_escullos
+  examples: |
+    - ¿Qué ver en Los Escullos?
+    - What to see in Los Escullos?
+    - Was gibt es in Los Escullos zu sehen?
+    - Que voir à Los Escullos ?
+- intent: nucleo_las_negras
+  examples: |
+    - ¿Cómo es Las Negras?
+    - What is Las Negras like?
+    - Wie ist Las Negras?
+    - Comment est Las Negras ?
+- intent: enclave_arrecife_sirenas
+  examples: |
+    - ¿Qué es el Arrecife de las Sirenas?
+    - What is the Arrecife de las Sirenas?
+    - Was ist das Arrecife de las Sirenas?
+    - Qu'est-ce que l'Arrecife de las Sirenas ?
+- intent: enclave_mirador_amatista
+  examples: |
+    - ¿Merece la pena el Mirador de la Amatista?
+    - Is the Amatista Viewpoint worth it?
+    - Lohnt sich der Aussichtspunkt Amatista?
+    - Le belvédère de l'Amatista vaut-il le détour ?
+- intent: patrimonio_castillo_san_ramon
+  examples: |
+    - ¿Se puede visitar el Castillo de San Ramón?
+    - Can I visit San Ramón Castle?
+    - Kann man die Burg San Ramón besichtigen?
+    - Peut-on visiter le château San Ramón ?
+- intent: patrimonio_iglesia_nijar
+  examples: |
+    - ¿Qué ver en el pueblo de Níjar?
+    - What to see in Níjar town?
+    - Was gibt es im Dorf Níjar zu sehen?
+    - Que voir au village de Níjar ?
+- intent: patrimonio_jardin_botanico
+  examples: |
+    - ¿Qué es el Jardín Botánico El Albardinal?
+    - What is the El Albardinal Botanical Garden?
+    - Was ist der Botanische Garten El Albardinal?
+    - Qu'est-ce que le Jardin Botanique El Albardinal ?
+- intent: actividad_avistamiento_aves
+  examples: |
+    - ¿Dónde observar aves además de en las salinas?
+    - Where to watch birds besides the salt flats?
+    - Wo Vögel beobachten außer an den Salinen?
+    - Où observer les oiseaux hormis aux salines ?
+- intent: actividad_paseo_barco
+  examples: |
+    - ¿Hay paseos en barco por las calas?
+    - Are there boat trips along the coves?
+    - Gibt es Bootsausflüge entlang der Buchten?
+    - Y a-t-il des sorties en bateau le long des criques ?
+- intent: actividad_familias_ninos
+  examples: |
+    - ¿Qué actividades hay para ir con niños?
+    - What activities are there for children?
+    - Welche Aktivitäten gibt es für Kinder?
+    - Quelles activités pour les enfants ?
+- intent: servicio_gasolinera
+  examples: |
+    - ¿Dónde hay gasolineras?
+    - Where are there petrol stations?
+    - Wo gibt es Tankstellen?
+    - Où y a-t-il des stations-service ?
+- intent: servicio_carga_electrico
+  examples: |
+    - ¿Hay puntos de carga para coches eléctricos?
+    - Are there EV charging points?
+    - Gibt es Ladepunkte für Elektroautos?
+    - Y a-t-il des bornes de recharge électrique ?
+- intent: servicio_alquiler_coche
+  examples: |
+    - ¿Necesito coche para moverme por la zona?
+    - Do I need a car to get around?
+    - Brauche ich ein Auto, um herumzukommen?
+    - Ai-je besoin d'une voiture pour me déplacer ?
+- intent: servicio_veterinario
+  examples: |
+    - ¿Hay veterinario por si viajo con mascota?
+    - Is there a vet if I travel with a pet?
+    - Gibt es einen Tierarzt, falls ich mit Haustier reise?
+    - Y a-t-il un vétérinaire si je voyage avec un animal ?
+- intent: servicio_urgencias_turista
+  examples: |
+    - Soy turista extranjero, ¿cómo accedo a asistencia médica?
+    - I'm a foreign tourist, how do I access medical care?
+    - Ich bin ausländischer Tourist, wie bekomme ich medizinische Hilfe?
+    - Touriste étranger, comment accéder aux soins médicaux ?
+- intent: practico_pago_tarjeta
+  examples: |
+    - ¿Se puede pagar con tarjeta en todas partes?
+    - Can I pay by card everywhere?
+    - Kann ich überall mit Karte zahlen?
+    - Peut-on payer par carte partout ?
+- intent: practico_que_llevar
+  examples: |
+    - ¿Qué debo llevar para visitar el parque?
+    - What should I bring to visit the park?
+    - Was sollte ich für den Parkbesuch mitnehmen?
+    - Que dois-je emporter pour visiter le parc ?
+- intent: practico_temporada_evitar
+  examples: |
+    - ¿Cuándo hay menos gente?
+    - When are there fewer people?
+    - Wann ist weniger los?
+    - Quand y a-t-il moins de monde ?
+- intent: practico_mascotas_general
+  examples: |
+    - ¿Puedo viajar con mi mascota por la zona?
+    - Can I travel with my pet in the area?
+    - Kann ich mit meinem Haustier in der Gegend reisen?
+    - Puis-je voyager avec mon animal dans la région ?
+- intent: ruta_san_pedro_pie
+  examples: |
+    - ¿Cómo llego a la Cala de San Pedro?
+    - How do I reach Cala de San Pedro?
+    - Wie erreiche ich die Cala de San Pedro?
+    - Comment atteindre la Cala de San Pedro ?
+- intent: ruta_sendero_amoladeras
+  examples: |
+    - ¿Hay senderos fáciles cerca del Centro de Visitantes?
+    - Are there easy trails near the Visitor Center?
+    - Gibt es leichte Wege beim Besucherzentrum?
+    - Y a-t-il des sentiers faciles près du Centre des Visiteurs ?
+- intent: eventos_mercado_pescado
+  examples: |
+    - ¿Hay lonja o venta de pescado fresco?
+    - Is there a fish market or fresh fish sale?
+    - Gibt es einen Fischmarkt oder frischen Fischverkauf?
+    - Y a-t-il une criée ou vente de poisson frais ?
+- intent: meta_no_entiende
+  examples: |
+    - No me has entendido / ¿puedes repetir?
+    - You didn't understand me / can you repeat?
+    - Du hast mich nicht verstanden / kannst du wiederholen?
+    - Tu ne m'as pas compris / peux-tu répéter ?
+- intent: meta_hablar_persona
+  examples: |
+    - Quiero hablar con una persona de la oficina de turismo
+    - I want to talk to a person at the tourist office
+    - Ich möchte mit einer Person im Tourismusbüro sprechen
+    - Je veux parler à une personne de l'office de tourisme
+- intent: playa_servicios_chiringuito
+  examples: |
+    - ¿Las playas tienen chiringuitos y hamacas?
+    - Do the beaches have beach bars and sunbeds?
+    - Gibt es an den Stränden Strandbars und Liegen?
+    - Les plages ont-elles des paillotes et transats ?
+- intent: playa_bandera_azul
+  examples: |
+    - ¿Hay playas con bandera azul?
+    - Are there Blue Flag beaches?
+    - Gibt es Strände mit Blauer Flagge?
+    - Y a-t-il des plages pavillon bleu ?
+- intent: gastronomia_reservas
+  examples: |
+    - ¿Necesito reservar mesa en los restaurantes?
+    - Do I need to book a table at restaurants?
+    - Muss ich im Restaurant einen Tisch reservieren?
+    - Dois-je réserver une table au restaurant ?
+- intent: parque_fauna_camaleon
+  examples: |
+    - ¿Qué fauna puedo ver en el parque?
+    - What wildlife can I see in the park?
+    - Welche Tierwelt kann ich im Park sehen?
+    - Quelle faune puis-je voir dans le parc ?
+- intent: gastronomia_tapas
+  examples: |
+    - ¿Hay cultura de tapas en la zona?
+    - Is there a tapas culture in the area?
+    - Gibt es eine Tapas-Kultur in der Gegend?
+    - Y a-t-il une culture des tapas dans la région ?
+- intent: servicio_correos
+  examples: |
+    - ¿Dónde hay oficina de correos?
+    - Where is there a post office?
+    - Wo gibt es ein Postamt?
+    - Où y a-t-il un bureau de poste ?
+- intent: transporte_estado_carreteras
+  examples: |
+    - ¿Cómo son las carreteras dentro del parque?
+    - What are the roads like inside the park?
+    - Wie sind die Straßen im Park?
+    - Comment sont les routes dans le parc ?
+- intent: alojamiento_precios_temporada
+  examples: |
+    - ¿Varían mucho los precios de alojamiento según la época?
+    - Do accommodation prices vary a lot by season?
+    - Schwanken die Unterkunftspreise stark je Saison?
+    - Les prix d'hébergement varient-ils beaucoup selon la saison ?

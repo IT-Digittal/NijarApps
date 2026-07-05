@@ -3,26 +3,111 @@
 
 version: '3.1'
 intents:
+- accesibilidad_perro_guia
 - accesibilidad_playas
+- accesibilidad_silla_anfibia
+- accesibilidad_totem_bucle
 - acceso_playa_monsul
+- actividad_avistamiento_aves
+- actividad_bici_alquiler
+- actividad_familias_ninos
+- actividad_kayak_snorkel
+- actividad_paseo_barco
+- alojamiento_camping
+- alojamiento_precios_temporada
+- alojamiento_temporada
+- alojamiento_tipos
 - artesania_jarapas
+- astroturismo
 - centro_salud
+- cultura_ceramica_nijar
+- cultura_cine_western
+- cultura_cortijo_fraile
+- cultura_mercadillo
 - despedida
 - donde_comer
 - donde_dormir
+- emergencia_documentos_perdidos
+- emergencia_incendio
+- emergencia_rescate_costa
 - emergencias
+- enclave_arrecife_sirenas
+- enclave_mirador_amatista
+- eventos_conciertos_verano
+- eventos_fiestas_san_jose
+- eventos_mercado_pescado
 - eventos_proximos
+- gastronomia_horarios
+- gastronomia_platos
+- gastronomia_reservas
+- gastronomia_tapas
+- gastronomia_vegetariano
+- gastronomia_vino
 - horario_amoladeras
 - lugares_fotografia
 - mejor_epoca_visita
+- meta_agradecimiento
+- meta_hablar_persona
+- meta_idiomas_chatbot
+- meta_no_entiende
+- meta_que_puedes_hacer
 - nlu_fallback
 - normativa_parque
+- nucleo_isleta_moro
+- nucleo_las_negras
+- nucleo_los_escullos
+- nucleo_san_jose
 - oficina_turismo
+- parque_aves_flamencos
+- parque_buceo_normativa
+- parque_faro_cabo_gata
+- parque_fauna_camaleon
+- parque_reserva_biosfera
+- parque_salinas
+- patrimonio_castillo_san_ramon
+- patrimonio_iglesia_nijar
+- patrimonio_jardin_botanico
+- playa_agua_amarga
+- playa_bandera_azul
+- playa_cala_enmedio
+- playa_genoveses
+- playa_playazo
+- playa_servicios_chiringuito
 - playas_destacadas
+- playas_nudismo
 - playas_perro
+- playas_seguridad_medusas
+- practico_agua_potable
+- practico_clima
+- practico_idiomas
+- practico_mascotas_general
+- practico_pago_tarjeta
+- practico_que_llevar
+- practico_sostenibilidad
+- practico_temporada_evitar
 - ruta_faro_vela_blanca
+- ruta_minera_rodalquilar
 - ruta_rodalquilar_albaricoques
+- ruta_san_pedro_pie
+- ruta_sendero_amoladeras
+- rutas_dificultad
 - saludo
+- servicio_alquiler_coche
+- servicio_cajeros
+- servicio_carga_electrico
+- servicio_correos
+- servicio_farmacia
+- servicio_gasolinera
+- servicio_parking_san_jose
+- servicio_supermercado
+- servicio_taxi
+- servicio_urgencias_turista
+- servicio_veterinario
+- servicio_wifi
+- transporte_aeropuerto
+- transporte_bus_lanzadera
+- transporte_distancias
+- transporte_estado_carreteras
 - transporte_publico
 slots:
   language:
@@ -697,6 +782,2371 @@ responses:
       value: fr
   - text: ¡Hasta luego! Que disfrutes tu visita a Níjar. Si necesitas algo más, vuelve
       a preguntar cuando quieras.
+  utter_playa_genoveses:
+  - text: Genoveses es una amplia playa virgen de arena fina, sin edificaciones, rodeada
+      de dunas y retamares. En verano el acceso en coche está regulado por aforo.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: Genoveses is a wide, unspoilt fine-sand beach with no buildings, surrounded
+      by dunes. In summer car access is capacity-controlled.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Genoveses ist ein weiter, unberührter Feinsandstrand ohne Bebauung, umgeben
+      von Dünen. Im Sommer ist die Anfahrt mit dem Auto kapazitätsgeregelt.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Genoveses est une vaste plage sauvage de sable fin, sans constructions,
+      entourée de dunes. En été l'accès en voiture est régulé par capacité.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: Genoveses es una amplia playa virgen de arena fina, sin edificaciones, rodeada
+      de dunas y retamares. En verano el acceso en coche está regulado por aforo.
+  utter_playa_cala_enmedio:
+  - text: Cala de Enmedio solo es accesible a pie (unos 20-30 min andando desde Agua
+      Amarga) o en kayak. No hay acceso rodado; lleva agua y calzado cómodo.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: Cala de Enmedio is only reachable on foot (about 20-30 min walking from
+      Agua Amarga) or by kayak. There is no road access; bring water and comfortable
+      shoes.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Die Cala de Enmedio ist nur zu Fuß (ca. 20-30 Min. von Agua Amarga) oder
+      mit dem Kajak erreichbar. Keine Zufahrt; Wasser und bequeme Schuhe mitnehmen.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Cala de Enmedio n'est accessible qu'à pied (environ 20-30 min depuis Agua
+      Amarga) ou en kayak. Pas d'accès routier ; prévoyez de l'eau et de bonnes chaussures.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: Cala de Enmedio solo es accesible a pie (unos 20-30 min andando desde Agua
+      Amarga) o en kayak. No hay acceso rodado; lleva agua y calzado cómodo.
+  utter_playa_playazo:
+  - text: El Playazo es una playa de fácil acceso junto al Castillo de San Ramón (s.
+      XVIII), con fondos ideales para snorkel. Hay aparcamiento cercano.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: El Playazo is an easy-access beach next to the 18th-century San Ramón Castle,
+      with seabeds ideal for snorkelling. Parking is nearby.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: El Playazo ist ein leicht zugänglicher Strand neben der Burg San Ramón (18.
+      Jh.), mit idealem Schnorchelgrund. Parkplatz in der Nähe.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: El Playazo est une plage d'accès facile près du château de San Ramón (XVIIIe),
+      avec des fonds idéaux pour le snorkeling. Parking à proximité.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: El Playazo es una playa de fácil acceso junto al Castillo de San Ramón (s.
+      XVIII), con fondos ideales para snorkel. Hay aparcamiento cercano.
+  utter_playa_agua_amarga:
+  - text: Agua Amarga es un pequeño pueblo costero con playa de arena en el casco,
+      ambiente tranquilo y oferta de restaurantes. Muy popular en verano.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: Agua Amarga is a small coastal village with a sandy town beach, a relaxed
+      atmosphere and several restaurants. Very popular in summer.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Agua Amarga ist ein kleines Küstendorf mit Sandstrand im Ort, ruhiger Atmosphäre
+      und Restaurants. Im Sommer sehr beliebt.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Agua Amarga est un petit village côtier avec une plage de sable, une ambiance
+      tranquille et des restaurants. Très prisé en été.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: Agua Amarga es un pequeño pueblo costero con playa de arena en el casco,
+      ambiente tranquilo y oferta de restaurantes. Muy popular en verano.
+  utter_playas_seguridad_medusas:
+  - text: 'El estado de las playas y los avisos (banderas) se actualizan en la app
+      municipal y en los tótems. Respeta siempre la bandera roja: prohíbe el baño.'
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: 'Beach status and flag warnings are updated in the municipal app and on
+      the totems. Always respect the red flag: bathing is forbidden.'
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: 'Strandzustand und Flaggenwarnungen werden in der städtischen App und an
+      den Totems aktualisiert. Rote Flagge stets beachten: Baden verboten.'
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: 'L''état des plages et les drapeaux sont mis à jour dans l''app municipale
+      et sur les totems. Respectez toujours le drapeau rouge : baignade interdite.'
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: 'El estado de las playas y los avisos (banderas) se actualizan en la app
+      municipal y en los tótems. Respeta siempre la bandera roja: prohíbe el baño.'
+  utter_playas_nudismo:
+  - text: Sí, algunas calas más apartadas como San Pedro o tramos de Genoveses son
+      tradicionalmente de uso nudista, sin regulación específica. Se pide respeto
+      mutuo.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: Yes, some remote coves such as San Pedro or sections of Genoveses are traditionally
+      nudist, without specific regulation. Mutual respect is expected.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Ja, einige abgelegene Buchten wie San Pedro oder Abschnitte von Genoveses
+      sind traditionell FKK, ohne besondere Regelung. Gegenseitiger Respekt wird erwartet.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Oui, certaines criques isolées comme San Pedro ou des sections de Genoveses
+      sont traditionnellement naturistes, sans réglementation. Respect mutuel demandé.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: Sí, algunas calas más apartadas como San Pedro o tramos de Genoveses son
+      tradicionalmente de uso nudista, sin regulación específica. Se pide respeto
+      mutuo.
+  utter_parque_reserva_biosfera:
+  - text: Es Parque Natural, Reserva de la Biosfera de la UNESCO, Geoparque Mundial
+      de la UNESCO y zona ZEPA/LIC de la Red Natura 2000.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: It is a Natural Park, a UNESCO Biosphere Reserve, a UNESCO Global Geopark
+      and a Natura 2000 SPA/SCI area.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Es ist Naturpark, UNESCO-Biosphärenreservat, globaler UNESCO-Geopark und
+      Natura-2000-Gebiet (ZEPA/LIC).
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: C'est un Parc Naturel, une Réserve de Biosphère UNESCO, un Géoparc Mondial
+      UNESCO et une zone Natura 2000 (ZPS/SIC).
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: Es Parque Natural, Reserva de la Biosfera de la UNESCO, Geoparque Mundial
+      de la UNESCO y zona ZEPA/LIC de la Red Natura 2000.
+  utter_parque_aves_flamencos:
+  - text: En las Salinas de Cabo de Gata hay observatorios de aves donde es habitual
+      ver flamencos, especialmente de primavera a otoño. El acceso es libre y gratuito.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: At the Cabo de Gata Salt Flats there are bird hides where flamingos are
+      commonly seen, especially from spring to autumn. Access is free.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: An den Salinen von Cabo de Gata gibt es Vogelbeobachtungshütten, wo man
+      oft Flamingos sieht, vor allem von Frühling bis Herbst. Zugang frei.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Aux Salines de Cabo de Gata, des observatoires permettent de voir des flamants,
+      surtout du printemps à l'automne. Accès libre et gratuit.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: En las Salinas de Cabo de Gata hay observatorios de aves donde es habitual
+      ver flamencos, especialmente de primavera a otoño. El acceso es libre y gratuito.
+  utter_parque_salinas:
+  - text: Son salinas en activo y un humedal protegido de gran valor para las aves
+      migratorias. Junto a ellas está la iglesia de Las Salinas y miradores de observación.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: They are working salt flats and a protected wetland of great value for migratory
+      birds, with the Las Salinas church and observation points nearby.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Es sind aktive Salinen und ein geschütztes Feuchtgebiet von großem Wert
+      für Zugvögel, mit der Kirche Las Salinas und Beobachtungspunkten.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Ce sont des salines en activité et une zone humide protégée, précieuse pour
+      les oiseaux migrateurs, avec l'église de Las Salinas et des observatoires.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: Son salinas en activo y un humedal protegido de gran valor para las aves
+      migratorias. Junto a ellas está la iglesia de Las Salinas y miradores de observación.
+  utter_parque_faro_cabo_gata:
+  - text: Sí. El Faro ofrece vistas al Arrecife de las Sirenas y al mirador de la
+      Vela Blanca. Es uno de los enclaves más fotografiados del parque.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: Yes. The Lighthouse offers views of the Arrecife de las Sirenas and the
+      Vela Blanca viewpoint. It is one of the most photographed spots in the park.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Ja. Der Leuchtturm bietet Blick auf das Arrecife de las Sirenas und den
+      Aussichtspunkt Vela Blanca. Einer der meistfotografierten Orte des Parks.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Oui. Le phare offre une vue sur l'Arrecife de las Sirenas et le belvédère
+      de Vela Blanca. L'un des sites les plus photographiés du parc.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: Sí. El Faro ofrece vistas al Arrecife de las Sirenas y al mirador de la
+      Vela Blanca. Es uno de los enclaves más fotografiados del parque.
+  utter_parque_buceo_normativa:
+  - text: Sí, hay reserva marina con zonas reguladas. El buceo se realiza con centros
+      autorizados; en algunas áreas hay límites de fondeo y de número de embarcaciones.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: Yes, there is a marine reserve with regulated zones. Diving is done through
+      authorised centres; some areas limit anchoring and the number of boats.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Ja, es gibt ein Meeresschutzgebiet mit regulierten Zonen. Tauchen über autorisierte
+      Zentren; in einigen Bereichen sind Ankern und Bootszahl begrenzt.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Oui, il y a une réserve marine avec des zones régulées. La plongée se fait
+      via des centres agréés ; certaines zones limitent le mouillage et le nombre
+      de bateaux.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: Sí, hay reserva marina con zonas reguladas. El buceo se realiza con centros
+      autorizados; en algunas áreas hay límites de fondeo y de número de embarcaciones.
+  utter_ruta_minera_rodalquilar:
+  - text: Rodalquilar conserva las antiguas minas de oro, el Jardín Botánico El Albardinal
+      y senderos interpretativos. Es un paisaje volcánico único en Europa.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: Rodalquilar preserves the former gold mines, the El Albardinal Botanical
+      Garden and interpretive trails. It is a volcanic landscape unique in Europe.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Rodalquilar bewahrt die ehemaligen Goldminen, den Botanischen Garten El
+      Albardinal und Lehrpfade. Eine in Europa einzigartige Vulkanlandschaft.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Rodalquilar conserve les anciennes mines d'or, le Jardin Botanique El Albardinal
+      et des sentiers d'interprétation. Un paysage volcanique unique en Europe.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: Rodalquilar conserva las antiguas minas de oro, el Jardín Botánico El Albardinal
+      y senderos interpretativos. Es un paisaje volcánico único en Europa.
+  utter_rutas_dificultad:
+  - text: Hay rutas para todos los niveles, la mayoría de dificultad baja-media. Lleva
+      agua, gorra y protección solar; hay poca sombra y el calor estival es intenso.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: There are trails for all levels, most of low-medium difficulty. Bring water,
+      a hat and sun protection; there is little shade and summer heat is intense.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Es gibt Wege für alle Niveaus, meist leicht bis mittel. Wasser, Hut und
+      Sonnenschutz mitnehmen; wenig Schatten und intensive Sommerhitze.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Il y a des sentiers pour tous niveaux, la plupart de difficulté faible à
+      moyenne. Prévoyez eau, casquette et protection solaire ; peu d'ombre et forte
+      chaleur estivale.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: Hay rutas para todos los niveles, la mayoría de dificultad baja-media. Lleva
+      agua, gorra y protección solar; hay poca sombra y el calor estival es intenso.
+  utter_actividad_kayak_snorkel:
+  - text: Hay empresas de actividades en San José, Las Negras y Agua Amarga que ofrecen
+      rutas guiadas de kayak y snorkel por las calas, con material incluido.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: Activity companies in San José, Las Negras and Agua Amarga offer guided
+      kayak and snorkelling tours of the coves, equipment included.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Anbieter in San José, Las Negras und Agua Amarga bieten geführte Kajak-
+      und Schnorcheltouren durch die Buchten an, Ausrüstung inklusive.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Des prestataires à San José, Las Negras et Agua Amarga proposent des sorties
+      guidées de kayak et snorkeling dans les criques, matériel inclus.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: Hay empresas de actividades en San José, Las Negras y Agua Amarga que ofrecen
+      rutas guiadas de kayak y snorkel por las calas, con material incluido.
+  utter_actividad_bici_alquiler:
+  - text: Sí, hay alquiler de bicicletas (incluidas eléctricas) en San José y Rodalquilar,
+      ideales para la ruta ciclista Rodalquilar-Albaricoques. Reserva en temporada
+      alta.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: Yes, bike rental (including e-bikes) is available in San José and Rodalquilar,
+      ideal for the Rodalquilar-Albaricoques cycle route. Book ahead in high season.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Ja, Fahrradverleih (auch E-Bikes) in San José und Rodalquilar, ideal für
+      den Radweg Rodalquilar-Albaricoques. In der Hochsaison vorab buchen.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Oui, location de vélos (y compris électriques) à San José et Rodalquilar,
+      idéale pour la voie cyclable Rodalquilar-Albaricoques. Réservez en haute saison.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: Sí, hay alquiler de bicicletas (incluidas eléctricas) en San José y Rodalquilar,
+      ideales para la ruta ciclista Rodalquilar-Albaricoques. Reserva en temporada
+      alta.
+  utter_astroturismo:
+  - text: Sí. La baja contaminación lumínica del parque lo hace excelente para observar
+      estrellas. Hay empresas que organizan observaciones guiadas, sobre todo en verano.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: Yes. The park's low light pollution makes it excellent for stargazing. Some
+      companies run guided night-sky sessions, especially in summer.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Ja. Die geringe Lichtverschmutzung macht den Park ideal zur Sternbeobachtung.
+      Anbieter organisieren geführte Beobachtungen, vor allem im Sommer.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Oui. La faible pollution lumineuse du parc le rend idéal pour observer les
+      étoiles. Des entreprises organisent des séances guidées, surtout en été.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: Sí. La baja contaminación lumínica del parque lo hace excelente para observar
+      estrellas. Hay empresas que organizan observaciones guiadas, sobre todo en verano.
+  utter_servicio_wifi:
+  - text: Sí, hay puntos de WiFi público municipal en varios núcleos y en la Oficina
+      de Turismo. La conexión es gratuita y anonimizada conforme al RGPD.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: Yes, there are municipal public WiFi points in several villages and at the
+      Tourist Office. The connection is free and anonymised under GDPR.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Ja, es gibt kommunale öffentliche WLAN-Punkte in mehreren Orten und im Tourismusbüro.
+      Die Verbindung ist kostenlos und DSGVO-konform anonymisiert.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Oui, des points WiFi publics municipaux existent dans plusieurs villages
+      et à l'Office de Tourisme. Connexion gratuite et anonymisée selon le RGPD.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: Sí, hay puntos de WiFi público municipal en varios núcleos y en la Oficina
+      de Turismo. La conexión es gratuita y anonimizada conforme al RGPD.
+  utter_servicio_cajeros:
+  - text: Hay cajeros en Níjar pueblo, San José y Campohermoso. En núcleos pequeños
+      y calas puede no haber, así que conviene llevar algo de efectivo.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: There are ATMs in Níjar town, San José and Campohermoso. Small villages
+      and coves may have none, so carrying some cash is advisable.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Geldautomaten gibt es in Níjar-Dorf, San José und Campohermoso. In kleinen
+      Orten und Buchten ggf. keine; etwas Bargeld mitnehmen.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Il y a des distributeurs à Níjar village, San José et Campohermoso. Les
+      petits villages et criques peuvent en manquer ; prévoyez un peu d'espèces.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: Hay cajeros en Níjar pueblo, San José y Campohermoso. En núcleos pequeños
+      y calas puede no haber, así que conviene llevar algo de efectivo.
+  utter_servicio_farmacia:
+  - text: Hay farmacias en Níjar pueblo, San José, Campohermoso y San Isidro. Fuera
+      de horario funciona el sistema de farmacia de guardia; consúltalo en la propia
+      farmacia.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: There are pharmacies in Níjar town, San José, Campohermoso and San Isidro.
+      Out of hours an on-duty pharmacy rota applies; check at any pharmacy.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Apotheken gibt es in Níjar-Dorf, San José, Campohermoso und San Isidro.
+      Außerhalb der Zeiten gilt der Notdienst; an jeder Apotheke erfragen.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Il y a des pharmacies à Níjar village, San José, Campohermoso et San Isidro.
+      Hors horaires, une pharmacie de garde fonctionne ; renseignez-vous en pharmacie.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: Hay farmacias en Níjar pueblo, San José, Campohermoso y San Isidro. Fuera
+      de horario funciona el sistema de farmacia de guardia; consúltalo en la propia
+      farmacia.
+  utter_servicio_parking_san_jose:
+  - text: San José cuenta con aparcamientos en el pueblo, algunos de pago en temporada
+      alta. Para Genoveses y Mónsul hay un parking regulado y bus lanzadera en verano.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: San José has car parks in the village, some paid in high season. For Genoveses
+      and Mónsul there is a regulated car park and a summer shuttle bus.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: San José hat Parkplätze im Ort, in der Hochsaison teils kostenpflichtig.
+      Für Genoveses und Mónsul gibt es einen geregelten Parkplatz und im Sommer einen
+      Pendelbus.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: San José dispose de parkings au village, certains payants en haute saison.
+      Pour Genoveses et Mónsul, un parking régulé et une navette en été.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: San José cuenta con aparcamientos en el pueblo, algunos de pago en temporada
+      alta. Para Genoveses y Mónsul hay un parking regulado y bus lanzadera en verano.
+  utter_servicio_supermercado:
+  - text: Sí, en San José, Las Negras, Agua Amarga y los núcleos principales hay supermercados
+      y tiendas de alimentación, con horario ampliado en verano.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: Yes, in San José, Las Negras, Agua Amarga and the main villages there are
+      supermarkets and grocery shops, with extended hours in summer.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Ja, in San José, Las Negras, Agua Amarga und den Hauptorten gibt es Supermärkte
+      und Lebensmittelgeschäfte, im Sommer mit längeren Öffnungszeiten.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Oui, à San José, Las Negras, Agua Amarga et les villages principaux il y
+      a des supermarchés et épiceries, avec horaires élargis en été.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: Sí, en San José, Las Negras, Agua Amarga y los núcleos principales hay supermercados
+      y tiendas de alimentación, con horario ampliado en verano.
+  utter_servicio_taxi:
+  - text: Hay servicio de taxi en los principales núcleos. Conviene reservar por teléfono
+      con antelación, especialmente en temporada alta y para trayectos a las calas.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: Taxi service is available in the main villages. Booking by phone in advance
+      is advisable, especially in high season and for trips to the coves.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Taxidienst gibt es in den Hauptorten. Telefonische Vorabreservierung empfohlen,
+      besonders in der Hochsaison und für Fahrten zu den Buchten.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Un service de taxi existe dans les villages principaux. Réservation téléphonique
+      conseillée, surtout en haute saison et pour les criques.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: Hay servicio de taxi en los principales núcleos. Conviene reservar por teléfono
+      con antelación, especialmente en temporada alta y para trayectos a las calas.
+  utter_gastronomia_platos:
+  - text: Destacan el pescado fresco y mariscos, la 'gurullos con conejo', el ajo
+      colorao, la pelota (cocido) y los dulces de almendra. Acompáñalo con vino de
+      la tierra.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: Highlights include fresh fish and seafood, 'gurullos con conejo', ajo colorao,
+      the 'pelota' stew and almond sweets. Pair it with local wine.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Höhepunkte sind frischer Fisch und Meeresfrüchte, 'gurullos con conejo',
+      Ajo Colorao, der Eintopf 'pelota' und Mandelsüßspeisen. Dazu Wein der Region.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: 'À découvrir : poisson frais et fruits de mer, ''gurullos con conejo'',
+      ajo colorao, le ragoût ''pelota'' et les douceurs aux amandes. Avec un vin local.'
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: Destacan el pescado fresco y mariscos, la 'gurullos con conejo', el ajo
+      colorao, la pelota (cocido) y los dulces de almendra. Acompáñalo con vino de
+      la tierra.
+  utter_gastronomia_horarios:
+  - text: En general se come de 14:00 a 16:00 y se cena de 21:00 a 23:00. En temporada
+      alta conviene reservar mesa, sobre todo en los pueblos costeros.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: Lunch is usually 14:00-16:00 and dinner 21:00-23:00. In high season booking
+      a table is advisable, especially in the coastal villages.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Mittagessen meist 14:00-16:00, Abendessen 21:00-23:00 Uhr. In der Hochsaison
+      Tisch reservieren, vor allem in den Küstendörfern.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Le déjeuner est généralement 14h-16h et le dîner 21h-23h. En haute saison,
+      réservez une table, surtout dans les villages côtiers.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: En general se come de 14:00 a 16:00 y se cena de 21:00 a 23:00. En temporada
+      alta conviene reservar mesa, sobre todo en los pueblos costeros.
+  utter_gastronomia_vegetariano:
+  - text: Sí, cada vez más restaurantes ofrecen platos vegetarianos y veganos, especialmente
+      en San José, Las Negras y Agua Amarga. Pregunta por verduras de la huerta local.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: Yes, more and more restaurants offer vegetarian and vegan dishes, especially
+      in San José, Las Negras and Agua Amarga. Ask for local garden vegetables.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Ja, immer mehr Restaurants bieten vegetarische und vegane Gerichte, besonders
+      in San José, Las Negras und Agua Amarga. Nach lokalem Gemüse fragen.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Oui, de plus en plus de restaurants proposent des plats végétariens et véganes,
+      surtout à San José, Las Negras et Agua Amarga. Demandez les légumes locaux.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: Sí, cada vez más restaurantes ofrecen platos vegetarianos y veganos, especialmente
+      en San José, Las Negras y Agua Amarga. Pregunta por verduras de la huerta local.
+  utter_gastronomia_vino:
+  - text: Sí, la zona produce vinos, aceite, miel, tomate 'raf' y dulces artesanos.
+      Los encontrarás en tiendas locales, mercados y en algunas bodegas que ofrecen
+      visitas.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: Yes, the area produces wine, olive oil, honey, 'raf' tomato and artisan
+      sweets. Find them in local shops, markets and some wineries offering visits.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Ja, die Region erzeugt Wein, Olivenöl, Honig, 'Raf'-Tomaten und handgemachte
+      Süßigkeiten. In Geschäften, Märkten und einigen Weingütern mit Besuch.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Oui, la région produit vin, huile d'olive, miel, tomate 'raf' et douceurs
+      artisanales. Dans les boutiques, marchés et certaines caves proposant des visites.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: Sí, la zona produce vinos, aceite, miel, tomate 'raf' y dulces artesanos.
+      Los encontrarás en tiendas locales, mercados y en algunas bodegas que ofrecen
+      visitas.
+  utter_alojamiento_tipos:
+  - text: Hay hoteles, apartamentos turísticos, casas rurales, campings y alojamientos
+      con encanto. La oferta es muy variada en San José, Agua Amarga y Níjar pueblo.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: There are hotels, tourist apartments, rural houses, campsites and boutique
+      stays. The offer is wide in San José, Agua Amarga and Níjar town.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Es gibt Hotels, Ferienwohnungen, Landhäuser, Campingplätze und charmante
+      Unterkünfte. Großes Angebot in San José, Agua Amarga und Níjar-Dorf.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Il y a des hôtels, appartements touristiques, maisons rurales, campings
+      et hébergements de charme. Offre variée à San José, Agua Amarga et Níjar village.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: Hay hoteles, apartamentos turísticos, casas rurales, campings y alojamientos
+      con encanto. La oferta es muy variada en San José, Agua Amarga y Níjar pueblo.
+  utter_alojamiento_camping:
+  - text: Sí, hay campings autorizados en San José y Tau (Los Escullos). Está prohibido
+      acampar libremente dentro del Parque Natural. Reserva en verano.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: Yes, there are authorised campsites in San José and Tau (Los Escullos).
+      Free camping inside the Natural Park is forbidden. Book in summer.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Ja, autorisierte Campingplätze in San José und Tau (Los Escullos). Wildcampen
+      im Naturpark ist verboten. Im Sommer reservieren.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Oui, des campings agréés à San José et Tau (Los Escullos). Le camping sauvage
+      dans le Parc Naturel est interdit. Réservez en été.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: Sí, hay campings autorizados en San José y Tau (Los Escullos). Está prohibido
+      acampar libremente dentro del Parque Natural. Reserva en verano.
+  utter_alojamiento_temporada:
+  - text: En julio y agosto la ocupación es muy alta; reserva con varias semanas de
+      antelación. En primavera y otoño hay más disponibilidad y mejores precios.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: In July and August occupancy is very high; book several weeks ahead. Spring
+      and autumn offer more availability and better prices.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Im Juli und August ist die Auslastung sehr hoch; Wochen im Voraus buchen.
+      Frühling und Herbst bieten mehr Verfügbarkeit und bessere Preise.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: En juillet-août l'occupation est très élevée ; réservez plusieurs semaines
+      à l'avance. Printemps et automne offrent plus de disponibilités et de meilleurs
+      prix.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: En julio y agosto la ocupación es muy alta; reserva con varias semanas de
+      antelación. En primavera y otoño hay más disponibilidad y mejores precios.
+  utter_cultura_ceramica_nijar:
+  - text: En Níjar pueblo, en la Calle Real y el Barrio Alto, hay numerosos talleres
+      y tiendas de cerámica tradicional y jarapas. Muchos permiten ver el proceso
+      artesanal.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: In Níjar town, along Calle Real and the Barrio Alto, there are many workshops
+      and shops of traditional pottery and 'jarapas' rugs. Many show the craft process.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: In Níjar-Dorf, in der Calle Real und im Barrio Alto, gibt es viele Werkstätten
+      und Läden für traditionelle Keramik und 'Jarapas'. Oft mit Vorführung.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: À Níjar village, Calle Real et Barrio Alto, de nombreux ateliers et boutiques
+      de céramique traditionnelle et de 'jarapas'. Beaucoup montrent le savoir-faire.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: En Níjar pueblo, en la Calle Real y el Barrio Alto, hay numerosos talleres
+      y tiendas de cerámica tradicional y jarapas. Muchos permiten ver el proceso
+      artesanal.
+  utter_cultura_cortijo_fraile:
+  - text: Es un cortijo histórico que inspiró 'Bodas de Sangre' de Lorca y escenario
+      de rodajes de cine. Está protegido como BIC; admíralo desde el exterior con
+      respeto.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: It is a historic farmhouse that inspired Lorca's 'Blood Wedding' and a film
+      location. Protected as a heritage site (BIC); admire it from outside with respect.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Ein historisches Gehöft, das Lorcas 'Bluthochzeit' inspirierte und Drehort
+      war. Als Kulturgut (BIC) geschützt; bitte respektvoll von außen betrachten.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Une ferme historique qui a inspiré 'Noces de sang' de Lorca et lieu de tournage.
+      Protégée (BIC) ; admirez-la de l'extérieur avec respect.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: Es un cortijo histórico que inspiró 'Bodas de Sangre' de Lorca y escenario
+      de rodajes de cine. Está protegido como BIC; admíralo desde el exterior con
+      respeto.
+  utter_cultura_cine_western:
+  - text: El desierto de Tabernas (cerca de Níjar) y parajes del Cabo de Gata fueron
+      escenario de muchos 'spaghetti westerns'. Hay poblados del oeste visitables
+      en Tabernas.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: The Tabernas Desert (near Níjar) and Cabo de Gata spots hosted many 'spaghetti
+      westerns'. There are visitable western towns in Tabernas.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Die Wüste von Tabernas (bei Níjar) und Orte am Cabo de Gata waren Kulisse
+      vieler 'Spaghetti-Western'. In Tabernas gibt es besuchbare Westernstädte.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Le désert de Tabernas (près de Níjar) et des sites de Cabo de Gata ont accueilli
+      de nombreux 'westerns spaghetti'. Villages western visitables à Tabernas.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: El desierto de Tabernas (cerca de Níjar) y parajes del Cabo de Gata fueron
+      escenario de muchos 'spaghetti westerns'. Hay poblados del oeste visitables
+      en Tabernas.
+  utter_cultura_mercadillo:
+  - text: Sí, hay mercadillos semanales y mercados artesanales, especialmente en verano.
+      Las fechas y ubicaciones se publican en la agenda municipal y en este tótem.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: Yes, there are weekly and craft markets, especially in summer. Dates and
+      locations are published in the municipal calendar and on this totem.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Ja, es gibt Wochen- und Kunsthandwerksmärkte, vor allem im Sommer. Termine
+      und Orte stehen im Veranstaltungskalender und auf diesem Totem.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Oui, des marchés hebdomadaires et artisanaux, surtout en été. Dates et lieux
+      publiés dans l'agenda municipal et sur ce totem.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: Sí, hay mercadillos semanales y mercados artesanales, especialmente en verano.
+      Las fechas y ubicaciones se publican en la agenda municipal y en este tótem.
+  utter_eventos_fiestas_san_jose:
+  - text: San José celebra sus fiestas patronales en torno al 19 de marzo, y en verano
+      hay fiestas y verbenas en los distintos núcleos. Consulta la agenda actualizada
+      en el tótem.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: San José holds its patron festivities around 19 March, and in summer there
+      are local fiestas across the villages. Check the updated calendar on the totem.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: San José feiert sein Patronatsfest um den 19. März, im Sommer gibt es Feste
+      in den Orten. Aktuellen Kalender am Totem prüfen.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: San José fête son saint patron autour du 19 mars ; en été, fêtes locales
+      dans les villages. Consultez l'agenda à jour sur le totem.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: San José celebra sus fiestas patronales en torno al 19 de marzo, y en verano
+      hay fiestas y verbenas en los distintos núcleos. Consulta la agenda actualizada
+      en el tótem.
+  utter_eventos_conciertos_verano:
+  - text: En verano se programan conciertos, cine al aire libre y actividades culturales.
+      La programación detallada se publica en la agenda municipal y aquí en el tótem.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: In summer there are concerts, open-air cinema and cultural activities. The
+      detailed programme is published in the municipal calendar and here on the totem.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Im Sommer gibt es Konzerte, Open-Air-Kino und Kulturprogramm. Das Detailprogramm
+      steht im städtischen Kalender und hier am Totem.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: 'En été : concerts, cinéma en plein air et activités culturelles. Le programme
+      détaillé est publié dans l''agenda municipal et ici sur le totem.'
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: En verano se programan conciertos, cine al aire libre y actividades culturales.
+      La programación detallada se publica en la agenda municipal y aquí en el tótem.
+  utter_transporte_aeropuerto:
+  - text: El aeropuerto de Almería (LEI) está a unos 30-40 min en coche. Lo más cómodo
+      es alquilar coche; también hay taxis y conexiones de autobús con transbordo
+      en Almería.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: Almería airport (LEI) is about 30-40 min by car. Renting a car is most convenient;
+      there are also taxis and bus connections with a transfer in Almería.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Der Flughafen Almería (LEI) ist ca. 30-40 Min. mit dem Auto entfernt. Am
+      bequemsten ist ein Mietwagen; auch Taxis und Busverbindungen mit Umstieg in
+      Almería.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: L'aéroport d'Almería (LEI) est à 30-40 min en voiture. Le plus pratique
+      est la location de voiture ; aussi taxis et bus avec correspondance à Almería.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: El aeropuerto de Almería (LEI) está a unos 30-40 min en coche. Lo más cómodo
+      es alquilar coche; también hay taxis y conexiones de autobús con transbordo
+      en Almería.
+  utter_transporte_distancias:
+  - text: El casco de Níjar está a unos 25-35 km de las playas del litoral (San José,
+      Mónsul, Genoveses). En coche son 30-45 min por carreteras de montaña.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: Níjar town is about 25-35 km from the coastal beaches (San José, Mónsul,
+      Genoveses). By car it is 30-45 min on mountain roads.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Níjar-Dorf liegt ca. 25-35 km von den Küstenstränden (San José, Mónsul,
+      Genoveses) entfernt. Mit dem Auto 30-45 Min. über Bergstraßen.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Le village de Níjar est à 25-35 km des plages (San José, Mónsul, Genoveses).
+      En voiture, 30-45 min par routes de montagne.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: El casco de Níjar está a unos 25-35 km de las playas del litoral (San José,
+      Mónsul, Genoveses). En coche son 30-45 min por carreteras de montaña.
+  utter_transporte_bus_lanzadera:
+  - text: Sí. En temporada alta funciona un bus lanzadera desde San José a Mónsul
+      y Genoveses para reducir el tráfico. Consulta horarios y paradas en el tótem
+      o la app.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: Yes. In high season a shuttle bus runs from San José to Mónsul and Genoveses
+      to reduce traffic. Check times and stops on the totem or app.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Ja. In der Hochsaison fährt ein Pendelbus von San José nach Mónsul und Genoveses,
+      um Verkehr zu reduzieren. Zeiten und Halte am Totem oder in der App.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Oui. En haute saison, une navette relie San José à Mónsul et Genoveses pour
+      réduire le trafic. Horaires et arrêts sur le totem ou l'app.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: Sí. En temporada alta funciona un bus lanzadera desde San José a Mónsul
+      y Genoveses para reducir el tráfico. Consulta horarios y paradas en el tótem
+      o la app.
+  utter_accesibilidad_silla_anfibia:
+  - text: Algunas playas accesibles disponen de sillas anfibias y puntos de baño asistido
+      en temporada. Consulta disponibilidad y horarios en la Oficina de Turismo.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: Some accessible beaches provide amphibious chairs and assisted bathing points
+      in season. Check availability and hours at the Tourist Office.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Einige barrierefreie Strände bieten in der Saison Amphibienstühle und Badehilfe.
+      Verfügbarkeit und Zeiten im Tourismusbüro erfragen.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Certaines plages accessibles offrent des fauteuils amphibies et un bain
+      assisté en saison. Vérifiez disponibilité et horaires à l'Office de Tourisme.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: Algunas playas accesibles disponen de sillas anfibias y puntos de baño asistido
+      en temporada. Consulta disponibilidad y horarios en la Oficina de Turismo.
+  utter_accesibilidad_perro_guia:
+  - text: Sí. Los perros guía y de asistencia están permitidos en playas y establecimientos
+      públicos durante todo el año, conforme a la legislación vigente.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: Yes. Guide and assistance dogs are allowed on beaches and in public premises
+      all year round, in accordance with current law.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Ja. Blinden- und Assistenzhunde sind ganzjährig an Stränden und in öffentlichen
+      Einrichtungen erlaubt, gemäß geltendem Recht.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Oui. Les chiens guides et d'assistance sont autorisés sur les plages et
+      dans les lieux publics toute l'année, conformément à la loi.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: Sí. Los perros guía y de asistencia están permitidos en playas y establecimientos
+      públicos durante todo el año, conforme a la legislación vigente.
+  utter_accesibilidad_totem_bucle:
+  - text: Sí. Este tótem dispone de bucle de inducción magnética, texto ampliable,
+      alto contraste y asistente por voz (entrada y lectura), conforme a WCAG 2.1
+      AA.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: Yes. This totem has a magnetic induction loop, enlargeable text, high contrast
+      and a voice assistant (input and read-out), compliant with WCAG 2.1 AA.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Ja. Dieses Totem bietet eine Induktionsschleife, vergrößerbaren Text, hohen
+      Kontrast und Sprachassistenz (Eingabe und Vorlesen), gemäß WCAG 2.1 AA.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Oui. Ce totem dispose d'une boucle magnétique, d'un texte agrandissable,
+      d'un fort contraste et d'un assistant vocal (saisie et lecture), conforme WCAG
+      2.1 AA.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: Sí. Este tótem dispone de bucle de inducción magnética, texto ampliable,
+      alto contraste y asistente por voz (entrada y lectura), conforme a WCAG 2.1
+      AA.
+  utter_practico_clima:
+  - text: Es de los lugares más secos y soleados de Europa, con unos 3.000 horas de
+      sol al año. Veranos calurosos e inviernos suaves; lleva siempre protección solar
+      y agua.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: It is one of Europe's driest and sunniest spots, with around 3,000 hours
+      of sun a year. Hot summers and mild winters; always carry sun protection and
+      water.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Einer der trockensten und sonnigsten Orte Europas, ca. 3.000 Sonnenstunden
+      im Jahr. Heiße Sommer, milde Winter; immer Sonnenschutz und Wasser mitnehmen.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: L'un des endroits les plus secs et ensoleillés d'Europe, environ 3 000 heures
+      de soleil par an. Étés chauds, hivers doux ; emportez protection solaire et
+      eau.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: Es de los lugares más secos y soleados de Europa, con unos 3.000 horas de
+      sol al año. Veranos calurosos e inviernos suaves; lleva siempre protección solar
+      y agua.
+  utter_practico_agua_potable:
+  - text: En muchas calas vírgenes no hay fuentes ni servicios. Lleva agua suficiente,
+      especialmente en verano, y recoge siempre tus residuos al salir.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: Many unspoilt coves have no fountains or facilities. Bring enough water,
+      especially in summer, and always take your litter with you.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Viele unberührte Buchten haben weder Brunnen noch Einrichtungen. Genug Wasser
+      mitnehmen, besonders im Sommer, und Müll stets wieder mitnehmen.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: De nombreuses criques sauvages n'ont ni fontaines ni services. Emportez
+      assez d'eau, surtout en été, et reprenez toujours vos déchets.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: En muchas calas vírgenes no hay fuentes ni servicios. Lleva agua suficiente,
+      especialmente en verano, y recoge siempre tus residuos al salir.
+  utter_practico_idiomas:
+  - text: En zonas turísticas es habitual la atención en inglés y, a menudo, en francés
+      o alemán. Este asistente y los tótems funcionan en español, inglés, alemán y
+      francés.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: In tourist areas English is common, and often French or German too. This
+      assistant and the totems work in Spanish, English, German and French.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: In touristischen Gebieten ist Englisch üblich, oft auch Französisch oder
+      Deutsch. Dieser Assistent und die Totems funktionieren auf Spanisch, Englisch,
+      Deutsch und Französisch.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Dans les zones touristiques, l'anglais est courant, souvent aussi le français
+      ou l'allemand. Cet assistant et les totems fonctionnent en espagnol, anglais,
+      allemand et français.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: En zonas turísticas es habitual la atención en inglés y, a menudo, en francés
+      o alemán. Este asistente y los tótems funcionan en español, inglés, alemán y
+      francés.
+  utter_practico_sostenibilidad:
+  - text: No salgas de los senderos, no recojas plantas ni minerales, no dejes residuos,
+      respeta la fauna y el aforo de las playas, y reduce el uso del coche cuando
+      puedas.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: Stay on the trails, do not pick plants or minerals, leave no litter, respect
+      wildlife and beach capacity, and reduce car use when possible.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Auf den Wegen bleiben, keine Pflanzen oder Mineralien sammeln, keinen Müll
+      hinterlassen, Tierwelt und Strandkapazität respektieren und Autofahrten reduzieren.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Restez sur les sentiers, ne cueillez ni plantes ni minéraux, ne laissez
+      aucun déchet, respectez la faune et la capacité des plages, et limitez la voiture.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: No salgas de los senderos, no recojas plantas ni minerales, no dejes residuos,
+      respeta la fauna y el aforo de las playas, y reduce el uso del coche cuando
+      puedas.
+  utter_emergencia_incendio:
+  - text: Llama de inmediato al 112. Aléjate del fuego en dirección contraria al viento,
+      no intentes apagarlo tú y sigue las indicaciones de las autoridades.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: Call 112 immediately. Move away from the fire, upwind, do not try to put
+      it out yourself and follow the authorities' instructions.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Sofort 112 anrufen. Vom Feuer weg, gegen den Wind, nicht selbst löschen
+      und den Anweisungen der Behörden folgen.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Appelez immédiatement le 112. Éloignez-vous du feu, face au vent, n'essayez
+      pas de l'éteindre et suivez les consignes des autorités.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: Llama de inmediato al 112. Aléjate del fuego en dirección contraria al viento,
+      no intentes apagarlo tú y sigue las indicaciones de las autoridades.
+  utter_emergencia_rescate_costa:
+  - text: Llama al 112 (emergencias generales) o a Salvamento Marítimo (900 202 202).
+      Indica el nombre de la cala o un punto de referencia para localizarte rápido.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: Call 112 (general emergencies) or Maritime Rescue (900 202 202). Give the
+      cove name or a landmark so they can locate you quickly.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Rufen Sie 112 (allgemeine Notfälle) oder die Seenotrettung (900 202 202)
+      an. Nennen Sie den Namen der Bucht oder einen Bezugspunkt zur schnellen Ortung.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Appelez le 112 (urgences générales) ou le Sauvetage en mer (900 202 202).
+      Indiquez le nom de la crique ou un repère pour vous localiser vite.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: Llama al 112 (emergencias generales) o a Salvamento Marítimo (900 202 202).
+      Indica el nombre de la cala o un punto de referencia para localizarte rápido.
+  utter_emergencia_documentos_perdidos:
+  - text: Denúncialo ante la Guardia Civil (062) o en el puesto más cercano. Para
+      emergencias generales, 112. Si eres extranjero, contacta también con tu consulado.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: Report it to the Guardia Civil (062) or the nearest post. For general emergencies,
+      112. If you are a foreign visitor, also contact your consulate.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: 'Bei der Guardia Civil (062) oder der nächsten Dienststelle anzeigen. Allgemeine
+      Notfälle: 112. Als ausländischer Gast auch das Konsulat kontaktieren.'
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: 'Signalez-le à la Guardia Civil (062) ou au poste le plus proche. Urgences
+      générales : 112. Si vous êtes étranger, contactez aussi votre consulat.'
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: Denúncialo ante la Guardia Civil (062) o en el puesto más cercano. Para
+      emergencias generales, 112. Si eres extranjero, contacta también con tu consulado.
+  utter_meta_que_puedes_hacer:
+  - text: Puedo informarte sobre playas, rutas, el parque natural, eventos, servicios
+      y emergencias, proponerte una ruta cercana y recomendarte qué visitar hoy. ¿Por
+      dónde empezamos?
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: I can tell you about beaches, trails, the natural park, events, services
+      and emergencies, suggest a nearby route and recommend what to visit today. Where
+      shall we start?
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Ich informiere über Strände, Wege, den Naturpark, Veranstaltungen, Dienste
+      und Notfälle, schlage eine Route in der Nähe vor und empfehle Ausflüge für heute.
+      Womit fangen wir an?
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Je peux vous renseigner sur les plages, sentiers, le parc naturel, événements,
+      services et urgences, proposer un itinéraire proche et recommander quoi visiter
+      aujourd'hui. Par où commencer ?
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: Puedo informarte sobre playas, rutas, el parque natural, eventos, servicios
+      y emergencias, proponerte una ruta cercana y recomendarte qué visitar hoy. ¿Por
+      dónde empezamos?
+  utter_meta_idiomas_chatbot:
+  - text: Puedo atenderte en español, inglés, alemán y francés. Cambia el idioma con
+      los botones del tótem y te responderé en el idioma seleccionado.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: I can assist you in Spanish, English, German and French. Switch language
+      with the totem buttons and I will reply in the selected language.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Ich helfe auf Spanisch, Englisch, Deutsch und Französisch. Sprache mit den
+      Totem-Tasten wechseln, dann antworte ich in der gewählten Sprache.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Je peux vous aider en espagnol, anglais, allemand et français. Changez de
+      langue avec les boutons du totem et je répondrai dans la langue choisie.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: Puedo atenderte en español, inglés, alemán y francés. Cambia el idioma con
+      los botones del tótem y te responderé en el idioma seleccionado.
+  utter_meta_agradecimiento:
+  - text: ¡De nada! Que disfrutes mucho de Cabo de Gata-Níjar. Si necesitas algo más,
+      aquí estoy.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: You're welcome! Enjoy Cabo de Gata-Níjar. If you need anything else, I'm
+      here.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Gern geschehen! Viel Freude in Cabo de Gata-Níjar. Wenn Sie noch etwas brauchen,
+      bin ich da.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Avec plaisir ! Profitez bien de Cabo de Gata-Níjar. Si vous avez besoin
+      d'autre chose, je suis là.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: ¡De nada! Que disfrutes mucho de Cabo de Gata-Níjar. Si necesitas algo más,
+      aquí estoy.
+  utter_nucleo_san_jose:
+  - text: 'San José es el principal núcleo turístico del parque: puerto deportivo,
+      restaurantes, comercios, alquiler de actividades y acceso a Mónsul y Genoveses.'
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: 'San José is the park''s main tourist hub: marina, restaurants, shops, activity
+      rentals and access to Mónsul and Genoveses.'
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: 'San José ist der wichtigste Touristenort des Parks: Yachthafen, Restaurants,
+      Geschäfte, Aktivitätenverleih und Zugang zu Mónsul und Genoveses.'
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: 'San José est le principal pôle touristique du parc : port de plaisance,
+      restaurants, commerces, location d''activités et accès à Mónsul et Genoveses.'
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: 'San José es el principal núcleo turístico del parque: puerto deportivo,
+      restaurantes, comercios, alquiler de actividades y acceso a Mónsul y Genoveses.'
+  utter_nucleo_isleta_moro:
+  - text: Es un pequeño y pintoresco pueblo de pescadores con encanto, ideal para
+      comer pescado fresco y disfrutar de un ambiente tranquilo junto al mar.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: It is a small, charming fishing village, ideal for fresh fish and a quiet
+      seaside atmosphere.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Ein kleines, charmantes Fischerdorf, ideal für frischen Fisch und eine ruhige
+      Atmosphäre am Meer.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Un petit village de pêcheurs plein de charme, idéal pour le poisson frais
+      et une ambiance paisible au bord de mer.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: Es un pequeño y pintoresco pueblo de pescadores con encanto, ideal para
+      comer pescado fresco y disfrutar de un ambiente tranquilo junto al mar.
+  utter_nucleo_los_escullos:
+  - text: Los Escullos destaca por el Castillo de San Felipe (s. XVIII), su playa
+      y las formaciones de duna fósil. Hay buceo y senderos cercanos.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: Los Escullos is known for the 18th-century San Felipe Castle, its beach
+      and fossil dune formations. Diving and trails are nearby.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Los Escullos ist bekannt für die Burg San Felipe (18. Jh.), den Strand und
+      fossile Dünen. Tauchen und Wanderwege in der Nähe.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Los Escullos est connu pour le château San Felipe (XVIIIe), sa plage et
+      ses dunes fossiles. Plongée et sentiers à proximité.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: Los Escullos destaca por el Castillo de San Felipe (s. XVIII), su playa
+      y las formaciones de duna fósil. Hay buceo y senderos cercanos.
+  utter_nucleo_las_negras:
+  - text: Las Negras es un pueblo costero tranquilo con playa de cantos, punto de
+      partida a pie hacia la Cala de San Pedro. Tiene restaurantes y empresas de kayak.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: Las Negras is a quiet coastal village with a pebble beach, a starting point
+      on foot to Cala de San Pedro. It has restaurants and kayak operators.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Las Negras ist ein ruhiges Küstendorf mit Kieselstrand, Ausgangspunkt zu
+      Fuß zur Cala de San Pedro. Mit Restaurants und Kajakanbietern.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Las Negras est un village côtier tranquille à plage de galets, départ à
+      pied vers la Cala de San Pedro. Restaurants et loueurs de kayak.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: Las Negras es un pueblo costero tranquilo con playa de cantos, punto de
+      partida a pie hacia la Cala de San Pedro. Tiene restaurantes y empresas de kayak.
+  utter_enclave_arrecife_sirenas:
+  - text: Son formaciones rocosas volcánicas junto al Faro de Cabo de Gata, uno de
+      los paisajes más emblemáticos. Hay un mirador accesible con panel interpretativo.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: They are volcanic rock formations by the Cabo de Gata Lighthouse, one of
+      the most emblematic landscapes. There is an accessible viewpoint with an interpretive
+      panel.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Vulkanische Felsformationen am Leuchtturm von Cabo de Gata, eine der markantesten
+      Landschaften. Mit zugänglichem Aussichtspunkt und Infotafel.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Des formations rocheuses volcaniques près du phare de Cabo de Gata, l'un
+      des paysages les plus emblématiques. Belvédère accessible avec panneau d'interprétation.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: Son formaciones rocosas volcánicas junto al Faro de Cabo de Gata, uno de
+      los paisajes más emblemáticos. Hay un mirador accesible con panel interpretativo.
+  utter_enclave_mirador_amatista:
+  - text: Sí, ofrece una de las mejores panorámicas de la costa entre La Isleta y
+      Las Negras. Está junto a la carretera y tiene aparcamiento.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: Yes, it offers one of the best coastal panoramas between La Isleta and Las
+      Negras. It is by the road and has parking.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Ja, einer der schönsten Küstenausblicke zwischen La Isleta und Las Negras.
+      An der Straße gelegen, mit Parkplatz.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Oui, l'un des plus beaux panoramas côtiers entre La Isleta et Las Negras.
+      Au bord de la route, avec parking.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: Sí, ofrece una de las mejores panorámicas de la costa entre La Isleta y
+      Las Negras. Está junto a la carretera y tiene aparcamiento.
+  utter_patrimonio_castillo_san_ramon:
+  - text: El Castillo de San Ramón, junto al Playazo de Rodalquilar, es de propiedad
+      privada y no suele tener visita interior, pero su exterior es muy fotografiado.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: San Ramón Castle, by El Playazo de Rodalquilar, is privately owned and usually
+      not open inside, but its exterior is much photographed.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Die Burg San Ramón am Playazo de Rodalquilar ist in Privatbesitz und meist
+      innen nicht zugänglich, aber außen ein beliebtes Fotomotiv.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Le château San Ramón, près d'El Playazo de Rodalquilar, est privé et rarement
+      ouvert à l'intérieur, mais son extérieur est très photographié.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: El Castillo de San Ramón, junto al Playazo de Rodalquilar, es de propiedad
+      privada y no suele tener visita interior, pero su exterior es muy fotografiado.
+  utter_patrimonio_iglesia_nijar:
+  - text: En Níjar pueblo destacan la Iglesia de Nuestra Señora de la Anunciación,
+      el Barrio Alto, los talleres de cerámica y jarapas y sus calles tradicionales.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: In Níjar town, highlights are the Church of Nuestra Señora de la Anunciación,
+      the Barrio Alto, the pottery and 'jarapa' workshops and its traditional streets.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: 'In Níjar-Dorf: die Kirche Nuestra Señora de la Anunciación, das Barrio
+      Alto, Keramik- und ''Jarapa''-Werkstätten und die traditionellen Gassen.'
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: 'À Níjar village : l''église Nuestra Señora de la Anunciación, le Barrio
+      Alto, les ateliers de céramique et de ''jarapas'' et ses ruelles traditionnelles.'
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: En Níjar pueblo destacan la Iglesia de Nuestra Señora de la Anunciación,
+      el Barrio Alto, los talleres de cerámica y jarapas y sus calles tradicionales.
+  utter_patrimonio_jardin_botanico:
+  - text: Es un jardín en Rodalquilar dedicado a la flora autóctona de los ambientes
+      áridos del sureste ibérico. Entrada gratuita; ideal para conocer la vegetación
+      del parque.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: It is a garden in Rodalquilar devoted to native flora of the arid southeast
+      of Iberia. Free entry; ideal to learn about the park's vegetation.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Ein Garten in Rodalquilar mit einheimischer Flora der ariden Gebiete Südostspaniens.
+      Eintritt frei; ideal, um die Vegetation des Parks kennenzulernen.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Un jardin à Rodalquilar dédié à la flore native des milieux arides du sud-est
+      ibérique. Entrée gratuite ; idéal pour découvrir la végétation du parc.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: Es un jardín en Rodalquilar dedicado a la flora autóctona de los ambientes
+      áridos del sureste ibérico. Entrada gratuita; ideal para conocer la vegetación
+      del parque.
+  utter_actividad_avistamiento_aves:
+  - text: Además de las Salinas, las ramblas, acantilados y la zona de la Albufera
+      de Adra (cercana) son buenos puntos. Primavera y otoño son las mejores épocas.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: Besides the Salt Flats, the ramblas, cliffs and the nearby Albufera de Adra
+      are good spots. Spring and autumn are the best seasons.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Neben den Salinen sind die Ramblas, Klippen und die nahe Albufera de Adra
+      gute Orte. Frühling und Herbst sind am besten.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Outre les salines, les ramblas, falaises et la proche Albufera de Adra sont
+      de bons sites. Printemps et automne sont idéaux.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: Además de las Salinas, las ramblas, acantilados y la zona de la Albufera
+      de Adra (cercana) son buenos puntos. Primavera y otoño son las mejores épocas.
+  utter_actividad_paseo_barco:
+  - text: Sí, desde San José y otros puntos salen excursiones en barco que recorren
+      las calas inaccesibles por tierra. Reserva con antelación en temporada alta.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: Yes, from San José and other points there are boat trips visiting coves
+      unreachable by land. Book ahead in high season.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Ja, von San José und anderen Orten gibt es Bootsausflüge zu den vom Land
+      unerreichbaren Buchten. In der Hochsaison vorab buchen.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Oui, depuis San José et d'autres points, des excursions en bateau visitent
+      les criques inaccessibles par terre. Réservez à l'avance en haute saison.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: Sí, desde San José y otros puntos salen excursiones en barco que recorren
+      las calas inaccesibles por tierra. Reserva con antelación en temporada alta.
+  utter_actividad_familias_ninos:
+  - text: Playas tranquilas como San José o El Playazo, snorkel sencillo, el Jardín
+      Botánico, los observatorios de aves y los castillos costeros son ideales en
+      familia.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: Calm beaches like San José or El Playazo, easy snorkelling, the Botanical
+      Garden, bird hides and the coastal castles are great for families.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Ruhige Strände wie San José oder El Playazo, einfaches Schnorcheln, der
+      Botanische Garten, Vogelhütten und die Küstenburgen sind ideal für Familien.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Des plages calmes comme San José ou El Playazo, le snorkeling facile, le
+      Jardin Botanique, les observatoires d'oiseaux et les châteaux côtiers sont parfaits
+      en famille.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: Playas tranquilas como San José o El Playazo, snorkel sencillo, el Jardín
+      Botánico, los observatorios de aves y los castillos costeros son ideales en
+      familia.
+  utter_servicio_gasolinera:
+  - text: Hay gasolineras en Níjar, San José, Campohermoso y la zona de San Isidro.
+      Dentro del parque hay pocas, conviene repostar antes de adentrarse en el litoral.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: There are petrol stations in Níjar, San José, Campohermoso and the San Isidro
+      area. Few inside the park, so refuel before heading to the coast.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Tankstellen gibt es in Níjar, San José, Campohermoso und im Gebiet San Isidro.
+      Im Park wenige; vor der Küstenfahrt tanken.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Des stations-service à Níjar, San José, Campohermoso et la zone de San Isidro.
+      Peu dans le parc ; faites le plein avant la côte.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: Hay gasolineras en Níjar, San José, Campohermoso y la zona de San Isidro.
+      Dentro del parque hay pocas, conviene repostar antes de adentrarse en el litoral.
+  utter_servicio_carga_electrico:
+  - text: Sí, el municipio está desplegando puntos de recarga para vehículos eléctricos
+      en varios núcleos. Consulta su ubicación y disponibilidad en la app municipal.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: Yes, the municipality is rolling out EV charging points in several villages.
+      Check their location and availability in the municipal app.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Ja, die Gemeinde baut Ladepunkte für E-Fahrzeuge in mehreren Orten auf.
+      Standort und Verfügbarkeit in der städtischen App.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Oui, la municipalité déploie des bornes de recharge dans plusieurs villages.
+      Localisation et disponibilité dans l'app municipale.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: Sí, el municipio está desplegando puntos de recarga para vehículos eléctricos
+      en varios núcleos. Consulta su ubicación y disponibilidad en la app municipal.
+  utter_servicio_alquiler_coche:
+  - text: El transporte público es limitado, así que tener coche facilita mucho moverse
+      entre núcleos y playas. En verano usa el bus lanzadera para evitar problemas
+      de aparcamiento.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: Public transport is limited, so having a car makes moving between villages
+      and beaches much easier. In summer use the shuttle bus to avoid parking issues.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Der ÖPNV ist begrenzt; ein Auto erleichtert das Reisen zwischen Orten und
+      Stränden. Im Sommer den Pendelbus nutzen, um Parkprobleme zu vermeiden.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Les transports publics sont limités ; une voiture facilite les déplacements
+      entre villages et plages. En été, utilisez la navette pour éviter les problèmes
+      de stationnement.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: El transporte público es limitado, así que tener coche facilita mucho moverse
+      entre núcleos y playas. En verano usa el bus lanzadera para evitar problemas
+      de aparcamiento.
+  utter_servicio_veterinario:
+  - text: Sí, hay clínicas veterinarias en Níjar y Campohermoso. Para urgencias fuera
+      de horario, consulta el servicio de guardia anunciado en la propia clínica.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: Yes, there are veterinary clinics in Níjar and Campohermoso. For out-of-hours
+      emergencies, check the on-duty service announced at the clinic.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Ja, Tierkliniken in Níjar und Campohermoso. Für Notfälle außerhalb der Zeiten
+      den an der Klinik angekündigten Notdienst beachten.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Oui, des cliniques vétérinaires à Níjar et Campohermoso. Pour les urgences
+      hors horaires, consultez le service de garde indiqué à la clinique.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: Sí, hay clínicas veterinarias en Níjar y Campohermoso. Para urgencias fuera
+      de horario, consulta el servicio de guardia anunciado en la propia clínica.
+  utter_servicio_urgencias_turista:
+  - text: Para urgencias, llama al 112. En la UE, lleva tu Tarjeta Sanitaria Europea;
+      el centro de salud de Níjar y el hospital de Almería atienden urgencias.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: For emergencies, call 112. In the EU, carry your European Health Insurance
+      Card; Níjar health centre and Almería hospital handle emergencies.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Bei Notfällen 112 anrufen. In der EU die Europäische Krankenversicherungskarte
+      mitführen; Gesundheitszentrum Níjar und Krankenhaus Almería behandeln Notfälle.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Pour les urgences, appelez le 112. Dans l'UE, munissez-vous de la Carte
+      Européenne d'Assurance Maladie ; le centre de santé de Níjar et l'hôpital d'Almería
+      gèrent les urgences.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: Para urgencias, llama al 112. En la UE, lleva tu Tarjeta Sanitaria Europea;
+      el centro de salud de Níjar y el hospital de Almería atienden urgencias.
+  utter_practico_pago_tarjeta:
+  - text: En la mayoría de hoteles, restaurantes y comercios sí, pero en chiringuitos,
+      mercadillos o pequeños negocios puede ser solo efectivo. Lleva algo de efectivo
+      por si acaso.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: In most hotels, restaurants and shops yes, but beach bars, markets or small
+      businesses may be cash only. Carry some cash just in case.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: In den meisten Hotels, Restaurants und Geschäften ja, aber Strandbars, Märkte
+      oder kleine Betriebe nur bar. Etwas Bargeld mitnehmen.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Dans la plupart des hôtels, restaurants et commerces oui, mais paillotes,
+      marchés ou petits commerces peuvent être en espèces. Prévoyez du liquide.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: En la mayoría de hoteles, restaurantes y comercios sí, pero en chiringuitos,
+      mercadillos o pequeños negocios puede ser solo efectivo. Lleva algo de efectivo
+      por si acaso.
+  utter_practico_que_llevar:
+  - text: Agua abundante, protección solar, gorra, calzado cómodo y, si vas a calas
+      remotas, comida. No hay sombra ni servicios en muchos enclaves.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: Plenty of water, sun protection, a hat, comfortable footwear and, for remote
+      coves, food. Many spots have no shade or facilities.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Viel Wasser, Sonnenschutz, Hut, bequeme Schuhe und für abgelegene Buchten
+      Essen. Viele Orte haben weder Schatten noch Einrichtungen.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Beaucoup d'eau, protection solaire, casquette, chaussures confortables et,
+      pour les criques isolées, de la nourriture. Peu d'ombre et de services.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: Agua abundante, protección solar, gorra, calzado cómodo y, si vas a calas
+      remotas, comida. No hay sombra ni servicios en muchos enclaves.
+  utter_practico_temporada_evitar:
+  - text: Fuera de julio y agosto. Mayo, junio, septiembre y octubre ofrecen buen
+      clima con mucha menos afluencia; entre semana siempre hay más tranquilidad.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: Outside July and August. May, June, September and October offer good weather
+      with far fewer crowds; weekdays are always quieter.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Außerhalb Juli und August. Mai, Juni, September und Oktober bieten gutes
+      Wetter mit viel weniger Andrang; wochentags ruhiger.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Hors juillet-août. Mai, juin, septembre et octobre offrent un bon climat
+      avec bien moins de monde ; en semaine, c'est plus calme.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: Fuera de julio y agosto. Mayo, junio, septiembre y octubre ofrecen buen
+      clima con mucha menos afluencia; entre semana siempre hay más tranquilidad.
+  utter_practico_mascotas_general:
+  - text: Sí, pero recuerda que los perros no pueden ir a las playas de baño en verano
+      (salvo las habilitadas) y deben ir atados en zonas del parque. Lleva agua para
+      tu mascota.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: Yes, but remember dogs cannot go to bathing beaches in summer (except designated
+      ones) and must be leashed in park areas. Bring water for your pet.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Ja, aber Hunde dürfen im Sommer nicht an Badestrände (außer ausgewiesene)
+      und müssen in Parkbereichen angeleint sein. Wasser für das Tier mitnehmen.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Oui, mais les chiens ne peuvent pas aller aux plages de baignade en été
+      (sauf désignées) et doivent être tenus en laisse dans le parc. Emportez de l'eau
+      pour l'animal.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: Sí, pero recuerda que los perros no pueden ir a las playas de baño en verano
+      (salvo las habilitadas) y deben ir atados en zonas del parque. Lleva agua para
+      tu mascota.
+  utter_ruta_san_pedro_pie:
+  - text: A pie desde Las Negras (1-1,5 h por sendero costero) o en barco-taxi en
+      temporada. No hay acceso rodado; lleva agua y calzado de senderismo.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: On foot from Las Negras (1-1.5 h on the coastal path) or by water-taxi in
+      season. No road access; bring water and hiking shoes.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Zu Fuß von Las Negras (1-1,5 Std. auf dem Küstenpfad) oder per Boots-Taxi
+      in der Saison. Keine Zufahrt; Wasser und Wanderschuhe mitnehmen.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: À pied depuis Las Negras (1-1,5 h par le sentier côtier) ou en bateau-taxi
+      en saison. Pas d'accès routier ; eau et chaussures de marche.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: A pie desde Las Negras (1-1,5 h por sendero costero) o en barco-taxi en
+      temporada. No hay acceso rodado; lleva agua y calzado de senderismo.
+  utter_ruta_sendero_amoladeras:
+  - text: Sí, junto a Las Amoladeras hay un sendero interpretativo corto y llano,
+      ideal para conocer la vegetación y el paisaje del parque en familia.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: Yes, by Las Amoladeras there is a short, flat interpretive trail, ideal
+      to discover the park's vegetation and landscape with the family.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Ja, bei Las Amoladeras gibt es einen kurzen, flachen Lehrpfad, ideal, um
+      Vegetation und Landschaft des Parks mit der Familie zu entdecken.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Oui, près de Las Amoladeras, un court sentier d'interprétation plat, idéal
+      pour découvrir la végétation et le paysage du parc en famille.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: Sí, junto a Las Amoladeras hay un sendero interpretativo corto y llano,
+      ideal para conocer la vegetación y el paisaje del parque en familia.
+  utter_eventos_mercado_pescado:
+  - text: El pescado fresco de la zona se sirve en los restaurantes de los pueblos
+      pesqueros (La Isleta, San José, Las Negras). Pregunta por la captura del día.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: Local fresh fish is served in the fishing villages' restaurants (La Isleta,
+      San José, Las Negras). Ask for the catch of the day.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Frischer Fisch der Region wird in den Restaurants der Fischerdörfer (La
+      Isleta, San José, Las Negras) serviert. Nach dem Tagesfang fragen.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Le poisson frais local est servi dans les restaurants des villages de pêcheurs
+      (La Isleta, San José, Las Negras). Demandez la pêche du jour.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: El pescado fresco de la zona se sirve en los restaurantes de los pueblos
+      pesqueros (La Isleta, San José, Las Negras). Pregunta por la captura del día.
+  utter_meta_no_entiende:
+  - text: Disculpa, ¿puedes reformular la pregunta con otras palabras? Puedo ayudarte
+      con playas, rutas, parque natural, eventos, servicios y emergencias.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: Sorry, could you rephrase your question? I can help with beaches, trails,
+      the natural park, events, services and emergencies.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Entschuldigung, können Sie die Frage anders formulieren? Ich helfe bei Stränden,
+      Wegen, Naturpark, Veranstaltungen, Diensten und Notfällen.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Désolé, pouvez-vous reformuler la question ? Je peux aider sur les plages,
+      sentiers, parc naturel, événements, services et urgences.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: Disculpa, ¿puedes reformular la pregunta con otras palabras? Puedo ayudarte
+      con playas, rutas, parque natural, eventos, servicios y emergencias.
+  utter_meta_hablar_persona:
+  - text: Puedes acudir a la Oficina de Turismo o llamar en horario de atención. Te
+      muestro sus datos de contacto y horario si me lo pides ('oficina de turismo').
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: You can visit the Tourist Office or call during opening hours. I can show
+      you its contact details and hours if you ask ('tourist office').
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Sie können das Tourismusbüro besuchen oder während der Öffnungszeiten anrufen.
+      Auf Wunsch zeige ich Kontaktdaten und Zeiten ('Tourismusbüro').
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Vous pouvez vous rendre à l'Office de Tourisme ou appeler aux heures d'ouverture.
+      Je peux afficher ses coordonnées et horaires si vous le demandez ('office de
+      tourisme').
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: Puedes acudir a la Oficina de Turismo o llamar en horario de atención. Te
+      muestro sus datos de contacto y horario si me lo pides ('oficina de turismo').
+  utter_playa_servicios_chiringuito:
+  - text: Las playas urbanas (San José, Agua Amarga) suelen tener chiringuitos y servicios;
+      las calas vírgenes del parque no tienen ningún servicio, ve preparado.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: Town beaches (San José, Agua Amarga) usually have beach bars and services;
+      the park's unspoilt coves have none, so come prepared.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Ortsstrände (San José, Agua Amarga) haben meist Strandbars und Service;
+      die unberührten Buchten des Parks haben keine, kommen Sie vorbereitet.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Les plages urbaines (San José, Agua Amarga) ont souvent paillotes et services
+      ; les criques sauvages du parc n'en ont aucun, soyez prévoyant.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: Las playas urbanas (San José, Agua Amarga) suelen tener chiringuitos y servicios;
+      las calas vírgenes del parque no tienen ningún servicio, ve preparado.
+  utter_playa_bandera_azul:
+  - text: Algunas playas urbanas del municipio cuentan con distintivos de calidad.
+      El listado puede variar cada temporada; consúltalo en la Oficina de Turismo
+      o en la app.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: Some town beaches hold quality awards. The list can vary each season; check
+      at the Tourist Office or in the app.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Einige Ortsstrände tragen Qualitätsauszeichnungen. Die Liste kann je Saison
+      variieren; im Tourismusbüro oder in der App prüfen.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Certaines plages urbaines détiennent des labels de qualité. La liste peut
+      varier chaque saison ; vérifiez à l'Office de Tourisme ou dans l'app.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: Algunas playas urbanas del municipio cuentan con distintivos de calidad.
+      El listado puede variar cada temporada; consúltalo en la Oficina de Turismo
+      o en la app.
+  utter_gastronomia_reservas:
+  - text: En temporada alta (julio-agosto) y fines de semana es muy recomendable reservar,
+      sobre todo en los pueblos costeros más demandados como San José o Agua Amarga.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: In high season (July-August) and at weekends booking is highly recommended,
+      especially in the busiest coastal villages like San José or Agua Amarga.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: In der Hochsaison (Juli-August) und an Wochenenden ist Reservierung sehr
+      empfehlenswert, vor allem in beliebten Küstenorten wie San José oder Agua Amarga.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: En haute saison (juillet-août) et le week-end, la réservation est vivement
+      conseillée, surtout dans les villages côtiers prisés comme San José ou Agua
+      Amarga.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: En temporada alta (julio-agosto) y fines de semana es muy recomendable reservar,
+      sobre todo en los pueblos costeros más demandados como San José o Agua Amarga.
+  utter_parque_fauna_camaleon:
+  - text: Destacan el camaleón común, aves marinas y esteparias, flamencos en las
+      salinas y fauna marina en la reserva. Obsérvala sin molestarla ni alimentarla.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: Highlights include the common chameleon, sea and steppe birds, flamingos
+      at the salt flats and marine life in the reserve. Watch without disturbing or
+      feeding.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: 'Höhepunkte: das Chamäleon, See- und Steppenvögel, Flamingos an den Salinen
+      und Meeresfauna im Reservat. Beobachten, ohne zu stören oder zu füttern.'
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: 'À voir : le caméléon commun, oiseaux marins et steppiques, flamants aux
+      salines et faune marine dans la réserve. Observez sans déranger ni nourrir.'
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: Destacan el camaleón común, aves marinas y esteparias, flamencos en las
+      salinas y fauna marina en la reserva. Obsérvala sin molestarla ni alimentarla.
+  utter_gastronomia_tapas:
+  - text: Sí, en Almería es tradición que la tapa acompañe gratis a la bebida. En
+      los bares de Níjar y los pueblos podrás disfrutar de esta costumbre.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: Yes, in Almería it is traditional for a free tapa to come with your drink.
+      In the bars of Níjar and the villages you can enjoy this custom.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Ja, in Almería ist es Tradition, dass zum Getränk eine kostenlose Tapa serviert
+      wird. In den Bars von Níjar und den Dörfern gilt dieser Brauch.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Oui, à Almería, il est de tradition qu'une tapa gratuite accompagne la boisson.
+      Dans les bars de Níjar et des villages, profitez de cette coutume.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: Sí, en Almería es tradición que la tapa acompañe gratis a la bebida. En
+      los bares de Níjar y los pueblos podrás disfrutar de esta costumbre.
+  utter_servicio_correos:
+  - text: Hay oficina de Correos en Níjar pueblo y en otros núcleos principales como
+      Campohermoso y San Isidro. Consulta horarios, que se reducen en agosto.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: There is a post office in Níjar town and in other main villages such as
+      Campohermoso and San Isidro. Check hours, which are reduced in August.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Ein Postamt gibt es in Níjar-Dorf und in anderen Hauptorten wie Campohermoso
+      und San Isidro. Öffnungszeiten prüfen, im August reduziert.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Il y a un bureau de poste à Níjar village et dans d'autres villages comme
+      Campohermoso et San Isidro. Vérifiez les horaires, réduits en août.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: Hay oficina de Correos en Níjar pueblo y en otros núcleos principales como
+      Campohermoso y San Isidro. Consulta horarios, que se reducen en agosto.
+  utter_transporte_estado_carreteras:
+  - text: Son carreteras secundarias, estrechas y con curvas en algunos tramos hacia
+      las calas. Conduce con precaución, respeta a ciclistas y no aparques fuera de
+      las zonas habilitadas.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: They are secondary roads, narrow and winding on some sections to the coves.
+      Drive carefully, respect cyclists and do not park outside designated areas.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Es sind Nebenstraßen, eng und kurvig auf manchen Abschnitten zu den Buchten.
+      Vorsichtig fahren, Radfahrer respektieren und nicht außerhalb ausgewiesener
+      Zonen parken.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Ce sont des routes secondaires, étroites et sinueuses par endroits vers
+      les criques. Conduisez prudemment, respectez les cyclistes et ne stationnez
+      pas hors des zones prévues.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: Son carreteras secundarias, estrechas y con curvas en algunos tramos hacia
+      las calas. Conduce con precaución, respeta a ciclistas y no aparques fuera de
+      las zonas habilitadas.
+  utter_alojamiento_precios_temporada:
+  - text: Sí, en julio y agosto los precios son notablemente más altos y hay estancia
+      mínima en muchos alojamientos. En primavera y otoño encontrarás mejores tarifas.
+    condition:
+    - type: slot
+      name: language
+      value: es
+  - text: Yes, in July and August prices are notably higher and many places require
+      a minimum stay. In spring and autumn you'll find better rates.
+    condition:
+    - type: slot
+      name: language
+      value: en
+  - text: Ja, im Juli und August sind die Preise deutlich höher und viele Unterkünfte
+      verlangen einen Mindestaufenthalt. Im Frühling und Herbst bessere Tarife.
+    condition:
+    - type: slot
+      name: language
+      value: de
+  - text: Oui, en juillet-août les prix sont nettement plus élevés et beaucoup d'hébergements
+      imposent un séjour minimum. Au printemps et en automne, meilleurs tarifs.
+    condition:
+    - type: slot
+      name: language
+      value: fr
+  - text: Sí, en julio y agosto los precios son notablemente más altos y hay estancia
+      mínima en muchos alojamientos. En primavera y otoño encontrarás mejores tarifas.
   utter_default:
   - text: No dispongo de información sobre esa consulta. ¿Puedo ayudarte con rutas,
       playas, eventos o servicios turísticos de Níjar?
