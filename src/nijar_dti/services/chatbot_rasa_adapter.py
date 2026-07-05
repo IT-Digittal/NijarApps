@@ -38,6 +38,7 @@ from nijar_dti.services import chatbot_service as lexical
 registrar_feedback = lexical.registrar_feedback
 listar_intents = lexical.listar_intents
 telemetria = lexical.telemetria
+telemetria_series = lexical.telemetria_series
 
 log = logging.getLogger(__name__)
 

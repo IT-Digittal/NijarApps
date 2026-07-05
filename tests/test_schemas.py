@@ -2,14 +2,21 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from uuid import uuid4
 
 import pytest
 
 from nijar_dti.schemas.chatbot import ChatQueryIn
 from nijar_dti.schemas.cms import ContenidoIn
-from nijar_dti.schemas.common import GeoPoint, I18nText, PageParams, Paginated
+from nijar_dti.schemas.common import (
+    GeoPoint,
+    I18nText,
+    PageParams,
+    Paginated,
+    PuntoSerieDiaria,
+    SerieDiaria,
+)
 from nijar_dti.schemas.iot import ObservacionIn
 from nijar_dti.schemas.tourism import (
     EventoTuristicoIn,
@@ -46,6 +53,43 @@ class TestCommonSchemas:
     def test_i18n_completo(self):
         t = I18nText(es="Hola", en="Hi", de="Hallo", fr="Bonjour")
         assert t.es == "Hola"
+
+
+# -------------------------- Series diarias --------------------------
+
+class TestSerieDiariaSchemas:
+    def test_serie_diaria_valida(self):
+        s = SerieDiaria(
+            desde=datetime(2026, 7, 1, tzinfo=timezone.utc),
+            hasta=datetime(2026, 7, 3, tzinfo=timezone.utc),
+            puntos=[
+                PuntoSerieDiaria(fecha=date(2026, 7, 1), total=12),
+                PuntoSerieDiaria(fecha=date(2026, 7, 2), total=0),
+            ],
+        )
+        assert s.granularidad == "dia"
+        assert len(s.puntos) == 2
+        assert s.puntos[0].total == 12
+
+    def test_serie_diaria_vacia(self):
+        s = SerieDiaria(puntos=[])
+        assert s.desde is None
+        assert s.hasta is None
+        assert s.puntos == []
+
+    def test_punto_fecha_desde_string_iso(self):
+        p = PuntoSerieDiaria(fecha="2026-07-01", total=5)
+        assert p.fecha == date(2026, 7, 1)
+
+    def test_punto_total_negativo(self):
+        with pytest.raises(Exception):
+            PuntoSerieDiaria(fecha=date(2026, 7, 1), total=-1)
+
+    def test_serie_json_campos(self):
+        s = SerieDiaria(puntos=[PuntoSerieDiaria(fecha=date(2026, 7, 1), total=3)])
+        data = s.model_dump(mode="json")
+        assert set(data.keys()) == {"granularidad", "desde", "hasta", "puntos"}
+        assert data["puntos"][0] == {"fecha": "2026-07-01", "total": 3}
 
 
 # -------------------------- Tourism --------------------------

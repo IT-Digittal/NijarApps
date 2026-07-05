@@ -348,7 +348,6 @@
     <span class="pill" style="background:var(--ok-bg);color:var(--ok)"><span class="dotp"></span> <span id="tb-pill2">Conectado</span></span>
   </div>
   <div class="topbar__sp"></div>
-  <a class="btn" href="gestion.html" title="Panel de gestión (CMS)" style="text-decoration:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg> Gestión</a>
   <button class="btn btn--dark" onclick="UI.presentation(true)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg> Modo presentación</button>
   <button class="tbicon" title="Notificaciones" onclick="UI.bell()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 01-3.4 0"/></svg><span class="dot"></span></button>
   <div class="tbav" title="Responsable técnico municipal">JT</div>
@@ -402,7 +401,7 @@
       <section class="dview" id="dv-integraciones"></section>
       <section class="dview" id="dv-informes"></section>
       <div class="note" style="margin-top:22px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
-        Maqueta funcional de la consola DTI conforme al PPT del Exp. 18962/2025: datos simulados, telemetría de tótems, chatbot, social listening, SLAs de la Matriz ANS y trazabilidad de hitos.</div>
+        Consola DTI del Exp. 18962/2025 conectada a la plataforma en producción: telemetría de tótems, chatbot, social listening, sensores IoT, SLAs de la Matriz ANS y gestión de contenidos. Las secciones marcadas en amarillo aún muestran datos de demostración.</div>
     </main>
   </div>
 </div>
@@ -2696,7 +2695,7 @@ UI.presentation=function(on){
 };
 
 /* ================= INIT ================= */
-window.__DTI={T:T,DR:DR};
+window.__DTI={T:T,DR:DR,DSECTIONS:DSECTIONS,renderDSidebar:renderDSidebar};
 renderDSidebar();
 if(X.renderHome)X.renderHome(); /* re-render home ahora que UI.enterDTI/goD existen */
 })();
@@ -3279,7 +3278,7 @@ function makeVertical(cfg){
     $$("[data-"+cfg.key+"sec]").forEach(function(b){b.classList.toggle("on",b.dataset[cfg.key+"sec"]===id)});
     window.scrollTo(0,0);animateBars(el);
   };
-  cfg.R=R;cfg.renderSidebar=sidebar;
+  cfg.R=R;cfg.renderSidebar=sidebar;cfg.rerender=function(id){rendered[id]=false;if(cur===id)UI[cfg.go](id)};
   return cfg;
 }
 function vsub(cfg,crumb,h1,p,acts){
@@ -3772,12 +3771,18 @@ UI.presentation=function(on){
 };
 
 /* ================= INIT ================= */
-window.__V4={RES:RES,MOV:MOV,SEG:SEG,ENE:ENE};
+window.__V4={RES:RES,MOV:MOV,SEG:SEG,ENE:ENE,RS:RS,RS_CONT:RS_CONT,MV_PK:MV_PK,SG_CAMS:SG_CAMS,EN_ED:EN_ED};
 RES.renderSidebar();MOV.renderSidebar();SEG.renderSidebar();ENE.renderSidebar();
 X.renderHome();
 })();
 </script>
 <!-- Puente de datos reales: login JWT + KPIs desde la API de la plataforma -->
 <script type="module" src="./assets/panel-live.js?v=1"></script>
+<!-- Módulos de gestión (CRUD) del pliego integrados en el panel -->
+<script type="module" src="./assets/panel-gestion.js?v=1"></script>
+<!-- Mapa GIS real (Leaflet + coordenadas de la BBDD) -->
+<script type="module" src="./assets/panel-mapa.js?v=1"></script>
+<!-- Verticales Smart City alimentadas por /api/v1/verticales -->
+<script type="module" src="./assets/verticales-live.js?v=1"></script>
 </body>
 </html>

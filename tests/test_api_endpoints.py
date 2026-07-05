@@ -39,10 +39,12 @@ class TestOpenAPI:
             "/api/v1/chatbot/feedback",
             "/api/v1/chatbot/intents",
             "/api/v1/chatbot/telemetry",
+            "/api/v1/chatbot/telemetry/series",
             "/api/v1/dashboards/smart-office/overview",
             "/api/v1/dashboards/smart-office/environment",
             "/api/v1/dashboards/big-data/overview",
             "/api/v1/dashboards/totems/usage",
+            "/api/v1/dashboards/totems/usage/series",
             "/api/v1/dashboards/reports/monthly",
         ]
         for ruta in rutas_obligatorias:
@@ -77,6 +79,25 @@ class TestAuthErrores:
     def test_token_invalido(self, client):
         headers = {"Authorization": "Bearer invalid-token"}
         resp = client.get("/api/v1/auth/me", headers=headers)
+        assert resp.status_code == 401
+
+
+class TestSeriesDiariasAuth:
+    def test_chatbot_telemetry_series_sin_token(self, client):
+        resp = client.get("/api/v1/chatbot/telemetry/series")
+        assert resp.status_code == 401
+
+    def test_chatbot_telemetry_series_granularidad_en_openapi(self, client):
+        """La granularidad solo admite 'dia' según el esquema OpenAPI."""
+        params = client.get("/openapi.json").json()["paths"][
+            "/api/v1/chatbot/telemetry/series"
+        ]["get"]["parameters"]
+        granularidad = next(p for p in params if p["name"] == "granularidad")
+        assert granularidad["schema"]["pattern"] == "^dia$"
+        assert granularidad["schema"]["default"] == "dia"
+
+    def test_totems_usage_series_sin_token(self, client):
+        resp = client.get("/api/v1/dashboards/totems/usage/series")
         assert resp.status_code == 401
 
 

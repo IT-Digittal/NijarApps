@@ -18,7 +18,7 @@ const REFRESH_MS = 60_000;
 const NO_DATA = "—";
 
 /* Secciones DTI que siguen sin fuente de datos real */
-const SECCIONES_DEMO = ["mapa", "alertas", "visitantes", "opendata", "plan", "proyecto", "integraciones", "informes"];
+const SECCIONES_DEMO = ["alertas", "visitantes", "opendata", "plan", "proyecto", "integraciones", "informes"];
 
 const COLOR_IDIOMA = { es: "#1F6FE5", en: "#17BEBB", de: "#F0B429", fr: "#7C6BF0" };
 const NOMBRE_IDIOMA = { es: "Español", en: "Inglés", de: "Alemán", fr: "Francés" };
@@ -131,6 +131,7 @@ async function cargar() {
   const hoy = new Date();
   const rutas = {
     tele: "/chatbot/telemetry",
+    teleSeries: "/chatbot/telemetry/series",
     bigdata: "/dashboards/big-data/overview",
     sentimiento: "/data/social/kpis/sentiment?granularidad=dia",
     topics: "/data/social/topics?limit=12",
@@ -180,7 +181,10 @@ function aplicar(d) {
   } else {
     K.chatQ = null; K.chatRes = null; K.chatSat = null; K.chatSes = null;
   }
-  T.CHATSERIES = null;   /* sin endpoint de serie temporal todavía */
+  if (d.teleSeries && d.teleSeries.puntos && d.teleSeries.puntos.length) {
+    T.CHATSERIES = d.teleSeries.puntos.slice(-30).map((p) => p.total || 0);
+    K.chatHoy = T.CHATSERIES[T.CHATSERIES.length - 1];
+  } else { T.CHATSERIES = null; K.chatHoy = null; }
   T.CHATCH = null;       /* sin desglose por canal todavía */
 
   /* Social listening */
@@ -369,17 +373,17 @@ async function arrancar() {
   iniciado = true;
 
   /* Indicador "en vivo" + salir en la topbar (los botones cuelgan del header) */
-  const gestion = document.querySelector('header a[href="gestion.html"]');
-  if (gestion && gestion.parentElement) {
-    gestion.parentElement.insertBefore(
+  const ancla = document.querySelector("header .btn--dark");
+  if (ancla && ancla.parentElement) {
+    ancla.parentElement.insertBefore(
       el("span", { className: "live-dot", title: "Conectado a la plataforma DTI" }, "<i></i> EN VIVO"),
-      gestion,
+      ancla,
     );
     const salir = el("button", { className: "btn", type: "button", title: "Cerrar sesión" }, "Salir");
     salir.addEventListener("click", async () => { await api.logout(); location.reload(); });
     const avatar = document.querySelector("header .tbav");
-    if (avatar) gestion.parentElement.insertBefore(salir, avatar);
-    else gestion.parentElement.appendChild(salir);
+    if (avatar) ancla.parentElement.insertBefore(salir, avatar);
+    else ancla.parentElement.appendChild(salir);
   }
 
   /* Aviso de demo al entrar en secciones sin fuente real */
