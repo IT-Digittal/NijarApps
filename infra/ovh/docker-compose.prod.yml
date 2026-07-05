@@ -146,6 +146,10 @@ services:
       mqtt:
         condition: service_started
     command: ["python", "-m", "nijar_dti.workers.mqtt_worker"]
+    # La imagen hereda el HEALTHCHECK de la API (curl a :8000), pero los
+    # workers no exponen servidor web: sin esto aparecerían "unhealthy".
+    healthcheck:
+      disable: true
     deploy:
       resources:
         limits: { memory: 512M }
@@ -161,6 +165,8 @@ services:
       db:
         condition: service_healthy
     command: ["python", "-m", "nijar_dti.workers.social_worker"]
+    healthcheck:
+      disable: true
     deploy:
       resources:
         limits: { memory: 512M }
