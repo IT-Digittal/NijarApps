@@ -2066,7 +2066,7 @@ UI.goD=function(id){
   UI._showV("view-dti");
   $("#tb-ctx").style.display="flex";
   $("#tb-pill").innerHTML=icon("totem")+' Plataforma DTI · Turismo <span class="bdg bdg-ok" style="margin-left:4px">contrato en ejecución</span>';
-  var p2=$("#tb-pill2");if(p2)p2.textContent="Plataforma disponible 99,62%";
+  var p2=$("#tb-pill2");if(p2)p2.textContent="Plataforma disponible "+(T.KPI.disp!=null?T.KPI.disp+"%":"—");
   dCurrent=id;
   $$(".dview").forEach(function(v){v.style.display="none"});
   var el=$("#dv-"+id);if(!el)return;
@@ -2087,6 +2087,9 @@ function dsub(crumb,h1,p,acts){
    '<h1>'+h1+'</h1><p>'+p+'</p></div><div class="acts">'+(acts||"")+'</div></div>';
 }
 function sentBadge(s){return s==="positivo"?'<span class="bdg bdg-ok">positivo</span>':s==="negativo"?'<span class="bdg bdg-err">negativo</span>':'<span class="bdg bdg-mut">neutro</span>'}
+/* pv/pn: pintar valores reales con "—" honesto cuando la API aún no los da */
+function pv(v,suf){return v==null||v==="—"?"—":v+(suf||"")}
+function pn(v){var x=parseFloat(v);return isNaN(x)?0:x}
 
 /* ================= 1. RESUMEN ================= */
 DR.resumen=function(el){
@@ -2097,35 +2100,35 @@ DR.resumen=function(el){
 
   h+='<div class="grid c8-4" style="margin-bottom:16px">';
   h+='<div class="card"><div class="card__h"><div><div class="card__t">Estado del servicio DTI</div><div class="card__s">Índice compuesto: disponibilidad, SLAs, uso y satisfacción</div></div><span class="ai-chip">✦ Actualización continua</span></div>'+
-   '<div style="display:flex;gap:26px;align-items:center;flex-wrap:wrap">'+gauge(94,"var(--ok)")+
+   '<div style="display:flex;gap:26px;align-items:center;flex-wrap:wrap">'+gauge(pn(T.KPI.indice))+
    '<div style="flex:1;min-width:230px" class="bars">'+
-   barRow("Disponibilidad plataforma","99,62%",99.62,"var(--ok)","UI.goD('slas')")+
-   barRow("SLAs de la Matriz ANS","10 de 12 en verde",83,"var(--teal2)","UI.goD('slas')")+
-   barRow("Resolución autónoma chatbot","84%",84,"var(--blue)","UI.goD('chatbot')")+
-   barRow("Satisfacción de usuarios","87%",87,"var(--violet)","UI.goD('chatbot')")+
-   barRow("Sentimiento positivo en redes","71%",71,"var(--gold)","UI.goD('social')")+'</div></div></div>';
+   barRow("Disponibilidad del servicio",pv(T.KPI.disp,"%"),pn(T.KPI.disp),"var(--ok)","UI.goD('slas')")+
+   barRow("Disponibilidad tótems",pv(T.KPI.totDisp,"%"),pn(T.KPI.totDisp),"var(--teal2)","UI.goD('totems')")+
+   barRow("Resolución autónoma chatbot",pv(T.KPI.chatRes,"%"),pn(T.KPI.chatRes),"var(--blue)","UI.goD('chatbot')")+
+   barRow("Satisfacción de usuarios",pv(T.KPI.chatSat,"%"),pn(T.KPI.chatSat),"var(--violet)","UI.goD('chatbot')")+
+   barRow("Sentimiento positivo en redes",pv(T.KPI.sentPos,"%"),pn(T.KPI.sentPos),"var(--gold)","UI.goD('social')")+'</div></div></div>';
   h+='<div class="card"><div class="card__h"><div><div class="card__t">Hoy en el destino</div><div class="card__s">'+new Date().toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long"})+'</div></div></div>'+
-   '<div class="kv"><span class="k">Preguntas al chatbot</span><span class="v tnum">47 <span class="mini" style="color:var(--ok)">▲ día récord</span></span></div>'+
-   '<div class="kv"><span class="k">Interacciones en tótems</span><span class="v tnum">382</span></div>'+
-   '<div class="kv"><span class="k">Menciones del destino</span><span class="v tnum">138</span></div>'+
-   '<div class="kv"><span class="k">Aforo Genoveses</span><span class="v tnum" style="color:var(--err);cursor:pointer" onclick="UI.goD(\'alertas\')">92% →</span></div>'+
-   '<div class="kv"><span class="k">CO₂ Smart Office</span><span class="v tnum">685 ppm</span></div>'+
-   '<div class="kv"><span class="k">Alertas activas</span><span class="v tnum" style="cursor:pointer;color:var(--blue)" onclick="UI.goD(\'alertas\')">6 (1 alta) →</span></div></div>';
+   '<div class="kv"><span class="k">Interacciones chatbot (total)</span><span class="v tnum">'+pv(T.KPI.chatQ&&fmt(T.KPI.chatQ))+'</span></div>'+
+   '<div class="kv"><span class="k">Interacciones en tótems</span><span class="v tnum">'+pv(T.KPI.totInter&&fmt(T.KPI.totInter))+'</span></div>'+
+   '<div class="kv"><span class="k">Menciones del destino (hoy)</span><span class="v tnum">'+pv(T.KPI.mentHoy)+'</span></div>'+
+   '<div class="kv"><span class="k">Sensores operativos</span><span class="v tnum">'+pv(T.KPI.sensOper)+(T.KPI.sensTotal!=null?" de "+T.KPI.sensTotal:"")+'</span></div>'+
+   '<div class="kv"><span class="k">CO₂ Smart Office</span><span class="v tnum">'+pv(T.KPI.co2," ppm")+'</span></div>'+
+   '<div class="kv"><span class="k">Incidencias abiertas</span><span class="v tnum" style="cursor:pointer;color:var(--blue)" onclick="UI.goD(\'slas\')">'+pv(T.KPI.incAbiertas)+' →</span></div></div>';
   h+='</div>';
 
   h+='<div class="grid g4" style="margin-bottom:16px">'+
-   kpiCard("Tótems online","2 <small>de 2</small>","T-02 con alerta de temperatura","ic-navy","totem","UI.goD('totems')")+
-   kpiCard("Preguntas chatbot (mes)",fmt(T.KPI.chatQ),"Objetivo ≥ 100 · resolución 84%","ic-blue","chat","UI.goD('chatbot')")+
-   kpiCard("Menciones en redes (mes)",fmt(T.KPI.ment),"Alcance "+fmt(T.KPI.reach),"ic-teal","globe","UI.goD('social')")+
-   kpiCard("Share of voice","18 <small>%</small>","vs destinos comparables de Almería","ic-violet","chart","UI.goD('social')")+
-   kpiCard("Visitas web (mes)",fmt(T.KPI.web),"App: "+fmt(T.KPI.app)+" sesiones/sem","ic-gold","chart","UI.goD('visitantes')")+
-   kpiCard("Usuarios WiFi (sem)",fmt(T.KPI.wifi),"Portal cautivo · anonimizado","ic-ok","wifi","UI.goD('visitantes')")+
-   kpiCard("NPS del destino","46","Encuestas + feedback chatbot","ic-coral","chart","UI.goD('social')")+
-   kpiCard("Sensores IoT","26","Latencia media 4 min (SLA ≤ 15)","ic-navy","bolt","UI.goD('sensores')")+'</div>';
+   kpiCard("Tótems online",(T.TOTEMS.filter(function(t){return t.state==="online"}).length)+' <small>de '+T.TOTEMS.length+'</small>',"Telemetría y disponibilidad por dispositivo","ic-navy","totem","UI.goD('totems')")+
+   kpiCard("Interacciones chatbot",pv(T.KPI.chatQ&&fmt(T.KPI.chatQ)),"Objetivo ≥ 100/mes · resolución "+pv(T.KPI.chatRes,"%"),"ic-blue","chat","UI.goD('chatbot')")+
+   kpiCard("Menciones (último mes)",pv(T.KPI.ment&&fmt(T.KPI.ment)),"Registradas en total: "+pv(T.KPI.mentTotal&&fmt(T.KPI.mentTotal)),"ic-teal","globe","UI.goD('social')")+
+   kpiCard("Fuente principal",T.KPI.sovTop?T.KPI.sovTop.fuente:"—",T.KPI.sovTop?Math.round(T.KPI.sovTop.porcentaje)+"% del share of voice":"share of voice","ic-violet","chart","UI.goD('social')")+
+   kpiCard("Visitas web (mes)",pv(T.KPI.web&&fmt(T.KPI.web)),"Estimación del informe mensual","ic-gold","chart","UI.goD('visitantes')")+
+   kpiCard("Recursos turísticos",pv(T.KPI.recursos),"Catálogo publicado · eventos: "+pv(T.KPI.eventos),"ic-ok","globe")+
+   kpiCard("NPS del destino",pv(T.KPI.nps),"Proxy desde sentimiento y feedback","ic-coral","chart","UI.goD('social')")+
+   kpiCard("Sensores IoT",pv(T.KPI.sensTotal),pv(T.KPI.sensOper)+" operativos · "+pv(T.KPI.sensAlertas)+" en alerta","ic-navy","bolt","UI.goD('sensores')")+'</div>';
 
   h+='<div class="grid c7-5" style="margin-bottom:16px">';
-  h+='<div class="card"><div class="card__h"><div><div class="card__t">Actividad del destino · 30 días</div><div class="card__s">Preguntas al chatbot por día (barras: menciones RRSS)</div></div><button class="btn btn--sm" onclick="UI.goD(\'social\')">Ampliar</button></div>'+
-   areaChart(T.CHATSERIES,{color:"blue",hpx:160,h:170})+'</div>';
+  h+='<div class="card"><div class="card__h"><div><div class="card__t">Actividad del destino · 30 días</div><div class="card__s">Menciones del destino en redes por día</div></div><button class="btn btn--sm" onclick="UI.goD(\'social\')">Ampliar</button></div>'+
+   (T.MENTSERIES?areaChart(T.MENTSERIES,{color:"blue",hpx:160,h:170}):'<div class="mini" style="color:var(--muted);padding:30px 0;text-align:center">Sin serie temporal disponible todavía</div>')+'</div>';
   h+='<div class="card"><div class="card__h"><div><div class="card__t">Recomendaciones IA</div><div class="card__s">Predicción y acción sobre los KPIs del pliego</div></div><span class="ai-chip">✦ IA</span></div>'+
    [["Alta","Adelantar ventilación del tótem T-02: el modelo prevé 45 °C a las 16 h y riesgo de parada térmica.","UI.totemDetail('T-02')"],
     ["Alta","Activar bandera de aforo en Genoveses y aviso en app/tótems: patrón de saturación idéntico al 23/06.","UI.goD('alertas')"],
@@ -2227,7 +2230,7 @@ DR.slas=function(el){
    '<button class="btn" onclick="UI.toast(\'Informe SLA de junio archivado y enviado (simulado)\')">'+icon("doc")+' Informe SLA del mes</button>'+
    '<button class="btn btn--pri" onclick="UI.dReport(\'sla\')">'+icon("doc")+' Vista previa</button>');
   h+='<div class="grid g4" style="margin-bottom:16px">'+
-   kpiCard("Disponibilidad plataforma","99,62 <small>%</small>","SLA ≥ 99% · caída permitida 7,3 h/mes","ic-ok","chart")+
+   kpiCard("Disponibilidad del servicio",pv(T.KPI.disp," <small>%</small>"),"SLA ≥ 99% · caída permitida 7,3 h/mes","ic-ok","chart")+
    kpiCard("Backup off-site","OK <small>diario</small>","RTO ≤ 24 h · RPO ≤ 24 h · simulacro 05/06","ic-blue","folder")+
    kpiCard("Ciberseguridad","ENS <small>medio</small>","WAF activo · pentest: 0 críticas pendientes","ic-navy","gear")+
    kpiCard("Helpdesk municipal","4 <small>tickets</small>","Monitorización 24/7 · 0 críticos","ic-teal","wrench")+'</div>';
@@ -2262,10 +2265,10 @@ DR.totems=function(el){
    '<button class="btn" onclick="UI.toast(\'Contenidos sincronizados en ambos tótems (< 5 min)\')">'+icon("folder")+' Sincronizar CMS</button>'+
    '<button class="btn btn--pri" onclick="UI.dReport(\'totems\')">'+icon("doc")+' Informe de uso</button>');
   h+='<div class="grid g4" style="margin-bottom:16px">'+
-   kpiCard("Disponibilidad media","99,25 <small>%</small>","SLA ≥ 99% por dispositivo","ic-ok","chart")+
-   kpiCard("Interacciones hoy","382","T-01: 214 · T-02: 168","ic-blue","totem")+
-   kpiCard("CTR medio","11,6 <small>%</small>","SLA ≥ 10% · toques / afluencia","ic-teal","chart")+
-   kpiCard("Consultas al agente IA","96 <small>hoy</small>","25% de las interacciones","ic-violet","chat","UI.goD('chatbot')")+'</div>';
+   kpiCard("Disponibilidad media",pv(T.KPI.totDisp," %"),"SLA ≥ 99% por dispositivo","ic-ok","chart")+
+   kpiCard("Interacciones (periodo)",pv(T.KPI.totInter&&fmt(T.KPI.totInter)),"Registradas por la telemetría","ic-blue","totem")+
+   kpiCard("Sesiones únicas",pv(T.KPI.totSes&&fmt(T.KPI.totSes)),"Visitantes distintos en tótems","ic-teal","chart")+
+   kpiCard("Duración media",pv(T.KPI.totDur," s"),"Por sesión de uso","ic-violet","clock")+'</div>';
   h+='<div class="grid g2" style="margin-bottom:16px">'+T.TOTEMS.map(function(t){
     return '<div class="card"><div class="card__h"><div><div class="card__t">'+t.id+' · '+t.name+'</div><div class="card__s">'+t.loc+'</div></div>'+(t.state==="online"?stBadge("operativa"):'<span class="bdg bdg-warn">alerta térmica</span>')+'</div>'+
      '<div class="grid g4" style="gap:8px;margin-bottom:10px">'+
@@ -2274,7 +2277,7 @@ DR.totems=function(el){
      }).join("")+'</div>'+
      '<div class="kv"><span class="k">Última comunicación · red</span><span class="v">'+t.lastComm+' · '+t.net+'</span></div>'+
      '<div class="kv"><span class="k">Idiomas de uso</span><span class="v mini">'+t.langs+'</span></div>'+
-     '<div class="kv"><span class="k">Secciones más consultadas</span><span class="v mini">'+t.top.join(" · ")+'</span></div>'+
+     '<div class="kv"><span class="k">Secciones más consultadas</span><span class="v mini">'+((t.top&&t.top.length)?t.top.join(" · "):(T.KPI.totSecs&&T.KPI.totSecs.length?T.KPI.totSecs.map(function(s){return s.seccion||s.nombre||JSON.stringify(s)}).slice(0,3).join(" · "):"—"))+'</span></div>'+
      '<div class="chip-row" style="margin-top:12px">'+
      '<button class="btn btn--sm btn--pri" onclick="UI.totemDetail(\''+t.id+'\')">Ficha y teleoperación</button>'+
      '<button class="btn btn--sm" onclick="UI.toast(\''+t.id+' reiniciado remotamente; reconexión automática en curso\')">Reinicio remoto</button>'+
@@ -2327,21 +2330,23 @@ DR.chatbot=function(el){
    '<button class="btn" onclick="UI.toast(\'Base de conocimiento exportada: intenciones_faqs_4idiomas.xlsx (simulado)\')">'+icon("doc")+' Exportar conocimiento</button>'+
    '<button class="btn btn--pri" onclick="UI.dReport(\'chatbot\')">'+icon("doc")+' Informe de telemetría</button>');
   h+='<div class="grid g4" style="margin-bottom:16px">'+
-   kpiCard("Preguntas este mes",fmt(T.KPI.chatQ),"SLA: ≥ 100/mes · +18% m/m","ic-blue","chat")+
-   kpiCard("Resolución autónoma","84 <small>%</small>","SLA ≥ 80% sin derivar a humano","ic-ok","chart")+
-   kpiCard("Satisfacción («¿fue útil?»)","87 <small>%</small>","SLA ≥ 80% satisfechos","ic-teal","chart")+
-   kpiCard("Intenciones sin reconocer","23 <small>/sem</small>","Autocaravanas · pernocta → añadir FAQ","ic-coral","warn")+'</div>';
+   kpiCard("Interacciones totales",pv(T.KPI.chatQ&&fmt(T.KPI.chatQ)),"SLA: ≥ 100 preguntas/mes","ic-blue","chat")+
+   kpiCard("Resolución autónoma",pv(T.KPI.chatRes," %"),"SLA ≥ 80% sin derivar a humano","ic-ok","chart")+
+   kpiCard("Satisfacción («¿fue útil?»)",pv(T.KPI.chatSat," %"),"SLA ≥ 80% satisfechos","ic-teal","chart")+
+   kpiCard("Sesiones únicas",pv(T.KPI.chatSes&&fmt(T.KPI.chatSes)),"Usuarios distintos del asistente","ic-violet","chat")+'</div>';
   h+='<div class="grid c7-5" style="margin-bottom:16px">';
-  h+='<div class="card"><div class="card__h"><div><div class="card__t">Preguntas por día · 30 días</div><div class="card__s">Crecimiento sostenido tras difusión en tótems y web</div></div></div>'+
-   areaChart(T.CHATSERIES,{color:"violet",hpx:160,h:170})+'</div>';
-  h+='<div class="card"><div class="card__h"><div><div class="card__t">Idiomas y canales</div><div class="card__s">Distribución del mes</div></div></div>'+
-   '<div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-bottom:8px">'+donut(T.CHATLANG.map(function(l){return{v:l[1],c:l[2]}}),120,14,"4","idiomas")+
-   '<div class="bars" style="flex:1;min-width:150px">'+T.CHATLANG.map(function(l){return barRow(l[0],l[1]+"%",l[1]/61*100,l[2])}).join("")+'</div></div>'+
-   '<div class="bars">'+T.CHATCH.map(function(c){return barRow(c[0],c[1]+"%",c[1]/46*100,"var(--teal2)")}).join("")+'</div></div>';
+  h+='<div class="card"><div class="card__h"><div><div class="card__t">Preguntas por día · 30 días</div><div class="card__s">Serie temporal del asistente</div></div></div>'+
+   (T.CHATSERIES?areaChart(T.CHATSERIES,{color:"violet",hpx:160,h:170}):'<div class="mini" style="color:var(--muted);padding:30px 0;text-align:center">Serie temporal pendiente de histórico suficiente</div>')+'</div>';
+  var maxLang=T.CHATLANG.length?Math.max.apply(null,T.CHATLANG.map(function(l){return l[1]})):1;
+  h+='<div class="card"><div class="card__h"><div><div class="card__t">Idiomas del asistente</div><div class="card__s">Distribución real de las conversaciones</div></div></div>'+
+   '<div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-bottom:8px">'+donut(T.CHATLANG.map(function(l){return{v:l[1],c:l[2]}}),120,14,String(T.CHATLANG.length),"idiomas")+
+   '<div class="bars" style="flex:1;min-width:150px">'+T.CHATLANG.map(function(l){return barRow(l[0],l[1]+"%",l[1]/maxLang*100,l[2])}).join("")+'</div></div>'+
+   (T.CHATCH?'<div class="bars">'+T.CHATCH.map(function(c){return barRow(c[0],c[1]+"%",c[1]/46*100,"var(--teal2)")}).join("")+'</div>':'')+'</div>';
   h+='</div>';
   h+='<div class="grid c7-5">';
   h+='<div class="card"><div class="card__h"><div><div class="card__t">Preguntas más frecuentes</div><div class="card__s">Base para FAQs dinámicas (100+ en 4 idiomas)</div></div><button class="btn btn--sm" onclick="UI.toast(\'FAQ añadida a la cola de revisión editorial\')">Añadir FAQ</button></div><div class="bars">'+
-   T.CHATTOP.map(function(q){return barRow(q[0],q[1],q[1]/214*100,"var(--blue)")}).join("")+'</div></div>';
+   (function(){var mx=T.CHATTOP.length?Math.max.apply(null,T.CHATTOP.map(function(q){return q[1]})):1;
+    return T.CHATTOP.map(function(q){return barRow(q[0],q[1],q[1]/mx*100,"var(--blue)")}).join("")})()+'</div></div>';
   h+='<div class="card"><div class="card__h"><div><div class="card__t">Calidad y accesibilidad</div><div class="card__s">Requisitos del pliego</div></div></div>'+
    '<div class="kv"><span class="k">Comprensión de intención</span><span class="v tnum">86% (SLA ≥ 80%)</span></div>'+
    '<div class="kv"><span class="k">Tiempo medio de respuesta</span><span class="v tnum">1,8 s</span></div>'+
@@ -2357,26 +2362,26 @@ DR.chatbot=function(el){
 
 /* ================= 7. SOCIAL LISTENING ================= */
 DR.social=function(el){
-  var mx=T.WORDS[0][1];
+  var mx=T.WORDS.length?Math.max.apply(null,T.WORDS.map(function(w){return w[1]})):1;
   var h=dsub("Social Listening (A.3)","Social Listening y Big Data turístico",
    "Escucha activa en X, Facebook, Instagram y reseñas + analítica web/app y movilidad. Sentimiento automatizado multiidioma, share of voice, estacionalidad, eficacia de campañas y encuestas ciudadanas.",
    '<button class="btn" onclick="UI.toast(\'Datos exportados: menciones_junio.csv (simulado)\')">'+icon("doc")+' Exportar CSV/JSON</button>'+
    '<button class="btn btn--pri" onclick="UI.dReport(\'social\')">'+icon("doc")+' Informe mensual</button>');
   h+='<div class="grid g4" style="margin-bottom:16px">'+
-   kpiCard("Menciones del destino (mes)",fmt(T.KPI.ment),"+22% vs junio 2025","ic-blue","globe")+
-   kpiCard("Alcance estimado",fmt(T.KPI.reach),"Suma de audiencias de autores únicos","ic-teal","chart")+
-   kpiCard("Share of voice","18 <small>%</small>","vs destinos comparables de Almería","ic-violet","chart")+
-   kpiCard("Sentimiento positivo","71 <small>%</small>","19% neutro · 10% negativo · precisión modelo 88%","ic-ok","leaf")+'</div>';
+   kpiCard("Menciones (último mes)",pv(T.KPI.ment&&fmt(T.KPI.ment)),"Registradas en total: "+pv(T.KPI.mentTotal&&fmt(T.KPI.mentTotal)),"ic-blue","globe")+
+   kpiCard("Fuentes activas",pv(T.KPI.fuentes),"X · Facebook · Instagram · reseñas","ic-teal","chart")+
+   kpiCard("Fuente principal",T.KPI.sovTop?T.KPI.sovTop.fuente:"—",T.KPI.sovTop?Math.round(T.KPI.sovTop.porcentaje)+"% del share of voice":"share of voice","ic-violet","chart")+
+   kpiCard("Sentimiento positivo",pv(T.KPI.sentPos," %"),"Sobre las menciones de los últimos 30 días","ic-ok","leaf")+'</div>';
   h+='<div class="grid c7-5" style="margin-bottom:16px">';
   h+='<div class="card"><div class="card__h"><div><div class="card__t">Menciones por día · 30 días</div><div class="card__s">Pico del 28/06: festival Noches del Castillo (campaña marcada)</div></div><button class="btn btn--sm" onclick="UI.toast(\'Periodo de campaña marcado: 26/06–29/06 · +34% menciones atribuidas\')">Marcar campaña</button></div>'+
-   areaChart(T.MENTSERIES,{color:"teal",hpx:160,h:170})+'</div>';
+   (T.MENTSERIES?areaChart(T.MENTSERIES,{color:"teal",hpx:160,h:170}):'<div class="mini" style="color:var(--muted);padding:30px 0;text-align:center">Sin serie temporal disponible todavía</div>')+'</div>';
   h+='<div class="card"><div class="card__h"><div><div class="card__t">Nube de temas</div><div class="card__s">Etiquetado temático automático (NLP)</div></div></div>'+
    '<div style="display:flex;flex-wrap:wrap;gap:9px;align-items:center;padding:6px 0">'+
    T.WORDS.map(function(w){
-     var sz=11+Math.round(w[1]/mx*15);var neg=(w[0]==="masificación"||w[0]==="aparcamiento");
+     var sz=11+Math.round(w[1]/mx*15);var neg=(w.length>2&&w[2]!=null?w[2]<0:(w[0]==="masificación"||w[0]==="aparcamiento"));
      return '<span style="font-size:'+sz+'px;font-weight:'+(sz>18?800:600)+';color:'+(neg?"var(--err)":sz>18?"var(--navy)":"var(--blue)")+';cursor:pointer" onclick="UI.toast(\'Filtro aplicado: menciones sobre «'+w[0]+'» ('+w[1]+')\')">#'+w[0]+'</span>';
    }).join("")+'</div>'+
-   '<div class="kv" style="margin-top:8px"><span class="k">NPS del destino (proxy)</span><span class="v tnum">46 <span class="mini" style="color:var(--ok)">▲ +5 vs trimestre anterior</span></span></div></div>';
+   '<div class="kv" style="margin-top:8px"><span class="k">NPS del destino (proxy)</span><span class="v tnum">'+pv(T.KPI.nps)+'</span></div></div>';
   h+='</div>';
   h+='<div class="grid c7-5">';
   h+='<div class="card card--pad0"><div style="padding:16px 16px 4px" class="card__h"><div><div class="card__t">Últimas menciones relevantes</div><div class="card__s">Autores anonimizados salvo cuentas públicas · pulsa para detalle</div></div></div>'+
@@ -2413,13 +2418,13 @@ DR.smartoffice=function(el){
    "Confort y operación de la oficina del ente gestor: CO₂, temperatura y ruido con reglas automáticas, estado de equipos, SLAs de dispositivos y procedimientos operativos (runbooks).",
    '<button class="btn btn--pri" onclick="UI.toast(\'Informe de uso de espacios y ambiente exportado a PDF/Excel (simulado)\')">'+icon("doc")+' Informe de espacios</button>');
   h+='<div class="grid g4" style="margin-bottom:16px">'+
-   kpiCard("CO₂ · sala principal","685 <small>ppm</small>","Regla automática al superar 1.000 ppm","ic-ok","leaf")+
-   kpiCard("Temperatura · ruido","24,1 °C · 41 dB","Dentro de rangos de confort","ic-teal","sun")+
-   kpiCard("Equipos online","9 <small>de 10</small>","Panel de sala 2 sin respuesta","ic-gold","panel")+
-   kpiCard("Reuniones híbridas (mes)","14","Ocupación de salas 62%","ic-blue","cal")+'</div>';
+   kpiCard("CO₂ · sala principal",pv(T.KPI.co2," <small>ppm</small>"),"Regla automática al superar 1.000 ppm","ic-ok","leaf")+
+   kpiCard("Temperatura · ruido",pv(T.KPI.tempC," °C")+" · "+pv(T.KPI.ruido," dB"),"Rangos de confort de la oficina","ic-teal","sun")+
+   kpiCard("Sensores operativos",pv(T.KPI.sensOper)+(T.KPI.sensTotal!=null?' <small>de '+T.KPI.sensTotal+'</small>':''),"Red IoT del Smart Office","ic-gold","panel")+
+   kpiCard("Humedad relativa",pv(T.KPI.hum," %"),"Sala principal · lectura actual","ic-blue","drop")+'</div>';
   h+='<div class="grid c7-5" style="margin-bottom:16px">';
   h+='<div class="card"><div class="card__h"><div><div class="card__t">CO₂ en sala principal · 24 h</div><div class="card__s">Umbral de alerta 1.000 ppm · ventilación automática si sala ocupada</div></div></div>'+
-   areaChart(T.CO2DAY,{color:"ok",hpx:150,h:170,labels:["0h","","","","4h","","","","8h","","","","12h","","","","16h","","","","20h","","","23h"]})+'</div>';
+   (T.CO2DAY?areaChart(T.CO2DAY,{color:"ok",hpx:150,h:170,labels:["0h","","","","4h","","","","8h","","","","12h","","","","16h","","","","20h","","","23h"]}):'<div class="mini" style="color:var(--muted);padding:30px 0;text-align:center">Sin histórico ambiental de las últimas 24 h</div>')+'</div>';
   h+='<div class="card"><div class="card__h"><div><div class="card__t">Reglas automáticas</div><div class="card__s">Automatización y confort (pliego A.2)</div></div></div>'+
    [["CO₂ > 1.000 ppm y sala ocupada → alerta + orden de ventilación","Activa"],
     ["Temperatura fuera de 21–26 °C → notificar responsable","Activa"],
@@ -2466,10 +2471,10 @@ DR.contenidos=function(el){
    "CMS centralizado del pliego: un contenido se publica una vez y se sincroniza en tótems, web y app. SLA de publicación ≤ 24 h desde aprobación (tótems < 5 min).",
    '<button class="btn btn--pri" onclick="UI.toast(\'Editor de contenidos disponible en la plataforma real\')">'+icon("folder")+' Nuevo contenido</button>');
   h+='<div class="grid g4" style="margin-bottom:16px">'+
-   kpiCard("Contenidos publicados (mes)","34","Eventos · avisos · bandos · campañas","ic-blue","folder")+
-   kpiCard("Tiempo medio de publicación","2,1 <small>h</small>","SLA ≤ 24 h · tótems en 3 min","ic-ok","clock")+
+   kpiCard("Contenidos en el CMS",pv(T.KPI.contPub),"Eventos · avisos · bandos · campañas","ic-blue","folder")+
+   kpiCard("SLA de publicación","≤ 24 <small>h</small>","Desde aprobación · tótems < 5 min","ic-ok","clock")+
    kpiCard("Idiomas","4","ES · EN · DE · FR (i18n preparado)","ic-teal","globe")+
-   kpiCard("Pendientes de aprobación","1","Campaña astroturismo (04/07)","ic-gold","cal")+'</div>';
+   kpiCard("Recursos del catálogo",pv(T.KPI.recursos),"Gestionables desde el área de Gestión","ic-gold","cal")+'</div>';
   h+='<div class="card card--pad0"><div style="padding:16px 16px 4px" class="card__h"><div><div class="card__t">Últimas publicaciones</div><div class="card__s">Trazabilidad de canal y tiempos (registros del CMS)</div></div></div>'+
    '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Tipo</th><th>Contenido</th><th>Canales</th><th>Publicación</th><th>Estado</th><th>Fecha</th><th></th></tr></thead><tbody>'+
    T.CONT.map(function(c){
@@ -2486,10 +2491,10 @@ DR.sensores=function(el){
    "Catálogo administrable de dispositivos (requisito transversal): estado, batería, latencia y umbrales. Modelo de datos FIWARE (AirQualityObserved, etc.) con lista blanca de nodos.",
    '<button class="btn btn--pri" onclick="UI.toast(\'Alta de sensor: asistente disponible en la plataforma real\')">'+icon("gear")+' Alta de dispositivo</button>');
   h+='<div class="grid g4" style="margin-bottom:16px">'+
-   kpiCard("Dispositivos",T.KPI.sensors,"6 tipologías · 38 nodos en lista blanca","ic-navy","bolt")+
-   kpiCard("Latencia media","4 <small>min</small>","SLA ≤ 15 min · WiFi degradada (22)","ic-ok","clock")+
-   kpiCard("Con alerta","2","Aforo Genoveses · beacon BC-07","ic-coral","warn")+
-   kpiCard("Batería < 20%","1","BC-07 (12%) · sustitución programada","ic-gold","bolt")+'</div>';
+   kpiCard("Dispositivos",pv(T.KPI.sensTotal),"Catálogo IoT de la plataforma","ic-navy","bolt")+
+   kpiCard("Operativos",pv(T.KPI.sensOper),"Reportando dentro de su cadencia","ic-ok","clock")+
+   kpiCard("Con alerta",pv(T.KPI.sensAlertas),"Umbral superado o sin comunicación","ic-coral","warn")+
+   kpiCard("Batería < 20%",pv(T.KPI.sensBatLow),"Candidatos a sustitución preventiva","ic-gold","bolt")+'</div>';
   h+='<div class="card card--pad0"><div style="padding:16px 16px 4px" class="card__h"><div><div class="card__t">Dispositivos</div><div class="card__s">Pulsa una fila para ficha y teleoperación básica</div></div></div>'+
    '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>ID</th><th>Dispositivo</th><th>Último valor</th><th>Umbral / regla</th><th>Batería</th><th>Latencia</th><th>Estado</th></tr></thead><tbody>'+
    T.SOSENSORS.map(function(sn){
@@ -2505,7 +2510,7 @@ UI.sensorDetail=function(id){
    '<div class="kv"><span class="k">Umbral / regla asociada</span><span class="v mini">'+sn.um+'</span></div>'+
    '<div class="kv"><span class="k">Batería · latencia</span><span class="v tnum">'+sn.bat+' · '+sn.lat+'</span></div>'+
    '<div class="kv"><span class="k">Modelo de datos</span><span class="v mini">FIWARE '+(sn.id.indexOf("MET")===0?"WeatherObserved":sn.id.indexOf("AF")===0||sn.id.indexOf("CP")===0?"CrowdFlowObserved":"AirQualityObserved")+' · GeoJSON WGS84</span></div></div>'+
-   '<div class="dsec"><div class="t">Últimas 24 h</div>'+areaChart(T.CO2DAY.map(function(v,i){return Math.round(v*(0.6+((i*7)%9)/20))}),{color:"teal",hpx:110,h:140})+'</div>'+
+   '<div class="dsec"><div class="t">Últimas 24 h</div>'+(T.CO2DAY?areaChart(T.CO2DAY.map(function(v,i){return Math.round(v*(0.6+((i*7)%9)/20))}),{color:"teal",hpx:110,h:140}):'<div class="mini" style="color:var(--muted)">Sin histórico de 24 h para este dispositivo</div>')+'</div>'+
    '<div class="dsec"><div class="t">Acciones</div><div class="chip-row">'+
    '<button class="btn btn--sm btn--pri" onclick="UI.toast(\''+sn.id+': parámetros ajustados remotamente (teleoperación básica)\')">Ajustar parámetros</button>'+
    '<button class="btn btn--sm" onclick="UI.toast(\'Ticket de mantenimiento creado para '+sn.id+'\')">Crear ticket</button>'+
@@ -3772,5 +3777,7 @@ RES.renderSidebar();MOV.renderSidebar();SEG.renderSidebar();ENE.renderSidebar();
 X.renderHome();
 })();
 </script>
+<!-- Puente de datos reales: login JWT + KPIs desde la API de la plataforma -->
+<script type="module" src="./assets/panel-live.js?v=1"></script>
 </body>
 </html>

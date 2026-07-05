@@ -115,6 +115,9 @@ export const api = {
 
   me() { return _doFetch("/auth/me"); },
 
+  // Acceso genérico (paneles que componen sus propias rutas, ej. panel-live.js)
+  get(path) { return _doFetch(path); },
+
   // Smart Office
   smartOfficeOverview() { return _doFetch("/dashboards/smart-office/overview"); },
   environment(params = {}) {
