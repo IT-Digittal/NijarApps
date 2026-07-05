@@ -464,6 +464,50 @@ async function renderPrediccion(el) {
       '<div class="mini" style="color:var(--muted);padding:30px 0;text-align:center">El modelo necesita más histórico de visitas para generar la predicción.</div>') + "</div>";
 }
 
+/* ================= CONSUMO DE IA ================= */
+
+async function renderConsumoIA(el) {
+  cargando(el, "Consumo de IA");
+  let c;
+  try { c = await api.get("/dashboards/ia/consumo"); }
+  catch (e) {
+    el.innerHTML = gsub("Consumo de IA", "Consumo de IA generativa", "Control de costes de los modelos de IA.") +
+      '<div class="card"><div class="mini" style="color:var(--muted);text-align:center;padding:26px 0">' +
+      (e && e.status === 403 ? "Tu rol no tiene acceso al consumo de IA (administrador TIC, analista o auditor)."
+        : "Error: " + esc(e && e.message || e)) + "</div></div>";
+    return;
+  }
+  const U2 = window.__U;
+  const fmtT = (n) => (U2 && n != null ? U2.fmt(n) : n ?? "—");
+  const usd = (n) => (n != null ? "$" + Number(n).toFixed(2) : "—");
+  const barras = (lista, color) => {
+    const max = lista.length ? Math.max(...lista.map((x) => x.coste_estimado_usd)) || 1 : 1;
+    return lista.map((x) => U2.barRow(
+      esc(x.clave) + " · " + fmtT(x.tokens_entrada + x.tokens_salida) + " tokens",
+      usd(x.coste_estimado_usd), (x.coste_estimado_usd / max) * 100, color)).join("") ||
+      '<div class="mini" style="color:var(--muted)">Sin consumo registrado</div>';
+  };
+
+  el.innerHTML = gsub("Consumo de IA", "Consumo de IA generativa",
+    "Tokens y coste estimado de todos los puntos de la plataforma que usan modelos de IA (últimos 30 días). Cada llamada queda registrada con su servicio, canal y modelo.", "") +
+    '<div class="grid g4" style="margin-bottom:16px">' +
+    kpi("Llamadas al modelo", fmtT(c.llamadas), "Últimos 30 días", "ic-navy", "chat") +
+    kpi("Tokens de entrada", fmtT(c.tokens_entrada), "Contexto + preguntas enviadas", "ic-teal", "chart") +
+    kpi("Tokens de salida", fmtT(c.tokens_salida), "Respuestas generadas", "ic-violet", "chart") +
+    kpi("Coste estimado", usd(c.coste_estimado_usd), "Según tarifas por modelo · latencia media " + (c.latencia_media_ms != null ? Math.round(c.latencia_media_ms) + " ms" : "—"), "ic-gold", "chart") + "</div>" +
+    '<div class="grid c7-5" style="margin-bottom:16px">' +
+    '<div class="card"><div class="card__h"><div><div class="card__t">Tokens por día</div><div class="card__s">Entrada + salida · últimos 30 días</div></div></div>' +
+    (c.serie_diaria.length && U2 ? U2.areaChart(c.serie_diaria.map((p) => p.tokens), { color: "violet", hpx: 150, h: 170 }) :
+      '<div class="mini" style="color:var(--muted);padding:26px 0;text-align:center">Sin consumo registrado todavía</div>') + "</div>" +
+    '<div class="card"><div class="card__h"><div><div class="card__t">Por canal</div><div class="card__s">Dónde se usa la IA (tótem, web, app…)</div></div></div><div class="bars">' +
+    barras(c.por_canal, "var(--teal2)") + "</div></div></div>" +
+    '<div class="grid g2">' +
+    '<div class="card"><div class="card__h"><div><div class="card__t">Por servicio</div><div class="card__s">Funcionalidad que consume IA</div></div></div><div class="bars">' +
+    barras(c.por_servicio, "var(--blue)") + "</div></div>" +
+    '<div class="card"><div class="card__h"><div><div class="card__t">Por modelo</div><div class="card__s">Con su coste estimado en USD</div></div></div><div class="bars">' +
+    barras(c.por_modelo, "var(--gold)") + "</div></div></div>";
+}
+
 /* ================= CONFIGURACIÓN ================= */
 
 async function renderConfig(el) {
@@ -515,6 +559,7 @@ const SECCIONES = [
   { id: "g-cliente", n: "Ficha del cliente", i: "folder", r: renderCliente },
   { id: "g-usuarios", n: "Usuarios y permisos", i: "gear", r: renderUsuarios },
   { id: "g-prediccion", n: "Predicción de afluencia", i: "chart", r: renderPrediccion },
+  { id: "g-ia", n: "Consumo de IA", i: "chat", r: renderConsumoIA },
   { id: "g-config", n: "Configuración", i: "gear", r: renderConfig },
 ];
 

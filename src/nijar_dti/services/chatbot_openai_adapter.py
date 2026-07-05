@@ -112,8 +112,8 @@ async def _contexto(db: AsyncSession, payload: ChatQueryIn) -> tuple[str, list[s
     return "\n".join(partes), intents
 
 
-async def _llamada_openai(settings: Settings, mensajes: list[dict]) -> str:
-    """Llama a Chat Completions y devuelve el texto de la respuesta."""
+async def _llamada_openai(settings: Settings, mensajes: list[dict]) -> tuple[str, dict]:
+    """Llama a Chat Completions y devuelve (texto, uso de tokens)."""
     async with httpx.AsyncClient(timeout=settings.openai_timeout_seconds) as client:
         resp = await client.post(
             OPENAI_CHAT_URL,
@@ -127,7 +127,8 @@ async def _llamada_openai(settings: Settings, mensajes: list[dict]) -> str:
         )
         resp.raise_for_status()
         data = resp.json()
-    return (data["choices"][0]["message"]["content"] or "").strip()
+    texto = (data["choices"][0]["message"]["content"] or "").strip()
+    return texto, data.get("usage") or {}
 
 
 async def consultar_openai(
@@ -153,7 +154,7 @@ async def consultar_openai(
             },
             {"role": "user", "content": payload.pregunta},
         ]
-        respuesta_texto = await _llamada_openai(settings, mensajes)
+        respuesta_texto, uso = await _llamada_openai(settings, mensajes)
         if not respuesta_texto:
             raise ValueError("respuesta vacía del modelo")
     except Exception as exc:  # noqa: BLE001 — cualquier fallo degrada al siguiente motor
@@ -192,6 +193,24 @@ async def consultar_openai(
     db.add(interaccion)
     await db.flush()
     await db.refresh(interaccion)
+
+    # Registro de consumo para el control de costes del panel
+    from nijar_dti.services import consumo_ia_service
+
+    try:
+        await consumo_ia_service.registrar(
+            db,
+            modelo=settings.openai_model,
+            servicio="chatbot",
+            canal=payload.canal,
+            idioma=payload.idioma,
+            tokens_entrada=int(uso.get("prompt_tokens") or 0),
+            tokens_salida=int(uso.get("completion_tokens") or 0),
+            latencia_ms=latencia_ms,
+            interaccion_id=interaccion.id,
+        )
+    except Exception:  # noqa: BLE001 — el registro de costes nunca rompe la respuesta
+        log.warning("No se pudo registrar el consumo de IA", exc_info=True)
 
     return ChatResponseOut(
         interaccion_id=interaccion.id,

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 
 from pydantic import BaseModel, Field
 
@@ -73,6 +73,38 @@ class TotemsHealthOverview(BaseModel):
 
     disponibilidad_media_pct: float | None = None
     totems: list[TotemHealth]
+
+
+class ConsumoIADesglose(BaseModel):
+    """Consumo agregado por una dimensión (servicio, canal o modelo)."""
+
+    clave: str
+    llamadas: int
+    tokens_entrada: int
+    tokens_salida: int
+    coste_estimado_usd: float
+
+
+class ConsumoIAPuntoDiario(BaseModel):
+    fecha: date
+    tokens: int
+    coste_estimado_usd: float
+
+
+class ConsumoIAResumen(BaseModel):
+    """Consumo de IA generativa del periodo (control de costes)."""
+
+    desde: datetime | None = None
+    hasta: datetime | None = None
+    llamadas: int
+    tokens_entrada: int
+    tokens_salida: int
+    coste_estimado_usd: float
+    latencia_media_ms: float | None = None
+    por_servicio: list[ConsumoIADesglose]
+    por_canal: list[ConsumoIADesglose]
+    por_modelo: list[ConsumoIADesglose]
+    serie_diaria: list[ConsumoIAPuntoDiario]
 
 
 class MonthlyReport(BaseModel):

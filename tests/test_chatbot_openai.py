@@ -57,7 +57,8 @@ class TestConsultarOpenai:
         async def fake_llamada(settings, mensajes):
             assert any(m["role"] == "user" for m in mensajes)
             assert "CONTEXTO" in mensajes[1]["content"]
-            return "Las playas más conocidas son Mónsul y Genoveses."
+            uso = {"prompt_tokens": 500, "completion_tokens": 60}
+            return "Las playas más conocidas son Mónsul y Genoveses.", uso
 
         monkeypatch.setattr(adapter, "_contexto", fake_contexto)
         monkeypatch.setattr(adapter, "_llamada_openai", fake_llamada)
@@ -74,7 +75,7 @@ class TestConsultarOpenai:
             return "", []
 
         async def fake_llamada(settings, mensajes):
-            return "Respuesta general del destino."
+            return "Respuesta general del destino.", {}
 
         monkeypatch.setattr(adapter, "_contexto", fake_contexto)
         monkeypatch.setattr(adapter, "_llamada_openai", fake_llamada)
@@ -113,6 +114,45 @@ class TestConsultarOpenai:
 
         out = await adapter.consultar_openai(FakeSession(), _payload(), settings=_settings())
         assert out == "FALLBACK"
+
+
+class TestConsumoIA:
+    def test_coste_estimado_gpt4o_mini(self):
+        from nijar_dti.services.consumo_ia_service import coste_estimado_usd
+
+        # 1M de entrada a 0.15 + 1M de salida a 0.60
+        assert coste_estimado_usd("gpt-4o-mini", 1_000_000, 1_000_000) == 0.75
+        assert coste_estimado_usd("gpt-4o-mini", 0, 0) == 0.0
+
+    def test_modelo_desconocido_usa_precio_defecto(self):
+        from nijar_dti.services.consumo_ia_service import coste_estimado_usd
+
+        assert coste_estimado_usd("modelo-futuro", 1_000_000, 0) == 0.5
+
+    async def test_consulta_registra_consumo(self, monkeypatch):
+        from nijar_dti.services import consumo_ia_service
+
+        registros = []
+
+        async def fake_registrar(db, **kw):
+            registros.append(kw)
+
+        async def fake_contexto(db, payload):
+            return "", []
+
+        async def fake_llamada(settings, mensajes):
+            return "Respuesta.", {"prompt_tokens": 321, "completion_tokens": 45}
+
+        monkeypatch.setattr(adapter, "_contexto", fake_contexto)
+        monkeypatch.setattr(adapter, "_llamada_openai", fake_llamada)
+        monkeypatch.setattr(consumo_ia_service, "registrar", fake_registrar)
+
+        await adapter.consultar_openai(FakeSession(), _payload(), settings=_settings())
+        assert len(registros) == 1
+        assert registros[0]["tokens_entrada"] == 321
+        assert registros[0]["tokens_salida"] == 45
+        assert registros[0]["canal"] == "totem"
+        assert registros[0]["servicio"] == "chatbot"
 
 
 class TestConfig:
