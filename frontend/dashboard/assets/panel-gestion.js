@@ -386,6 +386,59 @@ async function renderCliente(el) {
     });
 }
 
+/* ================= USUARIOS Y PERMISOS ================= */
+
+const ROLES = ["administrador_tic", "gestor_contenidos", "analista_datos", "operador_smart_office", "auditor"];
+
+async function renderUsuarios(el) {
+  cargando(el, "Usuarios y permisos");
+  let usuarios;
+  try { usuarios = await api.listUsuarios(); }
+  catch (e) {
+    el.innerHTML = gsub("Usuarios y permisos", "Usuarios y permisos", "Gestión de cuentas del panel.") +
+      '<div class="card"><div class="mini" style="color:var(--muted);text-align:center;padding:26px 0">' +
+      (e && e.status === 403 ? "Solo el administrador TIC puede gestionar usuarios." : "Error: " + esc(e && e.message || e)) + "</div></div>";
+    return;
+  }
+
+  el.innerHTML = gsub("Usuarios y permisos", "Usuarios y permisos",
+    "Cuentas con acceso al panel y sus roles RBAC (5 perfiles del pliego). Las invitaciones crean la cuenta con contraseña temporal.",
+    '<button class="btn btn--pri" data-g="inv-usr">＋ Invitar usuario</button>') +
+    '<div class="grid g4" style="margin-bottom:16px">' +
+    kpi("Usuarios", usuarios.length, "Con acceso al panel", "ic-navy", "gear") +
+    kpi("Activos", usuarios.filter((u) => u.activo).length, "Pueden iniciar sesión", "ic-ok", "chart") +
+    kpi("Administradores TIC", usuarios.filter((u) => u.rol === "administrador_tic").length, "Control total de la plataforma", "ic-coral", "gear") +
+    kpi("Con 2FA", usuarios.filter((u) => u.requiere_2fa).length, "Doble factor requerido", "ic-teal", "gear") + "</div>" +
+    '<div class="card card--pad0"><div style="padding:16px 16px 4px" class="card__h"><div><div class="card__t">Cuentas</div><div class="card__s">Roles según la matriz RBAC del pliego (ENS medio)</div></div></div>' +
+    '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Nombre</th><th>Email</th><th>Rol</th><th>Estado</th><th>2FA</th><th>Alta</th></tr></thead><tbody>' +
+    usuarios.map((u) =>
+      '<tr><td style="font-weight:600">' + esc(u.nombre_completo) + '</td><td class="mini">' + esc(u.email) + "</td>" +
+      '<td><span class="bdg bdg-info">' + esc(u.rol) + "</span></td>" +
+      "<td>" + (u.activo ? '<span class="bdg bdg-ok">activo</span>' : '<span class="bdg bdg-mut">inactivo</span>') + "</td>" +
+      '<td class="mini">' + (u.requiere_2fa ? "Sí" : "No") + '</td><td class="mini tnum">' + fechaCorta(u.created_at) + "</td></tr>").join("") +
+    "</tbody></table></div></div>";
+
+  const btn = el.querySelector('[data-g="inv-usr"]');
+  if (btn) btn.onclick = () => abrirForm("Invitar usuario",
+    campo("Nombre completo", '<input name="nombre_completo" required minlength="2" maxlength="255" ' + INPUT_CSS + ">") +
+    campo("Email", '<input name="email" type="email" required ' + INPUT_CSS + ">") +
+    campo("Rol", '<select name="rol" ' + INPUT_CSS + ">" + ROLES.map((r) => '<option value="' + r + '">' + r.replace(/_/g, " ") + "</option>").join("") + "</select>"),
+    async (fd) => {
+      try {
+        await api.inviteUsuario({
+          email: fd.get("email").trim(),
+          nombre_completo: fd.get("nombre_completo").trim(),
+          rol: fd.get("rol"),
+        });
+      } catch (e) {
+        if (e && e.status === 409) throw new Error("Ya existe un usuario con ese email.");
+        throw e;
+      }
+      UI.toast("Invitación enviada: cuenta creada con contraseña temporal");
+      UI.rerenderD("g-usuarios");
+    });
+}
+
 /* ================= PREDICCIÓN DE AFLUENCIA ================= */
 
 async function renderPrediccion(el) {
@@ -460,6 +513,7 @@ const SECCIONES = [
   { id: "g-campanas", n: "Campañas", i: "chart", r: renderCampanas },
   { id: "g-faqs", n: "FAQs del chatbot", i: "chat", r: renderFaqs },
   { id: "g-cliente", n: "Ficha del cliente", i: "folder", r: renderCliente },
+  { id: "g-usuarios", n: "Usuarios y permisos", i: "gear", r: renderUsuarios },
   { id: "g-prediccion", n: "Predicción de afluencia", i: "chart", r: renderPrediccion },
   { id: "g-config", n: "Configuración", i: "gear", r: renderConfig },
 ];
