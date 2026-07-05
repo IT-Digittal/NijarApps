@@ -1,0 +1,214 @@
+# =============================================================
+# Plataforma DTI Níjar — Despliegue en producción (VPS OVH)
+# =============================================================
+# Stack completo en un único servidor (VPS-4: 8 vCores / 24 GB RAM):
+#   - caddy             Reverse proxy con TLS automático (Let's Encrypt)
+#   - api               Backend FastAPI (sin --reload, imagen construida)
+#   - db                PostgreSQL 16 + PostGIS 3
+#   - redis             Cache y pub/sub (con persistencia AOF)
+#   - mqtt              Broker Mosquitto (autenticación obligatoria)
+#   - mqtt-subscriber   Worker de ingesta IoT
+#   - social-worker     Worker de Social Listening
+#   - rasa              Servidor Rasa (chatbot avanzado)
+#
+# Diferencias clave respecto al docker-compose.yml de desarrollo:
+#   - Ningún servicio interno publica puertos al host: solo Caddy (80/443).
+#   - Sin volúmenes de código fuente: la imagen contiene la aplicación.
+#   - restart: unless-stopped y límites de memoria en todos los servicios.
+#   - Contraseñas obligatorias vía .env (falla el arranque si faltan).
+#
+# Uso:
+#   cd infra/ovh
+#   cp .env.production.example .env   # y rellenar valores reales
+#   docker compose -f docker-compose.prod.yml up -d --build
+#
+# Entrenamiento del chatbot (bajo demanda, consume ~2-4 GB extra):
+#   docker compose -f docker-compose.prod.yml --profile rasa-train run --rm rasa-trainer
+# =============================================================
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    container_name: nijar-dti-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMINIO: ${DOMINIO:?definir DOMINIO en .env (ej. dti.nijar.es)}
+      ACME_EMAIL: ${ACME_EMAIL:?definir ACME_EMAIL en .env}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - api
+    deploy:
+      resources:
+        limits: { memory: 256M }
+    networks:
+      - nijar-net
+
+  api:
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+      args:
+        APP_VERSION: ${APP_VERSION:-prod}
+    image: nijar-dti-api:prod
+    container_name: nijar-dti-api
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mqtt:
+        condition: service_started
+    volumes:
+      - storage_data:/data/storage
+    command: >
+      sh -c "alembic upgrade head &&
+             uvicorn nijar_dti.main:app --host 0.0.0.0 --port 8000 --workers 4"
+    deploy:
+      resources:
+        limits: { memory: 2G }
+    networks:
+      - nijar-net
+
+  db:
+    image: postgis/postgis:16-3.4-alpine
+    container_name: nijar-dti-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: nijar_dti
+      POSTGRES_USER: nijar
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?definir POSTGRES_PASSWORD en .env}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ../../docs/database/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nijar -d nijar_dti"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    deploy:
+      resources:
+        limits: { memory: 4G }
+    networks:
+      - nijar-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: nijar-dti-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "512mb", "--maxmemory-policy", "allkeys-lru"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    deploy:
+      resources:
+        limits: { memory: 768M }
+    networks:
+      - nijar-net
+
+  mqtt:
+    image: eclipse-mosquitto:2
+    container_name: nijar-dti-mqtt
+    restart: unless-stopped
+    # Sin puertos publicados: solo accesible desde la red interna de Docker.
+    # Si los sensores publican desde Internet, descomentar el listener 8883
+    # en mosquitto.prod.conf (TLS) y publicar aquí "8883:8883".
+    volumes:
+      - ./mosquitto.prod.conf:/mosquitto/config/mosquitto.conf:ro
+      - ./mosquitto_passwd:/mosquitto/config/passwd:ro
+      - mqtt_data:/mosquitto/data
+      - mqtt_log:/mosquitto/log
+    deploy:
+      resources:
+        limits: { memory: 256M }
+    networks:
+      - nijar-net
+
+  mqtt-subscriber:
+    image: nijar-dti-api:prod
+    container_name: nijar-dti-mqtt-subscriber
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      db:
+        condition: service_healthy
+      mqtt:
+        condition: service_started
+    command: ["python", "-m", "nijar_dti.workers.mqtt_worker"]
+    deploy:
+      resources:
+        limits: { memory: 512M }
+    networks:
+      - nijar-net
+
+  social-worker:
+    image: nijar-dti-api:prod
+    container_name: nijar-dti-social-worker
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      db:
+        condition: service_healthy
+    command: ["python", "-m", "nijar_dti.workers.social_worker"]
+    deploy:
+      resources:
+        limits: { memory: 512M }
+    networks:
+      - nijar-net
+
+  rasa:
+    image: rasa/rasa:3.6.20-full
+    container_name: nijar-dti-rasa
+    restart: unless-stopped
+    # Sin puerto publicado: la API llega vía http://rasa:5005 en la red interna.
+    volumes:
+      - ../../rasa:/app
+      - rasa_models:/app/models
+    command: >
+      run
+      --enable-api
+      --port 5005
+    deploy:
+      resources:
+        limits: { memory: 3G }
+    networks:
+      - nijar-net
+
+  rasa-trainer:
+    image: rasa/rasa:3.6.20-full
+    container_name: nijar-dti-rasa-trainer
+    volumes:
+      - ../../rasa:/app
+      - rasa_models:/app/models
+    command: ["train", "--out", "/app/models"]
+    profiles: ["rasa-train"]
+    deploy:
+      resources:
+        limits: { memory: 6G }
+    networks:
+      - nijar-net
+
+volumes:
+  caddy_data:
+  caddy_config:
+  db_data:
+  redis_data:
+  mqtt_data:
+  mqtt_log:
+  rasa_models:
+  storage_data:
+
+networks:
+  nijar-net:
+    driver: bridge

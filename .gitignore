@@ -24,6 +24,10 @@ coverage.xml
 .env.local
 .env.*.local
 !.env.example
+!.env.production.example
+
+# Secretos de despliegue (OVH)
+infra/ovh/mosquitto_passwd
 
 # IDEs
 .vscode/

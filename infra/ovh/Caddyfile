@@ -1,0 +1,35 @@
+# =============================================================
+# Plataforma DTI Níjar — Reverse proxy Caddy (producción OVH)
+# =============================================================
+# Caddy obtiene y renueva automáticamente el certificado TLS de
+# Let's Encrypt para el dominio indicado en la variable DOMINIO.
+# Requisito: el DNS del dominio debe apuntar a la IP del VPS antes
+# del primer arranque.
+# =============================================================
+
+{
+	email {$ACME_EMAIL}
+}
+
+{$DOMINIO} {
+	encode zstd gzip
+
+	# Cabeceras de seguridad (ENS / OWASP)
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "SAMEORIGIN"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+
+	# Toda la plataforma la sirve la API de FastAPI:
+	#   /api/v1/*   REST API
+	#   /dashboard  Dashboard (estático)
+	#   /totem      Tótem (estático)
+	#   /metrics    Prometheus (bloqueado desde el exterior, ver abajo)
+	@metrics path /metrics
+	respond @metrics 403
+
+	reverse_proxy api:8000
+}
