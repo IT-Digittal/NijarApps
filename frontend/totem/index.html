@@ -57,10 +57,10 @@
     </div>
 
     <div class="tt-langbar" role="group" aria-label="Idioma / Language / Sprache / Langue">
-      <button class="lang-btn" data-lang="es" aria-pressed="true" lang="es"><span class="flag flag-es" aria-hidden="true"></span>ES</button>
-      <button class="lang-btn" data-lang="en" aria-pressed="false" lang="en"><span class="flag flag-en" aria-hidden="true"></span>EN</button>
-      <button class="lang-btn" data-lang="de" aria-pressed="false" lang="de"><span class="flag flag-de" aria-hidden="true"></span>DE</button>
-      <button class="lang-btn" data-lang="fr" aria-pressed="false" lang="fr"><span class="flag flag-fr" aria-hidden="true"></span>FR</button>
+      <button class="lang-btn" data-lang="es" aria-pressed="true" lang="es"><svg class="flag" viewBox="0 0 24 17" aria-hidden="true"><rect width="24" height="17" rx="2" fill="#C60B1E"/><rect y="4.25" width="24" height="8.5" fill="#FFC400"/></svg>ES</button>
+      <button class="lang-btn" data-lang="en" aria-pressed="false" lang="en"><svg class="flag" viewBox="0 0 24 17" aria-hidden="true"><clipPath id="fuk"><rect width="24" height="17" rx="2"/></clipPath><g clip-path="url(#fuk)"><rect width="24" height="17" fill="#012169"/><path d="M0 0l24 17M24 0L0 17" stroke="#fff" stroke-width="3.4"/><path d="M0 0l24 17M24 0L0 17" stroke="#C8102E" stroke-width="1.6"/><path d="M12 0v17M0 8.5h24" stroke="#fff" stroke-width="5.4"/><path d="M12 0v17M0 8.5h24" stroke="#C8102E" stroke-width="3"/></g></svg>EN</button>
+      <button class="lang-btn" data-lang="de" aria-pressed="false" lang="de"><svg class="flag" viewBox="0 0 24 17" aria-hidden="true"><clipPath id="fde"><rect width="24" height="17" rx="2"/></clipPath><g clip-path="url(#fde)"><rect width="24" height="5.7" fill="#000"/><rect y="5.7" width="24" height="5.6" fill="#DD0000"/><rect y="11.3" width="24" height="5.7" fill="#FFCE00"/></g></svg>DE</button>
+      <button class="lang-btn" data-lang="fr" aria-pressed="false" lang="fr"><svg class="flag" viewBox="0 0 24 17" aria-hidden="true"><clipPath id="ffr"><rect width="24" height="17" rx="2"/></clipPath><g clip-path="url(#ffr)"><rect width="8" height="17" fill="#0055A4"/><rect x="8" width="8" height="17" fill="#fff"/><rect x="16" width="8" height="17" fill="#EF4135"/></g></svg>FR</button>
     </div>
 
     <div class="tt-wrap">
@@ -122,7 +122,7 @@
     <div class="tt-chat-chips tt-wrap">
       <button class="tt-chip" type="button" id="plan-route-btn" data-i18n="rutas.plan">Sugerir ruta cercana</button>
       <button class="tt-chip" type="button" id="recommend-btn" data-i18n="rutas.recomend">¿Qué visitar hoy?</button>
-      <button class="tt-chip is-hidden" type="button" id="chatbot-speak" data-i18n-aria="chatbot.speak_aria" aria-label="Repetir en voz alta">🔊</button>
+      <button class="tt-chip tt-chip--ico is-hidden" type="button" id="chatbot-speak" data-i18n-aria="chatbot.speak_aria" aria-label="Repetir en voz alta"><svg class="tt-svg tt-svg--tag" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5L6 9H2v6h4l5 4V5z" fill="#0E3A78"/><path d="M15.5 8.5a5 5 0 010 7M18 6a8.5 8.5 0 010 12" stroke="#17B8C4" stroke-width="2" fill="none" stroke-linecap="round"/></svg></button>
     </div>
     <form class="tt-chat-inputbar" id="chatbot-form" novalidate>
       <label for="chatbot-input" class="sr-only" data-i18n="chatbot.label">Escribe tu pregunta</label>

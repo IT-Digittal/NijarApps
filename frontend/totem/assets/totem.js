@@ -27,17 +27,54 @@ const IDLE_MS = 60_000;
 
 const VOICE_LOCALE = { es: "es-ES", en: "en-GB", de: "de-DE", fr: "fr-FR" };
 
+// ============================================================
+// Iconografía plana vectorial (2D, sin emojis del sistema)
+// ============================================================
+const ICONS = {
+  playa: '<circle cx="16.5" cy="7" r="3.2" fill="#F5C518"/><path d="M2 14c2-1.6 4-1.6 6 0s4 1.6 6 0 4-1.6 6 0" stroke="#17B8C4" stroke-width="2.2" fill="none" stroke-linecap="round"/><path d="M2 18.5c2-1.6 4-1.6 6 0s4 1.6 6 0 4-1.6 6 0" stroke="#0E9AA5" stroke-width="2.2" fill="none" stroke-linecap="round"/>',
+  ruta: '<path d="M2 19L9 8l4 6 3-4 6 9z" fill="#1E9E6E"/><path d="M9 8l4 6 3-4" fill="#2FBF8A"/><circle cx="18" cy="5" r="2.4" fill="#F5C518"/><path d="M4 19h16" stroke="#7B5A3A" stroke-width="2" stroke-linecap="round" stroke-dasharray="2.5 2.5"/>',
+  patrimonio: '<path d="M3 9l9-5 9 5z" fill="#0E3A78"/><path d="M5 10h2.6v8H5zM10.7 10h2.6v8h-2.6zM16.4 10H19v8h-2.6z" fill="#4A6FA5"/><path d="M3 18h18v2.4H3z" fill="#0E3A78"/><path d="M12 5.6l4.5 2.5h-9z" fill="#F5C518"/>',
+  naturaleza: '<path d="M12 21c0-7 2-12 8-15 .5 8-2 13-8 15z" fill="#1E9E6E"/><path d="M12 21c0-5.5-1.5-9.5-6-12-.4 6.3 1.6 10.4 6 12z" fill="#57B87B"/><path d="M11 21.5h2V17h-2z" fill="#7B5A3A"/>',
+  gastronomia: '<circle cx="13.5" cy="12" r="6.5" fill="#FBE3D8"/><circle cx="13.5" cy="12" r="3.6" fill="#E2572B"/><path d="M4 4v6M2.6 4v3.4a1.4 1.4 0 002.8 0V4" stroke="#0E3A78" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M4 10v10" stroke="#0E3A78" stroke-width="1.8" stroke-linecap="round"/><path d="M21.5 4c-1.8 1-2.6 3-2.6 5.5V20" stroke="#0E3A78" stroke-width="1.8" fill="none" stroke-linecap="round"/>',
+  eventos: '<rect x="3" y="5" width="18" height="16" rx="2.5" fill="#EFEAFB"/><path d="M3 7.5A2.5 2.5 0 015.5 5h13A2.5 2.5 0 0121 7.5V10H3z" fill="#7C6BF0"/><path d="M8 3v4M16 3v4" stroke="#0E3A78" stroke-width="2" stroke-linecap="round"/><circle cx="8.5" cy="14" r="1.4" fill="#E2572B"/><circle cx="12" cy="14" r="1.4" fill="#F5C518"/><circle cx="15.5" cy="14" r="1.4" fill="#17B8C4"/><circle cx="8.5" cy="17.5" r="1.4" fill="#17B8C4"/><circle cx="12" cy="17.5" r="1.4" fill="#7C6BF0"/>',
+  alojamiento: '<path d="M3 11l9-7 9 7v9a1.5 1.5 0 01-1.5 1.5h-15A1.5 1.5 0 013 20z" fill="#4A6FA5"/><path d="M3 11l9-7 9 7-1.6 1.2L12 6.2 4.6 12.2z" fill="#0E3A78"/><rect x="9.6" y="14" width="4.8" height="7.5" rx="1" fill="#F5C518"/>',
+  artesania: '<path d="M9 3h6v2.6c0 1.6 3 2.6 3 6.4 0 4.5-2 9-6 9s-6-4.5-6-9c0-3.8 3-4.8 3-6.4z" fill="#E2572B"/><path d="M9 3h6v2.2H9z" fill="#B23F1B"/><path d="M8.2 12.5c.4 3 1.4 5.8 3.8 6.4" stroke="#F5A623" stroke-width="1.6" fill="none" stroke-linecap="round"/>',
+  servicios: '<circle cx="12" cy="12" r="9.5" fill="#4A6FA5"/><circle cx="12" cy="7.6" r="1.5" fill="#fff"/><rect x="10.6" y="10.4" width="2.8" height="7" rx="1.4" fill="#fff"/>',
+  emergencias: '<rect x="2.5" y="2.5" width="19" height="19" rx="5" fill="#E5484D"/><path d="M10.4 5.5h3.2v4.9h4.9v3.2h-4.9v4.9h-3.2v-4.9H5.5v-3.2h4.9z" fill="#fff"/>',
+  bot: '<rect x="4" y="7" width="16" height="12" rx="4" fill="#fff"/><circle cx="9.2" cy="12.5" r="1.6" fill="#0E3A78"/><circle cx="14.8" cy="12.5" r="1.6" fill="#0E3A78"/><path d="M9.5 16h5" stroke="#0E3A78" stroke-width="1.6" stroke-linecap="round"/><path d="M12 4v3" stroke="#fff" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="3.4" r="1.4" fill="#F5C518"/>',
+  usuario: '<circle cx="12" cy="8.4" r="4" fill="#0E3A78"/><path d="M4.5 20a7.5 7.5 0 0115 0z" fill="#0E3A78"/>',
+  andar: '<circle cx="13" cy="4.6" r="2.1" fill="#0E3A78"/><path d="M13 7.5l-2.6 4.2 2.2 3-1.4 5.8M10.4 11.7L8 13.5M12.6 14.7l3 2.2 1.2 4M13 7.5l3.4 1.7 1.8 3" stroke="#0E3A78" stroke-width="1.9" fill="none" stroke-linecap="round" stroke-linejoin="round"/>',
+  reloj: '<circle cx="12" cy="12" r="9" fill="#E4EAF6"/><circle cx="12" cy="12" r="9" stroke="#0E3A78" stroke-width="1.8" fill="none"/><path d="M12 6.8V12l3.4 2.4" stroke="#0E3A78" stroke-width="2" fill="none" stroke-linecap="round"/>',
+  telefono: '<path d="M5.5 3h3.4l1.5 4.4-2.2 1.7a12.6 12.6 0 006.7 6.7l1.7-2.2L21 15.1v3.4A2.5 2.5 0 0118.5 21C10 20.4 3.6 14 3 5.5A2.5 2.5 0 015.5 3z" fill="#1E9E6E"/>',
+  fecha: '<rect x="3.5" y="5" width="17" height="15.5" rx="2.5" fill="#E4EAF6"/><path d="M3.5 7.5A2.5 2.5 0 016 5h12a2.5 2.5 0 012.5 2.5v2.6h-17z" fill="#0E3A78"/><path d="M8 3.2v3.4M16 3.2v3.4" stroke="#0E3A78" stroke-width="2" stroke-linecap="round"/><rect x="7" y="13" width="4" height="3.4" rx="0.8" fill="#F5C518"/>',
+  precio: '<circle cx="12" cy="12" r="9.5" fill="#F5C518"/><path d="M15.6 8.6A4.6 4.6 0 108 15.4M6.8 10.6h5.4M6.8 13.4h4.6" stroke="#0E3A78" stroke-width="1.9" fill="none" stroke-linecap="round"/>',
+  edificio: '<rect x="5" y="3.5" width="10" height="17" rx="1.2" fill="#4A6FA5"/><rect x="15" y="9" width="4.5" height="11.5" rx="1" fill="#0E3A78"/><path d="M7.4 6.5h2m3 0h-2m-3 3.4h2m3 0h-2m-3 3.4h2m3 0h-2" stroke="#fff" stroke-width="1.4" stroke-linecap="round"/>',
+  lugar: '<path d="M12 2.5a7 7 0 017 7c0 5-7 12-7 12s-7-7-7-12a7 7 0 017-7z" fill="#E2572B"/><circle cx="12" cy="9.5" r="2.8" fill="#fff"/>',
+  campana: '<path d="M12 3a6.5 6.5 0 016.5 6.5c0 4 1.6 5.4 1.6 5.4H3.9s1.6-1.4 1.6-5.4A6.5 6.5 0 0112 3z" fill="#F5C518"/><path d="M10 18.5a2.1 2.1 0 004 0" stroke="#0E3A78" stroke-width="1.8" fill="none" stroke-linecap="round"/>',
+  accesible: '<circle cx="12" cy="4.6" r="2.1" fill="#0E3A78"/><path d="M12 7.5v5.5h5l2.4 5.5" stroke="#0E3A78" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 9.5h4.4" stroke="#0E3A78" stroke-width="2" stroke-linecap="round"/><path d="M14.6 14.5A5.3 5.3 0 116.7 12" stroke="#17B8C4" stroke-width="2" fill="none" stroke-linecap="round"/>',
+  web: '<circle cx="12" cy="12" r="9" fill="#E4EAF6"/><circle cx="12" cy="12" r="9" stroke="#0E3A78" stroke-width="1.7" fill="none"/><path d="M3 12h18M12 3a14.5 14.5 0 010 18M12 3a14.5 14.5 0 000 18" stroke="#0E3A78" stroke-width="1.5" fill="none"/>',
+  email: '<rect x="3" y="5.5" width="18" height="13" rx="2.4" fill="#17B8C4"/><path d="M4 7l8 6 8-6" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>',
+  idea: '<path d="M12 3a6.2 6.2 0 00-3.4 11.4c.8.6 1.4 1.4 1.4 2.1h4c0-.7.6-1.5 1.4-2.1A6.2 6.2 0 0012 3z" fill="#F5C518"/><path d="M10 19h4M10.7 21h2.6" stroke="#0E3A78" stroke-width="1.7" stroke-linecap="round"/>',
+  euro2: '<path d="M15.6 8.6A4.6 4.6 0 108 15.4M6.8 10.6h5.4M6.8 13.4h4.6" stroke="#E2572B" stroke-width="2" fill="none" stroke-linecap="round"/>',
+};
+
+function icono(nombre, cls) {
+  return `<svg class="tt-svg ${cls || ""}" viewBox="0 0 24 24" aria-hidden="true">${ICONS[nombre] || ICONS.servicios}</svg>`;
+}
+
+/* Las banderas planas (SVG) van inline en index.html junto a cada botón */
+
 // Categorías del home (diseño v4) → fuentes de datos reales
 const CATS = [
-  { id: "playas", icon: "🏖️", ic: "ic-sky", th: "th-playa", label: "categorias.playas", cnt: "count.lugares", res: ["playa"] },
-  { id: "rutas", icon: "🥾", ic: "ic-sun", th: "th-ruta", label: "categorias.rutas", cnt: "count.rutas", res: ["ruta"] },
-  { id: "patrimonio", icon: "🏛️", ic: "ic-sand", th: "th-patrimonio", label: "categorias.patrimonio", cnt: "count.sitios", res: ["monumento", "museo", "yacimiento"] },
-  { id: "naturaleza", icon: "🌿", ic: "ic-green", th: "th-naturaleza", label: "categorias.naturaleza", cnt: "count.sitios", res: ["parque_natural", "mirador"] },
-  { id: "gastronomia", icon: "🍽️", ic: "ic-rose", th: "th-gastro", label: "categorias.gastronomia", cnt: "count.sitios", srv: ["gastronomia_restaurante", "gastronomia_bar", "gastronomia_cafeteria"] },
-  { id: "eventos", icon: "🎉", ic: "ic-violet", th: "th-evento", label: "categorias.eventos", cnt: "count.semana", events: true },
-  { id: "alojamiento", icon: "🏠", ic: "ic-blue", th: "th-servicio", label: "categorias.alojamiento", cnt: "count.sitios", srv: ["alojamiento_hotel", "alojamiento_apartamento", "alojamiento_rural", "alojamiento_camping"] },
-  { id: "artesania", icon: "🏺", ic: "ic-orange", th: "th-gastro", label: "categorias.artesania", cnt: "count.talleres", srv: ["comercio", "ocio_actividad", "ocio_alquiler"] },
-  { id: "servicios", icon: "ℹ️", ic: "ic-gray", th: "th-servicio", label: "categorias.servicios", cnt: "count.sitios", res: ["oficina_turismo", "centro_visitantes", "punto_interes"], emergencias: true },
+  { id: "playas", icon: "playa", ic: "ic-sky", th: "th-playa", label: "categorias.playas", cnt: "count.lugares", res: ["playa"] },
+  { id: "rutas", icon: "ruta", ic: "ic-sun", th: "th-ruta", label: "categorias.rutas", cnt: "count.rutas", res: ["ruta"] },
+  { id: "patrimonio", icon: "patrimonio", ic: "ic-sand", th: "th-patrimonio", label: "categorias.patrimonio", cnt: "count.sitios", res: ["monumento", "museo", "yacimiento"] },
+  { id: "naturaleza", icon: "naturaleza", ic: "ic-green", th: "th-naturaleza", label: "categorias.naturaleza", cnt: "count.sitios", res: ["parque_natural", "mirador"] },
+  { id: "gastronomia", icon: "gastronomia", ic: "ic-rose", th: "th-gastro", label: "categorias.gastronomia", cnt: "count.sitios", srv: ["gastronomia_restaurante", "gastronomia_bar", "gastronomia_cafeteria"] },
+  { id: "eventos", icon: "eventos", ic: "ic-violet", th: "th-evento", label: "categorias.eventos", cnt: "count.semana", events: true },
+  { id: "alojamiento", icon: "alojamiento", ic: "ic-blue", th: "th-servicio", label: "categorias.alojamiento", cnt: "count.sitios", srv: ["alojamiento_hotel", "alojamiento_apartamento", "alojamiento_rural", "alojamiento_camping"] },
+  { id: "artesania", icon: "artesania", ic: "ic-orange", th: "th-gastro", label: "categorias.artesania", cnt: "count.talleres", srv: ["comercio", "ocio_actividad", "ocio_alquiler"] },
+  { id: "servicios", icon: "servicios", ic: "ic-gray", th: "th-servicio", label: "categorias.servicios", cnt: "count.sitios", res: ["oficina_turismo", "centro_visitantes", "punto_interes"], emergencias: true },
 ];
 
 // ============================================================
@@ -171,7 +208,7 @@ function renderHomeCats() {
   const t = dict();
   $("#home-cats").innerHTML = CATS.map((c) => `
     <button class="tt-cat" role="listitem" data-cat="${c.id}" aria-label="${escapeHtml(t[c.label] || c.id)}">
-      <span class="tt-cat-icon ${c.ic}" aria-hidden="true">${c.icon}</span>
+      <span class="tt-cat-icon ${c.ic}" aria-hidden="true">${icono(c.icon)}</span>
       <h3>${escapeHtml(t[c.label] || capitalize(c.id))}</h3>
       <small>${catCounts[c.id] != null ? `${catCounts[c.id]} ${t[c.cnt] || ""}` : "…"}</small>
     </button>`).join("");
@@ -250,7 +287,7 @@ function renderChips(c) {
       `<button class="tt-chip" data-chip="${s}" aria-pressed="${currentChip === s}">${escapeHtml(tagLabel(s))}</button>`));
   }
   if (c.emergencias) {
-    chips.push(`<button class="tt-chip" data-chip="emergencias" aria-pressed="${currentChip === "emergencias"}">🆘 ${t["categorias.emergencias"] || "Emergencias"}</button>`);
+    chips.push(`<button class="tt-chip tt-chip--ico" data-chip="emergencias" aria-pressed="${currentChip === "emergencias"}">${icono("emergencias", "tt-svg--tag")} ${t["categorias.emergencias"] || "Emergencias"}</button>`);
   }
   wrap.innerHTML = chips.join("");
   wrap.querySelectorAll(".tt-chip").forEach((b) =>
@@ -269,12 +306,12 @@ function itemCard(r, c) {
   }
   if (r.categoria) tags.push(`<span class="tt-tag tt-tag--info">${escapeHtml(tagLabel(r.categoria))}</span>`);
   else if (r.tipo) tags.push(`<span class="tt-tag tt-tag--info">${escapeHtml(tagLabel(r.tipo))}</span>`);
-  if (r.accesibilidad) tags.push('<span class="tt-tag tt-tag--warn">♿ Accesible</span>');
+  if (r.accesibilidad) tags.push(`<span class="tt-tag tt-tag--warn">${icono("accesible", "tt-svg--tag")} Accesible</span>`);
 
   const meta = [];
-  if (km != null) meta.push(`🚶 ${km < 1 ? Math.round(km * 1000) + " m" : km.toFixed(1) + " km"}`);
-  if (r.horario && typeof r.horario === "string") meta.push(`🕒 ${escapeHtml(r.horario)}`);
-  if (r.telefono) meta.push(`📞 ${escapeHtml(String(r.telefono))}`);
+  if (km != null) meta.push(`${icono("andar")} ${km < 1 ? Math.round(km * 1000) + " m" : km.toFixed(1) + " km"}`);
+  if (r.horario && typeof r.horario === "string") meta.push(`${icono("reloj")} ${escapeHtml(r.horario)}`);
+  if (r.telefono) meta.push(`${icono("telefono")} ${escapeHtml(String(r.telefono))}`);
 
   const img = r.imagenes?.[0];
   return `
@@ -358,7 +395,7 @@ async function renderAgenda(grid, chip) {
               ${ev.direccion ? `<span class="tt-tag tt-tag--info">${escapeHtml(ev.direccion)}</span>` : ""}
             </span>
             <h3>${escapeHtml(nombre)}</h3>
-            <span class="tt-item-meta"><span>🕒 ${hora}</span>${ev.precio ? `<span>💶 ${escapeHtml(String(ev.precio))}</span>` : ""}${ev.organizador ? `<span>🏢 ${escapeHtml(ev.organizador)}</span>` : ""}</span>
+            <span class="tt-item-meta"><span>${icono("reloj")} ${hora}</span>${ev.precio ? `<span>${icono("precio")} ${escapeHtml(String(ev.precio))}</span>` : ""}${ev.organizador ? `<span>${icono("edificio")} ${escapeHtml(ev.organizador)}</span>` : ""}</span>
           </span>
           <span class="tt-item-go" aria-hidden="true">›</span>
         </button>`;
@@ -387,7 +424,7 @@ function renderEmergencies(grid) {
   ];
   grid.innerHTML = items.map((it) => `
     <div class="tt-item emergency-card" role="region" aria-label="${escapeHtml(it.titulo)}">
-      <span class="tt-thumb th-servicio" aria-hidden="true" style="display:grid;place-items:center;font-size:44px">🆘</span>
+      <span class="tt-thumb th-servicio" aria-hidden="true" style="display:grid;place-items:center">${icono("emergencias", "tt-svg--xl")}</span>
       <span class="tt-item-body">
         <h3>${escapeHtml(it.titulo)}</h3>
         <p class="emergency-number">${escapeHtml(it.numero)}</p>
@@ -402,18 +439,18 @@ function renderEmergencies(grid) {
 const dialog = $("#poi-dialog");
 
 const META_FIELDS = [
-  { key: "fecha_inicio", icon: "📅", label: "info.fecha", format: "datetime" },
-  { key: "direccion", icon: "📍", label: "info.direccion", wide: true },
-  { key: "municipio", icon: "🏘️", label: "info.municipio" },
-  { key: "horario", icon: "🕒", label: "info.horario", format: "horario", wide: true },
-  { key: "precio", icon: "💶", label: "info.precio", format: "i18n" },
-  { key: "telefono", icon: "📞", label: "info.telefono" },
-  { key: "email", icon: "✉️", label: "info.email" },
-  { key: "web", icon: "🌐", label: "info.web" },
-  { key: "organizador", icon: "🏢", label: "info.organizador", format: "i18n" },
-  { key: "capacidad_aforo", icon: "👥", label: "info.aforo", format: "people" },
-  { key: "servicios_disponibles", icon: "🛎️", label: "info.servicios", format: "serviciosList", wide: true },
-  { key: "accesibilidad", icon: "♿", label: "info.accesibilidad", format: "acc", wide: true },
+  { key: "fecha_inicio", icon: "fecha", label: "info.fecha", format: "datetime" },
+  { key: "direccion", icon: "lugar", label: "info.direccion", wide: true },
+  { key: "municipio", icon: "alojamiento", label: "info.municipio" },
+  { key: "horario", icon: "reloj", label: "info.horario", format: "horario", wide: true },
+  { key: "precio", icon: "precio", label: "info.precio", format: "i18n" },
+  { key: "telefono", icon: "telefono", label: "info.telefono" },
+  { key: "email", icon: "email", label: "info.email" },
+  { key: "web", icon: "web", label: "info.web" },
+  { key: "organizador", icon: "edificio", label: "info.organizador", format: "i18n" },
+  { key: "capacidad_aforo", icon: "usuario", label: "info.aforo", format: "people" },
+  { key: "servicios_disponibles", icon: "campana", label: "info.servicios", format: "serviciosList", wide: true },
+  { key: "accesibilidad", icon: "accesible", label: "info.accesibilidad", format: "acc", wide: true },
 ];
 
 function formatMeta(field, value) {
@@ -458,14 +495,14 @@ function openDetail(r, c) {
   const latlon = extractLatLon(r);
   if (latlon) {
     const km = haversineKm(latlon[0], latlon[1]);
-    stats.push(["🚶", t["info.distancia"] || "Distancia", km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(1)} km`]);
+    stats.push(["andar", t["info.distancia"] || "Distancia", km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(1)} km`]);
   }
-  if (r.municipio) stats.push(["🏘️", t["info.municipio"] || "Municipio", r.municipio]);
-  if (r.fecha_inicio) stats.push(["📅", t["info.fecha"] || "Fecha", new Date(r.fecha_inicio).toLocaleDateString(currentLang, { day: "2-digit", month: "short" })]);
-  if (r.precio) stats.push(["💶", t["info.precio"] || "Precio", formatMeta({ format: "i18n" }, r.precio)]);
-  else if (cat) stats.push(["🏷️", "Categoría", tagLabel(cat)]);
+  if (r.municipio) stats.push(["lugar", t["info.municipio"] || "Municipio", r.municipio]);
+  if (r.fecha_inicio) stats.push(["fecha", t["info.fecha"] || "Fecha", new Date(r.fecha_inicio).toLocaleDateString(currentLang, { day: "2-digit", month: "short" })]);
+  if (r.precio) stats.push(["precio", t["info.precio"] || "Precio", formatMeta({ format: "i18n" }, r.precio)]);
+  else if (cat) stats.push(["servicios", "Categoría", tagLabel(cat)]);
   $("#poi-stats").innerHTML = stats.slice(0, 4).map(([ic, l, v]) =>
-    `<div class="tt-stat"><span class="ic" aria-hidden="true">${ic}</span><small>${escapeHtml(String(l).toUpperCase())}</small><b>${escapeHtml(String(v))}</b></div>`).join("");
+    `<div class="tt-stat"><span class="ic" aria-hidden="true">${icono(ic, "tt-svg--stat")}</span><small>${escapeHtml(String(l).toUpperCase())}</small><b>${escapeHtml(String(v))}</b></div>`).join("");
 
   // Metadatos
   const meta = $("#poi-meta");
@@ -478,7 +515,7 @@ function openDetail(r, c) {
     if (!formatted) continue;
     const row = document.createElement("div");
     row.className = "poi-dialog-meta-row" + (field.wide ? " is-wide" : "");
-    row.innerHTML = `<dt aria-hidden="true">${field.icon}</dt><dd><strong>${escapeHtml(dict()[field.label] || field.label)}:</strong> ${escapeHtml(formatted)}</dd>`;
+    row.innerHTML = `<dt aria-hidden="true">${icono(field.icon, "tt-svg--meta")}</dt><dd><strong>${escapeHtml(dict()[field.label] || field.label)}:</strong> ${escapeHtml(formatted)}</dd>`;
     meta.appendChild(row);
   }
   meta.parentElement.style.display = meta.children.length ? "" : "none";
@@ -492,10 +529,10 @@ function openDetail(r, c) {
   // Acciones
   const actions = [];
   if (latlon) {
-    actions.push(`<button class="action-btn" id="poi-goto-map">📍 ${escapeHtml(dict()["action.mapa"] || "Ver en el mapa")}</button>`);
+    actions.push(`<button class="action-btn" id="poi-goto-map">${icono("lugar", "tt-svg--btn")} ${escapeHtml(dict()["action.mapa"] || "Ver en el mapa")}</button>`);
   }
-  if (r.telefono) actions.push(`<a class="action-btn action-btn--secondary" href="tel:${escapeAttr(String(r.telefono).replace(/\s+/g, ""))}">📞 ${escapeHtml(dict()["action.llamar"] || "Llamar")}</a>`);
-  if (r.web) actions.push(`<a class="action-btn action-btn--secondary" href="${escapeAttr(r.web)}" target="_blank" rel="noopener noreferrer">🌐 Web</a>`);
+  if (r.telefono) actions.push(`<a class="action-btn action-btn--secondary" href="tel:${escapeAttr(String(r.telefono).replace(/\s+/g, ""))}">${icono("telefono", "tt-svg--btn")} ${escapeHtml(dict()["action.llamar"] || "Llamar")}</a>`);
+  if (r.web) actions.push(`<a class="action-btn action-btn--secondary" href="${escapeAttr(r.web)}" target="_blank" rel="noopener noreferrer">${icono("web", "tt-svg--btn")} Web</a>`);
   const actEl = $("#poi-actions");
   actEl.innerHTML = actions.join("");
   actEl.hidden = !actions.length;
@@ -592,7 +629,7 @@ function resetChat() {
   const t = dict();
   chatLog.innerHTML = `
     <div class="tt-msg tt-msg--bot">
-      <span class="tt-avatar tt-avatar--bot" aria-hidden="true">🤖</span>
+      <span class="tt-avatar tt-avatar--bot" aria-hidden="true">${icono("bot", "tt-svg--avatar")}</span>
       <div class="tt-bubble">${escapeHtml(t["chat.welcome"] || "¡Hola! ¿Qué te apetece hacer hoy?")}</div>
     </div>`;
 }
@@ -601,7 +638,7 @@ function burbuja(texto, esUsuario) {
   const div = document.createElement("div");
   div.className = `tt-msg ${esUsuario ? "tt-msg--user" : "tt-msg--bot"}`;
   div.innerHTML = `
-    <span class="tt-avatar ${esUsuario ? "tt-avatar--user" : "tt-avatar--bot"}" aria-hidden="true">${esUsuario ? "👤" : "🤖"}</span>
+    <span class="tt-avatar ${esUsuario ? "tt-avatar--user" : "tt-avatar--bot"}" aria-hidden="true">${icono(esUsuario ? "usuario" : "bot", "tt-svg--avatar")}</span>
     <div class="tt-bubble"></div>`;
   div.querySelector(".tt-bubble").textContent = texto;
   chatLog.appendChild(div);
@@ -638,7 +675,7 @@ async function askChatbot(message) {
   if (Array.isArray(data.sugerencias) && data.sugerencias.length) {
     const sug = document.createElement("p");
     sug.className = "chatbot-suggestions";
-    sug.textContent = "💡 " + data.sugerencias.join(" · ");
+    sug.innerHTML = `${icono("idea", "tt-svg--tag")} ${escapeHtml(data.sugerencias.join(" · "))}`;
     pensando.appendChild(sug);
   }
   $("#chatbot-output").textContent = lastAnswer;   /* lector de pantalla */

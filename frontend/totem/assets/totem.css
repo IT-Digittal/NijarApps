@@ -146,11 +146,25 @@ button { font-family: inherit; cursor: pointer; }
   font-size: 17px; font-weight: 700;
 }
 .lang-btn[aria-pressed="true"] { background: var(--navy); border-color: var(--navy); color: #fff; }
-.flag { width: 24px; height: 17px; border-radius: 3px; display: inline-block; box-shadow: 0 0 0 1px rgba(0,0,0,.12); }
-.flag-es { background: linear-gradient(180deg, #C60B1E 0 25%, #FFC400 25% 75%, #C60B1E 75%); }
-.flag-en { background: #012169 linear-gradient(45deg, transparent 42%, #fff 42% 45%, #C8102E 45% 55%, #fff 55% 58%, transparent 58%), linear-gradient(-45deg, transparent 42%, #fff 42% 45%, #C8102E 45% 55%, #fff 55% 58%, transparent 58%); background-color: #012169; }
-.flag-de { background: linear-gradient(180deg, #000 0 33%, #DD0000 33% 66%, #FFCE00 66%); }
-.flag-fr { background: linear-gradient(90deg, #0055A4 0 33%, #fff 33% 66%, #EF4135 66%); }
+.flag { width: 24px; height: 17px; display: inline-block; flex: 0 0 auto; filter: drop-shadow(0 0 1px rgba(0,0,0,.2)); }
+
+/* --- Iconos vectoriales planos --- */
+.tt-svg { width: 22px; height: 22px; vertical-align: -5px; }
+.tt-cat-icon .tt-svg { width: 48px; height: 48px; }
+.tt-svg--tag { width: 16px; height: 16px; vertical-align: -3px; }
+.tt-svg--xl { width: 62px; height: 62px; }
+.tt-svg--stat { width: 30px; height: 30px; }
+.tt-svg--meta { width: 20px; height: 20px; }
+.tt-svg--btn { width: 22px; height: 22px; }
+.tt-svg--avatar { width: 30px; height: 30px; }
+.tt-item-meta .tt-svg { width: 19px; height: 19px; vertical-align: -4px; }
+.tt-avatar--bot .tt-svg--avatar rect { fill: #fff; }
+.tt-avatar--user .tt-svg--avatar circle, .tt-avatar--user .tt-svg--avatar path { fill: var(--navy-2); }
+.tt-chip--ico { display: inline-flex; align-items: center; gap: 8px; }
+.action-btn .tt-svg--btn path, .action-btn .tt-svg--btn circle { fill: #fff; }
+.action-btn .tt-svg--btn [stroke] { stroke: #fff; }
+.action-btn--secondary .tt-svg--btn path, .action-btn--secondary .tt-svg--btn circle { fill: var(--navy); }
+.action-btn--secondary .tt-svg--btn [stroke] { stroke: var(--navy); }
 
 /* ================= SECCIÓN Y GRID DE CATEGORÍAS ================= */
 .tt-section-label {
