@@ -1766,7 +1766,10 @@ inviteForm?.addEventListener("submit", (e) => {
 // ============================================================
 // CONFIG section
 // ============================================================
-const API_BASE_RAW = `${window.location.protocol}//${window.location.hostname}:8000/api/v1`;
+// Mismo origen que la página; el puerto 8000 solo si se abre fuera del servidor.
+const API_BASE_RAW = window.location.origin.startsWith("http")
+  ? `${window.location.origin}/api/v1`
+  : "http://localhost:8000/api/v1";
 
 async function loadConfig() {
   // User profile

@@ -21,8 +21,12 @@ import { DEMO_RESOURCES, DEMO_EVENTS, answerChatbotDemo } from "./demo-data.js";
 // ============================================================
 // Configuración
 // ============================================================
+// Mismo origen que la página (la API sirve el tótem bajo /totem). El puerto
+// 8000 explícito solo aplica si se abre el HTML fuera del servidor (file://).
 const API_BASE = window.NIJAR_API_BASE
-  || `${window.location.protocol}//${window.location.hostname}:8000/api/v1`;
+  || (window.location.origin.startsWith("http")
+    ? `${window.location.origin}/api/v1`
+    : "http://localhost:8000/api/v1");
 
 const TOTEM_ID = document.body.dataset.totemId || "urn:ngsi-ld:Totem:nijar:rodalquilar";
 const TOTEM_LAT = parseFloat(document.body.dataset.totemLat || "36.847");
