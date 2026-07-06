@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 from typing import Annotated, Generic, TypeVar
 from uuid import UUID
 
@@ -80,3 +80,19 @@ class IdResponse(BaseModel):
     """Respuesta simple con un identificador."""
 
     id: UUID
+
+
+class PuntoSerieDiaria(BaseModel):
+    """Punto de una serie temporal diaria (conteo por fecha)."""
+
+    fecha: date
+    total: int = Field(..., ge=0)
+
+
+class SerieDiaria(BaseModel):
+    """Serie temporal diaria genérica para gráficas de los dashboards."""
+
+    granularidad: str = "dia"
+    desde: datetime | None = None
+    hasta: datetime | None = None
+    puntos: list[PuntoSerieDiaria]

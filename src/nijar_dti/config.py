@@ -102,10 +102,16 @@ class Settings(BaseSettings):
     social_dry_run: bool = True  # cuando True, usa datos sintéticos en vez de llamar a las APIs
 
     # --- Chatbot ---
-    chatbot_engine: Literal["lexical", "rasa"] = "lexical"
+    chatbot_engine: Literal["lexical", "rasa", "openai"] = "lexical"
     rasa_url: str = "http://rasa:5005"
     rasa_timeout_seconds: int = 8
     rasa_fallback_to_lexical: bool = True
+
+    # --- Chatbot generativo (CHATBOT_ENGINE=openai) ---
+    openai_api_key: str = ""
+    openai_model: str = "gpt-4o-mini"
+    openai_timeout_seconds: int = 15
+    openai_max_tokens: int = 400
 
     # --- Contexto histórico (backfill fuentes públicas INE/Junta/AENA) ---
     contexto_backfill_dry_run: bool = True  # True = series sintéticas sin llamar a APIs

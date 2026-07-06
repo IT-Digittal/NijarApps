@@ -15,7 +15,11 @@ const API_BASE = (() => {
   if (typeof window !== "undefined" && window.NIJAR_API_BASE) {
     return window.NIJAR_API_BASE;
   }
-  return `${window.location.protocol}//${window.location.hostname}:8000/api/v1`;
+  // Mismo origen que la página (la API sirve el dashboard bajo /dashboard).
+  // El puerto 8000 solo aplica si se abre el HTML fuera del servidor (file://).
+  return window.location.origin.startsWith("http")
+    ? `${window.location.origin}/api/v1`
+    : "http://localhost:8000/api/v1";
 })();
 
 const STORAGE_KEY_ACCESS = "nijar.dti.access";
@@ -155,6 +159,9 @@ export const api = {
   },
 
   me() { return _doFetch("/auth/me"); },
+
+  // Acceso genérico (paneles que componen sus propias rutas, ej. panel-live.js)
+  get(path) { return _doFetch(path); },
 
   // Smart Office
   smartOfficeOverview() { return _doFetch("/dashboards/smart-office/overview"); },

@@ -13,6 +13,7 @@ Entidades del modelo semántico de la plataforma DTI Níjar:
 from nijar_dti.models.alumbrado import CuadroMando, Luminaria, ZonaAlumbrado
 from nijar_dti.models.campana import Campana
 from nijar_dti.models.cliente import Cliente
+from nijar_dti.models.consumo_ia import ConsumoIA
 from nijar_dti.models.contenido import Contenido
 from nijar_dti.models.contexto import ContextoTuristico
 from nijar_dti.models.evento_turistico import EventoTuristico

@@ -132,32 +132,40 @@ import os
 from pathlib import Path
 from fastapi.staticfiles import StaticFiles
 
-_frontend_dir = Path(__file__).resolve().parent.parent.parent / "frontend" / "dashboard"
-if _frontend_dir.is_dir():
-    app.mount(
-        "/dashboard",
-        StaticFiles(directory=str(_frontend_dir), html=True),
-        name="dashboard",
-    )
-    logger.info("Dashboard estático montado en /dashboard", path=str(_frontend_dir))
 
-_shared_dir = Path(__file__).resolve().parent.parent.parent / "frontend" / "shared"
-if _shared_dir.is_dir():
-    app.mount(
-        "/shared",
-        StaticFiles(directory=str(_shared_dir)),
-        name="shared",
-    )
-    logger.info("Shared assets montados en /shared", path=str(_shared_dir))
+def _buscar_frontend() -> Path | None:
+    """Localiza la carpeta frontend/ según el modo de despliegue.
 
-_totem_dir = Path(__file__).resolve().parent.parent.parent / "frontend" / "totem"
-if _totem_dir.is_dir():
-    app.mount(
-        "/totem",
-        StaticFiles(directory=str(_totem_dir), html=True),
-        name="totem",
-    )
-    logger.info("Tótem estático montado en /totem", path=str(_totem_dir))
+    - FRONTEND_DIR: override explícito por variable de entorno.
+    - Relativa al código fuente: desarrollo (repo clonado o volumen en /app/src).
+    - Relativa al directorio de trabajo: imagen Docker de producción, donde el
+      paquete se instala en site-packages pero frontend/ se copia a /app.
+    """
+    override = os.environ.get("FRONTEND_DIR")
+    candidatos = [Path(override)] if override else []
+    candidatos += [
+        Path(__file__).resolve().parent.parent.parent / "frontend",
+        Path.cwd() / "frontend",
+    ]
+    for candidato in candidatos:
+        if candidato.is_dir():
+            return candidato
+    return None
+
+
+_frontend_base = _buscar_frontend()
+if _frontend_base is None:
+    logger.warning("Carpeta frontend/ no encontrada — dashboard y tótem no disponibles")
+else:
+    for _ruta, _subdir, _html in (
+        ("/dashboard", "dashboard", True),
+        ("/shared", "shared", False),
+        ("/totem", "totem", True),
+    ):
+        _dir = _frontend_base / _subdir
+        if _dir.is_dir():
+            app.mount(_ruta, StaticFiles(directory=str(_dir), html=_html), name=_subdir)
+            logger.info("Frontend estático montado", ruta=_ruta, path=str(_dir))
 
 
 # ----------------- Manejo global de excepciones -----------------

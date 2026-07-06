@@ -3,215 +3,190 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>Tótem turístico interactivo · Níjar · Cabo de Gata</title>
+  <title>Vive Níjar · Tótem turístico · Cabo de Gata</title>
   <meta name="description" content="Información turística accesible del Parque Natural Cabo de Gata-Níjar." />
 
-  <!-- Tipografías corporativas aprobadas (acta de aprobación visual) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
-  <!-- Hojas de estilo del proyecto: design tokens compartidos + tótem -->
-  <link rel="stylesheet" href="./assets/totem.css?v=3" />
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Geist:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./assets/totem.css?v=6" />
 </head>
 <!--
-  Plantilla de interfaz de los tótems digitales interactivos comprometidos
-  en la actuación A.1 del Expediente 18962/2025.
+  Interfaz de los tótems digitales interactivos (actuación A.1 · Exp. 18962/2025).
+  Rediseño v4 aprobado (Totem_Pantallas_v4): marca «Vive Níjar» con el logo
+  oficial del Ayuntamiento, home con grid de categorías, listados con
+  miniaturas ilustradas, fichas de detalle, asistente IA conversacional,
+  agenda por días y mapa del destino.
 
-  Diseño visual: dirección "Salinas y Sal corporativa" (iteración v2).
-  Acta de aprobación: Acta_Aprobacion_Diseno_Visual_Totem.docx.
-  Design tokens: ../shared/design-tokens.css y design-tokens.json.
-
-  Cumplimiento WCAG 2.1 nivel AA y referencias UNE 139803 (preservadas):
-    1.1.1 alt y aria-label en todos los iconos.
-    1.3.1 estructura semántica con <main>, <nav>, <section>.
-    1.4.3 contraste mínimo 4.5:1 en texto y 3:1 en componentes UI.
-    1.4.4 zoom de texto sin pérdida de contenido.
-    1.4.10 reflow a 320 CSS px (vista responsive).
-    1.4.11 contraste no textual en bordes y estados focus.
-    1.4.12 espaciado de texto ajustable.
-    2.1.1 todo manejable con teclado (sin tap obligatorio).
-    2.4.1 skip link al contenido principal.
-    2.4.3 orden de tabulación lógico.
-    2.4.7 indicador de foco visible (4 px outline).
-    2.5.5 áreas táctiles mínimas de 44 x 44 px (botones grandes).
-    3.1.1 lang en <html> y data-language por idioma activo.
-    3.2.1 cambio de idioma no provoca cambios inesperados (botón explícito).
-    4.1.2 roles ARIA correctos en switcher y diálogos.
-
-  El sistema de gestión de contenido alimenta dinámicamente las tarjetas
-  desde GET /api/v1/cms/content?canal=totem.
+  Cumplimiento WCAG 2.1 AA preservado: skip link, ARIA en controles, focus
+  visible, áreas táctiles ≥44px, alto contraste y texto grande conmutables,
+  lang dinámico por idioma activo.
 -->
 <body data-totem-id="urn:ngsi-ld:Totem:nijar:rodalquilar" data-totem-lat="36.847" data-totem-lon="-2.041">
 
-  <a href="#main" class="skip-link">
-    Saltar al contenido principal
-  </a>
+<a href="#main" class="skip-link" data-i18n="a11y.skip">Saltar al contenido principal</a>
 
-  <!-- Cabecera con marca, accesibilidad e idiomas -->
-  <header class="totem-header" role="banner">
-    <div class="totem-header-row">
+<!-- ================= CABECERA CORPORATIVA ================= -->
+<header class="tt-header" role="banner">
+  <button class="tt-brand" id="btn-home-brand" aria-label="Vive Níjar — volver al inicio">
+    <span class="tt-logo-plate"><img src="../shared/logo-ayuntamiento.png" alt="Ayuntamiento de Níjar" /></span>
+    <span class="tt-brand-txt">
+      <strong>Vive Níjar</strong>
+      <small data-i18n="header.subtitle">AYUNTAMIENTO · CABO DE GATA</small>
+    </span>
+  </button>
+  <div class="tt-header-right">
+    <span class="tt-datepill" id="header-date-pill" aria-live="off"></span>
+    <button class="tt-access-btn" id="contrast-toggle" aria-pressed="false" data-i18n-aria="a11y.contraste" aria-label="Activar alto contraste">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="5" r="2.2"/><path d="M5 9.5l7-1.5 7 1.5M12 8v6M12 14l-3.5 6M12 14l3.5 6"/></svg>
+    </button>
+  </div>
+</header>
+<div class="tt-accent" aria-hidden="true"></div>
 
-      <div class="totem-brand">
-        <div class="totem-brand-icon" aria-hidden="true">N</div>
-        <div class="totem-brand-text">
-          <p class="totem-eyebrow" data-i18n="header.subtitle">Cabo de Gata · Níjar</p>
-          <h1 class="totem-title" data-i18n="header.title">Información turística</h1>
-        </div>
-      </div>
+<main id="main" class="tt-main" role="main">
 
-      <div class="totem-controls">
+  <div id="featured" class="featured-banner is-hidden" role="region" aria-label="Aviso importante"></div>
 
-        <!-- Switch de tamaño de texto -->
-        <button
-          type="button"
-          id="text-size-toggle"
-          class="totem-icon-btn"
-          aria-label="Cambiar tamaño del texto"
-          aria-pressed="false"
-        >A+</button>
-
-        <!-- Switch de alto contraste -->
-        <button
-          type="button"
-          id="contrast-toggle"
-          class="totem-icon-btn"
-          aria-label="Activar alto contraste"
-          aria-pressed="false"
-        >◐</button>
-
-        <!-- Switch de idioma -->
-        <div class="totem-langs" role="group" aria-label="Selector de idioma">
-          <button type="button" class="lang-btn" data-lang="es" aria-pressed="true">ES</button>
-          <button type="button" class="lang-btn" data-lang="en" aria-pressed="false">EN</button>
-          <button type="button" class="lang-btn" data-lang="de" aria-pressed="false">DE</button>
-          <button type="button" class="lang-btn" data-lang="fr" aria-pressed="false">FR</button>
-        </div>
-
-      </div>
+  <!-- ================= VISTA: INICIO ================= -->
+  <section class="tt-view is-on" id="view-home" aria-label="Inicio">
+    <div class="tt-hero">
+      <span class="tt-hero-badge" data-i18n="hero.badge">BIENVENIDO</span>
+      <h1><span data-i18n="hero.title">Descubre</span> <em>Níjar</em></h1>
+      <p data-i18n="hero.sub">Cabo de Gata · Salinas · Pueblos blancos</p>
     </div>
 
-    <!-- Reloj (alineado al margen de la cabecera) -->
-    <div class="totem-status-bar">
-      <div class="totem-status-row">
-        <span id="clock" aria-live="polite">--:--</span>
+    <div class="tt-langbar" role="group" aria-label="Idioma / Language / Sprache / Langue">
+      <button class="lang-btn" data-lang="es" aria-pressed="true" lang="es"><svg class="flag" viewBox="0 0 24 17" aria-hidden="true"><rect width="24" height="17" rx="2" fill="#C60B1E"/><rect y="4.25" width="24" height="8.5" fill="#FFC400"/></svg>ES</button>
+      <button class="lang-btn" data-lang="en" aria-pressed="false" lang="en"><svg class="flag" viewBox="0 0 24 17" aria-hidden="true"><clipPath id="fuk"><rect width="24" height="17" rx="2"/></clipPath><g clip-path="url(#fuk)"><rect width="24" height="17" fill="#012169"/><path d="M0 0l24 17M24 0L0 17" stroke="#fff" stroke-width="3.4"/><path d="M0 0l24 17M24 0L0 17" stroke="#C8102E" stroke-width="1.6"/><path d="M12 0v17M0 8.5h24" stroke="#fff" stroke-width="5.4"/><path d="M12 0v17M0 8.5h24" stroke="#C8102E" stroke-width="3"/></g></svg>EN</button>
+      <button class="lang-btn" data-lang="de" aria-pressed="false" lang="de"><svg class="flag" viewBox="0 0 24 17" aria-hidden="true"><clipPath id="fde"><rect width="24" height="17" rx="2"/></clipPath><g clip-path="url(#fde)"><rect width="24" height="5.7" fill="#000"/><rect y="5.7" width="24" height="5.6" fill="#DD0000"/><rect y="11.3" width="24" height="5.7" fill="#FFCE00"/></g></svg>DE</button>
+      <button class="lang-btn" data-lang="fr" aria-pressed="false" lang="fr"><svg class="flag" viewBox="0 0 24 17" aria-hidden="true"><clipPath id="ffr"><rect width="24" height="17" rx="2"/></clipPath><g clip-path="url(#ffr)"><rect width="8" height="17" fill="#0055A4"/><rect x="8" width="8" height="17" fill="#fff"/><rect x="16" width="8" height="17" fill="#EF4135"/></g></svg>FR</button>
+    </div>
+
+    <div class="tt-wrap">
+      <div class="tt-section-label"><i aria-hidden="true"></i><span data-i18n="home.explora">EXPLORA EL DESTINO</span></div>
+      <div class="tt-catgrid" id="home-cats" role="list"><!-- tarjetas generadas por JS con conteos reales --></div>
+
+      <button class="tt-ia-banner" id="btn-open-chat">
+        <span class="tt-ia-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a8 8 0 01-8 8H4l3-3a8 8 0 1114-5z"/><path d="M8.5 11h.01M12 11h.01M15.5 11h.01"/></svg>
+        </span>
+        <span class="tt-ia-txt">
+          <small data-i18n="ia.badge">ASISTENTE IA</small>
+          <strong data-i18n="chatbot.title">Pregúntame lo que quieras</strong>
+          <span data-i18n="ia.sub">Recomendaciones personalizadas · 4 idiomas</span>
+        </span>
+        <span class="tt-ia-go" aria-hidden="true">→</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- ================= VISTA: LISTADO (categorías y agenda) ================= -->
+  <section class="tt-view" id="view-list" hidden aria-label="Listado">
+    <div class="tt-subhead">
+      <button class="tt-back" data-back data-i18n-aria="a11y.volver" aria-label="Volver al inicio">←</button>
+      <div class="tt-subhead-txt">
+        <small><span data-i18n="nav.inicio">INICIO</span> · <span data-i18n="nav.categorias">CATEGORÍAS</span></small>
+        <h2><span id="list-title">—</span> <em id="list-count"></em></h2>
       </div>
+      <button class="tt-round-btn" id="btn-open-map" data-i18n-aria="map.title" aria-label="Mapa del destino">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 20l-6-2V4l6 2 6-2 6 2v14l-6-2-6 2z"/><path d="M9 6v14M15 4v14"/></svg>
+      </button>
     </div>
-  </header>
-
-  <!-- Navegación por categorías -->
-  <nav class="cat-nav" aria-label="Categorías de información">
-    <div class="cat-nav-row">
-      <button class="cat-btn" data-cat="rutas" aria-pressed="true"><span aria-hidden="true">🥾</span><span data-i18n="categorias.rutas">Rutas</span></button>
-      <button class="cat-btn" data-cat="playas" aria-pressed="false"><span aria-hidden="true">🏖️</span><span data-i18n="categorias.playas">Playas</span></button>
-      <button class="cat-btn" data-cat="patrimonio" aria-pressed="false"><span aria-hidden="true">🏛️</span><span data-i18n="categorias.patrimonio">Patrimonio</span></button>
-      <button class="cat-btn" data-cat="servicios" aria-pressed="false"><span aria-hidden="true">🍽️</span><span data-i18n="categorias.servicios">Servicios</span></button>
-      <button class="cat-btn" data-cat="eventos" aria-pressed="false"><span aria-hidden="true">🎉</span><span data-i18n="categorias.eventos">Eventos</span></button>
-      <button class="cat-btn" data-cat="emergencias" aria-pressed="false"><span aria-hidden="true">🆘</span><span data-i18n="categorias.emergencias">Emergencias</span></button>
-    </div>
-  </nav>
-
-  <main id="main" class="totem-main" role="main">
-
-    <!-- Mensaje destacado dinámico -->
-    <div id="featured" class="featured-banner is-hidden" role="region" aria-label="Aviso importante"></div>
-
-    <!-- Tarjetas de contenido -->
-    <section
-      id="content-grid"
-      class="content-grid"
-      aria-live="polite"
-      aria-busy="true"
-    >
+    <div class="tt-chips tt-wrap" id="list-chips" role="group" aria-label="Filtros"></div>
+    <div class="tt-list tt-wrap" id="content-grid" aria-live="polite" aria-busy="false">
       <p class="content-loading" data-i18n="loading.contenido">Cargando contenidos…</p>
-    </section>
+    </div>
+  </section>
 
-    <!-- Planificador de rutas y recomendaciones -->
-    <section class="planner-section" aria-labelledby="planner-title">
-      <h2 id="planner-title" class="planner-title" data-i18n="rutas.title">Planifica tu visita</h2>
-      <div class="planner-actions">
-        <button type="button" id="plan-route-btn" class="planner-btn" data-i18n="rutas.plan">Sugerir ruta cercana</button>
-        <button type="button" id="recommend-btn" class="planner-btn" data-i18n="rutas.recomend">¿Qué visitar hoy?</button>
+  <!-- ================= VISTA: ASISTENTE IA ================= -->
+  <section class="tt-view" id="view-chat" hidden aria-label="Asistente">
+    <div class="tt-subhead">
+      <button class="tt-back" data-back data-i18n-aria="a11y.volver" aria-label="Volver al inicio">←</button>
+      <div class="tt-subhead-txt">
+        <small><span data-i18n="nav.inicio">INICIO</span> · <span data-i18n="nav.asistente">ASISTENTE</span></small>
+        <h2><span data-i18n="chat.title">Asistente IA</span> <span class="tt-online" data-i18n="chat.online">EN LÍNEA</span></h2>
       </div>
-      <div id="planner-output" class="planner-output" aria-live="polite"></div>
-    </section>
-
-    <!-- Asistente de turismo (chatbot) -->
-    <section class="chatbot-section" aria-labelledby="chatbot-title">
-      <div class="chatbot-header">
-        <div class="chatbot-icon" aria-hidden="true">N</div>
-        <h2 id="chatbot-title" class="chatbot-title" data-i18n="chatbot.title">¿Te ayudo a planificar tu visita?</h2>
+    </div>
+    <div class="tt-chat-hero">
+      <span class="tt-ia-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a8 8 0 01-8 8H4l3-3a8 8 0 1114-5z"/><path d="M8.5 11h.01M12 11h.01M15.5 11h.01"/></svg>
+      </span>
+      <div>
+        <small data-i18n="chat.badge">ASISTENTE IA · 4 IDIOMAS</small>
+        <h3 data-i18n="chat.hello">¿En qué puedo ayudarte?</h3>
+        <p data-i18n="chat.hellosub">Recomendaciones personalizadas del destino</p>
       </div>
+    </div>
+    <div class="tt-chat-scroll tt-wrap" id="chat-log" aria-live="polite"></div>
+    <div class="tt-chat-chips tt-wrap">
+      <button class="tt-chip" type="button" id="plan-route-btn" data-i18n="rutas.plan">Sugerir ruta cercana</button>
+      <button class="tt-chip" type="button" id="recommend-btn" data-i18n="rutas.recomend">¿Qué visitar hoy?</button>
+      <button class="tt-chip tt-chip--ico is-hidden" type="button" id="chatbot-speak" data-i18n-aria="chatbot.speak_aria" aria-label="Repetir en voz alta"><svg class="tt-svg tt-svg--tag" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5L6 9H2v6h4l5 4V5z" fill="#0E3A78"/><path d="M15.5 8.5a5 5 0 010 7M18 6a8.5 8.5 0 010 12" stroke="#17B8C4" stroke-width="2" fill="none" stroke-linecap="round"/></svg></button>
+    </div>
+    <form class="tt-chat-inputbar" id="chatbot-form" novalidate>
+      <label for="chatbot-input" class="sr-only" data-i18n="chatbot.label">Escribe tu pregunta</label>
+      <input id="chatbot-input" type="text" autocomplete="off"
+             data-i18n-placeholder="chatbot.placeholder" placeholder="Escribe tu pregunta o pulsa el micro…" />
+      <button type="button" class="tt-chat-mic is-hidden" id="chatbot-voice" aria-pressed="false" data-i18n-aria="chatbot.voice_aria" aria-label="Preguntar con la voz">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0014 0M12 17v5"/></svg>
+      </button>
+      <button type="submit" class="tt-chat-send" data-i18n-aria="chatbot.send" aria-label="Enviar pregunta">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+      </button>
+    </form>
+    <output id="chatbot-output" class="sr-only" aria-live="polite"></output>
+    <div id="planner-output" class="sr-only" aria-hidden="true"></div>
+  </section>
 
-      <form id="chatbot-form" class="chatbot-form" novalidate>
-        <label for="chatbot-input" class="sr-only" data-i18n="chatbot.label">Escribe tu pregunta</label>
-        <input
-          type="text"
-          id="chatbot-input"
-          class="chatbot-input"
-          autocomplete="off"
-          placeholder="¿Qué playas hay cerca?"
-          data-i18n-placeholder="chatbot.placeholder"
-          required
-        />
-        <button
-          type="button"
-          id="chatbot-voice"
-          class="chatbot-voice is-hidden"
-          aria-label="Preguntar por voz"
-          data-i18n-aria="chatbot.voice_aria"
-        ><span aria-hidden="true">🎤</span></button>
-        <button
-          type="submit"
-          class="chatbot-submit"
-          data-i18n="chatbot.send"
-        >Preguntar</button>
-      </form>
-
-      <div class="chatbot-output-row">
-        <output id="chatbot-output" class="chatbot-output" aria-live="polite"></output>
-        <button
-          type="button"
-          id="chatbot-speak"
-          class="chatbot-speak is-hidden"
-          aria-label="Escuchar la respuesta"
-          data-i18n-aria="chatbot.speak_aria"
-        ><span aria-hidden="true">🔊</span></button>
+  <!-- ================= VISTA: MAPA DEL DESTINO ================= -->
+  <section class="tt-view" id="view-map" hidden aria-label="Mapa">
+    <div class="tt-subhead">
+      <button class="tt-back" data-back data-i18n-aria="a11y.volver" aria-label="Volver al inicio">←</button>
+      <div class="tt-subhead-txt">
+        <small><span data-i18n="nav.inicio">INICIO</span> · <span data-i18n="nav.explorar">EXPLORAR</span></small>
+        <h2 data-i18n="map.title">Mapa del destino</h2>
       </div>
-    </section>
+    </div>
+    <div class="tt-mapbox" id="totem-map" role="application" aria-label="Mapa interactivo del destino"></div>
+    <div class="tt-mapsheet is-hidden" id="map-sheet"></div>
+  </section>
 
-    <!-- Pie del tótem -->
-    <footer class="totem-footer" role="contentinfo">
-      <p>
-        <span data-i18n="footer.legal">Plataforma DTI Níjar · Servicio público gratuito</span>
-        · <a href="#" data-i18n="footer.privacy">Aviso legal y privacidad</a>
-      </p>
-      <p data-i18n="footer.accessibility">
-        Pantalla accesible WCAG 2.1 AA · Bucle magnético disponible · Texto ampliable
-      </p>
-      <p class="prtr-line">
-        UE · NextGenerationEU · PRTR · Componente 14 · Ayuntamiento de Níjar
-      </p>
-    </footer>
+</main>
 
-  </main>
+<!-- ================= FICHA DE DETALLE (modal a pantalla completa) ================= -->
+<dialog class="tt-dialog" id="poi-dialog" aria-labelledby="poi-title">
+  <div class="tt-dialog-hero" id="poi-image">
+    <button class="tt-round-btn tt-dialog-back" id="poi-close" data-i18n-aria="a11y.cerrar" aria-label="Cerrar ficha">←</button>
+    <span class="tt-dialog-badge" id="poi-tag" hidden></span>
+  </div>
+  <div class="poi-dialog-content tt-dialog-body">
+    <h2 id="poi-title">—</h2>
+    <div class="tt-dialog-stats" id="poi-stats"></div>
+    <div class="tt-dialog-desc"><p id="poi-body"></p></div>
+    <div class="tt-dialog-card">
+      <h3 data-i18n="detail.servicios">Servicios y características</h3>
+      <dl class="tt-dialog-meta" id="poi-meta"></dl>
+    </div>
+    <div class="tt-dialog-tags" id="poi-tags" hidden></div>
+    <div class="tt-dialog-actions" id="poi-actions" hidden></div>
+  </div>
+</dialog>
 
-  <!-- Modal detalle (poi seleccionado) -->
-  <dialog id="poi-dialog" class="poi-dialog" aria-labelledby="poi-title">
-    <article class="poi-dialog-content">
-      <button id="poi-close" class="poi-dialog-close" aria-label="Cerrar">×</button>
-      <div id="poi-image" class="poi-dialog-image" aria-hidden="true"></div>
-      <div class="poi-dialog-body-wrap">
-        <span id="poi-tag" class="poi-dialog-tag" hidden></span>
-        <h2 id="poi-title" class="poi-dialog-title">—</h2>
-        <p id="poi-body" class="poi-dialog-body"></p>
-        <dl class="poi-dialog-meta" id="poi-meta"></dl>
-        <div id="poi-tags" class="poi-dialog-tags" hidden></div>
-        <div id="poi-actions" class="poi-dialog-actions" hidden></div>
-      </div>
-    </article>
-  </dialog>
+<!-- ================= PIE PERMANENTE ================= -->
+<footer class="tt-footer" role="contentinfo">
+  <span class="tt-clock" id="clock" aria-live="off">--:--</span>
+  <span class="tt-date" id="footer-date"></span>
+  <span class="tt-footer-sp" aria-hidden="true"></span>
+  <button class="tt-foot-btn" id="text-size-toggle" aria-pressed="false" data-i18n-aria="a11y.texto" aria-label="Aumentar tamaño del texto">A</button>
+  <button class="tt-foot-btn" id="footer-voice" data-i18n-aria="chatbot.speak_aria" aria-label="Leer la última respuesta en voz alta">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 010 7"/></svg>
+  </button>
+  <button class="tt-foot-btn" id="footer-contrast" data-i18n-aria="a11y.contraste" aria-label="Alternar alto contraste">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 010 18z" fill="currentColor" stroke="none"/></svg>
+  </button>
+</footer>
 
-  <script type="module" src="./assets/totem.js?v=6"></script>
+<script type="module" src="./assets/totem.js?v=6"></script>
 </body>
 </html>

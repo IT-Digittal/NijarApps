@@ -13,6 +13,7 @@ from nijar_dti.models.observacion import Observacion
 from nijar_dti.models.opinion import Opinion
 from nijar_dti.models.sensor import Sensor
 from nijar_dti.models.visita import TipoVisita, Visita
+from nijar_dti.schemas.common import PuntoSerieDiaria, SerieDiaria
 from nijar_dti.schemas.dashboards import (
     BigDataOverview,
     EnvironmentPoint,
@@ -229,6 +230,33 @@ async def totems_usage(
         duracion_media_seg=duracion_media,
         secciones_top=top_secciones,
     )
+
+
+async def totems_usage_series(
+    db: AsyncSession,
+    desde: datetime | None = None,
+    hasta: datetime | None = None,
+) -> SerieDiaria:
+    """Serie temporal diaria de interacciones registradas en los tótems.
+
+    Cuenta las visitas de tipo ``interaccion_totem`` agrupadas por día de
+    ocurrencia para la gráfica de uso del dashboard.
+    """
+    bucket = func.date_trunc("day", Visita.ocurrido_en).label("bucket")
+    q = select(bucket, func.count().label("total")).where(
+        Visita.tipo == TipoVisita.INTERACCION_TOTEM
+    )
+    if desde:
+        q = q.where(Visita.ocurrido_en >= desde)
+    if hasta:
+        q = q.where(Visita.ocurrido_en <= hasta)
+    q = q.group_by(bucket).order_by(bucket)
+
+    rows = (await db.execute(q)).all()
+    puntos = [
+        PuntoSerieDiaria(fecha=row.bucket.date(), total=int(row.total)) for row in rows
+    ]
+    return SerieDiaria(desde=desde, hasta=hasta, puntos=puntos)
 
 
 async def totems_health(db: AsyncSession) -> TotemsHealthOverview:

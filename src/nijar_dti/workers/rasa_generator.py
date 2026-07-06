@@ -47,6 +47,15 @@ def _utter_name(intent: str) -> str:
     return f"utter_{intent}"
 
 
+def _representar_cadena(dumper: yaml.SafeDumper, data: str) -> yaml.ScalarNode:
+    """Serializa cadenas multilínea como bloque literal (``|``), formato canónico Rasa."""
+    estilo = "|" if "\n" in data else None
+    return dumper.represent_scalar("tag:yaml.org,2002:str", data, style=estilo)
+
+
+yaml.SafeDumper.add_representer(str, _representar_cadena)
+
+
 def _yaml_dump(data: dict, path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8") as fh:
@@ -130,7 +139,10 @@ def build_nlu() -> dict:
         if not ejemplos_dedup:
             continue
         bloque = "\n".join(f"- {e}" for e in ejemplos_dedup)
-        nlu_items.append({"intent": faq["intent"], "examples": f"|\n{bloque}\n"})
+        # El valor NO debe incluir el carácter "|": el estilo de bloque literal
+        # lo aplica el representer de _yaml_dump. Incluirlo aquí hacía que Rasa
+        # recibiera una línea "|" espuria y la descartara con un aviso.
+        nlu_items.append({"intent": faq["intent"], "examples": f"{bloque}\n"})
     return {"version": "3.1", "nlu": nlu_items}
 
 

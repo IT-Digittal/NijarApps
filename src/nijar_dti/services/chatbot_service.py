@@ -31,6 +31,7 @@ from nijar_dti.schemas.chatbot import (
     IntentInfo,
     TopIntentItem,
 )
+from nijar_dti.schemas.common import PuntoSerieDiaria, SerieDiaria
 
 
 # Stop-words mínimas por idioma (suficientes para un motor lexical baseline).
@@ -356,3 +357,29 @@ async def telemetria(
         idiomas_distribucion=idiomas_pct,
         top_intents=top,
     )
+
+
+async def telemetria_series(
+    db: AsyncSession,
+    desde: datetime | None = None,
+    hasta: datetime | None = None,
+    granularidad: str = "dia",
+) -> SerieDiaria:
+    """Serie temporal diaria de interacciones del chatbot.
+
+    Cuenta las filas de ``interacciones_chatbot`` agrupadas por día de
+    creación para alimentar la gráfica de actividad del dashboard.
+    """
+    bucket = func.date_trunc("day", InteraccionChatbot.created_at).label("bucket")
+    q = select(bucket, func.count().label("total"))
+    if desde:
+        q = q.where(InteraccionChatbot.created_at >= desde)
+    if hasta:
+        q = q.where(InteraccionChatbot.created_at <= hasta)
+    q = q.group_by(bucket).order_by(bucket)
+
+    rows = (await db.execute(q)).all()
+    puntos = [
+        PuntoSerieDiaria(fecha=row.bucket.date(), total=int(row.total)) for row in rows
+    ]
+    return SerieDiaria(granularidad=granularidad, desde=desde, hasta=hasta, puntos=puntos)

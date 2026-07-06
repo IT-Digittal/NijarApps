@@ -158,9 +158,11 @@ class TestFrontend:
 
     @pytest.mark.parametrize("f", [
         "frontend/dashboard/index.html",
-        "frontend/dashboard/assets/dashboard.css",
-        "frontend/dashboard/assets/dashboard.js",
         "frontend/dashboard/assets/api-client.js",
+        "frontend/dashboard/assets/panel-live.js",
+        "frontend/dashboard/assets/panel-gestion.js",
+        "frontend/dashboard/assets/panel-mapa.js",
+        "frontend/dashboard/assets/verticales-live.js",
         "frontend/totem/index.html",
         "frontend/totem/assets/totem.css",
         "frontend/totem/assets/totem.js",

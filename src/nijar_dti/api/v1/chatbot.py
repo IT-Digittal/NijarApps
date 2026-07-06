@@ -18,6 +18,7 @@ from nijar_dti.schemas.chatbot import (
     FeedbackIn,
     IntentInfo,
 )
+from nijar_dti.schemas.common import SerieDiaria
 from nijar_dti.services import chatbot_rasa_adapter as svc
 
 router = APIRouter()
@@ -75,3 +76,20 @@ async def telemetry(
     db: AsyncSession = Depends(get_db),
 ) -> ChatbotTelemetry:
     return await svc.telemetria(db, desde, hasta)
+
+
+@router.get(
+    "/telemetry/series",
+    response_model=SerieDiaria,
+    summary="Serie diaria de interacciones del chatbot",
+)
+async def telemetry_series(
+    desde: datetime | None = Query(None),
+    hasta: datetime | None = Query(None),
+    granularidad: str = Query("dia", pattern=r"^dia$"),
+    user: Annotated[
+        CurrentUser, Depends(require_roles("administrador_tic", "analista_datos"))
+    ] = ...,
+    db: AsyncSession = Depends(get_db),
+) -> SerieDiaria:
+    return await svc.telemetria_series(db, desde, hasta, granularidad)

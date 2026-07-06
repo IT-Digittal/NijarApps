@@ -83,6 +83,346 @@ rules:
   steps:
   - intent: despedida
   - action: utter_despedida
+- rule: Responder a playa_genoveses
+  steps:
+  - intent: playa_genoveses
+  - action: utter_playa_genoveses
+- rule: Responder a playa_cala_enmedio
+  steps:
+  - intent: playa_cala_enmedio
+  - action: utter_playa_cala_enmedio
+- rule: Responder a playa_playazo
+  steps:
+  - intent: playa_playazo
+  - action: utter_playa_playazo
+- rule: Responder a playa_agua_amarga
+  steps:
+  - intent: playa_agua_amarga
+  - action: utter_playa_agua_amarga
+- rule: Responder a playas_seguridad_medusas
+  steps:
+  - intent: playas_seguridad_medusas
+  - action: utter_playas_seguridad_medusas
+- rule: Responder a playas_nudismo
+  steps:
+  - intent: playas_nudismo
+  - action: utter_playas_nudismo
+- rule: Responder a parque_reserva_biosfera
+  steps:
+  - intent: parque_reserva_biosfera
+  - action: utter_parque_reserva_biosfera
+- rule: Responder a parque_aves_flamencos
+  steps:
+  - intent: parque_aves_flamencos
+  - action: utter_parque_aves_flamencos
+- rule: Responder a parque_salinas
+  steps:
+  - intent: parque_salinas
+  - action: utter_parque_salinas
+- rule: Responder a parque_faro_cabo_gata
+  steps:
+  - intent: parque_faro_cabo_gata
+  - action: utter_parque_faro_cabo_gata
+- rule: Responder a parque_buceo_normativa
+  steps:
+  - intent: parque_buceo_normativa
+  - action: utter_parque_buceo_normativa
+- rule: Responder a ruta_minera_rodalquilar
+  steps:
+  - intent: ruta_minera_rodalquilar
+  - action: utter_ruta_minera_rodalquilar
+- rule: Responder a rutas_dificultad
+  steps:
+  - intent: rutas_dificultad
+  - action: utter_rutas_dificultad
+- rule: Responder a actividad_kayak_snorkel
+  steps:
+  - intent: actividad_kayak_snorkel
+  - action: utter_actividad_kayak_snorkel
+- rule: Responder a actividad_bici_alquiler
+  steps:
+  - intent: actividad_bici_alquiler
+  - action: utter_actividad_bici_alquiler
+- rule: Responder a astroturismo
+  steps:
+  - intent: astroturismo
+  - action: utter_astroturismo
+- rule: Responder a servicio_wifi
+  steps:
+  - intent: servicio_wifi
+  - action: utter_servicio_wifi
+- rule: Responder a servicio_cajeros
+  steps:
+  - intent: servicio_cajeros
+  - action: utter_servicio_cajeros
+- rule: Responder a servicio_farmacia
+  steps:
+  - intent: servicio_farmacia
+  - action: utter_servicio_farmacia
+- rule: Responder a servicio_parking_san_jose
+  steps:
+  - intent: servicio_parking_san_jose
+  - action: utter_servicio_parking_san_jose
+- rule: Responder a servicio_supermercado
+  steps:
+  - intent: servicio_supermercado
+  - action: utter_servicio_supermercado
+- rule: Responder a servicio_taxi
+  steps:
+  - intent: servicio_taxi
+  - action: utter_servicio_taxi
+- rule: Responder a gastronomia_platos
+  steps:
+  - intent: gastronomia_platos
+  - action: utter_gastronomia_platos
+- rule: Responder a gastronomia_horarios
+  steps:
+  - intent: gastronomia_horarios
+  - action: utter_gastronomia_horarios
+- rule: Responder a gastronomia_vegetariano
+  steps:
+  - intent: gastronomia_vegetariano
+  - action: utter_gastronomia_vegetariano
+- rule: Responder a gastronomia_vino
+  steps:
+  - intent: gastronomia_vino
+  - action: utter_gastronomia_vino
+- rule: Responder a alojamiento_tipos
+  steps:
+  - intent: alojamiento_tipos
+  - action: utter_alojamiento_tipos
+- rule: Responder a alojamiento_camping
+  steps:
+  - intent: alojamiento_camping
+  - action: utter_alojamiento_camping
+- rule: Responder a alojamiento_temporada
+  steps:
+  - intent: alojamiento_temporada
+  - action: utter_alojamiento_temporada
+- rule: Responder a cultura_ceramica_nijar
+  steps:
+  - intent: cultura_ceramica_nijar
+  - action: utter_cultura_ceramica_nijar
+- rule: Responder a cultura_cortijo_fraile
+  steps:
+  - intent: cultura_cortijo_fraile
+  - action: utter_cultura_cortijo_fraile
+- rule: Responder a cultura_cine_western
+  steps:
+  - intent: cultura_cine_western
+  - action: utter_cultura_cine_western
+- rule: Responder a cultura_mercadillo
+  steps:
+  - intent: cultura_mercadillo
+  - action: utter_cultura_mercadillo
+- rule: Responder a eventos_fiestas_san_jose
+  steps:
+  - intent: eventos_fiestas_san_jose
+  - action: utter_eventos_fiestas_san_jose
+- rule: Responder a eventos_conciertos_verano
+  steps:
+  - intent: eventos_conciertos_verano
+  - action: utter_eventos_conciertos_verano
+- rule: Responder a transporte_aeropuerto
+  steps:
+  - intent: transporte_aeropuerto
+  - action: utter_transporte_aeropuerto
+- rule: Responder a transporte_distancias
+  steps:
+  - intent: transporte_distancias
+  - action: utter_transporte_distancias
+- rule: Responder a transporte_bus_lanzadera
+  steps:
+  - intent: transporte_bus_lanzadera
+  - action: utter_transporte_bus_lanzadera
+- rule: Responder a accesibilidad_silla_anfibia
+  steps:
+  - intent: accesibilidad_silla_anfibia
+  - action: utter_accesibilidad_silla_anfibia
+- rule: Responder a accesibilidad_perro_guia
+  steps:
+  - intent: accesibilidad_perro_guia
+  - action: utter_accesibilidad_perro_guia
+- rule: Responder a accesibilidad_totem_bucle
+  steps:
+  - intent: accesibilidad_totem_bucle
+  - action: utter_accesibilidad_totem_bucle
+- rule: Responder a practico_clima
+  steps:
+  - intent: practico_clima
+  - action: utter_practico_clima
+- rule: Responder a practico_agua_potable
+  steps:
+  - intent: practico_agua_potable
+  - action: utter_practico_agua_potable
+- rule: Responder a practico_idiomas
+  steps:
+  - intent: practico_idiomas
+  - action: utter_practico_idiomas
+- rule: Responder a practico_sostenibilidad
+  steps:
+  - intent: practico_sostenibilidad
+  - action: utter_practico_sostenibilidad
+- rule: Responder a emergencia_incendio
+  steps:
+  - intent: emergencia_incendio
+  - action: utter_emergencia_incendio
+- rule: Responder a emergencia_rescate_costa
+  steps:
+  - intent: emergencia_rescate_costa
+  - action: utter_emergencia_rescate_costa
+- rule: Responder a emergencia_documentos_perdidos
+  steps:
+  - intent: emergencia_documentos_perdidos
+  - action: utter_emergencia_documentos_perdidos
+- rule: Responder a meta_que_puedes_hacer
+  steps:
+  - intent: meta_que_puedes_hacer
+  - action: utter_meta_que_puedes_hacer
+- rule: Responder a meta_idiomas_chatbot
+  steps:
+  - intent: meta_idiomas_chatbot
+  - action: utter_meta_idiomas_chatbot
+- rule: Responder a meta_agradecimiento
+  steps:
+  - intent: meta_agradecimiento
+  - action: utter_meta_agradecimiento
+- rule: Responder a nucleo_san_jose
+  steps:
+  - intent: nucleo_san_jose
+  - action: utter_nucleo_san_jose
+- rule: Responder a nucleo_isleta_moro
+  steps:
+  - intent: nucleo_isleta_moro
+  - action: utter_nucleo_isleta_moro
+- rule: Responder a nucleo_los_escullos
+  steps:
+  - intent: nucleo_los_escullos
+  - action: utter_nucleo_los_escullos
+- rule: Responder a nucleo_las_negras
+  steps:
+  - intent: nucleo_las_negras
+  - action: utter_nucleo_las_negras
+- rule: Responder a enclave_arrecife_sirenas
+  steps:
+  - intent: enclave_arrecife_sirenas
+  - action: utter_enclave_arrecife_sirenas
+- rule: Responder a enclave_mirador_amatista
+  steps:
+  - intent: enclave_mirador_amatista
+  - action: utter_enclave_mirador_amatista
+- rule: Responder a patrimonio_castillo_san_ramon
+  steps:
+  - intent: patrimonio_castillo_san_ramon
+  - action: utter_patrimonio_castillo_san_ramon
+- rule: Responder a patrimonio_iglesia_nijar
+  steps:
+  - intent: patrimonio_iglesia_nijar
+  - action: utter_patrimonio_iglesia_nijar
+- rule: Responder a patrimonio_jardin_botanico
+  steps:
+  - intent: patrimonio_jardin_botanico
+  - action: utter_patrimonio_jardin_botanico
+- rule: Responder a actividad_avistamiento_aves
+  steps:
+  - intent: actividad_avistamiento_aves
+  - action: utter_actividad_avistamiento_aves
+- rule: Responder a actividad_paseo_barco
+  steps:
+  - intent: actividad_paseo_barco
+  - action: utter_actividad_paseo_barco
+- rule: Responder a actividad_familias_ninos
+  steps:
+  - intent: actividad_familias_ninos
+  - action: utter_actividad_familias_ninos
+- rule: Responder a servicio_gasolinera
+  steps:
+  - intent: servicio_gasolinera
+  - action: utter_servicio_gasolinera
+- rule: Responder a servicio_carga_electrico
+  steps:
+  - intent: servicio_carga_electrico
+  - action: utter_servicio_carga_electrico
+- rule: Responder a servicio_alquiler_coche
+  steps:
+  - intent: servicio_alquiler_coche
+  - action: utter_servicio_alquiler_coche
+- rule: Responder a servicio_veterinario
+  steps:
+  - intent: servicio_veterinario
+  - action: utter_servicio_veterinario
+- rule: Responder a servicio_urgencias_turista
+  steps:
+  - intent: servicio_urgencias_turista
+  - action: utter_servicio_urgencias_turista
+- rule: Responder a practico_pago_tarjeta
+  steps:
+  - intent: practico_pago_tarjeta
+  - action: utter_practico_pago_tarjeta
+- rule: Responder a practico_que_llevar
+  steps:
+  - intent: practico_que_llevar
+  - action: utter_practico_que_llevar
+- rule: Responder a practico_temporada_evitar
+  steps:
+  - intent: practico_temporada_evitar
+  - action: utter_practico_temporada_evitar
+- rule: Responder a practico_mascotas_general
+  steps:
+  - intent: practico_mascotas_general
+  - action: utter_practico_mascotas_general
+- rule: Responder a ruta_san_pedro_pie
+  steps:
+  - intent: ruta_san_pedro_pie
+  - action: utter_ruta_san_pedro_pie
+- rule: Responder a ruta_sendero_amoladeras
+  steps:
+  - intent: ruta_sendero_amoladeras
+  - action: utter_ruta_sendero_amoladeras
+- rule: Responder a eventos_mercado_pescado
+  steps:
+  - intent: eventos_mercado_pescado
+  - action: utter_eventos_mercado_pescado
+- rule: Responder a meta_no_entiende
+  steps:
+  - intent: meta_no_entiende
+  - action: utter_meta_no_entiende
+- rule: Responder a meta_hablar_persona
+  steps:
+  - intent: meta_hablar_persona
+  - action: utter_meta_hablar_persona
+- rule: Responder a playa_servicios_chiringuito
+  steps:
+  - intent: playa_servicios_chiringuito
+  - action: utter_playa_servicios_chiringuito
+- rule: Responder a playa_bandera_azul
+  steps:
+  - intent: playa_bandera_azul
+  - action: utter_playa_bandera_azul
+- rule: Responder a gastronomia_reservas
+  steps:
+  - intent: gastronomia_reservas
+  - action: utter_gastronomia_reservas
+- rule: Responder a parque_fauna_camaleon
+  steps:
+  - intent: parque_fauna_camaleon
+  - action: utter_parque_fauna_camaleon
+- rule: Responder a gastronomia_tapas
+  steps:
+  - intent: gastronomia_tapas
+  - action: utter_gastronomia_tapas
+- rule: Responder a servicio_correos
+  steps:
+  - intent: servicio_correos
+  - action: utter_servicio_correos
+- rule: Responder a transporte_estado_carreteras
+  steps:
+  - intent: transporte_estado_carreteras
+  - action: utter_transporte_estado_carreteras
+- rule: Responder a alojamiento_precios_temporada
+  steps:
+  - intent: alojamiento_precios_temporada
+  - action: utter_alojamiento_precios_temporada
 - rule: Fallback fuera de dominio
   steps:
   - intent: nlu_fallback

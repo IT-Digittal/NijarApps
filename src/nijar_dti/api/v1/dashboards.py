@@ -11,17 +11,37 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from nijar_dti.api.v1.dependencies import get_current_user, require_roles
 from nijar_dti.core.database import get_db
 from nijar_dti.schemas.auth import CurrentUser
+from nijar_dti.schemas.common import SerieDiaria
 from nijar_dti.schemas.dashboards import (
     BigDataOverview,
+    ConsumoIAResumen,
     EnvironmentSeries,
     MonthlyReport,
     SmartOfficeOverview,
     TotemsHealthOverview,
     TotemUsageStats,
 )
+from nijar_dti.services import consumo_ia_service
 from nijar_dti.services import dashboards_service as svc
 
 router = APIRouter()
+
+
+@router.get(
+    "/ia/consumo",
+    response_model=ConsumoIAResumen,
+    summary="Consumo de IA generativa (tokens y coste estimado)",
+)
+async def consumo_ia(
+    user: Annotated[
+        CurrentUser, Depends(require_roles("administrador_tic", "analista_datos", "auditor"))
+    ],
+    desde: datetime | None = Query(None),
+    hasta: datetime | None = Query(None),
+    db: AsyncSession = Depends(get_db),
+) -> ConsumoIAResumen:
+    """Agregado del consumo de modelos de IA en todos los puntos de uso."""
+    return await consumo_ia_service.resumen(db, desde=desde, hasta=hasta)
 
 
 @router.get(
@@ -75,6 +95,20 @@ async def totems_usage(
     user: CurrentUser = Depends(get_current_user),
 ) -> TotemUsageStats:
     return await svc.totems_usage(db, desde, hasta)
+
+
+@router.get(
+    "/totems/usage/series",
+    response_model=SerieDiaria,
+    summary="Serie diaria de interacciones de los tótems",
+)
+async def totems_usage_series(
+    desde: datetime | None = Query(None),
+    hasta: datetime | None = Query(None),
+    db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(get_current_user),
+) -> SerieDiaria:
+    return await svc.totems_usage_series(db, desde, hasta)
 
 
 @router.get(

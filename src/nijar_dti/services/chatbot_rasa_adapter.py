@@ -39,6 +39,7 @@ from nijar_dti.services import chatbot_service as lexical
 registrar_feedback = lexical.registrar_feedback
 listar_intents = lexical.listar_intents
 telemetria = lexical.telemetria
+telemetria_series = lexical.telemetria_series
 
 log = logging.getLogger(__name__)
 
@@ -201,6 +202,11 @@ async def consultar_rasa(
 async def consultar(db: AsyncSession, payload: ChatQueryIn) -> ChatResponseOut:
     """Punto de entrada unificado: respeta CHATBOT_ENGINE."""
     settings = get_settings()
+    if settings.chatbot_engine == "openai":
+        # Import perezoso para evitar dependencia circular con el fallback
+        from nijar_dti.services import chatbot_openai_adapter
+
+        return await chatbot_openai_adapter.consultar_openai(db, payload, settings=settings)
     if settings.chatbot_engine == "rasa":
         return await consultar_rasa(db, payload, settings=settings)
     return await lexical.consultar(db, payload)
