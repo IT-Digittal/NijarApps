@@ -9,7 +9,7 @@
  * - Inactividad >60 s: vuelve al inicio en español (modo público).
  */
 
-import { I18N, translateAll } from "./i18n.js?v=4";
+import { I18N, translateAll } from "./i18n.js?v=6";
 import { DEMO_RESOURCES, DEMO_EVENTS, answerChatbotDemo } from "./demo-data.js";
 
 // ============================================================
@@ -210,7 +210,7 @@ function renderHomeCats() {
     <button class="tt-cat" role="listitem" data-cat="${c.id}" aria-label="${escapeHtml(t[c.label] || c.id)}">
       <span class="tt-cat-icon ${c.ic}" aria-hidden="true">${icono(c.icon)}</span>
       <h3>${escapeHtml(t[c.label] || capitalize(c.id))}</h3>
-      <small>${catCounts[c.id] != null ? `${catCounts[c.id]} ${t[c.cnt] || ""}` : "…"}</small>
+      <small>${catCounts[c.id] != null ? `${catCounts[c.id]} ${cntLabel(t, c.cnt, catCounts[c.id])}` : "…"}</small>
     </button>`).join("");
   document.querySelectorAll(".tt-cat").forEach((b) =>
     b.addEventListener("click", () => abrirCategoria(b.dataset.cat)));
@@ -221,7 +221,10 @@ async function cargarConteos() {
   await Promise.all(CATS.map(async (c) => {
     try {
       if (c.events) {
-        const d = await apiGet("/tourism/events?publicado=true&page_size=1");
+        const hoy = new Date();
+        const finSemana = new Date(hoy.getTime() + 7 * 24 * 3600 * 1000);
+        const q = `desde=${encodeURIComponent(hoy.toISOString())}&hasta=${encodeURIComponent(finSemana.toISOString())}`;
+        const d = await apiGet(`/tourism/events?publicado=true&${q}&page_size=1`);
         catCounts[c.id] = d.total ?? 0;
       } else if (c.srv) {
         catCounts[c.id] = servicios.filter((s) => c.srv.includes(s.tipo)).length;
@@ -331,7 +334,12 @@ function itemCard(r, c) {
 function renderItems(grid, items, c) {
   const t = dict();
   if (!items.length) {
-    grid.innerHTML = `<p class="content-loading">${t["empty.contenido"] || "Sin contenidos disponibles"}</p>`;
+    grid.innerHTML = `
+      <div class="tt-empty">
+        <span class="tt-empty-icon ${c.ic || ""}" aria-hidden="true">${icono(c.icon || "servicios")}</span>
+        <p class="tt-empty-title">${t["empty.contenido"] || "Sin contenidos disponibles"}</p>
+        <p class="tt-empty-sub">${t["empty.sub"] || "Estamos añadiendo información en esta categoría."}</p>
+      </div>`;
     return;
   }
   grid.innerHTML = items.map((r) => itemCard(r, c)).join("");
@@ -362,14 +370,19 @@ async function renderAgenda(grid, chip) {
     grupos.get(k).push(ev);
   }
   if (!grupos.size) {
-    grid.innerHTML = `<p class="content-loading">${t["empty.contenido"] || "Sin eventos programados"}</p>`;
+    grid.innerHTML = `
+      <div class="tt-empty">
+        <span class="tt-empty-icon ic-violet" aria-hidden="true">${icono("eventos")}</span>
+        <p class="tt-empty-title">${t["empty.contenido"] || "Sin eventos programados"}</p>
+        <p class="tt-empty-sub">${t["empty.sub_eventos"] || "Consulta más tarde para conocer la agenda."}</p>
+      </div>`;
     return;
   }
 
   const tiposChips = [...new Set(items.map((e) => e.tipo).filter(Boolean))];
   $("#list-chips").innerHTML =
     `<button class="tt-chip" data-chip="todas" aria-pressed="${chip === "todas"}">${t["chips.todas"] || "Todas"}</button>` +
-    tiposChips.map((x) => `<button class="tt-chip" data-chip="${x}" aria-pressed="${chip === x}">${escapeHtml(capitalize(x))}</button>`).join("");
+    tiposChips.map((x) => `<button class="tt-chip" data-chip="${x}" aria-pressed="${chip === x}">${escapeHtml(tagLabel(x))}</button>`).join("");
   $("#list-chips").querySelectorAll(".tt-chip").forEach((b) =>
     b.addEventListener("click", () => abrirCategoria("eventos", b.dataset.chip)));
 
@@ -391,7 +404,7 @@ async function renderAgenda(grid, chip) {
           </span>
           <span class="tt-item-body">
             <span class="tt-item-tags">
-              ${ev.tipo ? `<span class="tt-tag tt-tag--rose">${escapeHtml(capitalize(ev.tipo))}</span>` : ""}
+              ${ev.tipo ? `<span class="tt-tag tt-tag--rose">${escapeHtml(tagLabel(ev.tipo))}</span>` : ""}
               ${ev.direccion ? `<span class="tt-tag tt-tag--info">${escapeHtml(ev.direccion)}</span>` : ""}
             </span>
             <h3>${escapeHtml(nombre)}</h3>
@@ -735,7 +748,7 @@ function recoCard(titulo, filas) {
   card.className = "tt-reco-card";
   card.innerHTML = `<h4>${escapeHtml(titulo.toUpperCase())}</h4><ol>${filas}</ol>`;
   chatLog.appendChild(card);
-  card.scrollIntoView({ behavior: "smooth", block: "end" });
+  requestAnimationFrame(() => card.scrollIntoView({ behavior: "smooth", block: "end" }));
 }
 
 $("#plan-route-btn").addEventListener("click", async () => {
@@ -820,6 +833,13 @@ function escapeHtml(s) {
 }
 function escapeAttr(s) { return escapeHtml(s).replace(/`/g, "&#96;"); }
 function capitalize(s) { return String(s || "").charAt(0).toUpperCase() + String(s || "").slice(1); }
+function cntLabel(dict, key, n) {
+  if (n === 1) {
+    const singular = { "count.lugares": "count.lugar", "count.rutas": "count.ruta", "count.sitios": "count.sitio", "count.talleres": "count.taller" }[key];
+    if (singular && dict[singular]) return dict[singular];
+  }
+  return dict[key] || "";
+}
 function tagLabel(categoria) {
   if (!categoria) return "";
   return dict()[`tag.${categoria}`] || I18N.es?.[`tag.${categoria}`] || capitalize(String(categoria).replace(/_/g, " "));

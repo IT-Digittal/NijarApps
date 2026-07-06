@@ -7,7 +7,7 @@
  * datos) e Informes (informe mensual de servicio C.1 con descarga).
  */
 
-import { api, tokens } from "./api-client.js?v=16";
+import { api, tokens } from "./api-client.js?v=17";
 
 let U, UI, DTI;
 
@@ -125,8 +125,11 @@ async function renderVisitantes(el) {
     '<div class="card"><div class="card__h"><div><div class="card__t">Composición lingüística</div><div class="card__s">Tótem + web/app + chatbot + RRSS · k-anonimato</div></div></div><div class="bars">' +
     (idiomas.map((i) => barRow(NOMBRE_IDIOMA[i.idioma] || i.idioma, Math.round(i.porcentaje) + "% ±" + (i.banda_confianza_pp || 0).toFixed(1), i.porcentaje, COLOR_IDIOMA[i.idioma] || "#9AA7BF")).join("") ||
       '<div class="mini" style="color:var(--muted)">Sin muestra suficiente</div>') + "</div>" +
-    (secciones.length ? '<div style="margin-top:14px"><div class="card__t" style="font-size:13px;margin-bottom:8px">Secciones más consultadas en tótems</div><div class="bars">' +
-      secciones.map((s) => barRow(s.seccion || s.nombre || "—", s.total || s.conteo || 0, (s.total || s.conteo || 0) / maxSec * 100, "var(--blue)")).join("") + "</div></div>" : "") +
+    (secciones.length ? '<div style="margin-top:14px"><div class="card__t" style="font-size:13px;margin-bottom:8px">Secciones más consultadas en tótems</div>' +
+      (maxSec > 0
+        ? '<div class="bars">' + secciones.map((s) => barRow(s.seccion || s.nombre || "—", s.total || s.conteo || 0, (s.total || s.conteo || 0) / maxSec * 100, "var(--blue)")).join("") + '</div>'
+        : '<div class="mini" style="color:var(--muted);padding:14px 0">Aún no hay tráfico registrado en tótems</div>') +
+      "</div>" : "") +
     "</div></div>";
 }
 

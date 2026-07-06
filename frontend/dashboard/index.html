@@ -37,9 +37,11 @@
   .brand__mark{width:36px;height:36px;border-radius:11px;background:linear-gradient(135deg,var(--navy),var(--teal2));
     display:grid;place-items:center;color:#fff}
   .brand__mark svg{width:20px;height:20px}
-  .brand__tag{display:flex;flex-direction:column;line-height:1.08}
-  .brand__tag b{font-size:13.5px;color:var(--navy);font-weight:800;letter-spacing:-.01em}
-  .brand__tag span{font-size:10px;color:var(--subtle);letter-spacing:.12em;text-transform:uppercase}
+  .brand__tag{display:flex;flex-direction:column;line-height:1.08;min-width:0}
+  .brand__tag b{font-size:13.5px;color:var(--navy);font-weight:800;letter-spacing:-.01em;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .brand__tag span{font-size:10px;color:var(--subtle);letter-spacing:.12em;text-transform:uppercase;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .tb-ctx{display:flex;align-items:center;gap:8px;margin-left:8px;padding-left:16px;border-left:1px solid var(--line-2);min-width:0}
   .tb-ctx .pill{display:inline-flex;align-items:center;gap:6px;background:#eef3fb;color:var(--navy);
     border-radius:var(--r-pill);padding:5px 12px;font-size:12px;font-weight:700;white-space:nowrap;flex-shrink:0}
@@ -108,6 +110,7 @@
     .sidebar.open{transform:none}
   }
   @media(max-width:768px){.tb-ctx{display:none!important}.topbar{padding:0 12px;gap:8px}}
+  @media(max-width:480px){.brand__tag span{display:none}.brand__tag b{font-size:14px}}
 
   .subhead{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;margin-bottom:20px;flex-wrap:wrap}
   .crumb{font-size:11px;letter-spacing:.11em;text-transform:uppercase;color:var(--subtle);font-weight:700}
@@ -338,7 +341,9 @@
   .pres .bval{color:#9db9dd}
   .pres .kv{border-color:rgba(255,255,255,.14)} .pres .kv .k{color:#9db9dd}
   .pres-clock{font-family:var(--fm);font-size:14px;color:#9db9dd}
-  .live{display:inline-flex;align-items:center;gap:7px;color:#0B7A3B;font-size:12px;font-weight:800;letter-spacing:.06em}
+  .live{display:inline-flex;align-items:center;gap:7px;color:#0B7A3B;font-size:12px;font-weight:800;letter-spacing:.06em;white-space:nowrap;flex-shrink:0}
+  .live-dot{display:inline-flex;align-items:center;gap:6px;color:#12A150;font-size:11px;font-weight:800;white-space:nowrap;flex-shrink:0}
+  .live-dot i{width:8px;height:8px;border-radius:50%;background:#12A150;animation:blink 1.6s infinite;flex-shrink:0}
   .live i{width:8px;height:8px;border-radius:50%;background:#39d98a;animation:blink 1.6s infinite}
   @keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
 
@@ -3831,7 +3836,7 @@ X.renderHome();
 <!-- Verticales Smart City alimentadas por /api/v1/verticales -->
 <script type="module" src="./assets/verticales-live.js?v=1"></script>
 <!-- Alertas, visitantes, integraciones e informes con datos reales -->
-<script type="module" src="./assets/panel-extra.js?v=1"></script>
+<script type="module" src="./assets/panel-extra.js?v=2"></script>
 <!-- Correcciones de accesibilidad (axe-core · WCAG 2.1 AA): contraste de
      contadores y nombre accesible de los filtros generados por JS. -->
 <style>

@@ -12,7 +12,7 @@
  * fuente real llevan un aviso visible de demostración.
  */
 
-import { api, tokens } from "./api-client.js?v=16";
+import { api, tokens } from "./api-client.js?v=17";
 
 const REFRESH_MS = 60_000;
 const NO_DATA = "—";
@@ -84,8 +84,8 @@ function montarLogin() {
   .live-gate__btn:disabled{opacity:.6}
   .demo-note{background:#FFF7E0;border:1px solid #F0B429;color:#7a5c00;border-radius:12px;
     padding:10px 14px;font-size:12.5px;margin-bottom:14px}
-  .live-dot{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:800;color:#12A150}
-  .live-dot i{width:8px;height:8px;border-radius:50%;background:#12A150;animation:liveblink 1.6s infinite}
+  .live-dot{display:inline-flex!important;align-items:center;gap:6px;font-size:11px;font-weight:800;color:#12A150;white-space:nowrap;flex-shrink:0}
+  .live-dot i{width:8px;height:8px;border-radius:50%;background:#12A150;animation:liveblink 1.6s infinite;flex-shrink:0}
   @keyframes liveblink{50%{opacity:.25}}`;
   document.head.appendChild(el("style", null, css));
 
@@ -144,7 +144,7 @@ async function cargar() {
     totemsUso: "/dashboards/totems/usage",
     totemsSalud: "/dashboards/totems/health",
     incidencias: "/incidencias",
-    ans: "/incidencias/ans",
+    ans: `/incidencias/ans?desde=${encodeURIComponent(new Date(hoy.getTime() - 30 * 24 * 3600 * 1000).toISOString())}&hasta=${encodeURIComponent(hoy.toISOString())}`,
     contenidos: "/cms/content?page=1&page_size=8",
     recursos: "/tourism/resources?page=1&page_size=1",
     eventos: "/tourism/events?page=1&page_size=1",

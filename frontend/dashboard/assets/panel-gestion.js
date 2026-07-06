@@ -7,7 +7,7 @@
  * configuración. Todo contra la API real con control de roles.
  */
 
-import { api, getCachedUser } from "./api-client.js?v=16";
+import { api, getCachedUser } from "./api-client.js?v=17";
 
 const CATEGORIAS = ["playa", "monumento", "ruta", "mirador", "centro_visitantes", "parque_natural", "museo", "yacimiento", "punto_interes", "oficina_turismo"];
 const TIPOS_EVENTO = ["cultural", "gastronomico", "deportivo", "musical", "festivo", "naturaleza", "educativo", "otro"];
@@ -444,8 +444,8 @@ async function renderUsuarios(el) {
 async function renderPrediccion(el) {
   cargando(el, "Predicción");
   const [afluencia, validacion] = await Promise.all([
-    api.get("/prediccion/afluencia?metrica=visitas_totem&horizonte_dias=14").catch(() => null),
-    api.get("/prediccion/validacion?metrica=visitas_totem").catch(() => null),
+    api.get("/prediccion/afluencia?metrica=totem&horizonte_dias=14").catch(() => null),
+    api.get("/prediccion/validacion?metrica=totem").catch(() => null),
   ]);
   const U2 = window.__U;
   const puntos = (afluencia && afluencia.puntos) || [];
@@ -534,7 +534,7 @@ async function renderConfig(el) {
     kv("Usuario", u ? u.nombre_completo || u.email : "—") +
     kv("Email", u ? u.email : "—") +
     kv("Rol", u ? '<span class="bdg bdg-info">' + esc(u.rol) + "</span>" : "—") +
-    '<div class="chip-row" style="margin-top:14px"><button class="btn btn--sm" onclick="(async()=>{const m=await import(\'./api-client.js?v=16\');await m.api.logout();location.reload()})()">Cerrar sesión</button></div></div></div>';
+    '<div class="chip-row" style="margin-top:14px"><button class="btn btn--sm" onclick="(async()=>{const m=await import(\'./api-client.js?v=17\');await m.api.logout();location.reload()})()">Cerrar sesión</button></div></div></div>';
 }
 
 /* ---------------- helpers de tarjetas ---------------- */

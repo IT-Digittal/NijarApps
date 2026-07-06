@@ -230,6 +230,7 @@ button { font-family: inherit; cursor: pointer; }
   background: var(--band);
   display: flex; align-items: center; gap: 20px;
   padding: 22px 28px;
+  position: sticky; top: 92px; z-index: 50;
 }
 .tt-back, .tt-round-btn {
   flex: 0 0 auto; width: 56px; height: 56px; border-radius: 50%;
@@ -341,6 +342,25 @@ button { font-family: inherit; cursor: pointer; }
 .tt-dateblock b { font-size: 34px; font-family: var(--fd); }
 .tt-dateblock small { font-size: 11.5px; font-weight: 800; letter-spacing: .12em; }
 
+/* --- Empty state --- */
+.tt-empty {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 56px 24px 32px; text-align: center; gap: 12px;
+}
+.tt-empty-icon {
+  width: 88px; height: 88px; border-radius: 24px;
+  display: grid; place-items: center;
+  background: var(--band);
+}
+.tt-empty-icon .tt-svg { width: 44px; height: 44px; }
+.tt-empty-title {
+  margin: 8px 0 0; font-family: var(--fd); font-size: 22px;
+  color: var(--navy); font-weight: 700;
+}
+.tt-empty-sub {
+  margin: 0; color: var(--muted); font-size: 15.5px; max-width: 420px;
+}
+
 /* --- Emergencias --- */
 .emergency-card .emergency-number {
   font-size: 30px; font-weight: 800; color: var(--orange); margin: 4px 0; font-family: var(--fd);
@@ -360,7 +380,7 @@ button { font-family: inherit; cursor: pointer; }
 .tt-chat-hero h3 { margin: 6px 0 4px; font-family: var(--fd); font-size: clamp(26px, 4vw, 36px); }
 .tt-chat-hero p { margin: 0; color: #C9D9F2; font-size: 16px; }
 
-.tt-chat-scroll { padding-top: 24px; padding-bottom: 8px; display: flex; flex-direction: column; gap: 18px; min-height: 180px; }
+.tt-chat-scroll { padding-top: 24px; padding-bottom: 260px; display: flex; flex-direction: column; gap: 18px; min-height: calc(100vh - 260px); }
 .tt-msg { display: flex; gap: 14px; align-items: flex-start; }
 .tt-msg--user { flex-direction: row-reverse; }
 .tt-avatar {
@@ -383,7 +403,9 @@ button { font-family: inherit; cursor: pointer; }
 .tt-reco-card {
   background: var(--card); border: 1.5px solid var(--line); border-radius: 20px;
   padding: 20px 22px; box-shadow: var(--sh); max-width: 76%; margin-left: 66px;
+  scroll-margin-bottom: 260px;
 }
+.tt-msg { scroll-margin-bottom: 260px; }
 .tt-reco-card h4 {
   margin: 0 0 10px; color: var(--navy); font-size: 15px; letter-spacing: .08em; font-weight: 800;
 }
@@ -395,13 +417,21 @@ button { font-family: inherit; cursor: pointer; }
 .tt-reco-card li:last-child { border-bottom: 0; }
 .tt-reco-card .planner-cat { color: var(--muted); font-size: 14.5px; margin-left: auto; }
 
-.tt-chat-chips { display: flex; gap: 12px; flex-wrap: wrap; padding-top: 14px; padding-bottom: 14px; }
+.tt-chat-chips {
+  display: flex; gap: 12px; flex-wrap: wrap;
+  padding: 14px 28px 18px;
+  position: sticky; bottom: calc(var(--footer-h) + 90px);
+  background: var(--bg);
+  box-shadow: 0 -12px 16px -8px var(--bg);
+  z-index: 2;
+}
 .tt-chat-inputbar {
   position: sticky; bottom: calc(var(--footer-h) + 10px);
   display: flex; gap: 12px; align-items: center;
   margin: 8px 28px 20px; padding: 10px 12px 10px 24px;
   background: var(--card); border: 1.5px solid var(--line); border-radius: 999px;
   box-shadow: var(--sh-lg);
+  z-index: 3;
 }
 .tt-chat-inputbar input {
   flex: 1; border: 0; background: none; font-family: inherit;

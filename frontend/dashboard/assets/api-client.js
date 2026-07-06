@@ -62,6 +62,23 @@ export function invalidateCache(prefix) {
   }
 }
 
+// Decodifica el payload de un JWT sin verificar firma (el backend valida en cada
+// petición). Sólo lo usamos para detectar expiración de forma proactiva.
+function _jwtExp(token) {
+  try {
+    const [, payload] = token.split(".");
+    if (!payload) return null;
+    const b64 = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = b64 + "===".slice((b64.length + 3) % 4);
+    return JSON.parse(atob(padded)).exp || null;
+  } catch { return null; }
+}
+function _tokenExpiredSoon(token, marginSeconds = 30) {
+  const exp = _jwtExp(token);
+  if (!exp) return false; // sin exp lo tratamos como válido (evita loops)
+  return exp * 1000 - Date.now() < marginSeconds * 1000;
+}
+
 async function _doFetch(path, { method = "GET", body, retry = true, cache = true } = {}) {
   const isGet = method === "GET";
   const cacheable = isGet && cache;
@@ -76,6 +93,16 @@ async function _doFetch(path, { method = "GET", body, retry = true, cache = true
   }
 
   const doIt = (async () => {
+    // Refresh proactivo: si el access token ya caducó y tenemos refresh,
+    // renovamos ANTES de disparar la petición para evitar tandas de 401
+    // en la carga inicial con sesión rescatada.
+    if (
+      path !== "/auth/refresh" && path !== "/auth/login"
+      && tokens.access && tokens.refresh && _tokenExpiredSoon(tokens.access)
+    ) {
+      await tryRefresh();
+    }
+
     const headers = { "Content-Type": "application/json" };
     if (tokens.access) headers["Authorization"] = `Bearer ${tokens.access}`;
 
@@ -123,19 +150,28 @@ async function _doFetch(path, { method = "GET", body, retry = true, cache = true
   return doIt;
 }
 
+// Colapso de refresh en vuelo: varias peticiones concurrentes que dispararon
+// refresh comparten la misma promesa en lugar de encadenar N refresh a la vez.
+let _refreshInFlight = null;
 async function tryRefresh() {
-  try {
-    const data = await _doFetch("/auth/refresh", {
-      method: "POST",
-      body: { refresh_token: tokens.refresh },
-      retry: false,
-    });
-    tokens.set(data.access_token, data.refresh_token);
-    return true;
-  } catch {
-    tokens.clear();
-    return false;
-  }
+  if (_refreshInFlight) return _refreshInFlight;
+  _refreshInFlight = (async () => {
+    try {
+      const data = await _doFetch("/auth/refresh", {
+        method: "POST",
+        body: { refresh_token: tokens.refresh },
+        retry: false,
+      });
+      tokens.set(data.access_token, data.refresh_token);
+      return true;
+    } catch {
+      tokens.clear();
+      return false;
+    } finally {
+      _refreshInFlight = null;
+    }
+  })();
+  return _refreshInFlight;
 }
 
 // ----------------- Endpoints -----------------
