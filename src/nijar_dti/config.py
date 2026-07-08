@@ -130,6 +130,16 @@ class Settings(BaseSettings):
     sentry_dsn: str = ""
     prometheus_enabled: bool = True
 
+    # --- Indicadores de dirección (estimaciones económicas/ambientales) ---
+    # Factores para calcular ahorro € y CO₂ evitado (no hay dato directo: se
+    # muestran como "estimado"). Ajustables por entorno.
+    precio_kwh_eur: float = 0.165
+    factor_co2_kwh_kg: float = 0.19
+    baseline_consumo_vsap_factor: float = 1.45  # VSAP consumiría ~45% más que LED
+    # Motor de las recomendaciones de dirección: reglas (por defecto) u OpenAI
+    # (requiere OPENAI_API_KEY; sin clave o ante error cae a reglas).
+    direccion_recomendaciones_engine: Literal["reglas", "openai"] = "reglas"
+
     @property
     def is_production(self) -> bool:
         return self.app_env == "production"
