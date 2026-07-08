@@ -972,7 +972,7 @@ UI.go=function(id){
   window.scrollTo(0,0);
   animateBars(el);
 };
-UI.rerender=function(id){rendered[id]=false;if(current===id)UI.go(id)};
+UI.rerender=function(id){rendered[id]=false;if(current===id&&$("#view-lighting").classList.contains("on"))UI.go(id)};
 
 /* ============ DRAWER / MODAL / TOAST ============ */
 UI.openDrawer=function(t,s,html){
