@@ -33,18 +33,15 @@ Services: API on :8000, PostgreSQL on :5432, Redis on :6379, MQTT on :1883, Rasa
 ### Tests
 
 ```bash
-pytest tests/                                    # all 133 tests (~5s)
+pytest tests/                                    # ~279 tests across 25 files (~5s)
 pytest tests/test_mqtt_parser.py                 # single test file
+pytest tests/ -k test_nombre                     # single test by name (--strict-markers is on)
 pytest tests/ --cov=nijar_dti --cov-report=html  # with coverage (fail_under=50)
 ```
 
-Tests use `asyncio_mode = "auto"` — async test functions are handled automatically.
+Tests use `asyncio_mode = "auto"` — async test functions are handled automatically. Most tests need no DB (schemas, chatbot logic, helpers, health endpoints) and run in CI. `conftest.py` sets env defaults (`SECRET_KEY`, `DATABASE_URL`, `APP_ENV`) so the app can be imported without `.env`.
 
-Test suite has two groups:
-- **Unit tests** (default): no DB required — schemas, chatbot logic, helpers, health endpoints. These run in CI.
-- **Integration tests** (`pytest -m integration`): require PostgreSQL+PostGIS running (`docker compose up -d db`).
-
-`conftest.py` sets env defaults (`SECRET_KEY`, `DATABASE_URL`, `APP_ENV`) so the app can be imported without `.env`.
+> Note: an `integration` marker is mentioned in `conftest.py` docstrings but is **not actually wired** — no test is decorated with `@pytest.mark.integration`, and with `--strict-markers` on, `pytest -m integration` selects zero tests. Don't rely on it.
 
 ### Linting & type checking
 
@@ -80,7 +77,9 @@ Rasa artifacts in `rasa/` are auto-generated from `src/nijar_dti/data/seeds/faqs
 python -m nijar_dti.data.seed_loader   # idempotent — safe to re-run
 ```
 
-Loads admin user, tourism resources, sensors, FAQs, and demo data (events, observations, visits, opinions, chatbot interactions). Runs after `alembic upgrade head` on first boot.
+Loads admin user, 14 tourism resources, 9 sensors, ~105 FAQs, data sources, clients, campaigns, Smart City verticals (lighting, containers, cameras, mobility, water, energy), and demo data (events, observations, visits, opinions, chatbot interactions, content, incidents). Runs after `alembic upgrade head` on first boot.
+
+Default admin (from README, overridable via `INITIAL_ADMIN_EMAIL` / `INITIAL_ADMIN_PASSWORD`): `admin@nijar.es` / `CambiarEnPrimerArranque#2026` (2FA required). Frontends: `http://localhost:8000/dashboard` and `/totem`.
 
 ## Architecture
 
@@ -90,31 +89,34 @@ The app follows a layered architecture: **routers → services → models/ORM**,
 
 - **`main.py`** — FastAPI app, lifespan (metrics refresh loop), CORS, global exception handlers, static file mounts for `/dashboard` and `/totem`
 - **`config.py`** — Single `Settings` class using pydantic-settings, loaded from `.env`. Cached via `get_settings()`
-- **`api/v1/`** — 8 routers mounted under `/api/v1`. Route prefixes differ from module names: `/auth`, `/tourism`, `/data/iot`, `/data/social`, `/cms`, `/chatbot`, `/dashboards`, plus health (no prefix). Auth dependency chain: `get_current_user` → `require_roles(...)` in `dependencies.py`
-- **`services/`** — Business logic layer. Each router has a corresponding service. `chatbot_rasa_adapter.py` bridges the Rasa server
-- **`models/`** — 11 SQLAlchemy 2.0 async ORM models (PostGIS-enabled via GeoAlchemy2). `_mixins.py` has shared columns
+- **`api/v1/`** — **17 routers** mounted under `/api/v1` (see `api/v1/router.py`). Route prefixes differ from module names: `/auth`, `/tourism`, `/data/iot`, `/data/social`, `/data/contexto`, `/prediccion`, `/rutas`, `/incidencias`, `/cms`, `/chatbot`, `/dashboards`, `/cliente`, `/campanas`, `/verticales`, `/integraciones` (from `fuentes.py`), `/usuarios`, plus health (no prefix). Auth dependency chain: `get_current_user` → `require_roles(...)` in `dependencies.py`
+- **`services/`** — Business logic layer (~21 modules). Each router has a corresponding service, plus cross-cutting ones (`analitica_service.py`, `informe_render.py`, `consumo_ia_service.py`). Chatbot has three engine adapters — see Key patterns
+- **`models/`** — **18 model files defining ~25 SQLAlchemy 2.0 async ORM classes** (some files hold several tables, e.g. `verticales.py`, `alumbrado.py`, `faq.py`). Base is `MappedAsDataclass, DeclarativeBase`; `_mixins.py` has `TimestampMixin` and `AuditMixin` (soft-delete `deleted_at`, `created_by`/`updated_by`)
 - **`schemas/`** — Pydantic v2 request/response schemas. `common.py` has the standard `APIError` envelope
-- **`core/`** — Cross-cutting: `database.py` (async engine/session), `security.py` (JWT + bcrypt + RBAC), `logging.py` (structlog JSON), `metrics.py` (Prometheus counters/histograms + domain metrics)
-- **`workers/`** — Standalone processes: `mqtt_worker` (MQTT subscriber), `social_worker` (social media polling), `rasa_generator` (generates Rasa training files from FAQ seed)
-- **`connectors/social/`** — Twitter/Facebook/Instagram API clients + NLP pipeline (language detection, sentiment, topic extraction)
-- **`data/seeds/`** — Initial data loaded on first boot: admin user, 14 tourism resources, 9 sensors, 22 FAQs in 4 languages
+- **`core/`** — Cross-cutting (8 files): `database.py` (async engine/session), `security.py` (JWT + bcrypt + RBAC), `logging.py` (structlog JSON), `metrics.py` (Prometheus counters/histograms + domain metrics), plus `anonimizacion.py`, `ans.py` (SLA/ANS), `export.py`, `geo.py`
+- **`workers/`** — Standalone processes: `mqtt_worker` (MQTT subscriber), `social_worker` (social media polling), `rasa_generator` (generates Rasa training files from FAQ seed), `contexto_backfill` (context/GA4 backfill), `informe_mensual_render` (monthly report rendering)
+- **`connectors/`** — `social/` (Twitter/Facebook/Instagram API clients + NLP pipeline: language detection, sentiment, topic extraction), plus `analytics/` (GA4, forecasting) and `contexto/`
+- **`data/seeds/`** — Initial data loaded on first boot: admin user, 14 tourism resources, 9 sensors, ~105 FAQs in 4 languages (split across `faqs.py` + `faqs_ampliacion.py` + `faqs_ampliacion2.py`, combined into `FAQS_SEED`), data sources, clients, campaigns, Smart City verticals, demo data
 
 ### Key patterns
 
-- **Chatbot engine selector**: `CHATBOT_ENGINE` env var switches between `lexical` and `rasa` engines. Rasa has automatic fallback to lexical if unavailable (`RASA_FALLBACK_TO_LEXICAL=true`)
+- **Chatbot engine selector**: `CHATBOT_ENGINE` env var switches between **three** engines — `lexical`, `rasa`, `openai`. The selector is `chatbot_rasa_adapter.consultar()`, used by the chatbot router. Fallback chain: `openai` (no key/error) → `rasa` → `lexical`; Rasa failures honor `RASA_FALLBACK_TO_LEXICAL=true`. The `openai` engine (`services/chatbot_openai_adapter.py`) grounds answers on FAQs + published resources + upcoming events (config: `OPENAI_API_KEY`, `OPENAI_MODEL=gpt-4o-mini`, `OPENAI_TIMEOUT_SECONDS`, `OPENAI_MAX_TOKENS`)
+- **Consumo de IA (token/cost tracking)**: every OpenAI call is logged via `services/consumo_ia_service.py` (`registrar()`, `coste_estimado_usd()` using the `PRECIOS_USD_POR_MILLON` price table, `resumen()`) into the `ConsumoIA` model (table `consumos_ia`, migration `007`). Surfaced at `GET /api/v1/dashboards/ia/consumo` (roles `administrador_tic`, `analista_datos`, `auditor`) → `ConsumoIAResumen`. Note: `ConsumoIA` is imported in `models/__init__.py` but currently missing from `__all__`
+- **Usuarios y permisos**: admin-only user management — router `api/v1/usuarios.py` (`/usuarios`: list + `POST /invitar` with temp password + `requiere_2fa`), service `usuarios_service.py`, model `models/usuario.py`
 - **Social Listening dry-run**: `SOCIAL_DRY_RUN=true` generates synthetic data without calling external APIs — useful for dev
-- **RBAC**: 5 roles (`administrador_tic`, `gestor_contenidos`, `analista_datos`, `operador_smart_office`, `auditor`) enforced via JWT claims
-- **Static frontends**: Dashboard and totem UI are plain HTML/JS in `frontend/`, served by FastAPI's StaticFiles — no build step. Shared design tokens in `frontend/shared/design-tokens.css` and `.json`
+- **RBAC**: 5 roles (`administrador_tic`, `gestor_contenidos`, `analista_datos`, `operador_smart_office`, `auditor`) — the `RolUsuario` StrEnum lives in `models/usuario.py` (not `config.py`), enforced via `require_roles(...)` reading JWT claims
+- **Static frontends**: Dashboard and totem UI are plain HTML/JS in `frontend/`, served by FastAPI's StaticFiles — no build step. `frontend/dashboard/` has `index.html` + `gestion.html`, with a unified admin panel (`assets/panel-gestion.js`) hosting the Usuarios/permisos and Consumo de IA views. The totem uses custom vectorial 2D SVG iconography, multilingual `i18n.js`, and the official Ayuntamiento logo. Shared design tokens in `frontend/shared/design-tokens.css` and `.json`
 - **Pre-commit hooks**: trailing-whitespace, end-of-file-fixer, check-yaml/toml, detect-private-key, ruff (with --fix), ruff-format, mypy (on `src/` only)
 
 ### Infrastructure
 
 - **`docker-compose.yml`** — Local dev: api, db (PostGIS), redis, mqtt (Mosquitto). Workers and Rasa behind Docker profiles (`workers`, `rasa`, `rasa-train`)
-- **`infra/terraform/`** — AWS production (EKS, RDS PostgreSQL, ElastiCache Redis, ECR, WAF, KMS)
+- **`infra/terraform/`** — AWS deployment path (EKS, RDS PostgreSQL, ElastiCache Redis, ECR, WAF, KMS)
 - **`infra/k8s/`** — Kubernetes manifests with External Secrets Operator, HPA, NetworkPolicy
-- **`infra/observability/`** — Prometheus + Grafana + Loki stack, 5 Grafana dashboards, 9 alert rules
-- **`.github/workflows/`** — CI (tests + ruff + mypy + security scanners), CD (OIDC → ECR → EKS with rollback), nightly security scan
+- **`infra/ovh/`** — **actual production target**: OVH VPS deploy (`docker-compose.prod.yml`, `Caddyfile`, `mosquitto.prod.conf`, `.env.production.example`) — this is where the platform is deployed and operational
+- **`infra/observability/`** — Prometheus + Grafana + Loki stack, 5 Grafana dashboards, 13 alert rules (`alerts.yaml`)
+- **`.github/workflows/`** — `ci.yml` (tests + ruff + mypy + security scanners), `cd.yml` (OIDC → ECR → EKS with Trivy scan + Alembic migration job), `security-nightly.yml` (nightly scan), `accessibility.yml` (WCAG accessibility CI)
 
 ### Database
 
-PostgreSQL 16 + PostGIS 3. Single Alembic migration in `alembic/versions/001_initial.py` creates 11 tables + PostGIS/pg_trgm extensions. The migration runs automatically on `docker compose up`.
+PostgreSQL 16 + PostGIS 3. **7 Alembic migrations** in `alembic/versions/` (`001_initial` → `007_consumo_ia`), applied incrementally: initial schema, contexto turístico, incidencias, cliente/campaña/contenidos, Smart City verticals, fuentes de datos, consumo de IA. Migrations run automatically on `docker compose up`. When adding tables, create a new numbered migration — don't edit `001_initial`.
