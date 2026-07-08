@@ -18,8 +18,14 @@ from geoalchemy2.elements import WKTElement
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from nijar_dti.core import permisos as permisos_catalogo
 from nijar_dti.core.database import AsyncSessionLocal
-from nijar_dti.data.seeds.admin_user import ADMIN_USER_SEED, admin_password_hash
+from nijar_dti.data.seeds.admin_user import (
+    ADMIN_USER_SEED,
+    DIRECCION_USER_SEED,
+    admin_password_hash,
+    direccion_password_hash,
+)
 from nijar_dti.data.seeds.campanas import generar_campanas_seed
 from nijar_dti.data.seeds.cliente import CLIENTE_SEED
 from nijar_dti.data.seeds.demo_data import (
@@ -57,6 +63,7 @@ from nijar_dti.models.incidencia import Incidencia
 from nijar_dti.models.observacion import Observacion
 from nijar_dti.models.opinion import Opinion
 from nijar_dti.models.recurso_turistico import RecursoTuristico
+from nijar_dti.models.rol import Rol
 from nijar_dti.models.sensor import Sensor
 from nijar_dti.models.alumbrado import CuadroMando, Luminaria, ZonaAlumbrado
 from nijar_dti.models.fuente_dato import FuenteDato
@@ -78,23 +85,55 @@ def _wkt(lon: float, lat: float) -> WKTElement:
     return WKTElement(f"POINT({lon} {lat})", srid=4326)
 
 
-async def seed_admin_user(db: AsyncSession) -> None:
-    email = ADMIN_USER_SEED["email"]
+async def _seed_usuario(db: AsyncSession, seed: dict, password_hash: str) -> None:
+    """Crea un usuario del seed si no existe (idempotente por email)."""
+    email = seed["email"]
     res = await db.execute(select(Usuario).where(Usuario.email == email))
     if res.scalar_one_or_none() is not None:
-        log.info("Admin user '%s' ya existe — saltando", email)
+        log.info("Usuario '%s' ya existe — saltando", email)
         return
     user = Usuario(
         email=email,
-        nombre_completo=ADMIN_USER_SEED["nombre_completo"],
-        password_hash=admin_password_hash(),
-        rol=ADMIN_USER_SEED["rol"],
-        activo=ADMIN_USER_SEED["activo"],
-        requiere_2fa=ADMIN_USER_SEED["requiere_2fa"],
-        scopes_adicionales=list(ADMIN_USER_SEED.get("scopes_adicionales") or []),
+        nombre_completo=seed["nombre_completo"],
+        password_hash=password_hash,
+        rol=seed["rol"],
+        activo=seed["activo"],
+        requiere_2fa=seed["requiere_2fa"],
+        scopes_adicionales=list(seed.get("scopes_adicionales") or []),
     )
     db.add(user)
-    log.info("Admin user creado: %s", email)
+    log.info("Usuario creado: %s (%s)", email, seed["rol"])
+
+
+async def seed_admin_user(db: AsyncSession) -> None:
+    await _seed_usuario(db, ADMIN_USER_SEED, admin_password_hash())
+    await _seed_usuario(db, DIRECCION_USER_SEED, direccion_password_hash())
+
+
+async def seed_roles(db: AsyncSession) -> None:
+    """Siembra los roles integrados en la tabla `roles` (idempotente por tabla).
+
+    Los permisos por defecto salen del catálogo curado en `core.permisos`; una
+    vez sembrados, la BD es la fuente de verdad y el administrador puede
+    editarlos o crear roles nuevos desde el panel.
+    """
+    from sqlalchemy import func as sqlfunc
+
+    n = int((await db.execute(select(sqlfunc.count()).select_from(Rol))).scalar_one() or 0)
+    if n > 0:
+        log.info("Roles ya existen (%d) — saltando", n)
+        return
+    for slug, permisos in permisos_catalogo.PERMISOS_POR_ROL.items():
+        db.add(
+            Rol(
+                slug=slug,
+                display=permisos_catalogo.DISPLAY_ROLES.get(slug, slug),
+                descripcion=None,
+                permisos=sorted(permisos),
+                es_sistema=True,
+            )
+        )
+    log.info("Roles integrados creados: %d", len(permisos_catalogo.PERMISOS_POR_ROL))
 
 
 async def seed_recursos(db: AsyncSession) -> None:
@@ -541,6 +580,7 @@ async def seed_fuentes_datos(db: AsyncSession) -> None:
 async def run() -> None:
     async with AsyncSessionLocal() as db:
         try:
+            await seed_roles(db)
             await seed_admin_user(db)
             await seed_cliente(db)
             await seed_recursos(db)

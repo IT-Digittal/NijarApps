@@ -1,11 +1,15 @@
 """Entidad Usuario — Cuentas con acceso a la plataforma DTI.
 
-Implementa los 5 perfiles RBAC definidos en la Memoria Técnica:
-- administrador_tic
-- gestor_contenidos
+Implementa los perfiles RBAC definidos en la Memoria Técnica:
+- administrador_tic (Superadministrador)
+- gestor_contenidos (Administrador municipal / Contenidos)
 - analista_datos
-- operador_smart_office
-- auditor
+- operador_smart_office (Operaciones)
+- auditor (Consulta / Visor)
+- direccion_gobierno (Dirección / Gobierno — perfil directivo/político)
+
+Los módulos visibles por rol se definen de forma centralizada en
+`nijar_dti.core.permisos` (matriz curada en código).
 
 Cumple con el principio de privilegio mínimo (ENS Medio).
 """
@@ -30,6 +34,7 @@ class RolUsuario(StrEnum):
     ANALISTA_DATOS = "analista_datos"
     OPERADOR_SMART_OFFICE = "operador_smart_office"
     AUDITOR = "auditor"
+    DIRECCION_GOBIERNO = "direccion_gobierno"
 
 
 class Usuario(Base, AuditMixin):

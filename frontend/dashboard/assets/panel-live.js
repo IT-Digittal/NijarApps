@@ -12,7 +12,7 @@
  * fuente real llevan un aviso visible de demostración.
  */
 
-import { api, tokens } from "./api-client.js?v=16";
+import { api, tokens } from "./api-client.js?v=18";
 
 const REFRESH_MS = 60_000;
 const NO_DATA = "—";

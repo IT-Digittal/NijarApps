@@ -22,7 +22,9 @@ from nijar_dti.models.fuente_dato import FuenteDato
 from nijar_dti.models.incidencia import Incidencia
 from nijar_dti.models.observacion import Observacion
 from nijar_dti.models.opinion import Opinion
+from nijar_dti.models.recomendacion_direccion import RecomendacionDireccion
 from nijar_dti.models.recurso_turistico import RecursoTuristico
+from nijar_dti.models.rol import Rol
 from nijar_dti.models.sensor import Sensor
 from nijar_dti.models.servicio import Servicio
 from nijar_dti.models.usuario import Usuario
@@ -52,7 +54,9 @@ __all__ = [
     "Observacion",
     "Opinion",
     "PuntoMovilidad",
+    "RecomendacionDireccion",
     "RecursoTuristico",
+    "Rol",
     "SectorAgua",
     "Sensor",
     "Servicio",

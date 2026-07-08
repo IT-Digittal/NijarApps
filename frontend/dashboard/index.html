@@ -972,7 +972,7 @@ UI.go=function(id){
   window.scrollTo(0,0);
   animateBars(el);
 };
-UI.rerender=function(id){rendered[id]=false;if(current===id)UI.go(id)};
+UI.rerender=function(id){rendered[id]=false;if(current===id&&$("#view-lighting").classList.contains("on"))UI.go(id)};
 
 /* ============ DRAWER / MODAL / TOAST ============ */
 UI.openDrawer=function(t,s,html){
@@ -3825,7 +3825,9 @@ X.renderHome();
 <!-- Puente de datos reales: login JWT + KPIs desde la API de la plataforma -->
 <script type="module" src="./assets/panel-live.js?v=1"></script>
 <!-- Módulos de gestión (CRUD) del pliego integrados en el panel -->
-<script type="module" src="./assets/panel-gestion.js?v=1"></script>
+<script type="module" src="./assets/panel-gestion.js?v=4"></script>
+<!-- Cuadro de Mando de Dirección (perfil ejecutivo / político) -->
+<script type="module" src="./assets/panel-direccion.js?v=2"></script>
 <!-- Mapa GIS real (Leaflet + coordenadas de la BBDD) -->
 <script type="module" src="./assets/panel-mapa.js?v=1"></script>
 <!-- Verticales Smart City alimentadas por /api/v1/verticales -->

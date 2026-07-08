@@ -10,11 +10,13 @@ from nijar_dti.api.v1 import (
     cms,
     contexto,
     dashboards,
+    direccion,
     fuentes,
     health,
     incidencias,
     iot,
     prediccion,
+    roles,
     rutas,
     social,
     tourism,
@@ -41,3 +43,5 @@ api_router.include_router(campanas.router, prefix="/campanas", tags=["campanas"]
 api_router.include_router(verticales.router, prefix="/verticales", tags=["verticales"])
 api_router.include_router(fuentes.router, prefix="/integraciones", tags=["integraciones"])
 api_router.include_router(usuarios.router, prefix="/usuarios", tags=["usuarios"])
+api_router.include_router(roles.router, prefix="/roles", tags=["roles"])
+api_router.include_router(direccion.router, prefix="/direccion", tags=["direccion"])

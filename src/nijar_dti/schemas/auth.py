@@ -33,4 +33,5 @@ class CurrentUser(BaseModel):
     nombre_completo: str
     rol: str
     scopes: list[str] = Field(default_factory=list)
+    permisos: list[str] = Field(default_factory=list)
     activo: bool = True

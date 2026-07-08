@@ -17,7 +17,7 @@
  *    referencias originales en closures.
  */
 
-import { api } from "./api-client.js?v=16";
+import { api } from "./api-client.js?v=18";
 
 const CLAVE_ACCESO = "nijar.dti.access";
 const INTERVALO_SESION_MS = 500;
