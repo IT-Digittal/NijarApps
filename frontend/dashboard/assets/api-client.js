@@ -283,10 +283,45 @@ export const api = {
     return _doFetch(`/tourism/resources/${id}`, { method: "DELETE" });
   },
 
-  // ------------------ Usuarios (solo administrador_tic) ------------------
+  // ------------------ Usuarios, roles y permisos (solo administrador_tic) ------------------
   listUsuarios() { return _doFetch("/usuarios"); },
   invitarUsuario(payload) {
     return _doFetch("/usuarios/invitar", { method: "POST", body: payload });
+  },
+  updateUsuario(id, payload) {
+    return _doFetch(`/usuarios/${id}`, { method: "PATCH", body: payload });
+  },
+  activarUsuario(id) {
+    return _doFetch(`/usuarios/${id}/activar`, { method: "POST" });
+  },
+  desactivarUsuario(id) {
+    return _doFetch(`/usuarios/${id}/desactivar`, { method: "POST" });
+  },
+  resetPasswordUsuario(id) {
+    return _doFetch(`/usuarios/${id}/reset-password`, { method: "POST" });
+  },
+  eliminarUsuario(id) {
+    return _doFetch(`/usuarios/${id}`, { method: "DELETE" });
+  },
+  getMatrizPermisos() { return _doFetch("/usuarios/matriz-permisos"); },
+
+  // ------------------ Roles y permisos (solo administrador_tic) ------------------
+  listRoles() { return _doFetch("/roles"); },
+  crearRol(payload) {
+    return _doFetch("/roles", { method: "POST", body: payload });
+  },
+  actualizarRol(slug, payload) {
+    return _doFetch(`/roles/${slug}`, { method: "PATCH", body: payload });
+  },
+  eliminarRol(slug) {
+    return _doFetch(`/roles/${slug}`, { method: "DELETE" });
+  },
+
+  // ------------------ Cuadro de Mando de Dirección ------------------
+  getResumenDireccion() { return _doFetch("/direccion/resumen"); },
+  getRecomendacionesDireccion() { return _doFetch("/direccion/recomendaciones"); },
+  actualizarRecomendacion(clave, payload) {
+    return _doFetch(`/direccion/recomendaciones/${clave}`, { method: "PATCH", body: payload });
   },
 
   invalidateCache,

@@ -6,7 +6,7 @@
  * conmutables y ficha al pulsar cada elemento.
  */
 
-import { api } from "./api-client.js?v=16";
+import { api } from "./api-client.js?v=18";
 
 const CENTRO_NIJAR = [36.85, -2.13];
 const COLOR_CATEGORIA = {

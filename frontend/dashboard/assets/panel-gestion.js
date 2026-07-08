@@ -7,7 +7,7 @@
  * configuración. Todo contra la API real con control de roles.
  */
 
-import { api, getCachedUser } from "./api-client.js?v=16";
+import { api, getCachedUser } from "./api-client.js?v=18";
 
 const CATEGORIAS = ["playa", "monumento", "ruta", "mirador", "centro_visitantes", "parque_natural", "museo", "yacimiento", "punto_interes", "oficina_turismo"];
 const TIPOS_EVENTO = ["cultural", "gastronomico", "deportivo", "musical", "festivo", "naturaleza", "educativo", "otro"];
@@ -39,6 +39,12 @@ function puedeEscribir() {
 
 function gsub(crumb, h1, p, acts) {
   return '<div class="subhead"><div><div class="crumb"><a onclick="UI.go(\'home\')">Plataforma</a> · <a onclick="UI.goD(\'resumen\')">DTI Turismo</a> · <b>' + esc(crumb) + "</b></div>" +
+    "<h1>" + esc(h1) + "</h1><p>" + esc(p) + '</p></div><div class="acts">' + (acts || "") + "</div></div>";
+}
+
+/* Subhead del módulo de Administración (migaja propia, no DTI). */
+function asub(crumb, h1, p, acts) {
+  return '<div class="subhead"><div><div class="crumb"><a onclick="UI.go(\'home\')">Plataforma</a> · <a onclick="UI.enterAdmin()">Administración</a> · <b>' + esc(crumb) + "</b></div>" +
     "<h1>" + esc(h1) + "</h1><p>" + esc(p) + '</p></div><div class="acts">' + (acts || "") + "</div></div>";
 }
 
@@ -98,6 +104,24 @@ function campo(label, inner) {
 }
 
 const INPUT_CSS = 'style="width:100%;box-sizing:border-box;border:1.5px solid var(--line);border-radius:10px;padding:9px 11px;font-size:13.5px;font-family:inherit"';
+
+/* Diálogo informativo de solo lectura (un botón «Cerrar»). */
+function mostrarInfo(titulo, htmlContenido) {
+  let dlg = document.getElementById("g-info-dialog");
+  if (dlg) dlg.remove();
+  dlg = document.createElement("dialog");
+  dlg.id = "g-info-dialog";
+  dlg.style.cssText = "border:0;border-radius:16px;box-shadow:var(--sh-lg);padding:0;width:min(94vw,520px)";
+  dlg.innerHTML = '<div style="padding:26px 28px;font-family:var(--ff)">' +
+    '<h2 style="margin:0 0 16px;font-size:17px;color:var(--ink)">' + esc(titulo) + "</h2>" +
+    htmlContenido +
+    '<div style="display:flex;justify-content:flex-end;margin-top:20px">' +
+    '<button type="button" class="btn btn--pri" id="g-info-close">Cerrar</button></div></div>';
+  document.body.appendChild(dlg);
+  dlg.querySelector("#g-info-close").onclick = () => { dlg.close(); dlg.remove(); };
+  dlg.showModal();
+  return dlg;
+}
 
 /* ================= CATÁLOGO DE RECURSOS ================= */
 
@@ -386,46 +410,98 @@ async function renderCliente(el) {
     });
 }
 
-/* ================= USUARIOS Y PERMISOS ================= */
+/* ================= USUARIOS, ROLES Y PERMISOS ================= */
 
-const ROLES = ["administrador_tic", "gestor_contenidos", "analista_datos", "operador_smart_office", "auditor"];
+// Roles RBAC: nombres legibles de respaldo (los roles reales se cargan de la API).
+const ROLES_FALLBACK = [
+  { slug: "administrador_tic", display: "Superadministrador" },
+  { slug: "gestor_contenidos", display: "Administrador municipal / Contenidos" },
+  { slug: "analista_datos", display: "Analista de datos" },
+  { slug: "operador_smart_office", display: "Operaciones" },
+  { slug: "auditor", display: "Consulta / Visor" },
+  { slug: "direccion_gobierno", display: "Dirección / Gobierno" },
+];
+
+// Cache de roles cargados de la API (se refresca al abrir el módulo admin).
+let ROLES_CACHE = null;
+
+async function cargarRoles() {
+  try {
+    const roles = await api.listRoles();
+    ROLES_CACHE = roles.map((r) => ({ slug: r.slug, display: r.display }));
+  } catch {
+    /* si falla (p.ej. 403), se mantiene el respaldo */
+  }
+  return ROLES_CACHE || ROLES_FALLBACK;
+}
+
+function rolesDisponibles() {
+  return ROLES_CACHE || ROLES_FALLBACK;
+}
+
+function rolLabel(r) {
+  const found = rolesDisponibles().find((x) => x.slug === r);
+  return found ? found.display : String(r || "").replace(/_/g, " ");
+}
+
+function opcionesRol(seleccionado) {
+  return rolesDisponibles().map((r) =>
+    '<option value="' + r.slug + '"' + (r.slug === seleccionado ? " selected" : "") + ">" + esc(r.display) + "</option>").join("");
+}
 
 async function renderUsuarios(el) {
   cargando(el, "Usuarios y permisos");
+  await cargarRoles();
   let usuarios;
   try { usuarios = await api.listUsuarios(); }
   catch (e) {
-    el.innerHTML = gsub("Usuarios y permisos", "Usuarios y permisos", "Gestión de cuentas del panel.") +
+    el.innerHTML = asub("Usuarios y permisos", "Usuarios y permisos", "Gestión de cuentas del panel.") +
       '<div class="card"><div class="mini" style="color:var(--muted);text-align:center;padding:26px 0">' +
       (e && e.status === 403 ? "Solo el administrador TIC puede gestionar usuarios." : "Error: " + esc(e && e.message || e)) + "</div></div>";
     return;
   }
 
-  el.innerHTML = gsub("Usuarios y permisos", "Usuarios y permisos",
-    "Cuentas con acceso al panel y sus roles RBAC (5 perfiles del pliego). Las invitaciones crean la cuenta con contraseña temporal.",
+  const yo = getCachedUser && getCachedUser();
+  const miEmail = yo && yo.email;
+
+  const filas = usuarios.map((u, i) => {
+    const esYo = miEmail && u.email === miEmail;
+    const acciones = '<div class="chip-row">' +
+      '<button class="btn btn--sm" data-g="edit-usr" data-i="' + i + '">Editar</button>' +
+      (u.activo
+        ? '<button class="btn btn--sm" data-g="off-usr" data-i="' + i + '"' + (esYo ? " disabled title=\"No puedes desactivarte a ti mismo\"" : "") + ">Desactivar</button>"
+        : '<button class="btn btn--sm" data-g="on-usr" data-i="' + i + '">Activar</button>') +
+      '<button class="btn btn--sm" data-g="pwd-usr" data-i="' + i + '">Reset contraseña</button>' +
+      '<button class="btn btn--sm btn--ghost" data-g="del-usr" data-i="' + i + '"' + (esYo ? " disabled title=\"No puedes eliminar tu propia cuenta\"" : "") + ">Eliminar</button></div>";
+    return '<tr><td style="font-weight:600">' + esc(u.nombre_completo) + (esYo ? ' <span class="bdg bdg-mut">tú</span>' : "") + '</td><td class="mini">' + esc(u.email) + "</td>" +
+      '<td><span class="bdg bdg-info">' + esc(rolLabel(u.rol)) + "</span></td>" +
+      "<td>" + (u.activo ? '<span class="bdg bdg-ok">activo</span>' : '<span class="bdg bdg-mut">inactivo</span>') + "</td>" +
+      '<td class="mini">' + (u.requiere_2fa ? "Sí" : "No") + '</td><td class="mini tnum">' + fechaCorta(u.created_at) + "</td>" +
+      "<td>" + acciones + "</td></tr>";
+  }).join("");
+
+  el.innerHTML = asub("Usuarios y permisos", "Usuarios, roles y permisos",
+    "Cuentas con acceso al panel y su rol RBAC. Las invitaciones y los reset generan una contraseña temporal que el usuario debe cambiar en el primer acceso.",
     '<button class="btn btn--pri" data-g="inv-usr">＋ Invitar usuario</button>') +
     '<div class="grid g4" style="margin-bottom:16px">' +
     kpi("Usuarios", usuarios.length, "Con acceso al panel", "ic-navy", "gear") +
     kpi("Activos", usuarios.filter((u) => u.activo).length, "Pueden iniciar sesión", "ic-ok", "chart") +
-    kpi("Administradores TIC", usuarios.filter((u) => u.rol === "administrador_tic").length, "Control total de la plataforma", "ic-coral", "gear") +
+    kpi("Superadministradores", usuarios.filter((u) => u.rol === "administrador_tic").length, "Control total de la plataforma", "ic-coral", "gear") +
     kpi("Con 2FA", usuarios.filter((u) => u.requiere_2fa).length, "Doble factor requerido", "ic-teal", "gear") + "</div>" +
-    '<div class="card card--pad0"><div style="padding:16px 16px 4px" class="card__h"><div><div class="card__t">Cuentas</div><div class="card__s">Roles según la matriz RBAC del pliego (ENS medio)</div></div></div>' +
-    '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Nombre</th><th>Email</th><th>Rol</th><th>Estado</th><th>2FA</th><th>Alta</th></tr></thead><tbody>' +
-    usuarios.map((u) =>
-      '<tr><td style="font-weight:600">' + esc(u.nombre_completo) + '</td><td class="mini">' + esc(u.email) + "</td>" +
-      '<td><span class="bdg bdg-info">' + esc(u.rol) + "</span></td>" +
-      "<td>" + (u.activo ? '<span class="bdg bdg-ok">activo</span>' : '<span class="bdg bdg-mut">inactivo</span>') + "</td>" +
-      '<td class="mini">' + (u.requiere_2fa ? "Sí" : "No") + '</td><td class="mini tnum">' + fechaCorta(u.created_at) + "</td></tr>").join("") +
+    '<div class="card card--pad0"><div style="padding:16px 16px 4px" class="card__h"><div><div class="card__t">Cuentas</div><div class="card__s">Roles según la matriz RBAC (ENS medio). Consulta la matriz completa en «Matriz de permisos».</div></div></div>' +
+    '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Nombre</th><th>Email</th><th>Rol</th><th>Estado</th><th>2FA</th><th>Alta</th><th></th></tr></thead><tbody>' +
+    (filas || '<tr><td colspan="7" class="mini" style="text-align:center;padding:20px">Sin usuarios</td></tr>') +
     "</tbody></table></div></div>";
 
-  const btn = el.querySelector('[data-g="inv-usr"]');
-  if (btn) btn.onclick = () => abrirForm("Invitar usuario",
+  const invBtn = el.querySelector('[data-g="inv-usr"]');
+  if (invBtn) invBtn.onclick = () => abrirForm("Invitar usuario",
     campo("Nombre completo", '<input name="nombre_completo" required minlength="2" maxlength="255" ' + INPUT_CSS + ">") +
     campo("Email", '<input name="email" type="email" required ' + INPUT_CSS + ">") +
-    campo("Rol", '<select name="rol" ' + INPUT_CSS + ">" + ROLES.map((r) => '<option value="' + r + '">' + r.replace(/_/g, " ") + "</option>").join("") + "</select>"),
+    campo("Rol", '<select name="rol" ' + INPUT_CSS + ">" + opcionesRol("direccion_gobierno") + "</select>"),
     async (fd) => {
+      let creado;
       try {
-        await api.inviteUsuario({
+        creado = await api.invitarUsuario({
           email: fd.get("email").trim(),
           nombre_completo: fd.get("nombre_completo").trim(),
           rol: fd.get("rol"),
@@ -434,9 +510,212 @@ async function renderUsuarios(el) {
         if (e && e.status === 409) throw new Error("Ya existe un usuario con ese email.");
         throw e;
       }
-      UI.toast("Invitación enviada: cuenta creada con contraseña temporal");
-      UI.rerenderD("g-usuarios");
+      UI.toast("Usuario creado con contraseña temporal");
+      UI.rerenderAdm("usuarios");
+      return creado;
     });
+
+  el.querySelectorAll("[data-g$='-usr']").forEach((b) => {
+    if (b.dataset.i == null) return;
+    const u = usuarios[Number(b.dataset.i)];
+    if (!u) return;
+    if (b.dataset.g === "edit-usr") b.onclick = () => formEditarUsuario(u);
+    if (b.dataset.g === "on-usr") b.onclick = () => accionUsuario(() => api.activarUsuario(u.id), "Usuario activado");
+    if (b.dataset.g === "off-usr") b.onclick = () => accionUsuario(() => api.desactivarUsuario(u.id), "Usuario desactivado");
+    if (b.dataset.g === "pwd-usr") b.onclick = async () => {
+      if (!confirm("¿Restablecer la contraseña de " + u.email + "?")) return;
+      try {
+        const r = await api.resetPasswordUsuario(u.id);
+        mostrarInfo("Contraseña temporal", "<p style=\"margin:0 0 10px;font-size:13px;color:var(--muted)\">Entrégala al usuario por un canal seguro. Deberá cambiarla en el primer acceso.</p>" +
+          '<div style="font-family:monospace;font-size:15px;background:var(--bg);border:1.5px solid var(--line);border-radius:10px;padding:12px;word-break:break-all">' + esc(r.password_temporal) + "</div>");
+      } catch (e) { UI.toast("Error: " + (e && e.message || e)); }
+    };
+    if (b.dataset.g === "del-usr") b.onclick = async () => {
+      if (!confirm("¿Eliminar la cuenta de " + u.email + "? (borrado lógico)")) return;
+      await accionUsuario(() => api.eliminarUsuario(u.id), "Usuario eliminado");
+    };
+  });
+}
+
+async function accionUsuario(fn, mensajeOk) {
+  try {
+    await fn();
+    UI.toast(mensajeOk);
+    UI.rerenderAdm("usuarios");
+  } catch (e) {
+    UI.toast("Error: " + (e && e.status === 409 ? (e.message || "operación no permitida") : (e && e.message || e)));
+  }
+}
+
+function formEditarUsuario(u) {
+  abrirForm("Editar usuario",
+    campo("Nombre completo", '<input name="nombre_completo" required minlength="2" maxlength="255" value="' + esc(u.nombre_completo) + '" ' + INPUT_CSS + ">") +
+    campo("Rol", '<select name="rol" ' + INPUT_CSS + ">" + opcionesRol(u.rol) + "</select>") +
+    '<label style="display:flex;gap:8px;align-items:center;margin-top:14px;font-size:13px"><input type="checkbox" name="activo"' + (u.activo ? " checked" : "") + "> Cuenta activa</label>",
+    async (fd) => {
+      await api.updateUsuario(u.id, {
+        nombre_completo: fd.get("nombre_completo").trim(),
+        rol: fd.get("rol"),
+        activo: fd.get("activo") === "on",
+      });
+      UI.toast("Usuario actualizado");
+      UI.rerenderAdm("usuarios");
+    });
+}
+
+/* ================= MATRIZ DE PERMISOS ================= */
+
+async function renderMatrizPermisos(el) {
+  cargando(el, "Matriz de permisos");
+  let m;
+  try { m = await api.getMatrizPermisos(); }
+  catch (e) {
+    el.innerHTML = asub("Matriz de permisos", "Matriz de permisos", "Qué módulos ve cada rol.") +
+      '<div class="card"><div class="mini" style="color:var(--muted);text-align:center;padding:26px 0">' +
+      (e && e.status === 403 ? "Solo el administrador TIC puede consultar la matriz." : "Error: " + esc(e && e.message || e)) + "</div></div>";
+    return;
+  }
+  const permisosPorRol = Object.fromEntries(m.roles.map((r) => [r.rol, new Set(r.permisos)]));
+  const check = (on) => on
+    ? '<span class="bdg bdg-ok" style="min-width:26px;justify-content:center">✓</span>'
+    : '<span class="bdg bdg-mut" style="min-width:26px;justify-content:center">·</span>';
+
+  // Agrupa los módulos por su grupo, manteniendo el orden de aparición.
+  const grupos = [];
+  m.modulos.forEach((mod) => {
+    let g = grupos.find((x) => x.grupo === mod.grupo);
+    if (!g) { g = { grupo: mod.grupo, mods: [] }; grupos.push(g); }
+    g.mods.push(mod);
+  });
+
+  const cabecera = "<tr><th>Módulo</th>" + m.roles.map((r) => '<th class="mini" style="text-align:center">' + esc(r.display) + "</th>").join("") + "</tr>";
+  const cuerpo = grupos.map((g) =>
+    '<tr><td colspan="' + (m.roles.length + 1) + '" class="mini" style="font-weight:800;background:var(--bg);text-transform:uppercase;letter-spacing:.04em;color:var(--muted)">' + esc(g.grupo) + "</td></tr>" +
+    g.mods.map((mod) =>
+      "<tr><td style=\"font-weight:600\">" + esc(mod.nombre) + "</td>" +
+      m.roles.map((r) => '<td style="text-align:center">' + check(permisosPorRol[r.rol].has(mod.id)) + "</td>").join("") +
+      "</tr>").join("")
+  ).join("");
+
+  el.innerHTML = asub("Matriz de permisos", "Matriz de permisos",
+    "Qué módulos ve cada rol RBAC. Vista de solo lectura; para crear roles o cambiar permisos usa la sección «Roles».", "") +
+    '<div class="card card--pad0"><div class="tbl-wrap"><table class="tbl">' +
+    "<thead>" + cabecera + "</thead><tbody>" + cuerpo + "</tbody></table></div></div>";
+}
+
+/* ================= ROLES (CRUD + permisos) ================= */
+
+function camposPermisos(modulos, seleccionados) {
+  const sel = new Set(seleccionados || []);
+  const grupos = [];
+  modulos.forEach((mod) => {
+    let g = grupos.find((x) => x.grupo === mod.grupo);
+    if (!g) { g = { grupo: mod.grupo, mods: [] }; grupos.push(g); }
+    g.mods.push(mod);
+  });
+  return '<div style="max-height:46vh;overflow:auto;margin-top:6px;border:1.5px solid var(--line);border-radius:10px;padding:10px 12px">' +
+    grupos.map((g) =>
+      '<div class="mini" style="font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin:8px 0 4px">' + esc(g.grupo) + "</div>" +
+      g.mods.map((mod) =>
+        '<label style="display:flex;gap:8px;align-items:center;padding:3px 0;font-size:13px">' +
+        '<input type="checkbox" name="perm_' + mod.id + '"' + (sel.has(mod.id) ? " checked" : "") + "> " + esc(mod.nombre) + "</label>").join("")
+    ).join("") + "</div>";
+}
+
+function permisosDeForm(fd, modulos) {
+  return modulos.filter((m) => fd.get("perm_" + m.id) === "on").map((m) => m.id);
+}
+
+async function renderRoles(el) {
+  cargando(el, "Roles");
+  let roles, modulos;
+  try {
+    const [rs, m] = await Promise.all([api.listRoles(), api.getMatrizPermisos()]);
+    roles = rs;
+    modulos = m.modulos;
+  } catch (e) {
+    el.innerHTML = asub("Roles", "Roles", "Gestión de roles y permisos.") +
+      '<div class="card"><div class="mini" style="color:var(--muted);text-align:center;padding:26px 0">' +
+      (e && e.status === 403 ? "Solo el administrador TIC puede gestionar roles." : "Error: " + esc(e && e.message || e)) + "</div></div>";
+    return;
+  }
+  ROLES_CACHE = roles.map((r) => ({ slug: r.slug, display: r.display }));
+
+  const filas = roles.map((r, i) =>
+    '<tr><td style="font-weight:600">' + esc(r.display) + ' <span class="mini" style="color:var(--muted)">' + esc(r.slug) + "</span></td>" +
+    '<td class="mini">' + (r.permisos ? r.permisos.length : 0) + " / " + modulos.length + "</td>" +
+    '<td class="mini">' + (r.n_usuarios || 0) + "</td>" +
+    "<td>" + (r.es_sistema ? '<span class="bdg bdg-info">sistema</span>' : '<span class="bdg bdg-mut">personalizado</span>') + "</td>" +
+    '<td><div class="chip-row"><button class="btn btn--sm" data-r="edit" data-i="' + i + '">Editar</button>' +
+    (r.es_sistema ? "" : '<button class="btn btn--sm btn--ghost" data-r="del" data-i="' + i + '">Eliminar</button>') +
+    "</div></td></tr>").join("");
+
+  el.innerHTML = asub("Roles", "Roles y permisos",
+    "Crea roles a medida y decide qué módulos ve cada uno (p.ej. un rol que solo ve DTI y Agua). Los roles de sistema se pueden editar pero no borrar.",
+    '<button class="btn btn--pri" data-r="new">＋ Crear rol</button>') +
+    '<div class="grid g4" style="margin-bottom:16px">' +
+    kpi("Roles", roles.length, "Definidos en la plataforma", "ic-navy", "gear") +
+    kpi("De sistema", roles.filter((r) => r.es_sistema).length, "Integrados (no borrables)", "ic-teal", "gear") +
+    kpi("Personalizados", roles.filter((r) => !r.es_sistema).length, "Creados por el administrador", "ic-violet", "gear") +
+    kpi("Módulos", modulos.length, "Permisos asignables", "ic-gold", "box") + "</div>" +
+    '<div class="card card--pad0"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Rol</th><th>Permisos</th><th>Usuarios</th><th>Tipo</th><th></th></tr></thead><tbody>' +
+    (filas || '<tr><td colspan="5" class="mini" style="text-align:center;padding:20px">Sin roles</td></tr>') +
+    "</tbody></table></div></div>";
+
+  const nuevo = el.querySelector('[data-r="new"]');
+  if (nuevo) nuevo.onclick = () => abrirForm("Crear rol",
+    campo("Identificador (slug)", '<input name="slug" required pattern="[a-z][a-z0-9_]{1,49}" placeholder="visor_dti_agua" ' + INPUT_CSS + ">") +
+    campo("Nombre visible", '<input name="display" required minlength="2" maxlength="120" ' + INPUT_CSS + ">") +
+    campo("Descripción (opcional)", '<input name="descripcion" maxlength="255" ' + INPUT_CSS + ">") +
+    campo("Permisos (módulos visibles)", camposPermisos(modulos, [])),
+    async (fd) => {
+      try {
+        await api.crearRol({
+          slug: fd.get("slug").trim(),
+          display: fd.get("display").trim(),
+          descripcion: (fd.get("descripcion") || "").trim() || null,
+          permisos: permisosDeForm(fd, modulos),
+        });
+      } catch (e) {
+        if (e && e.status === 409) throw new Error("Ya existe un rol con ese identificador.");
+        if (e && e.status === 400) throw new Error("Identificador o permisos no válidos.");
+        throw e;
+      }
+      UI.toast("Rol creado");
+      UI.rerenderAdm("roles");
+    });
+
+  el.querySelectorAll("[data-r]").forEach((b) => {
+    if (b.dataset.i == null) return;
+    const r = roles[Number(b.dataset.i)];
+    if (!r) return;
+    if (b.dataset.r === "edit") b.onclick = () => abrirForm("Editar rol · " + r.display,
+      campo("Nombre visible", '<input name="display" required minlength="2" maxlength="120" value="' + esc(r.display) + '" ' + INPUT_CSS + ">") +
+      campo("Descripción (opcional)", '<input name="descripcion" maxlength="255" value="' + esc(r.descripcion || "") + '" ' + INPUT_CSS + ">") +
+      (r.slug === "administrador_tic"
+        ? '<div class="mini" style="color:var(--muted);margin-top:10px">El superadministrador conserva siempre todos los permisos.</div>'
+        : campo("Permisos (módulos visibles)", camposPermisos(modulos, r.permisos))),
+      async (fd) => {
+        const body = {
+          display: fd.get("display").trim(),
+          descripcion: (fd.get("descripcion") || "").trim() || null,
+        };
+        if (r.slug !== "administrador_tic") body.permisos = permisosDeForm(fd, modulos);
+        await api.actualizarRol(r.slug, body);
+        UI.toast("Rol actualizado");
+        UI.rerenderAdm("roles");
+      });
+    if (b.dataset.r === "del") b.onclick = async () => {
+      if (!confirm('¿Eliminar el rol «' + r.display + '»?')) return;
+      try {
+        await api.eliminarRol(r.slug);
+        UI.toast("Rol eliminado");
+        UI.rerenderAdm("roles");
+      } catch (e) {
+        UI.toast("Error: " + (e && e.status === 409 ? "el rol tiene usuarios asignados" : (e && e.message || e)));
+      }
+    };
+  });
 }
 
 /* ================= PREDICCIÓN DE AFLUENCIA ================= */
@@ -534,7 +813,7 @@ async function renderConfig(el) {
     kv("Usuario", u ? u.nombre_completo || u.email : "—") +
     kv("Email", u ? u.email : "—") +
     kv("Rol", u ? '<span class="bdg bdg-info">' + esc(u.rol) + "</span>" : "—") +
-    '<div class="chip-row" style="margin-top:14px"><button class="btn btn--sm" onclick="(async()=>{const m=await import(\'./api-client.js?v=16\');await m.api.logout();location.reload()})()">Cerrar sesión</button></div></div></div>';
+    '<div class="chip-row" style="margin-top:14px"><button class="btn btn--sm" onclick="(async()=>{const m=await import(\'./api-client.js?v=18\');await m.api.logout();location.reload()})()">Cerrar sesión</button></div></div></div>';
 }
 
 /* ---------------- helpers de tarjetas ---------------- */
@@ -548,6 +827,170 @@ function kv(k, v) {
   return '<div class="kv"><span class="k">' + esc(k) + '</span><span class="v">' + (v == null || v === "" ? "—" : v) + "</span></div>";
 }
 
+/* ================= MÓDULO ADMINISTRACIÓN (nivel superior, solo admin) ================= */
+/* "Usuarios y permisos" y "Matriz de permisos" viven aquí, como un módulo más
+   del lanzador (junto a las verticales), no dentro de la consola DTI. La tarjeta
+   del home y el módulo solo se muestran al rol administrador_tic. */
+
+const ADMIN_SECCIONES = [
+  { id: "usuarios", n: "Usuarios y permisos", i: "gear", r: renderUsuarios },
+  { id: "roles", n: "Roles", i: "gear", r: renderRoles },
+  { id: "matriz", n: "Matriz de permisos", i: "box", r: renderMatrizPermisos },
+];
+
+// Mapa entrada de módulo → permiso requerido (para visibilidad por rol).
+const ENTER_PERMISO = {
+  enterDTI: "ver_dti",
+  enterLighting: "ver_alumbrado",
+  enterAgua: "ver_agua",
+  enterResiduos: "ver_residuos",
+  enterMovilidad: "ver_movilidad",
+  enterSeguridad: "ver_seguridad",
+  enterEnergia: "ver_energia",
+};
+
+function tienePermiso(p) {
+  const u = getCachedUser && getCachedUser();
+  if (!u) return false;
+  // Compatibilidad: si el backend no envía permisos, no se bloquea nada.
+  if (!Array.isArray(u.permisos)) return true;
+  return u.permisos.includes(p);
+}
+
+const ADM_R = {};
+let admRendered = {};
+let admCur = null;
+let admInstalado = false;
+
+function icono(nombre) {
+  return window.icon ? window.icon(nombre) : "";
+}
+
+function construirVistaAdmin() {
+  if (document.getElementById("view-admin")) return;
+  const home = document.getElementById("view-home");
+  if (!home) return;
+  const div = document.createElement("div");
+  div.className = "view";
+  div.id = "view-admin";
+  div.innerHTML = '<div class="app"><aside class="sidebar" id="adm-sidebar"></aside>' +
+    '<main class="main" id="adm-main">' +
+    ADMIN_SECCIONES.map((s) => '<section class="admview" id="adm-' + s.id + '"></section>').join("") +
+    "</main></div>";
+  home.insertAdjacentElement("afterend", div);
+  ADMIN_SECCIONES.forEach((s) => { ADM_R[s.id] = s.r; });
+}
+
+function renderAdmSidebar() {
+  const sb = document.getElementById("adm-sidebar");
+  if (!sb) return;
+  let h = '<div class="sb-head"><div class="sb-title">' + icono("gear") + " Administración</div>" +
+    '<div class="sb-sub">Usuarios, roles y permisos</div></div><div class="sb-g">Gestión</div>';
+  ADMIN_SECCIONES.forEach((s) => {
+    h += '<button class="sb-it" data-admsec="' + s.id + '" onclick="UI.goAdm(\'' + s.id + '\')">' + icono(s.i) + s.n + "</button>";
+  });
+  sb.innerHTML = h;
+}
+
+function tarjetaAdminHTML() {
+  return '<div class="vcard vcard--on" data-admcard onclick="UI.enterAdmin()">' +
+    '<div class="vi ic-coral">' + icono("gear") + "</div>" +
+    "<h3>Administración</h3><p>Gestión de usuarios, roles y permisos de acceso a la plataforma: alta y baja de cuentas, cambio de rol, reset de contraseña y matriz de permisos RBAC.</p>" +
+    '<div class="vfoot"><span class="bdg bdg-info">Solo administrador</span>' +
+    '<button class="btn btn--sm btn--pri">Gestionar usuarios</button></div></div>';
+}
+
+function inyectarTarjetaAdmin() {
+  const u = getCachedUser && getCachedUser();
+  const cont = document.getElementById("home-verticals");
+  if (!cont) return;
+  const ya = cont.querySelector("[data-admcard]");
+  if (!u || u.rol !== "administrador_tic") { if (ya) ya.remove(); return; }
+  if (!ya) cont.insertAdjacentHTML("beforeend", tarjetaAdminHTML());
+}
+
+// Quita del lanzador las tarjetas de módulos que el rol no puede ver.
+function filtrarTarjetasPorPermiso() {
+  const cont = document.getElementById("home-verticals");
+  const u = getCachedUser && getCachedUser();
+  if (!cont || !u || !Array.isArray(u.permisos)) return; // compat: no filtrar
+  cont.querySelectorAll(".vcard").forEach((card) => {
+    if (card.hasAttribute("data-admcard")) return;
+    const onclick = card.getAttribute("onclick") || "";
+    const entry = Object.keys(ENTER_PERMISO).find((name) => onclick.indexOf(name) !== -1);
+    if (entry && !tienePermiso(ENTER_PERMISO[entry])) card.remove();
+  });
+}
+
+function aplicarPermisosHome() {
+  inyectarTarjetaAdmin();
+  filtrarTarjetasPorPermiso();
+}
+
+// Bloquea la entrada a un módulo por URL/onclick si el rol no tiene el permiso.
+function bloquearEntradasSinPermiso() {
+  Object.keys(ENTER_PERMISO).forEach((name) => {
+    const orig = UI[name];
+    if (typeof orig !== "function" || orig._permWrap) return;
+    const permiso = ENTER_PERMISO[name];
+    const wrapped = function () {
+      if (!tienePermiso(permiso)) { if (UI.toast) UI.toast("No tienes acceso a este módulo"); return undefined; }
+      return orig.apply(this, arguments);
+    };
+    wrapped._permWrap = true;
+    UI[name] = wrapped;
+  });
+}
+
+function instalarAdmin() {
+  if (admInstalado) return;
+  construirVistaAdmin();
+  renderAdmSidebar();
+  if (UI._VIEWS && UI._VIEWS.indexOf("view-admin") === -1) UI._VIEWS.push("view-admin");
+
+  UI.goAdm = function (id) {
+    UI._showV("view-admin");
+    const ctx = document.getElementById("tb-ctx");
+    if (ctx) ctx.style.display = "flex";
+    const pill = document.getElementById("tb-pill");
+    if (pill) pill.innerHTML = icono("gear") + ' Administración <span class="bdg bdg-info" style="margin-left:4px">solo admin</span>';
+    const p2 = document.getElementById("tb-pill2");
+    if (p2) p2.textContent = "Usuarios, roles y permisos";
+    admCur = id;
+    document.querySelectorAll(".admview").forEach((v) => { v.style.display = "none"; });
+    const el = document.getElementById("adm-" + id);
+    if (!el) return;
+    if (!admRendered[id]) { ADM_R[id](el); admRendered[id] = true; }
+    el.style.display = "block";
+    document.querySelectorAll("[data-admsec]").forEach((b) => b.classList.toggle("on", b.dataset.admsec === id));
+    window.scrollTo(0, 0);
+  };
+  UI.enterAdmin = function () { UI.goAdm(ADMIN_SECCIONES[0].id); };
+  UI.rerenderAdm = function (id) { admRendered[id] = false; if (admCur === id) UI.goAdm(id); };
+
+  bloquearEntradasSinPermiso();
+
+  // La tarjeta del home solo se rehace en el arranque; envolvemos renderHome para
+  // que, si vuelve a renderizarse, mantenga la tarjeta admin y el filtrado por rol.
+  const X = window.__UI2;
+  if (X && X.renderHome && !X._admWrap) {
+    const orig = X.renderHome;
+    X.renderHome = function () { orig.apply(this, arguments); aplicarPermisosHome(); };
+    X._admWrap = true;
+  }
+
+  // El home se pinta antes del login; sondeamos hasta conocer el rol de la sesión.
+  aplicarPermisosHome();
+  const poll = setInterval(() => {
+    const u = getCachedUser && getCachedUser();
+    if (!u) return;               // aún sin sesión iniciada
+    aplicarPermisosHome();
+    clearInterval(poll);          // ya conocemos el rol de esta sesión
+  }, 1000);
+
+  admInstalado = true;
+}
+
 /* ---------------- registro de secciones ---------------- */
 
 const SECCIONES = [
@@ -557,7 +1000,6 @@ const SECCIONES = [
   { id: "g-campanas", n: "Campañas", i: "chart", r: renderCampanas },
   { id: "g-faqs", n: "FAQs del chatbot", i: "chat", r: renderFaqs },
   { id: "g-cliente", n: "Ficha del cliente", i: "folder", r: renderCliente },
-  { id: "g-usuarios", n: "Usuarios y permisos", i: "gear", r: renderUsuarios },
   { id: "g-prediccion", n: "Predicción de afluencia", i: "chart", r: renderPrediccion },
   { id: "g-ia", n: "Consumo de IA", i: "chat", r: renderConsumoIA },
   { id: "g-config", n: "Configuración", i: "gear", r: renderConfig },
@@ -582,6 +1024,7 @@ function registrar() {
     }
   });
   DTI.renderDSidebar();
+  instalarAdmin();
   return true;
 }
 

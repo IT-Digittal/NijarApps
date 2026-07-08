@@ -7,7 +7,7 @@
  * datos) e Informes (informe mensual de servicio C.1 con descarga).
  */
 
-import { api, tokens } from "./api-client.js?v=16";
+import { api, tokens } from "./api-client.js?v=18";
 
 let U, UI, DTI;
 
