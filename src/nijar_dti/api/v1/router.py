@@ -12,6 +12,7 @@ from nijar_dti.api.v1 import (
     dashboards,
     direccion,
     fuentes,
+    gemelo,
     health,
     incidencias,
     iot,
@@ -45,3 +46,4 @@ api_router.include_router(fuentes.router, prefix="/integraciones", tags=["integr
 api_router.include_router(usuarios.router, prefix="/usuarios", tags=["usuarios"])
 api_router.include_router(roles.router, prefix="/roles", tags=["roles"])
 api_router.include_router(direccion.router, prefix="/direccion", tags=["direccion"])
+api_router.include_router(gemelo.router, prefix="/gemelo", tags=["gemelo"])

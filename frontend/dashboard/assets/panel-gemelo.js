@@ -50,9 +50,11 @@ function kpi(l, v, d, cls, ic, click) {
 function estadoDe(e) {
   const s = String(e || "").toLowerCase();
   if (!s || s === "desconocido") return "warn";
-  if (s.startsWith("operat") || s === "online" || s === "ok" || s === "activo" || s === "activa") return "ok";
-  if (s.includes("sin_comunicacion") || s.includes("error") || s.includes("fallo") || s === "offline" || s.includes("averia")) return "err";
-  return "warn";
+  if (s.startsWith("operat") || s === "online" || s === "ok" || s === "activo" || s === "activa" ||
+      s === "verde" || s === "sin_bandera") return "ok";
+  if (s.includes("sin_comunicacion") || s.includes("error") || s.includes("fallo") || s === "offline" ||
+      s.includes("averia") || s === "roja") return "err";
+  return "warn"; /* incluye bandera amarilla */
 }
 
 const COLOR_ESTADO = { ok: "#12A150", warn: "#F0B429", err: "#E5484D" };
@@ -79,6 +81,11 @@ async function cargarActivos() {
       (d) => (d.items || d || []).map((p) => ({ nombre: p.nombre || p.codigo, estado: p.estado, extra: p.tipo, obj: p }))],
     seguridad: ["/verticales/seguridad/camaras", "#E2572B", "Seguridad · CCTV",
       (d) => (d.items || d || []).map((c) => ({ nombre: c.codigo || c.nombre, estado: c.estado, extra: c.tipo, obj: c }))],
+    /* Vertical externa (Fase 4): plataforma IoT municipal vía ThingsBoard.
+       Si el backend responde 503 (sin configurar), la capa simplemente no aparece. */
+    banderas: ["/gemelo/playas/banderas", "#0E9BD8", "Banderas de playa (IoT municipal)",
+      (d) => (d.banderas || []).map((b) => ({ nombre: b.nombre, estado: b.estado,
+        extra: "bandera: " + String(b.estado).replace(/_/g, " "), obj: b }))],
   };
   const claves = Object.keys(fuentes);
   const res = await Promise.allSettled(claves.map((k) => api.get(fuentes[k][0])));
@@ -145,13 +152,16 @@ async function maplibre() {
 
 async function renderGemelo2D(el) {
   el.innerHTML = sub("Gemelo digital", "Gemelo vivo del destino",
-    "Réplica digital operativa (Fase 1): todos los activos georreferenciados de la plataforma sobre un único mapa en tiempo real, coloreados por estado y con refresco automático cada minuto.",
+    "Réplica digital operativa: los activos georreferenciados de la plataforma y de la vertical IoT municipal (banderas de playa y aforo del parque, vía ThingsBoard) sobre un único mapa en tiempo real, con refresco automático cada minuto.",
     '<button class="btn btn--pri" onclick="UI.goD(\'gd-3d\')">Vista 3D →</button>') +
     '<div class="grid g4" style="margin-bottom:16px" id="gd-kpis"></div>' +
     '<div class="card card--pad0" style="overflow:hidden"><div id="gemelo-2d" style="height:600px;width:100%"></div></div>' +
     '<div class="mini" style="color:var(--muted);margin-top:8px" id="gd-refresco"></div>';
 
-  const capas = await cargarActivos();
+  const [capas, aforo] = await Promise.all([
+    cargarActivos(),
+    api.get("/gemelo/parque/aforo").catch(() => null), /* 503 si la vertical no está configurada */
+  ]);
 
   const total = capas.reduce((a, c) => a + c.items.length, 0);
   const enAlerta = capas.reduce((a, c) => a + c.items.filter((x) => x.sem !== "ok").length, 0);
@@ -159,7 +169,10 @@ async function renderGemelo2D(el) {
     kpi("Activos en el gemelo", total, capas.filter((c) => c.items.length).length + " capas con datos", "ic-navy", "map") +
     kpi("Operativos", total - enAlerta, "Estado nominal", "ic-ok", "bolt") +
     kpi("Con incidencia", enAlerta, "Alerta o sin comunicación", "ic-coral", "warn") +
-    kpi("Refresco", "60 s", "Telemetría de la plataforma en vivo", "ic-teal", "clock");
+    (aforo && aforo.aforo_actual != null
+      ? kpi("Aforo P.N. Cabo de Gata", aforo.aforo_actual + " vehículos",
+          "Ahora dentro · " + (aforo.entradas_hoy != null ? aforo.entradas_hoy + " entradas hoy · " : "") + "IoT municipal en vivo", "ic-teal", "map")
+      : kpi("Refresco", "60 s", "Telemetría de la plataforma en vivo", "ic-teal", "clock"));
 
   let L;
   try {
