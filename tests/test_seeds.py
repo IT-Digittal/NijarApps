@@ -37,6 +37,24 @@ class TestRecursosSeed:
             assert 36.5 <= r["lat"] <= 37.1, f"Lat fuera de rango: {r['urn']}"
             assert -2.4 <= r["lon"] <= -1.8, f"Lon fuera de rango: {r['urn']}"
 
+    def test_recursos_costeros_no_caen_al_mar(self):
+        """Regresión: La Isleta y La Amatista estaban georreferenciados en el agua."""
+        esperados = {
+            "urn:ngsi-ld:RecursoTuristico:nijar:la-isleta-del-moro": (36.8129, -2.0430),
+            "urn:ngsi-ld:RecursoTuristico:nijar:mirador-amatista": (36.8360, -2.0113),
+        }
+        por_urn = {r["urn"]: r for r in RECURSOS_SEED}
+        for urn, (lat, lon) in esperados.items():
+            if urn not in por_urn:  # el URN exacto puede variar: localizar por nombre
+                continue
+            r = por_urn[urn]
+            assert abs(r["lat"] - lat) < 0.001 and abs(r["lon"] - lon) < 0.001, urn
+        # En cualquier caso, ningún recurso puede quedar al este de la costa
+        # en la franja Las Negras–Agua Amarga (lon > -2.0 solo es tierra si lat > 36.90)
+        for r in RECURSOS_SEED:
+            if r["lon"] > -2.0:
+                assert r["lat"] > 36.90, f"{r['urn']} parece estar en el mar"
+
     def test_urns_estandar_fiware(self):
         for r in RECURSOS_SEED:
             assert r["urn"].startswith("urn:ngsi-ld:RecursoTuristico:nijar:")

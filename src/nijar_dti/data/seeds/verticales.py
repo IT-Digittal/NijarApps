@@ -47,6 +47,21 @@ _POT_W = {"led": 45, "vsap": 100, "solar": 28}
 _VIDA_H = {"led": 100000, "vsap": 24000, "solar": 60000}
 _MARCA = {"led": "Salvi Basic LED", "vsap": "Carandini VSAP", "solar": "Solar autónoma IP66"}
 
+# San José y Las Negras tienen el mar justo al este del núcleo: la dispersión
+# aleatoria de activos solo puede ir hacia tierra (oeste) para no caer al agua.
+# UMBRAL_LON_MAR marca la longitud a partir de la cual ya es mar en esas zonas
+# (lo usa también el backfill correctivo del seed_loader).
+JITTER_LON_ZONA: dict[str, tuple[float, float]] = {
+    "sanjose": (-0.014, -0.001),
+    "negras": (-0.014, -0.001),
+}
+UMBRAL_LON_MAR: dict[str, float] = {"sanjose": -2.105, "negras": -2.001}
+
+
+def _jitter_lon(zid: str, amplitud: float) -> float:
+    lo, hi = JITTER_LON_ZONA.get(zid, (-amplitud, amplitud))
+    return _R.uniform(lo, hi)
+
 
 def generar_cuadros_seed() -> list[dict]:
     zonas = {z["id"]: z for z in ZONAS_ALUMBRADO}
@@ -77,7 +92,7 @@ def generar_cuadros_seed() -> list[dict]:
             "estado": estado,
             "alarmas": alarmas or None,
             "latitud": round(z["latitud"] + _R.uniform(-0.01, 0.01), 6),
-            "longitud": round(z["longitud"] + _R.uniform(-0.01, 0.01), 6),
+            "longitud": round(z["longitud"] + _jitter_lon(zid, 0.01), 6),
         })
         idx[zid] += 1
     return cuadros
@@ -206,7 +221,7 @@ def generar_contenedores_seed() -> list[dict]:
             "ruta": _R.choice(_RUTAS),
             "estado": estado,
             "latitud": round(z["latitud"] + _R.uniform(-0.012, 0.012), 6),
-            "longitud": round(z["longitud"] + _R.uniform(-0.012, 0.012), 6),
+            "longitud": round(z["longitud"] + _jitter_lon(zid, 0.012), 6),
         })
     return contenedores
 
@@ -272,11 +287,11 @@ COORDS_CAMARAS: dict[str, tuple[float, float]] = {
     "Depósito de agua San José": (36.7641, -2.1093),
     "Nave de servicios": (36.8432, -2.1521),
     "Cala de Enmedio (sendero)": (36.9441, -1.9603),
-    "Playa del Playazo": (36.8557, -2.0021),
+    "Playa del Playazo": (36.8560, -2.0048),
     "Rotonda AL-3108": (36.8002, -2.1401),
     "Aparcamiento Genoveses": (36.7468, -2.1252),
     "Isleta del Moro": (36.8128, -2.0431),
-    "Agua Amarga": (36.9389, -1.9351),
+    "Agua Amarga": (36.9393, -1.9363),
     "Fernán Pérez": (36.8763, -2.0532),
     "San Isidro": (36.8791, -2.1562),
 }

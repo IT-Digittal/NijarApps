@@ -7,6 +7,7 @@ cableado (routing + auth): responden 401 sin token antes de tocar la BBDD.
 from __future__ import annotations
 
 from nijar_dti.data.seeds.verticales import (
+    UMBRAL_LON_MAR,
     ZONAS_ALUMBRADO,
     generar_camaras_seed,
     generar_contenedores_seed,
@@ -68,6 +69,13 @@ class TestSeedResto:
         cams = generar_camaras_seed()
         assert len(cams) == 24
         assert sum(1 for c in cams if c["estado"] == "sin_comunicacion") == 1
+
+    def test_activos_costeros_no_caen_al_mar(self):
+        """En San José y Las Negras el mar está al este: la dispersión no puede cruzarlo."""
+        for item in generar_cuadros_seed() + generar_contenedores_seed():
+            umbral = UMBRAL_LON_MAR.get(item["zona_id"])
+            if umbral is not None:
+                assert item["longitud"] <= umbral, f"{item['codigo']} en el mar: {item['longitud']}"
 
     def test_todos_los_activos_geoposicionables_llevan_coordenadas(self):
         """Sin coordenadas, los activos no aparecen en el gemelo ni en el mapa."""

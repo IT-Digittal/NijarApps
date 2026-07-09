@@ -47,6 +47,7 @@ from nijar_dti.data.seeds.sensores import SENSORES_SEED
 from nijar_dti.data.seeds.verticales import (
     COORDS_CAMARAS,
     COORDS_MOVILIDAD,
+    UMBRAL_LON_MAR,
     ZONAS_ALUMBRADO,
     generar_camaras_seed,
     generar_contenedores_seed,
@@ -141,14 +142,36 @@ async def seed_roles(db: AsyncSession) -> None:
 
 
 async def seed_recursos(db: AsyncSession) -> None:
+    from sqlalchemy import func as sqlfunc
+
     creados = 0
     traducciones_actualizadas = 0
+    coordenadas_actualizadas = 0
     for r in RECURSOS_SEED:
         urn = r["urn"]
         existente = (
             await db.execute(select(RecursoTuristico).where(RecursoTuristico.urn == urn))
         ).scalar_one_or_none()
         if existente is not None:
+            # Refrescar coordenadas si difieren del seed (>1 m): versiones
+            # anteriores tenían varios recursos desplazados (dos caían al mar).
+            if existente.ubicacion is not None:
+                coincide = (
+                    await db.execute(
+                        select(
+                            sqlfunc.ST_DWithin(
+                                RecursoTuristico.ubicacion,
+                                sqlfunc.ST_GeographyFromText(
+                                    f"SRID=4326;POINT({r['lon']} {r['lat']})"
+                                ),
+                                1.0,
+                            )
+                        ).where(RecursoTuristico.urn == urn)
+                    )
+                ).scalar()
+                if not coincide:
+                    existente.ubicacion = _wkt(r["lon"], r["lat"])  # type: ignore[assignment]
+                    coordenadas_actualizadas += 1
             # Refrescar traducciones si el seed las incorpora y faltan/difieren.
             # Se limita a los campos i18n para evitar sobreescribir contenido
             # editado desde el CMS.
@@ -183,9 +206,10 @@ async def seed_recursos(db: AsyncSession) -> None:
         db.add(obj)
         creados += 1
     log.info(
-        "Recursos turísticos creados: %d · traducciones actualizadas: %d",
+        "Recursos turísticos creados: %d · traducciones: %d · coordenadas corregidas: %d",
         creados,
         traducciones_actualizadas,
+        coordenadas_actualizadas,
     )
 
 
@@ -604,18 +628,16 @@ async def backfill_coordenadas_verticales(db: AsyncSession) -> None:
             p.latitud, p.longitud = c
             actualizados += 1
 
-    # Cámaras: por nombre de emplazamiento; si no, centro de su zona + dispersión
-    for cam in (
-        (await db.execute(select(CamaraCCTV).where(CamaraCCTV.latitud.is_(None))))
-        .scalars()
-        .all()
-    ):
+    # Cámaras: por nombre de emplazamiento; si no, centro de su zona + dispersión.
+    # Las que ya tienen coordenadas se reconcilian con el mapa del seed (los
+    # emplazamientos son fijos y alguna corrección puntual debe propagarse).
+    for cam in (await db.execute(select(CamaraCCTV))).scalars().all():
         c = COORDS_CAMARAS.get(cam.nombre)
-        if c is None and cam.zona_id in zonas:
+        if c is None and cam.latitud is None and cam.zona_id in zonas:
             zlat, zlon = zonas[cam.zona_id]
             dx, dy = dispersion(cam.codigo)
             c = (round(zlat + dx, 6), round(zlon + dy, 6))
-        if c is not None:
+        if c is not None and (cam.latitud, cam.longitud) != c:
             cam.latitud, cam.longitud = c
             actualizados += 1
 
@@ -632,8 +654,34 @@ async def backfill_coordenadas_verticales(db: AsyncSession) -> None:
             ct.longitud = round(zlon + dy, 6)
             actualizados += 1
 
-    if actualizados:
-        log.info("Backfill de coordenadas en verticales: %d filas actualizadas", actualizados)
+    # Corrección «mar adentro»: en San José y Las Negras el mar está justo al
+    # este del núcleo, y la dispersión antigua (±0,012°) dejó activos en el
+    # agua. Se reposicionan hacia tierra (oeste del centro de zona) de forma
+    # determinista. Solo afecta a filas más allá del umbral de costa.
+    reposicionados = 0
+    filas_mar: list[Contenedor | CuadroMando] = [
+        *(await db.execute(select(Contenedor).where(Contenedor.longitud.is_not(None))))
+        .scalars()
+        .all(),
+        *(await db.execute(select(CuadroMando).where(CuadroMando.longitud.is_not(None))))
+        .scalars()
+        .all(),
+    ]
+    for fila in filas_mar:
+        umbral = UMBRAL_LON_MAR.get(fila.zona_id)
+        if umbral is None or fila.longitud is None or float(fila.longitud) <= umbral:
+            continue
+        _zlat, zlon = zonas[fila.zona_id]
+        dx, _dy = dispersion(fila.codigo)
+        fila.longitud = round(zlon - 0.001 - abs(dx), 6)
+        reposicionados += 1
+
+    if actualizados or reposicionados:
+        log.info(
+            "Backfill de coordenadas en verticales: %d rellenadas · %d sacadas del mar",
+            actualizados,
+            reposicionados,
+        )
 
 
 async def seed_fuentes_datos(db: AsyncSession) -> None:
