@@ -44,7 +44,13 @@ function bloqueInteranual(kpis, titulo, claves) {
     '<div class="card__s">Frente al mismo periodo del año pasado · fuentes oficiales (INE / Junta / AENA)</div></div>' +
     '<span class="ai-chip">✦ interanual</span></div><div class="grid g4">' +
     lista.map((k) => {
-      const col = k.tendencia === "sube" ? "var(--ok)" : (k.tendencia === "baja" ? "var(--err)" : "var(--muted)");
+      // Color según si el cambio es POSITIVO para la gestión (depende de 'sentido').
+      let col = "var(--muted)";
+      if (k.tendencia !== "estable" && k.sentido !== "neutro") {
+        const subeBueno = k.sentido !== "bajar_bueno";
+        const positivo = (k.tendencia === "sube") === subeBueno;
+        col = positivo ? "var(--ok)" : "var(--err)";
+      }
       const fl = k.tendencia === "sube" ? "▲" : (k.tendencia === "baja" ? "▼" : "▬");
       const sign = k.variacion_pct > 0 ? "+" : "";
       return '<div class="card" style="box-shadow:none;border:1.5px solid var(--line)">' +
@@ -305,11 +311,14 @@ function renderVertical(id) {
         '<div class="mini" style="margin-top:6px"><b>Recomendación:</b> ' + esc(sem.recomendacion) + "</div></div>";
     }
     h += '<div class="grid g4" style="margin-bottom:16px">' + _kpisVertical(id, ov, extra) + "</div>";
-    // Comparativa interanual real donde procede (turismo completo; movilidad: proxy AENA).
+    // Comparativa interanual REAL de la vertical (histórico mensual de 2 años).
+    const ivVert = (resumen.interanual_verticales || []).filter((k) => k.vertical === id);
+    if (ivVert.length) h += bloqueInteranual(ivVert, "Evolución interanual (vs mismo mes año pasado)", null);
+    // Turismo: series oficiales del contexto. Movilidad: proxy aeropuerto (AENA).
     if (id === "turismo") {
       h += bloqueInteranual(resumen.interanual_turismo, "Evolución interanual del turismo", null);
     } else if (id === "movilidad") {
-      h += bloqueInteranual(resumen.interanual_turismo, "Presión turística sobre la movilidad (proxy: aeropuerto)", ["pasajeros_aena"]);
+      h += bloqueInteranual(resumen.interanual_turismo, "Presión turística (proxy: aeropuerto de Almería)", ["pasajeros_aena"]);
     }
     h += '<div class="grid g2">' +
       '<div class="card"><div class="card__t">Preguntas que responde</div><ul style="margin:10px 0 0;padding-left:18px;font-size:13.5px;line-height:1.9">' +

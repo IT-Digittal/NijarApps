@@ -100,6 +100,7 @@ class KpiInteranual(BaseModel):
     clave: str
     nombre: str
     fuente: str
+    vertical: str | None = None
     periodo: str
     periodo_anterior: str
     valor: float
@@ -107,6 +108,8 @@ class KpiInteranual(BaseModel):
     variacion_pct: float
     unidad: str | None = None
     tendencia: Literal["sube", "baja", "estable"] = "estable"
+    # Semántica para colorear: si "subir" o "bajar" es lo positivo.
+    sentido: Literal["subir_bueno", "bajar_bueno", "neutro"] = "subir_bueno"
 
 
 class ResumenMunicipal(BaseModel):
@@ -126,4 +129,5 @@ class ResumenMunicipal(BaseModel):
     alertas: list[AlertaDireccion]
     impacto: ImpactoDireccion
     interanual_turismo: list[KpiInteranual] = Field(default_factory=list)
+    interanual_verticales: list[KpiInteranual] = Field(default_factory=list)
     generado_en: datetime

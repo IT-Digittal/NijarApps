@@ -41,6 +41,7 @@ from nijar_dti.data.seeds.demo_data import (
 )
 from nijar_dti.data.seeds.faqs import FAQS_SEED
 from nijar_dti.data.seeds.fuentes_datos import FUENTES_DATOS_SEED
+from nijar_dti.data.seeds.historico_verticales import generar_historico_seed
 from nijar_dti.data.seeds.recursos_turisticos import RECURSOS_SEED
 from nijar_dti.data.seeds.sensores import SENSORES_SEED
 from nijar_dti.data.seeds.verticales import (
@@ -60,6 +61,7 @@ from nijar_dti.models.contexto import ContextoTuristico
 from nijar_dti.models.evento_turistico import EventoTuristico
 from nijar_dti.models.faq import FAQ, InteraccionChatbot, NivelConfianza
 from nijar_dti.models.incidencia import Incidencia
+from nijar_dti.models.metrica_historica import MetricaHistorica
 from nijar_dti.models.observacion import Observacion
 from nijar_dti.models.opinion import Opinion
 from nijar_dti.models.recurso_turistico import RecursoTuristico
@@ -577,6 +579,16 @@ async def seed_fuentes_datos(db: AsyncSession) -> None:
     log.info("Fuentes de datos / integraciones creadas: %d", len(FUENTES_DATOS_SEED))
 
 
+async def seed_historico_verticales(db: AsyncSession) -> None:
+    """Carga 2 años de histórico mensual por vertical (idempotente por tabla)."""
+    if not await _tabla_vacia(db, MetricaHistorica):
+        return
+    filas = generar_historico_seed(anios=2)
+    for f in filas:
+        db.add(MetricaHistorica(**f))
+    log.info("Histórico mensual de verticales creado: %d puntos", len(filas))
+
+
 async def run() -> None:
     async with AsyncSessionLocal() as db:
         try:
@@ -601,6 +613,7 @@ async def run() -> None:
             await seed_contexto_backfill(db)
             await seed_verticales(db)
             await seed_fuentes_datos(db)
+            await seed_historico_verticales(db)
             await db.commit()
             log.info("Seeds aplicados correctamente")
         except Exception:  # noqa: BLE001

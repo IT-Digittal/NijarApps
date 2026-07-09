@@ -307,6 +307,41 @@ async def _interanual_turismo(db: AsyncSession) -> list[KpiInteranual]:
     return kpis
 
 
+async def _interanual_verticales(db: AsyncSession) -> list[KpiInteranual]:
+    """Comparativa interanual REAL por vertical desde el histórico mensual."""
+    from sqlalchemy import select
+
+    from nijar_dti.data.seeds.historico_verticales import INDICADORES
+    from nijar_dti.models.metrica_historica import MetricaHistorica
+
+    meta = {(v, i): (nom, uni, sent) for v, i, nom, uni, *_rest, sent in INDICADORES}
+    filas = (
+        await db.execute(select(MetricaHistorica).order_by(MetricaHistorica.periodo))
+    ).scalars().all()
+    grupos: dict[tuple[str, str], list[MetricaHistorica]] = {}
+    for f in filas:
+        grupos.setdefault((f.vertical, f.indicador), []).append(f)
+
+    kpis: list[KpiInteranual] = []
+    for (vertical, indicador), pts in grupos.items():
+        if len(pts) <= 12:
+            continue
+        actual, anterior = pts[-1], pts[-13]  # mismo mes del año anterior
+        if not anterior.valor:
+            continue
+        var = round((actual.valor - anterior.valor) / anterior.valor * 100, 1)
+        tendencia = "sube" if var > 0.5 else ("baja" if var < -0.5 else "estable")
+        nombre, unidad, sentido = meta.get((vertical, indicador), (indicador, None, "neutro"))
+        kpis.append(KpiInteranual(
+            clave=indicador, nombre=nombre, fuente="plataforma", vertical=vertical,
+            periodo=actual.periodo, periodo_anterior=anterior.periodo,
+            valor=float(actual.valor), valor_anterior=float(anterior.valor),
+            variacion_pct=var, unidad=actual.unidad or unidad,
+            tendencia=tendencia, sentido=sentido,
+        ))
+    return kpis
+
+
 async def resumen_municipal(db: AsyncSession) -> ResumenMunicipal:
     k = await _kpis(db)
     semaforo = _construir_semaforo(k)
@@ -350,5 +385,6 @@ async def resumen_municipal(db: AsyncSession) -> ResumenMunicipal:
         alertas=alertas,
         impacto=impacto,
         interanual_turismo=await _interanual_turismo(db),
+        interanual_verticales=await _interanual_verticales(db),
         generado_en=datetime.now(UTC),
     )
