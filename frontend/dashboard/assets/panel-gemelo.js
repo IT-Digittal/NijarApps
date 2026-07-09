@@ -266,6 +266,23 @@ async function renderGemelo3D(el) {
       mapa3d.addControl(new gl.NavigationControl({ visualizePitch: true }));
       mapa3d.on("load", () => {
         mapa3d.setTerrain({ source: "dem", exaggeration: 1.35 });
+        /* Fase 2: edificios 3D extruidos (huellas OSM vía OpenFreeMap, sin clave) */
+        try {
+          mapa3d.addSource("edificios", { type: "vector", url: "https://tiles.openfreemap.org/planet" });
+          mapa3d.addLayer({
+            id: "edificios-3d",
+            type: "fill-extrusion",
+            source: "edificios",
+            "source-layer": "building",
+            minzoom: 13,
+            paint: {
+              "fill-extrusion-color": "#EFE7D6",
+              "fill-extrusion-height": ["coalesce", ["get", "render_height"], 4.5],
+              "fill-extrusion-base": ["coalesce", ["get", "render_min_height"], 0],
+              "fill-extrusion-opacity": 0.9,
+            },
+          });
+        } catch { /* sin edificios: el terreno sigue funcionando */ }
         capas.forEach((capa) => {
           capa.items.forEach((a) => {
             const dot = document.createElement("div");
@@ -289,6 +306,124 @@ async function renderGemelo3D(el) {
     }));
 }
 
+/* ================= SIMULADOR DE ESCENARIOS (Fase 3) ================= */
+
+const ESCENARIOS = [
+  {
+    id: "cierre_monsul",
+    n: "Cierre de acceso rodado a Mónsul",
+    d: "Restricción del acceso en coche a la playa de Mónsul. Parte de los visitantes se desvía a Genoveses y otras calas; el resto desiste.",
+    param: "Nivel de restricción",
+    supuesto: "Supuestos: Mónsul concentra ~25% de las visitas de costa; el 60% de los desviados se redistribuye dentro del destino.",
+    aplicar(base, p) {
+      const f = 1 - 0.25 * (p / 100) * 0.4;
+      return { serie: base.map((v) => Math.round(v * f)), nota: "Visitas redistribuidas a otras calas: " + Math.round(base.reduce((a, b) => a + b, 0) * 0.25 * (p / 100) * 0.6) };
+    },
+  },
+  {
+    id: "lanzadera",
+    n: "Lanzadera San José – Genoveses",
+    d: "Servicio de autobús lanzadera en temporada. Aumenta la capacidad de acogida los fines de semana y reduce la presión del parking.",
+    param: "Frecuencia del servicio",
+    supuesto: "Supuestos: la lanzadera eleva la afluencia de fin de semana hasta un +12% y elimina el cuello de botella del aparcamiento.",
+    aplicar(base, p) {
+      const serie = base.map((v, i) => Math.round(v * (i % 7 >= 5 ? 1 + 0.12 * (p / 100) : 1)));
+      return { serie, nota: "Plazas de parking liberadas estimadas por día punta: " + Math.round(140 * (p / 100)) };
+    },
+  },
+  {
+    id: "evento",
+    n: "Gran evento en Rodalquilar",
+    d: "Festival o evento cultural puntual. Añade visitantes concentrados en torno al día del evento.",
+    param: "Asistentes esperados",
+    supuesto: "Supuestos: el evento se celebra a mitad del horizonte; el 30% de asistentes llega la víspera o se queda al día siguiente.",
+    aplicar(base, p) {
+      const serie = base.slice();
+      const d = Math.floor(serie.length / 2);
+      const asistentes = p * 30;
+      serie[d] = Math.round(serie[d] + asistentes * 0.7);
+      if (serie[d - 1] != null) serie[d - 1] = Math.round(serie[d - 1] + asistentes * 0.15);
+      if (serie[d + 1] != null) serie[d + 1] = Math.round(serie[d + 1] + asistentes * 0.15);
+      return { serie, nota: "Pico del evento: día " + (d + 1) + " del horizonte (+" + Math.round(asistentes * 0.7) + " visitas)" };
+    },
+  },
+  {
+    id: "ola_calor",
+    n: "Ola de calor",
+    d: "Episodio de temperaturas extremas. Sube la demanda de playas y baja la de senderismo; crece el riesgo de saturación.",
+    param: "Intensidad del episodio",
+    supuesto: "Supuestos: cada 10 puntos de intensidad elevan ~2,4% la afluencia de costa (histórico de veranos previos, pendiente de calibrar).",
+    aplicar(base, p) {
+      return { serie: base.map((v) => Math.round(v * (1 + 0.24 * (p / 100)))), nota: "Vigilar aforos de Genoveses y Mónsul en los días pico" };
+    },
+  },
+];
+
+async function renderSimulador(el) {
+  el.innerHTML = sub("Simulador", "Simulador de escenarios «qué pasaría si»",
+    "Fase 3 del gemelo: simula decisiones de gestión sobre la predicción real de afluencia de la plataforma y compara el resultado con la línea base.", "") +
+    '<div class="card"><div class="mini" style="color:var(--muted);padding:20px 0;text-align:center">Cargando la predicción base…</div></div>';
+
+  let base = null;
+  try {
+    const af = await api.get("/prediccion/afluencia?metrica=visitas_totem&horizonte_dias=14");
+    base = (af.puntos || []).map((p) => p.prediccion ?? p.valor ?? 0);
+  } catch { /* sin predicción */ }
+
+  if (!base || !base.length) {
+    el.innerHTML = sub("Simulador", "Simulador de escenarios",
+      "Fase 3 del gemelo digital.") +
+      '<div class="card"><div class="mini" style="color:var(--muted);padding:26px 0;text-align:center">El simulador necesita la predicción de afluencia y aún no hay histórico suficiente para generarla.</div></div>';
+    return;
+  }
+
+  const opciones = ESCENARIOS.map((e, i) => '<option value="' + i + '">' + esc(e.n) + "</option>").join("");
+  el.innerHTML = sub("Simulador", "Simulador de escenarios «qué pasaría si»",
+    "Simula decisiones de gestión sobre la predicción real de afluencia (línea discontinua: base; línea sólida: escenario).", "") +
+    '<div class="grid c7-5" style="margin-bottom:16px">' +
+    '<div class="card"><div class="card__h"><div><div class="card__t">Escenario</div><div class="card__s" id="sim-desc"></div></div></div>' +
+    '<select id="sim-esc" style="width:100%;border:1.5px solid var(--line);border-radius:10px;padding:10px 12px;font-size:14px;font-family:inherit;margin-bottom:14px">' + opciones + "</select>" +
+    '<label class="mini" style="color:var(--muted)"><span id="sim-param-label">Intensidad</span>: <b id="sim-param-val">50</b>%</label>' +
+    '<input type="range" id="sim-param" min="10" max="100" value="50" style="width:100%;margin:6px 0 14px">' +
+    '<button class="btn btn--pri" id="sim-run" style="width:100%">Simular escenario</button>' +
+    '<div class="mini" id="sim-supuesto" style="color:var(--muted);margin-top:12px"></div></div>' +
+    '<div class="card"><div class="card__h"><div><div class="card__t">Impacto estimado</div><div class="card__s">Sobre los próximos 14 días</div></div></div><div id="sim-kpis" class="mini" style="color:var(--muted)">Ejecuta una simulación para ver el impacto.</div></div>' +
+    "</div>" +
+    '<div class="card"><div class="card__h"><div><div class="card__t">Afluencia prevista · base vs escenario</div><div class="card__s">Predicción real del modelo de la plataforma como línea base</div></div></div><div id="sim-chart">' +
+    (U ? U.areaChart(base, { color: "blue", hpx: 190, h: 200 }) : "") + "</div></div>" +
+    '<div class="mini" style="color:var(--muted);margin-top:8px">Simulador paramétrico (Fase 3 inicial): la línea base procede del modelo de predicción real; las elasticidades de cada escenario son supuestos documentados, pendientes de calibración con los datos de la primera temporada completa.</div>';
+
+  const sel = el.querySelector("#sim-esc");
+  const slider = el.querySelector("#sim-param");
+  const pintarMeta = () => {
+    const e = ESCENARIOS[Number(sel.value)];
+    el.querySelector("#sim-desc").textContent = e.d;
+    el.querySelector("#sim-param-label").textContent = e.param;
+    el.querySelector("#sim-supuesto").textContent = e.supuesto;
+  };
+  pintarMeta();
+  sel.addEventListener("change", pintarMeta);
+  slider.addEventListener("input", () => { el.querySelector("#sim-param-val").textContent = slider.value; });
+
+  el.querySelector("#sim-run").addEventListener("click", () => {
+    const e = ESCENARIOS[Number(sel.value)];
+    const p = Number(slider.value);
+    const { serie, nota } = e.aplicar(base, p);
+    const totalBase = base.reduce((a, b) => a + b, 0);
+    const totalEsc = serie.reduce((a, b) => a + b, 0);
+    const delta = totalBase ? ((totalEsc - totalBase) / totalBase) * 100 : 0;
+    const pico = Math.max.apply(null, serie);
+    const diaPico = serie.indexOf(pico) + 1;
+    el.querySelector("#sim-chart").innerHTML = U.areaChart(serie, { color: delta >= 0 ? "teal" : "gold", hpx: 190, h: 200, compare: base });
+    el.querySelector("#sim-kpis").innerHTML =
+      '<div class="kv"><span class="k">Visitas base (14 días)</span><span class="v tnum">' + U.fmt(totalBase) + "</span></div>" +
+      '<div class="kv"><span class="k">Visitas con escenario</span><span class="v tnum">' + U.fmt(totalEsc) + "</span></div>" +
+      '<div class="kv"><span class="k">Variación</span><span class="v tnum" style="color:' + (delta >= 0 ? "var(--ok)" : "var(--err)") + '">' + (delta >= 0 ? "+" : "") + delta.toFixed(1) + "%</span></div>" +
+      '<div class="kv"><span class="k">Pico del escenario</span><span class="v tnum">' + U.fmt(pico) + " (día " + diaPico + ")</span></div>" +
+      '<div class="kv" style="align-items:flex-start"><span class="k">Lectura</span><span class="v mini" style="max-width:60%;text-align:right">' + esc(nota) + "</span></div>";
+  });
+}
+
 /* ---------------- registro en la consola DTI ---------------- */
 
 (function init() {
@@ -302,6 +437,7 @@ async function renderGemelo3D(el) {
     { g: "Gemelo digital" },
     { id: "gd-mapa", n: "Gemelo vivo (2D)", i: "map", r: renderGemelo2D },
     { id: "gd-3d", n: "Vista 3D del territorio", i: "globe", r: renderGemelo3D },
+    { id: "gd-sim", n: "Simulador de escenarios", i: "chart", r: renderSimulador },
   ];
   secciones.forEach((s) => {
     if (s.g) { DTI.DSECTIONS.push({ g: s.g }); return; }
