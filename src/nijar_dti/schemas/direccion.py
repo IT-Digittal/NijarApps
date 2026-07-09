@@ -90,6 +90,25 @@ class ImpactoDireccion(BaseModel):
     ambiental: ImpactoAmbiental
 
 
+class KpiInteranual(BaseModel):
+    """Indicador con comparativa "vs mismo periodo del año pasado".
+
+    Solo se produce cuando existe serie histórica real (turismo: contexto
+    oficial INE/Junta/AENA). No hay interanual para las verticales técnicas.
+    """
+
+    clave: str
+    nombre: str
+    fuente: str
+    periodo: str
+    periodo_anterior: str
+    valor: float
+    valor_anterior: float
+    variacion_pct: float
+    unidad: str | None = None
+    tendencia: Literal["sube", "baja", "estable"] = "estable"
+
+
 class ResumenMunicipal(BaseModel):
     """Cockpit ejecutivo del municipio."""
 
@@ -106,4 +125,5 @@ class ResumenMunicipal(BaseModel):
     semaforo: list[EstadoVertical]
     alertas: list[AlertaDireccion]
     impacto: ImpactoDireccion
+    interanual_turismo: list[KpiInteranual] = Field(default_factory=list)
     generado_en: datetime
