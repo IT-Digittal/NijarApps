@@ -67,6 +67,21 @@ function coordsGeoJSON(o) {
   return null;
 }
 
+/* Recorre todas las páginas de un endpoint paginado (el gemelo debe mostrar
+   el parque COMPLETO de dispositivos, no solo la primera página). */
+async function cargarPaginado(ruta, pageSize = 200, maxPaginas = 10) {
+  const primera = await api.get(ruta + "?page=1&page_size=" + pageSize);
+  const items = (primera.items || []).slice();
+  const total = primera.total ?? items.length;
+  const paginas = Math.min(Math.ceil(total / pageSize), maxPaginas);
+  if (paginas > 1) {
+    const resto = await Promise.all(Array.from({ length: paginas - 1 }, (_, i) =>
+      api.get(ruta + "?page=" + (i + 2) + "&page_size=" + pageSize).catch(() => null)));
+    resto.forEach((p) => { if (p && p.items) items.push(...p.items); });
+  }
+  return { items, total };
+}
+
 async function cargarActivos() {
   const fuentes = {
     turismo: ["/tourism/resources?page=1&page_size=200&publicado=true", "#1F6FE5", "Recursos turísticos",
@@ -75,7 +90,7 @@ async function cargarActivos() {
       (d) => (d.items || []).map((s) => ({ nombre: s.nombre, estado: s.estado, extra: s.tipo, obj: s }))],
     alumbrado: ["/verticales/alumbrado/cuadros", "#F0B429", "Alumbrado · cuadros",
       (d) => (d.items || d || []).map((c) => ({ nombre: c.nombre || c.codigo, estado: c.estado, extra: (c.circuitos != null ? c.circuitos + " circuitos" : ""), obj: c }))],
-    residuos: ["/verticales/residuos/contenedores?page_size=200", "#7B5A3A", "Residuos · contenedores",
+    residuos: [() => cargarPaginado("/verticales/residuos/contenedores"), "#7B5A3A", "Residuos · contenedores",
       (d) => (d.items || d || []).map((c) => ({ nombre: c.codigo || c.nombre, estado: c.estado, extra: (c.llenado_pct != null ? "llenado " + c.llenado_pct + "%" : c.fraccion), obj: c }))],
     movilidad: ["/verticales/movilidad/puntos", "#7C6BF0", "Movilidad",
       (d) => (d.items || d || []).map((p) => ({ nombre: p.nombre || p.codigo, estado: p.estado, extra: p.tipo, obj: p }))],
@@ -88,7 +103,10 @@ async function cargarActivos() {
         extra: "bandera: " + String(b.estado).replace(/_/g, " "), obj: b }))],
   };
   const claves = Object.keys(fuentes);
-  const res = await Promise.allSettled(claves.map((k) => api.get(fuentes[k][0])));
+  const res = await Promise.allSettled(claves.map((k) => {
+    const f = fuentes[k][0];
+    return typeof f === "function" ? f() : api.get(f);
+  }));
   const capas = [];
   claves.forEach((k, i) => {
     const [, color, nombre, mapear] = fuentes[k];
@@ -187,7 +205,7 @@ async function renderGemelo2D(el) {
     const cont = document.getElementById("gemelo-2d");
     if (!cont || cont.dataset.iniciado) return;
     cont.dataset.iniciado = "1";
-    mapa2d = L.map(cont).setView(CENTRO, 11);
+    mapa2d = L.map(cont, { preferCanvas: true }).setView(CENTRO, 11); /* canvas: fluido con ~800 marcadores */
     L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 18, attribution: "&copy; OpenStreetMap" }).addTo(mapa2d);
 
     const grupos = {};
@@ -297,15 +315,36 @@ async function renderGemelo3D(el) {
             },
           });
         } catch { /* sin edificios: el terreno sigue funcionando */ }
+        /* Activos como capa de círculos WebGL: escala a cientos de puntos sin
+           coste por marcador (los Marker DOM no aguantan el parque completo). */
+        const features = [];
         capas.forEach((capa) => {
           capa.items.forEach((a) => {
-            const dot = document.createElement("div");
-            dot.style.cssText = "width:14px;height:14px;border-radius:50%;border:2.5px solid #fff;box-shadow:0 1px 6px rgba(0,0,0,.5);background:" +
-              (a.sem === "ok" ? capa.color : COLOR_ESTADO[a.sem]);
-            const popup = new gl.Popup({ offset: 12 }).setHTML(popupActivo(capa, a));
-            new gl.Marker({ element: dot }).setLngLat([a.ll[1], a.ll[0]]).setPopup(popup).addTo(mapa3d);
+            features.push({
+              type: "Feature",
+              geometry: { type: "Point", coordinates: [a.ll[1], a.ll[0]] },
+              properties: { color: a.sem === "ok" ? capa.color : COLOR_ESTADO[a.sem], html: popupActivo(capa, a) },
+            });
           });
         });
+        mapa3d.addSource("activos", { type: "geojson", data: { type: "FeatureCollection", features } });
+        mapa3d.addLayer({
+          id: "activos-puntos",
+          type: "circle",
+          source: "activos",
+          paint: {
+            "circle-radius": 6.5,
+            "circle-color": ["get", "color"],
+            "circle-stroke-width": 2,
+            "circle-stroke-color": "#fff",
+          },
+        });
+        mapa3d.on("click", "activos-puntos", (e) => {
+          const f = e.features && e.features[0];
+          if (f) new gl.Popup({ offset: 10 }).setLngLat(f.geometry.coordinates).setHTML(f.properties.html).addTo(mapa3d);
+        });
+        mapa3d.on("mouseenter", "activos-puntos", () => { mapa3d.getCanvas().style.cursor = "pointer"; });
+        mapa3d.on("mouseleave", "activos-puntos", () => { mapa3d.getCanvas().style.cursor = ""; });
       });
     } catch (e) {
       cont.innerHTML = '<div class="mini" style="color:#fff;padding:40px;text-align:center">Este navegador no soporta WebGL para la vista 3D: ' + esc(e.message || e) + "</div>";
