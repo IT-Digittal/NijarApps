@@ -27,6 +27,41 @@ function tienePermiso(p) {
 }
 function eur(n) { return (n == null ? "—" : Number(n).toLocaleString("es-ES") + " €"); }
 
+function fmtNum(v) {
+  v = Number(v);
+  if (Math.abs(v) >= 1e9) return (v / 1e9).toFixed(1).replace(".", ",") + " mM";
+  if (Math.abs(v) >= 1e6) return (v / 1e6).toFixed(1).replace(".", ",") + " M";
+  return v.toLocaleString("es-ES");
+}
+
+/* Bloque de comparativa interanual (turismo, datos oficiales). Para el turismo,
+   una subida es positiva (verde); una bajada, negativa (rojo). */
+function bloqueInteranual(kpis, titulo, claves) {
+  const lista = (kpis || []).filter((k) => !claves || claves.includes(k.clave));
+  if (!lista.length) return "";
+  return '<div class="card" style="margin-bottom:16px"><div class="card__h"><div>' +
+    '<div class="card__t">' + esc(titulo) + "</div>" +
+    '<div class="card__s">Frente al mismo periodo del año pasado · fuentes oficiales (INE / Junta / AENA)</div></div>' +
+    '<span class="ai-chip">✦ interanual</span></div><div class="grid g4">' +
+    lista.map((k) => {
+      // Color según si el cambio es POSITIVO para la gestión (depende de 'sentido').
+      let col = "var(--muted)";
+      if (k.tendencia !== "estable" && k.sentido !== "neutro") {
+        const subeBueno = k.sentido !== "bajar_bueno";
+        const positivo = (k.tendencia === "sube") === subeBueno;
+        col = positivo ? "var(--ok)" : "var(--err)";
+      }
+      const fl = k.tendencia === "sube" ? "▲" : (k.tendencia === "baja" ? "▼" : "▬");
+      const sign = k.variacion_pct > 0 ? "+" : "";
+      return '<div class="card" style="box-shadow:none;border:1.5px solid var(--line)">' +
+        '<div class="mini" style="color:var(--muted)">' + esc(k.nombre) + "</div>" +
+        '<div class="tnum" style="font-size:22px;font-weight:800;margin-top:4px;color:' + col + '">' + fl + " " + sign + k.variacion_pct + "%</div>" +
+        '<div class="mini tnum" style="margin-top:4px">' + fmtNum(k.valor) + (k.unidad ? " " + esc(k.unidad) : "") +
+        ' <span style="color:var(--muted)">(' + esc(k.periodo) + ")</span></div>" +
+        '<div class="mini" style="color:var(--muted)">Año pasado: ' + fmtNum(k.valor_anterior) + " (" + esc(k.periodo_anterior) + ")</div></div>";
+    }).join("") + "</div></div>";
+}
+
 const ESTADO_BDG = {
   verde: '<span class="bdg bdg-ok">Correcto</span>',
   ambar: '<span class="bdg bdg-warn">Atención</span>',
@@ -109,6 +144,9 @@ async function renderResumen(el) {
     kpi("Servicios en correcto", r.servicios_ok + " de " + r.servicios_total, "Verticales sin alerta", "ic-teal", "chart") +
     kpi("Incidencias críticas", r.incidencias_criticas, "Requieren decisión", r.incidencias_criticas ? "ic-coral" : "ic-ok", "bell") +
     kpi("Satisfacción ciudadana", (r.satisfaccion_pct != null ? r.satisfaccion_pct + "%" : "—"), "Proxy (NPS " + (im.ciudadano.nps ?? "—") + ")", "ic-blue", "chart") + "</div>";
+
+  // Titular interanual de turismo (los 3 más relevantes para decisión política)
+  h += bloqueInteranual(r.interanual_turismo, "Turismo · evolución interanual", ["viajeros", "gasto", "pasajeros_aena"]);
 
   // Semáforo por vertical
   h += '<div class="card card--pad0" style="margin-bottom:16px"><div style="padding:16px 16px 4px" class="card__h"><div>' +
@@ -273,6 +311,15 @@ function renderVertical(id) {
         '<div class="mini" style="margin-top:6px"><b>Recomendación:</b> ' + esc(sem.recomendacion) + "</div></div>";
     }
     h += '<div class="grid g4" style="margin-bottom:16px">' + _kpisVertical(id, ov, extra) + "</div>";
+    // Comparativa interanual REAL de la vertical (histórico mensual de 2 años).
+    const ivVert = (resumen.interanual_verticales || []).filter((k) => k.vertical === id);
+    if (ivVert.length) h += bloqueInteranual(ivVert, "Evolución interanual (vs mismo mes año pasado)", null);
+    // Turismo: series oficiales del contexto. Movilidad: proxy aeropuerto (AENA).
+    if (id === "turismo") {
+      h += bloqueInteranual(resumen.interanual_turismo, "Evolución interanual del turismo", null);
+    } else if (id === "movilidad") {
+      h += bloqueInteranual(resumen.interanual_turismo, "Presión turística (proxy: aeropuerto de Almería)", ["pasajeros_aena"]);
+    }
     h += '<div class="grid g2">' +
       '<div class="card"><div class="card__t">Preguntas que responde</div><ul style="margin:10px 0 0;padding-left:18px;font-size:13.5px;line-height:1.9">' +
       cfg.preguntas.map((p) => "<li>" + esc(p) + "</li>").join("") + "</ul></div>" +

@@ -82,6 +82,22 @@ class TestClaveEstable:
         assert recs[0].clave == rs._clave(recs[0].area, recs[0].titulo)
 
 
+class TestInteranual:
+    def test_config_interanual_cubre_las_5_series(self):
+        claves = {c[0] for c in ds._INTERANUAL_TURISMO}
+        assert claves == {"viajeros", "pernoctaciones", "gasto", "pasajeros_aena", "turistas"}
+
+    def test_offsets_coherentes(self):
+        # Mensuales = 12; el gasto (Egatur) es trimestral = 4.
+        por_clave = {c[0]: c[5] for c in ds._INTERANUAL_TURISMO}
+        assert por_clave["gasto"] == 4
+        assert por_clave["viajeros"] == 12 and por_clave["pasajeros_aena"] == 12
+
+    def test_resumen_incluye_campo_interanual(self):
+        from nijar_dti.schemas.direccion import ResumenMunicipal
+        assert "interanual_turismo" in ResumenMunicipal.model_fields
+
+
 class TestRutasDireccion:
     def test_rutas_montadas(self, client):
         paths = client.get("/openapi.json").json()["paths"]

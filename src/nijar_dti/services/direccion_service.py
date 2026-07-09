@@ -22,6 +22,7 @@ from nijar_dti.schemas.direccion import (
     ImpactoCiudadano,
     ImpactoDireccion,
     ImpactoEconomico,
+    KpiInteranual,
     ResumenMunicipal,
 )
 from nijar_dti.schemas.verticales import (
@@ -34,10 +35,27 @@ from nijar_dti.schemas.verticales import (
 )
 from nijar_dti.services import (
     analitica_service,
+    contexto_service,
     dashboards_service,
     incidencias_service,
     verticales_service,
 )
+
+# Indicadores turísticos con serie histórica oficial (contexto): permiten
+# comparativa interanual real. offset = nº de periodos de un año (mensual=12,
+# trimestral=4).
+_INTERANUAL_TURISMO: list[tuple[str, str, str, str, str, int]] = [
+    ("viajeros", "Viajeros alojados",
+     "junta_andalucia", "viajeros_alojados", "provincia_almeria", 12),
+    ("pernoctaciones", "Pernoctaciones",
+     "ine_eoh", "pernoctaciones", "provincia_almeria", 12),
+    ("gasto", "Gasto turístico",
+     "ine_egatur", "gasto_turistico_total_eur", "andalucia", 4),
+    ("pasajeros_aena", "Pasajeros aeropuerto Almería",
+     "aena", "pasajeros_aeropuerto_almeria", "almeria", 12),
+    ("turistas", "Turistas internacionales (Andalucía)",
+     "ine_frontur", "turistas_internacionales", "andalucia", 12),
+]
 
 
 def _riesgo(estado: str) -> str:
@@ -267,6 +285,63 @@ def _impacto(k: dict[str, Any]) -> ImpactoDireccion:
     )
 
 
+async def _interanual_turismo(db: AsyncSession) -> list[KpiInteranual]:
+    """Comparativa "vs mismo periodo del año pasado" para turismo (contexto real)."""
+    kpis: list[KpiInteranual] = []
+    for clave, nombre, fuente, indicador, ambito, offset in _INTERANUAL_TURISMO:
+        serie = await contexto_service.obtener_serie(db, fuente, indicador, ambito)
+        pts = serie.puntos
+        if len(pts) <= offset:
+            continue  # sin histórico suficiente: no se inventa
+        actual, anterior = pts[-1], pts[-1 - offset]
+        if not anterior.valor:
+            continue
+        var = round((actual.valor - anterior.valor) / anterior.valor * 100, 1)
+        tendencia = "sube" if var > 0.5 else ("baja" if var < -0.5 else "estable")
+        kpis.append(KpiInteranual(
+            clave=clave, nombre=nombre, fuente=fuente,
+            periodo=actual.periodo, periodo_anterior=anterior.periodo,
+            valor=actual.valor, valor_anterior=anterior.valor,
+            variacion_pct=var, unidad=actual.unidad, tendencia=tendencia,
+        ))
+    return kpis
+
+
+async def _interanual_verticales(db: AsyncSession) -> list[KpiInteranual]:
+    """Comparativa interanual REAL por vertical desde el histórico mensual."""
+    from sqlalchemy import select
+
+    from nijar_dti.data.seeds.historico_verticales import INDICADORES
+    from nijar_dti.models.metrica_historica import MetricaHistorica
+
+    meta = {(v, i): (nom, uni, sent) for v, i, nom, uni, *_rest, sent in INDICADORES}
+    filas = (
+        await db.execute(select(MetricaHistorica).order_by(MetricaHistorica.periodo))
+    ).scalars().all()
+    grupos: dict[tuple[str, str], list[MetricaHistorica]] = {}
+    for f in filas:
+        grupos.setdefault((f.vertical, f.indicador), []).append(f)
+
+    kpis: list[KpiInteranual] = []
+    for (vertical, indicador), pts in grupos.items():
+        if len(pts) <= 12:
+            continue
+        actual, anterior = pts[-1], pts[-13]  # mismo mes del año anterior
+        if not anterior.valor:
+            continue
+        var = round((actual.valor - anterior.valor) / anterior.valor * 100, 1)
+        tendencia = "sube" if var > 0.5 else ("baja" if var < -0.5 else "estable")
+        nombre, unidad, sentido = meta.get((vertical, indicador), (indicador, None, "neutro"))
+        kpis.append(KpiInteranual(
+            clave=indicador, nombre=nombre, fuente="plataforma", vertical=vertical,
+            periodo=actual.periodo, periodo_anterior=anterior.periodo,
+            valor=float(actual.valor), valor_anterior=float(anterior.valor),
+            variacion_pct=var, unidad=actual.unidad or unidad,
+            tendencia=tendencia, sentido=sentido,
+        ))
+    return kpis
+
+
 async def resumen_municipal(db: AsyncSession) -> ResumenMunicipal:
     k = await _kpis(db)
     semaforo = _construir_semaforo(k)
@@ -309,5 +384,7 @@ async def resumen_municipal(db: AsyncSession) -> ResumenMunicipal:
         semaforo=semaforo,
         alertas=alertas,
         impacto=impacto,
+        interanual_turismo=await _interanual_turismo(db),
+        interanual_verticales=await _interanual_verticales(db),
         generado_en=datetime.now(UTC),
     )
