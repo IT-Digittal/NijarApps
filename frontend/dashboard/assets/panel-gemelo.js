@@ -366,11 +366,11 @@ async function renderSimulador(el) {
 
   let base = null;
   try {
-    const af = await api.get("/prediccion/afluencia?metrica=visitas_totem&horizonte_dias=14");
-    base = (af.puntos || []).map((p) => p.prediccion ?? p.valor ?? 0);
+    const af = await api.get("/prediccion/afluencia?metrica=totem&horizonte_dias=14");
+    base = (af.puntos || []).map((p) => p.valor_estimado ?? p.prediccion ?? p.valor ?? 0);
   } catch { /* sin predicción */ }
 
-  if (!base || !base.length) {
+  if (!base || !base.length || !base.some((v) => v > 0)) {
     el.innerHTML = sub("Simulador", "Simulador de escenarios",
       "Fase 3 del gemelo digital.") +
       '<div class="card"><div class="mini" style="color:var(--muted);padding:26px 0;text-align:center">El simulador necesita la predicción de afluencia y aún no hay histórico suficiente para generarla.</div></div>';

@@ -723,17 +723,17 @@ async function renderRoles(el) {
 async function renderPrediccion(el) {
   cargando(el, "Predicción");
   const [afluencia, validacion] = await Promise.all([
-    api.get("/prediccion/afluencia?metrica=visitas_totem&horizonte_dias=14").catch(() => null),
-    api.get("/prediccion/validacion?metrica=visitas_totem").catch(() => null),
+    api.get("/prediccion/afluencia?metrica=totem&horizonte_dias=14").catch(() => null),
+    api.get("/prediccion/validacion?metrica=totem").catch(() => null),
   ]);
   const U2 = window.__U;
   const puntos = (afluencia && afluencia.puntos) || [];
-  const vals = puntos.map((p) => p.prediccion ?? p.valor ?? 0);
+  const vals = puntos.map((p) => p.valor_estimado ?? p.prediccion ?? p.valor ?? 0);
 
   el.innerHTML = gsub("Predicción", "Predicción de afluencia",
     "Modelo estacional sobre el histórico de la plataforma: previsión de visitas a 14 días con validación MAPE (holdout temporal).", "") +
     '<div class="grid g4" style="margin-bottom:16px">' +
-    kpi("Modelo", afluencia ? afluencia.modelo.replace(/_/g, " ") : "—", "Entrenado con el histórico propio", "ic-navy", "gear") +
+    kpi("Modelo", afluencia ? "estacional" : "—", "Entrenado con el histórico propio", "ic-navy", "gear") +
     kpi("Horizonte", afluencia ? afluencia.horizonte_dias + " días" : "—", "Días de histórico: " + (afluencia ? afluencia.dias_historico : "—"), "ic-teal", "cal") +
     kpi("MAPE validación", validacion && validacion.mape != null ? validacion.mape.toFixed(1) + " %" : "—", "Umbral del pliego ≤ " + (validacion ? validacion.umbral : 20) + "%", validacion && validacion.cumple_umbral ? "ic-ok" : "ic-gold", "chart") +
     kpi("Cobertura", validacion ? validacion.n_evaluable + " de " + validacion.n_test : "—", "Días evaluables del holdout", "ic-violet", "box") + "</div>" +
