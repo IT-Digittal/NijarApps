@@ -36,6 +36,8 @@ class CuadroMandoOut(BaseModel):
     sla: int
     estado: str
     alarmas: list[str] | None = None
+    latitud: float | None = None
+    longitud: float | None = None
 
 
 class LuminariaOut(BaseModel):
@@ -119,6 +121,8 @@ class ContenedorOut(BaseModel):
     llenado_pct: int | None = None
     ruta: str | None = None
     estado: str
+    latitud: float | None = None
+    longitud: float | None = None
 
 
 class ContenedoresPage(Paginado):
@@ -146,6 +150,8 @@ class PuntoMovilidadOut(BaseModel):
     capacidad: int | None = None
     unidad: str | None = None
     estado: str
+    latitud: float | None = None
+    longitud: float | None = None
 
 
 class MovilidadOverview(BaseModel):
@@ -171,6 +177,8 @@ class CamaraCCTVOut(BaseModel):
     con_analitica: bool
     retencion_dias: int
     estado: str
+    latitud: float | None = None
+    longitud: float | None = None
 
 
 class SeguridadOverview(BaseModel):
