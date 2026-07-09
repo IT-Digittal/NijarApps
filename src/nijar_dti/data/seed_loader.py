@@ -45,6 +45,8 @@ from nijar_dti.data.seeds.historico_verticales import generar_historico_seed
 from nijar_dti.data.seeds.recursos_turisticos import RECURSOS_SEED
 from nijar_dti.data.seeds.sensores import SENSORES_SEED
 from nijar_dti.data.seeds.verticales import (
+    COORDS_CAMARAS,
+    COORDS_MOVILIDAD,
     ZONAS_ALUMBRADO,
     generar_camaras_seed,
     generar_contenedores_seed,
@@ -570,6 +572,70 @@ async def seed_verticales(db: AsyncSession) -> None:
         log.info("Energía · suministros (CUPS) creados: %d", len(sums))
 
 
+async def backfill_coordenadas_verticales(db: AsyncSession) -> None:
+    """Rellena coordenadas NULL de filas creadas por seeds antiguos.
+
+    El seed de verticales es idempotente por tabla, así que las bases sembradas
+    antes de que los seeds incluyeran latitud/longitud se quedaron sin
+    coordenadas (y sus activos no aparecen en el gemelo digital ni en el mapa).
+    Solo toca filas con ``latitud IS NULL``: nunca pisa datos reales.
+    """
+    import hashlib
+
+    zonas = {z["id"]: (z["latitud"], z["longitud"]) for z in ZONAS_ALUMBRADO}
+
+    def dispersion(clave: str, amplitud: float = 0.012) -> tuple[float, float]:
+        """Desplazamiento determinista (por clave) alrededor del centro de zona."""
+        h = hashlib.sha256(clave.encode()).digest()
+        return (
+            (h[0] / 255 - 0.5) * 2 * amplitud,
+            (h[1] / 255 - 0.5) * 2 * amplitud,
+        )
+
+    actualizados = 0
+
+    # Movilidad: coordenadas conocidas por código de punto
+    for p in (
+        (await db.execute(select(PuntoMovilidad).where(PuntoMovilidad.latitud.is_(None))))
+        .scalars()
+        .all()
+    ):
+        if (c := COORDS_MOVILIDAD.get(p.codigo)) is not None:
+            p.latitud, p.longitud = c
+            actualizados += 1
+
+    # Cámaras: por nombre de emplazamiento; si no, centro de su zona + dispersión
+    for cam in (
+        (await db.execute(select(CamaraCCTV).where(CamaraCCTV.latitud.is_(None))))
+        .scalars()
+        .all()
+    ):
+        c = COORDS_CAMARAS.get(cam.nombre)
+        if c is None and cam.zona_id in zonas:
+            zlat, zlon = zonas[cam.zona_id]
+            dx, dy = dispersion(cam.codigo)
+            c = (round(zlat + dx, 6), round(zlon + dy, 6))
+        if c is not None:
+            cam.latitud, cam.longitud = c
+            actualizados += 1
+
+    # Contenedores: centro de su zona + dispersión determinista por código
+    for ct in (
+        (await db.execute(select(Contenedor).where(Contenedor.latitud.is_(None))))
+        .scalars()
+        .all()
+    ):
+        if ct.zona_id in zonas:
+            zlat, zlon = zonas[ct.zona_id]
+            dx, dy = dispersion(ct.codigo)
+            ct.latitud = round(zlat + dx, 6)
+            ct.longitud = round(zlon + dy, 6)
+            actualizados += 1
+
+    if actualizados:
+        log.info("Backfill de coordenadas en verticales: %d filas actualizadas", actualizados)
+
+
 async def seed_fuentes_datos(db: AsyncSession) -> None:
     """Carga el catálogo de fuentes de datos e integraciones (idempotente)."""
     if not await _tabla_vacia(db, FuenteDato):
@@ -612,6 +678,7 @@ async def run() -> None:
             await seed_demo_incidencias(db)
             await seed_contexto_backfill(db)
             await seed_verticales(db)
+            await backfill_coordenadas_verticales(db)
             await seed_fuentes_datos(db)
             await seed_historico_verticales(db)
             await db.commit()

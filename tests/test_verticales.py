@@ -69,6 +69,19 @@ class TestSeedResto:
         assert len(cams) == 24
         assert sum(1 for c in cams if c["estado"] == "sin_comunicacion") == 1
 
+    def test_todos_los_activos_geoposicionables_llevan_coordenadas(self):
+        """Sin coordenadas, los activos no aparecen en el gemelo ni en el mapa."""
+        for coleccion in (
+            generar_contenedores_seed(),
+            generar_movilidad_seed(),
+            generar_camaras_seed(),
+        ):
+            for item in coleccion:
+                assert isinstance(item.get("latitud"), float), item.get("codigo")
+                assert isinstance(item.get("longitud"), float), item.get("codigo")
+                assert 36.5 < item["latitud"] < 37.2
+                assert -2.5 < item["longitud"] < -1.8
+
     def test_energia(self):
         sums = generar_suministros_energia_seed()
         assert len(sums) == 61

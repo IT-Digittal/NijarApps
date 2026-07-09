@@ -184,11 +184,13 @@ _RUTAS = ["R1", "R2", "R3", "R4", "R5", "R6"]
 
 
 def generar_contenedores_seed() -> list[dict]:
-    # 684 contenedores, 412 con sensor de llenado
+    # 684 contenedores, 412 con sensor de llenado, dispersos alrededor de su zona
+    zonas = {z["id"]: z for z in ZONAS_ALUMBRADO}
     idx_sensor = set(_R.sample(range(684), 412))
     contenedores = []
     for i in range(684):
         zid = _R.choices(_RES_ZONAS, weights=[30, 26, 20, 10, 8, 6])[0]
+        z = zonas[zid]
         fraccion = _R.choice(_FRACCIONES)
         sensor = i in idx_sensor
         llenado = _R.randint(5, 100) if sensor else None
@@ -203,11 +205,30 @@ def generar_contenedores_seed() -> list[dict]:
             "llenado_pct": llenado,
             "ruta": _R.choice(_RUTAS),
             "estado": estado,
+            "latitud": round(z["latitud"] + _R.uniform(-0.012, 0.012), 6),
+            "longitud": round(z["longitud"] + _R.uniform(-0.012, 0.012), 6),
         })
     return contenedores
 
 
 # --------------------------------------------------------------- MOVILIDAD
+# Coordenadas reales aproximadas de cada punto (WGS84). Se usan también en el
+# backfill del seed_loader para bases sembradas por versiones sin coordenadas.
+COORDS_MOVILIDAD: dict[str, tuple[float, float]] = {
+    "MOV-01": (36.7755, -2.1295),  # Ctra. AL-3108, acceso al parque por San José
+    "MOV-02": (36.8508, -2.0330),  # Ctra. del Playazo, Rodalquilar
+    "MOV-03": (36.8785, -2.0062),  # AL-5106, Las Negras
+    "MOV-04": (36.7440, -2.1230),  # Parking Genoveses
+    "MOV-05": (36.7307, -2.1447),  # Parking Mónsul
+    "MOV-06": (36.7618, -2.1067),  # Parking San José centro
+    "MOV-07": (36.7712, -2.1108),  # Parking disuasorio, acceso San José
+    "MOV-08": (36.9656, -2.2067),  # Recarga EV Ayuntamiento (Níjar)
+    "MOV-09": (36.7603, -2.1055),  # Recarga EV Puerto de San José
+    "MOV-10": (36.8494, -2.0402),  # Recarga EV Rodalquilar
+    "MOV-11": (36.7560, -2.1150),  # Lanzadera San José ↔ playas
+}
+
+
 def generar_movilidad_seed() -> list[dict]:
     puntos = [
         {"codigo": "MOV-01", "nombre": "Aforo acceso Parque · San José", "tipo": "aforo", "ubicacion": "Ctra. AL-3108", "valor_actual": _R.randint(180, 420), "capacidad": None, "unidad": "veh/h", "estado": "operativo"},
@@ -222,27 +243,53 @@ def generar_movilidad_seed() -> list[dict]:
         {"codigo": "MOV-10", "nombre": "Recarga EV · Rodalquilar", "tipo": "recarga_ev", "ubicacion": "C/ del Oro", "valor_actual": 0, "capacidad": 2, "unidad": "tomas", "estado": "operativo"},
         {"codigo": "MOV-11", "nombre": "Lanzadera estival playas", "tipo": "lanzadera", "ubicacion": "San José ↔ Genoveses/Mónsul", "valor_actual": _R.randint(12, 46), "capacidad": 55, "unidad": "ocupación", "estado": "operativo"},
     ]
+    for p in puntos:
+        lat, lon = COORDS_MOVILIDAD[p["codigo"]]
+        p["latitud"], p["longitud"] = lat, lon
     return puntos
 
 
 # --------------------------------------------------------------- SEGURIDAD
 _SEG_ZONAS = ["nijar", "sanjose", "campo", "roda", "negras", "albar"]
 
+# Coordenadas reales aproximadas por emplazamiento (WGS84); también las usa el
+# backfill del seed_loader para bases sembradas por versiones sin coordenadas.
+COORDS_CAMARAS: dict[str, tuple[float, float]] = {
+    "Playa de Mónsul": (36.7305, -2.1442),
+    "Playa de los Genoveses": (36.7443, -2.1207),
+    "Acceso San José": (36.7708, -2.1082),
+    "Puerto de San José": (36.7605, -2.1058),
+    "Plaza de la Glorieta": (36.9659, -2.2066),
+    "Avda. García Lorca": (36.9648, -2.2079),
+    "Acceso Rodalquilar": (36.8479, -2.0452),
+    "Mirador de la Amatista": (36.8363, -2.0113),
+    "Paseo del Mar (Las Negras)": (36.8793, -2.0034),
+    "Acceso Los Albaricoques": (36.8721, -2.0803),
+    "Centro de salud": (36.9644, -2.2074),
+    "Ayuntamiento": (36.9656, -2.2070),
+    "Recinto ferial": (36.9632, -2.2088),
+    "Colegio Campohermoso": (36.8452, -2.1494),
+    "Depósito de agua San José": (36.7641, -2.1093),
+    "Nave de servicios": (36.8432, -2.1521),
+    "Cala de Enmedio (sendero)": (36.9441, -1.9603),
+    "Playa del Playazo": (36.8557, -2.0021),
+    "Rotonda AL-3108": (36.8002, -2.1401),
+    "Aparcamiento Genoveses": (36.7468, -2.1252),
+    "Isleta del Moro": (36.8128, -2.0431),
+    "Agua Amarga": (36.9389, -1.9351),
+    "Fernán Pérez": (36.8763, -2.0532),
+    "San Isidro": (36.8791, -2.1562),
+}
+
 
 def generar_camaras_seed() -> list[dict]:
     # 24 cámaras: 23 online, 1 sin comunicación
-    ubic = [
-        "Playa de Mónsul", "Playa de los Genoveses", "Acceso San José", "Puerto de San José",
-        "Plaza de la Glorieta", "Avda. García Lorca", "Acceso Rodalquilar", "Mirador de la Amatista",
-        "Paseo del Mar (Las Negras)", "Acceso Los Albaricoques", "Centro de salud", "Ayuntamiento",
-        "Recinto ferial", "Colegio Campohermoso", "Depósito de agua San José", "Nave de servicios",
-        "Cala de Enmedio (sendero)", "Playa del Playazo", "Rotonda AL-3108", "Aparcamiento Genoveses",
-        "Isleta del Moro", "Agua Amarga", "Fernán Pérez", "San Isidro",
-    ]
+    ubic = list(COORDS_CAMARAS)
     camaras = []
     sin_com = _R.randrange(24)
     for i in range(24):
         zid = _R.choice(_SEG_ZONAS)
+        lat, lon = COORDS_CAMARAS[ubic[i]]
         camaras.append({
             "codigo": f"CCTV-{i + 1:02d}",
             "nombre": ubic[i],
@@ -251,6 +298,8 @@ def generar_camaras_seed() -> list[dict]:
             "con_analitica": _R.random() < 0.55,
             "retencion_dias": 30,
             "estado": "sin_comunicacion" if i == sin_com else "operativo",
+            "latitud": lat,
+            "longitud": lon,
         })
     return camaras
 

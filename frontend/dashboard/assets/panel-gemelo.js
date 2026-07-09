@@ -193,6 +193,7 @@ async function renderGemelo2D(el) {
     const grupos = {};
     const puntos = [];
     capas.forEach((capa) => {
+      if (!capa.disponible) return; /* fuente no configurada o caída: no listar la capa */
       const g = L.layerGroup();
       capa.items.forEach((a) => {
         puntos.push(a.ll);
