@@ -19,6 +19,7 @@ from nijar_dti.schemas.gemelo import (
     BanderasPlayasOut,
     EstacionesAireOut,
     EstadoGemelo,
+    ResumenAireOut,
 )
 from nijar_dti.services import gemelo_service as svc
 
@@ -61,6 +62,25 @@ async def aforo(user: CurrentUser = Depends(get_current_user)) -> AforoParqueOut
     try:
         return await svc.aforo_parque()
     except ThingsBoardError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+
+@router.get(
+    "/aire/resumen",
+    response_model=ResumenAireOut,
+    summary="Resumen meteorológico y de calidad del aire del municipio (público)",
+)
+async def aire_resumen() -> ResumenAireOut:
+    """Agregado municipal sin datos sensibles: lo consume el tótem público
+    (temperatura, humedad y peor índice EAQI de las estaciones activas)."""
+    if not svc.bettair_configurado():
+        raise HTTPException(
+            status_code=503,
+            detail="Vertical Bettair sin configurar (BETTAIR_CLIENT_ID/CLIENT_SECRET)",
+        )
+    try:
+        return await svc.resumen_aire()
+    except BettairError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
 
 

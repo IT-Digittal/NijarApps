@@ -7,7 +7,7 @@ v3 de Bettair (una entidad ``info`` y una ``data`` por estación).
 from __future__ import annotations
 
 from nijar_dti.config import Settings
-from nijar_dti.connectors.bettair import parsear_estaciones
+from nijar_dti.connectors.bettair import parsear_estaciones, resumen_estaciones
 from nijar_dti.services.gemelo_service import bettair_configurado
 
 
@@ -68,6 +68,33 @@ def test_parsear_estaciones_eaqi_desconocido():
     ent["airQualityIndexes"]["value"] = {}
     filas = parsear_estaciones([ent])
     assert filas[0]["eaqi"] is None and filas[0]["eaqi_texto"] is None
+
+
+def _estacion(sid, temperatura, eaqi, estado="active", medido="2026-07-10T09:35:00Z"):
+    return {
+        "id": sid, "estado": estado, "temperatura_c": temperatura,
+        "humedad_pct": 30.0, "eaqi": eaqi, "medido_en": medido,
+    }
+
+
+def test_resumen_estaciones_agrega_activas():
+    r = resumen_estaciones([
+        _estacion("A", 36.6, 1),
+        _estacion("B", 32.8, 2, medido="2026-07-10T09:40:00Z"),
+        _estacion("C", 99.0, 6, estado="inactive"),  # inactiva: no cuenta
+    ])
+    assert r["estaciones_activas"] == 2
+    assert r["temperatura_media_c"] == 34.7
+    assert r["temperatura_max_c"] == 36.6
+    assert r["eaqi_peor"] == 2 and r["eaqi_peor_texto"] == "razonable"
+    assert r["medido_en"] == "2026-07-10T09:40:00Z"
+
+
+def test_resumen_estaciones_vacio():
+    r = resumen_estaciones([])
+    assert r["estaciones_activas"] == 0
+    assert r["temperatura_media_c"] is None
+    assert r["eaqi_peor"] is None and r["medido_en"] is None
 
 
 def test_bettair_configurado_segun_settings():

@@ -100,6 +100,10 @@ button { font-family: inherit; cursor: pointer; }
   background: rgba(255, 255, 255, .12); color: #fff;
   border-radius: 999px; padding: 10px 18px; font-size: 15px; font-weight: 600;
 }
+/* Chip de tiempo y calidad del aire (red Bettair) */
+.tt-weatherpill { display: inline-flex; align-items: center; gap: 8px; background: rgba(245, 197, 24, .16); }
+.tt-weatherpill[hidden] { display: none; }
+.tt-weatherpill b { font-weight: 800; }
 .tt-access-btn {
   width: 52px; height: 52px; border-radius: 50%;
   background: var(--yellow); border: 0; color: var(--navy-2);

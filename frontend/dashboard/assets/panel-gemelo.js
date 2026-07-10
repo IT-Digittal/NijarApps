@@ -433,10 +433,14 @@ async function renderSimulador(el) {
     "Fase 3 del gemelo: simula decisiones de gestión sobre la predicción real de afluencia de la plataforma y compara el resultado con la línea base.", "") +
     '<div class="card"><div class="mini" style="color:var(--muted);padding:20px 0;text-align:center">Cargando la predicción base…</div></div>';
 
-  let base = null;
+  let base = null, aire = null;
   try {
-    const af = await api.get("/prediccion/afluencia?metrica=totem&horizonte_dias=14");
+    const [af, res] = await Promise.all([
+      api.get("/prediccion/afluencia?metrica=totem&horizonte_dias=14"),
+      api.get("/gemelo/aire/resumen").catch(() => null), /* 503 si Bettair no está configurado */
+    ]);
     base = (af.puntos || []).map((p) => p.valor_estimado ?? p.prediccion ?? p.valor ?? 0);
+    aire = res;
   } catch { /* sin predicción */ }
 
   if (!base || !base.length || !base.some((v) => v > 0)) {
@@ -464,11 +468,22 @@ async function renderSimulador(el) {
 
   const sel = el.querySelector("#sim-esc");
   const slider = el.querySelector("#sim-param");
+  /* Intensidad sugerida de la ola de calor a partir de la temperatura REAL de
+     la red Bettair: 28 °C → 0% y 42 °C → 100% (lineal, acotada 10-100). */
+  const tempReal = aire && aire.temperatura_max_c != null ? aire.temperatura_max_c : null;
+  const sugerida = tempReal != null ? Math.max(10, Math.min(100, Math.round(((tempReal - 28) / 14) * 100))) : null;
   const pintarMeta = () => {
     const e = ESCENARIOS[Number(sel.value)];
     el.querySelector("#sim-desc").textContent = e.d;
     el.querySelector("#sim-param-label").textContent = e.param;
-    el.querySelector("#sim-supuesto").textContent = e.supuesto;
+    let supuesto = e.supuesto;
+    if (e.id === "ola_calor" && sugerida != null) {
+      slider.value = sugerida;
+      el.querySelector("#sim-param-val").textContent = String(sugerida);
+      supuesto += " Ahora mismo: " + tempReal.toLocaleString("es-ES") +
+        " °C de máxima en las estaciones Bettair del municipio → intensidad sugerida " + sugerida + "%.";
+    }
+    el.querySelector("#sim-supuesto").textContent = supuesto;
   };
   pintarMeta();
   sel.addEventListener("change", pintarMeta);

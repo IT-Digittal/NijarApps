@@ -123,6 +123,7 @@ function applyLanguage(lang) {
   });
   renderHomeCats();
   pintarFechas();
+  pintarMeteo();
   const listaVisible = !document.getElementById("view-list").hidden;
   if (currentCat && listaVisible) abrirCategoria(currentCat, currentChip);
   resetChat();
@@ -164,6 +165,36 @@ function pintarFechas() {
 setInterval(updateClock, 1000);
 updateClock();
 pintarFechas();
+
+// ============================================================
+// El tiempo y calidad del aire hoy (red Bettair, endpoint público)
+// ============================================================
+const ICONO_SOL =
+  '<svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><circle cx="12" cy="12" r="4.4" fill="#F5C518"/>' +
+  '<g stroke="#F5C518" stroke-width="2" stroke-linecap="round"><path d="M12 2.6v2.8M12 18.6v2.8M2.6 12h2.8M18.6 12h2.8M5.2 5.2l2 2M16.8 16.8l2 2M18.8 5.2l-2 2M7.2 16.8l-2 2"/></g></svg>';
+
+let meteoCache = null;
+
+function pintarMeteo() {
+  const el = $("#header-weather");
+  if (!el) return;
+  const m = meteoCache;
+  if (!m || m.temperatura_media_c == null) { el.hidden = true; return; }
+  const t = dict();
+  const temp = Math.round(m.temperatura_media_c);
+  const aire = m.eaqi_peor != null ? (t[`meteo.aire.${m.eaqi_peor}`] || m.eaqi_peor_texto) : null;
+  el.innerHTML = `${ICONO_SOL} <b>${temp} °C</b>` +
+    (aire ? ` · ${escapeHtml(t["meteo.aire"] || "Aire")}: ${escapeHtml(aire)}` : "");
+  el.hidden = false;
+}
+
+async function cargarMeteo() {
+  try { meteoCache = await apiGet("/gemelo/aire/resumen"); }
+  catch { meteoCache = null; } /* sin red Bettair configurada: el chip no aparece */
+  pintarMeteo();
+}
+cargarMeteo();
+setInterval(cargarMeteo, 10 * 60 * 1000); /* la red emite cada ~10 min */
 
 // ============================================================
 // API helpers

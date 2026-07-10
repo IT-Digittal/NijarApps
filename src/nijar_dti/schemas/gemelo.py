@@ -56,6 +56,20 @@ class EstacionesAireOut(BaseModel):
     estaciones: list[EstacionAireOut]
 
 
+class ResumenAireOut(BaseModel):
+    """Agregado municipal de la red Bettair (apto para información pública)."""
+
+    fuente: str = "bettair"
+    obtenido_en: datetime
+    medido_en: datetime | None
+    estaciones_activas: int
+    temperatura_media_c: float | None
+    temperatura_max_c: float | None
+    humedad_media_pct: float | None
+    eaqi_peor: int | None
+    eaqi_peor_texto: str | None
+
+
 class AforoParqueOut(BaseModel):
     """Aforo en tiempo real del P.N. Cabo de Gata (conteo de accesos)."""
 

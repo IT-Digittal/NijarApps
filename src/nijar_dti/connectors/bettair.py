@@ -112,6 +112,26 @@ def _valor(entidad: dict[str, Any], attr: str) -> Any:
     return v.get("value") if isinstance(v, dict) else None
 
 
+def resumen_estaciones(estaciones: list[dict[str, Any]]) -> dict[str, Any]:
+    """Agregado municipal de la red: media/máxima de temperatura, humedad media
+    y el peor índice EAQI (criterio conservador para información al público)."""
+    activas = [e for e in estaciones if e.get("estado") == "active"]
+    temps = [e["temperatura_c"] for e in activas if e.get("temperatura_c") is not None]
+    hums = [e["humedad_pct"] for e in activas if e.get("humedad_pct") is not None]
+    eaqis = [e["eaqi"] for e in activas if e.get("eaqi") is not None]
+    peor = max(eaqis) if eaqis else None
+    marcas = [e["medido_en"] for e in activas if e.get("medido_en")]
+    return {
+        "estaciones_activas": len(activas),
+        "temperatura_media_c": round(sum(temps) / len(temps), 1) if temps else None,
+        "temperatura_max_c": round(max(temps), 1) if temps else None,
+        "humedad_media_pct": round(sum(hums) / len(hums), 1) if hums else None,
+        "eaqi_peor": peor,
+        "eaqi_peor_texto": NIVELES_EAQI.get(peor) if peor is not None else None,
+        "medido_en": max(marcas) if marcas else None,
+    }
+
+
 def parsear_estaciones(entidades: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Combina las entidades ``info`` y ``data`` de cada estación Bettair.
 

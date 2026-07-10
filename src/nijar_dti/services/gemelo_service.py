@@ -12,7 +12,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from nijar_dti.config import Settings, get_settings
-from nijar_dti.connectors.bettair import ClienteBettair, parsear_estaciones
+from nijar_dti.connectors.bettair import ClienteBettair, parsear_estaciones, resumen_estaciones
 from nijar_dti.connectors.thingsboard import (
     CLAVES_AFORO_PARQUE,
     ClienteThingsBoard,
@@ -26,6 +26,7 @@ from nijar_dti.schemas.gemelo import (
     EstacionAireOut,
     EstacionesAireOut,
     EstadoGemelo,
+    ResumenAireOut,
 )
 
 _TTL_SEGUNDOS = 60
@@ -97,6 +98,13 @@ async def estaciones_aire() -> EstacionesAireOut:
     )
     _cache["aire"] = (time.monotonic(), resultado)
     return resultado
+
+
+async def resumen_aire() -> ResumenAireOut:
+    """Agregado municipal (público: lo muestra el tótem sin autenticación)."""
+    datos = await estaciones_aire()
+    agregado = resumen_estaciones([e.model_dump() for e in datos.estaciones])
+    return ResumenAireOut(obtenido_en=datetime.now(UTC), **agregado)
 
 
 async def banderas_playas() -> BanderasPlayasOut:
