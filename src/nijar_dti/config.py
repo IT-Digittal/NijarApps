@@ -125,6 +125,13 @@ class Settings(BaseSettings):
     thingsboard_password: str = ""
     thingsboard_timeout_seconds: int = 12
 
+    # --- Gemelo digital: red Bettair de calidad del aire y meteo (OAuth2) ---
+    # client_id/client_secret = «app password» generado en cloud.bettair.city.
+    bettair_base_url: str = "https://api.v3.bettair.city"
+    bettair_client_id: str = ""
+    bettair_client_secret: str = ""
+    bettair_timeout_seconds: int = 12
+
     # --- Google Analytics 4 ---
     ga4_property_id: str = ""
     # Ruta a un fichero JSON de service-account o JSON inline

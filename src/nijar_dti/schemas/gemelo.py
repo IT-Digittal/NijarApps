@@ -11,6 +11,7 @@ class EstadoGemelo(BaseModel):
     """Estado de configuración de las fuentes externas del gemelo."""
 
     thingsboard_configurado: bool
+    bettair_configurado: bool = False
 
 
 class BanderaPlayaOut(BaseModel):
@@ -25,6 +26,34 @@ class BanderasPlayasOut(BaseModel):
     obtenido_en: datetime
     total: int
     banderas: list[BanderaPlayaOut]
+
+
+class EstacionAireOut(BaseModel):
+    """Estación Bettair de calidad del aire y meteorología."""
+
+    id: str
+    latitud: float
+    longitud: float
+    estado: str  # active | inactive | desconocido
+    bateria_pct: float | None
+    ultima_conexion: datetime | None
+    medido_en: datetime | None
+    eaqi: int | None  # índice europeo de calidad del aire (1 buena … 6 extrema)
+    eaqi_texto: str | None
+    temperatura_c: float | None
+    humedad_pct: float | None
+    presion_hpa: float | None
+    no2_ugm3: float | None
+    o3_ugm3: float | None
+    pm25_ugm3: float | None
+    pm10_ugm3: float | None
+
+
+class EstacionesAireOut(BaseModel):
+    fuente: str = "bettair"
+    obtenido_en: datetime
+    total: int
+    estaciones: list[EstacionAireOut]
 
 
 class AforoParqueOut(BaseModel):

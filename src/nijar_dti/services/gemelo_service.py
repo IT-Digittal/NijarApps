@@ -12,6 +12,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from nijar_dti.config import Settings, get_settings
+from nijar_dti.connectors.bettair import ClienteBettair, parsear_estaciones
 from nijar_dti.connectors.thingsboard import (
     CLAVES_AFORO_PARQUE,
     ClienteThingsBoard,
@@ -22,12 +23,15 @@ from nijar_dti.schemas.gemelo import (
     AforoParqueOut,
     BanderaPlayaOut,
     BanderasPlayasOut,
+    EstacionAireOut,
+    EstacionesAireOut,
     EstadoGemelo,
 )
 
 _TTL_SEGUNDOS = 60
 _cache: dict[str, tuple[float, Any]] = {}
 _cliente: ClienteThingsBoard | None = None
+_cliente_bettair: ClienteBettair | None = None
 
 ACTIVO_AFORO_PARQUE = "parque_cabo_de_gata"
 TIPO_BANDERAS = "Bandera playas"
@@ -38,8 +42,16 @@ def thingsboard_configurado(settings: Settings | None = None) -> bool:
     return bool(s.thingsboard_base_url and s.thingsboard_usuario and s.thingsboard_password)
 
 
+def bettair_configurado(settings: Settings | None = None) -> bool:
+    s = settings or get_settings()
+    return bool(s.bettair_client_id and s.bettair_client_secret)
+
+
 def estado_gemelo() -> EstadoGemelo:
-    return EstadoGemelo(thingsboard_configurado=thingsboard_configurado())
+    return EstadoGemelo(
+        thingsboard_configurado=thingsboard_configurado(),
+        bettair_configurado=bettair_configurado(),
+    )
 
 
 def _obtener_cliente() -> ClienteThingsBoard:
@@ -60,6 +72,31 @@ def _cacheado(clave: str) -> Any | None:
     if entrada and time.monotonic() - entrada[0] < _TTL_SEGUNDOS:
         return entrada[1]
     return None
+
+
+def _obtener_cliente_bettair() -> ClienteBettair:
+    global _cliente_bettair
+    if _cliente_bettair is None:
+        s = get_settings()
+        _cliente_bettair = ClienteBettair(
+            s.bettair_client_id,
+            s.bettair_client_secret,
+            s.bettair_base_url,
+            s.bettair_timeout_seconds,
+        )
+    return _cliente_bettair
+
+
+async def estaciones_aire() -> EstacionesAireOut:
+    if (hit := _cacheado("aire")) is not None:
+        return hit  # type: ignore[no-any-return]
+    entidades = await _obtener_cliente_bettair().entidades()
+    estaciones = [EstacionAireOut(**e) for e in parsear_estaciones(entidades)]
+    resultado = EstacionesAireOut(
+        obtenido_en=datetime.now(UTC), total=len(estaciones), estaciones=estaciones
+    )
+    _cache["aire"] = (time.monotonic(), resultado)
+    return resultado
 
 
 async def banderas_playas() -> BanderasPlayasOut:

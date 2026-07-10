@@ -51,10 +51,12 @@ function estadoDe(e) {
   const s = String(e || "").toLowerCase();
   if (!s || s === "desconocido") return "warn";
   if (s.startsWith("operat") || s === "online" || s === "ok" || s === "activo" || s === "activa" ||
-      s === "verde" || s === "sin_bandera") return "ok";
+      s === "active" || s === "verde" || s === "sin_bandera" ||
+      s === "buena" || s === "razonable") return "ok"; /* EAQI 1-2 */
   if (s.includes("sin_comunicacion") || s.includes("error") || s.includes("fallo") || s === "offline" ||
-      s.includes("averia") || s === "roja") return "err";
-  return "warn"; /* incluye bandera amarilla */
+      s.includes("averia") || s === "roja" ||
+      s.includes("muy desfavorable") || s.includes("extremadamente")) return "err"; /* EAQI 5-6 */
+  return "warn"; /* incluye bandera amarilla y EAQI 3-4 (moderada, desfavorable) */
 }
 
 const COLOR_ESTADO = { ok: "#12A150", warn: "#F0B429", err: "#E5484D" };
@@ -96,11 +98,25 @@ async function cargarActivos() {
       (d) => (d.items || d || []).map((p) => ({ nombre: p.nombre || p.codigo, estado: p.estado, extra: p.tipo, obj: p }))],
     seguridad: ["/verticales/seguridad/camaras", "#E2572B", "Seguridad · CCTV",
       (d) => (d.items || d || []).map((c) => ({ nombre: c.codigo || c.nombre, estado: c.estado, extra: c.tipo, obj: c }))],
-    /* Vertical externa (Fase 4): plataforma IoT municipal vía ThingsBoard.
-       Si el backend responde 503 (sin configurar), la capa simplemente no aparece. */
+    /* Verticales externas (Fase 4). Si el backend responde 503 (fuente sin
+       configurar), la capa simplemente no aparece. */
     banderas: ["/gemelo/playas/banderas", "#0E9BD8", "Banderas de playa (IoT municipal)",
       (d) => (d.banderas || []).map((b) => ({ nombre: b.nombre, estado: b.estado,
         extra: "bandera: " + String(b.estado).replace(/_/g, " "), obj: b }))],
+    aire: ["/gemelo/aire/estaciones", "#18794E", "Calidad del aire y meteo (Bettair)",
+      (d) => (d.estaciones || []).map((e) => ({
+        nombre: "Estación " + e.id,
+        /* el estado es el nivel EAQI en texto (buena, moderada…); estadoDe() lo mapea al semáforo */
+        estado: e.eaqi_texto || e.estado,
+        extra: (e.temperatura_c != null ? e.temperatura_c.toFixed(1) + " °C" : "") +
+          (e.eaqi != null ? " · aire: " + (e.eaqi_texto || e.eaqi) : ""),
+        obj: {
+          estacion: e.id, calidad_aire: e.eaqi_texto, temperatura_c: e.temperatura_c,
+          humedad_pct: e.humedad_pct, no2_ugm3: e.no2_ugm3, o3_ugm3: e.o3_ugm3,
+          pm25_ugm3: e.pm25_ugm3, pm10_ugm3: e.pm10_ugm3, medido_en: e.medido_en,
+          latitud: e.latitud, longitud: e.longitud,
+        },
+      }))],
   };
   const claves = Object.keys(fuentes);
   const res = await Promise.allSettled(claves.map((k) => {
@@ -170,7 +186,7 @@ async function maplibre() {
 
 async function renderGemelo2D(el) {
   el.innerHTML = sub("Gemelo digital", "Gemelo vivo del destino",
-    "Réplica digital operativa: los activos georreferenciados de la plataforma y de la vertical IoT municipal (banderas de playa y aforo del parque, vía ThingsBoard) sobre un único mapa en tiempo real, con refresco automático cada minuto.",
+    "Réplica digital operativa: los activos de la plataforma y de las verticales externas (IoT municipal con banderas de playa y aforo del parque; red Bettair de calidad del aire y meteorología) sobre un único mapa en tiempo real, con refresco automático cada minuto.",
     '<button class="btn btn--pri" onclick="UI.goD(\'gd-3d\')">Vista 3D →</button>') +
     '<div class="grid g4" style="margin-bottom:16px" id="gd-kpis"></div>' +
     '<div class="card card--pad0" style="overflow:hidden"><div id="gemelo-2d" style="height:600px;width:100%"></div></div>' +
