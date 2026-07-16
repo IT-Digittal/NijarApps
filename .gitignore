@@ -73,3 +73,6 @@ node_modules/
 
 # Reports generados
 reports/
+
+# Capturas de pantalla locales (tótem)
+totem-*.png

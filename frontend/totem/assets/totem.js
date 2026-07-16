@@ -9,7 +9,7 @@
  * - Inactividad >60 s: vuelve al inicio en español (modo público).
  */
 
-import { I18N, translateAll } from "./i18n.js?v=4";
+import { I18N, translateAll } from "./i18n.js?v=21";
 import { DEMO_RESOURCES, DEMO_EVENTS, answerChatbotDemo } from "./demo-data.js";
 
 // ============================================================
@@ -64,17 +64,21 @@ function icono(nombre, cls) {
 
 /* Las banderas planas (SVG) van inline en index.html junto a cada botón */
 
-// Categorías del home (diseño v4) → fuentes de datos reales
+// Categorías del home (rediseño Dirección) → 6 tiles del grid 2×3.
+// - `res`: recursos con esa categoria de recurso_turistico
+// - `srv`: servicios de esos tipos (agrupados desde /tourism/services)
+// - `etiquetas`: recursos que llevan alguna de estas tags (case-insensitive)
+// - `bg`: imagen de fondo del tile (path relativo). Si falla, cae a `solid`.
+// - `solid`: color plano del tile cuando no hay foto.
 const CATS = [
-  { id: "playas", icon: "playa", ic: "ic-sky", th: "th-playa", label: "categorias.playas", cnt: "count.lugares", res: ["playa"] },
-  { id: "rutas", icon: "ruta", ic: "ic-sun", th: "th-ruta", label: "categorias.rutas", cnt: "count.rutas", res: ["ruta"] },
-  { id: "patrimonio", icon: "patrimonio", ic: "ic-sand", th: "th-patrimonio", label: "categorias.patrimonio", cnt: "count.sitios", res: ["monumento", "museo", "yacimiento"] },
-  { id: "naturaleza", icon: "naturaleza", ic: "ic-green", th: "th-naturaleza", label: "categorias.naturaleza", cnt: "count.sitios", res: ["parque_natural", "mirador"] },
-  { id: "gastronomia", icon: "gastronomia", ic: "ic-rose", th: "th-gastro", label: "categorias.gastronomia", cnt: "count.sitios", srv: ["gastronomia_restaurante", "gastronomia_bar", "gastronomia_cafeteria"] },
-  { id: "eventos", icon: "eventos", ic: "ic-violet", th: "th-evento", label: "categorias.eventos", cnt: "count.semana", events: true },
-  { id: "alojamiento", icon: "alojamiento", ic: "ic-blue", th: "th-servicio", label: "categorias.alojamiento", cnt: "count.sitios", srv: ["alojamiento_hotel", "alojamiento_apartamento", "alojamiento_rural", "alojamiento_camping"] },
-  { id: "artesania", icon: "artesania", ic: "ic-orange", th: "th-gastro", label: "categorias.artesania", cnt: "count.talleres", srv: ["comercio", "ocio_actividad", "ocio_alquiler"] },
-  { id: "servicios", icon: "servicios", ic: "ic-gray", th: "th-servicio", label: "categorias.servicios", cnt: "count.sitios", res: ["oficina_turismo", "centro_visitantes", "punto_interes"], emergencias: true },
+  { id: "playas",      label: "cat.playas_calas",      icon: "playa",       th: "th-playa",       bg: "../shared/tiles/playas.jpg",      res: ["playa"],              heroSub: "sub.playas",     unit: "unit.lugares" },
+  { id: "cabo",        label: "cat.cabo_gata",         icon: "naturaleza",  th: "th-naturaleza",  bg: "../shared/tiles/cabo.jpg",        res: ["parque_natural"],     heroSub: "sub.cabo",       unit: "unit.lugares" },
+  { id: "rutas",       label: "cat.rutas_senderos",    icon: "ruta",        th: "th-ruta",        bg: "../shared/tiles/rutas.jpg",       res: ["ruta"],               heroSub: "sub.rutas",      unit: "unit.rutas" },
+  { id: "naturaleza",  label: "cat.naturaleza",        icon: "naturaleza",  th: "th-naturaleza",  bg: "../shared/tiles/naturaleza.jpg",  res: ["mirador"], etiquetas: ["naturaleza"], heroSub: "sub.naturaleza", unit: "unit.lugares" },
+  { id: "ceramica",    label: "cat.ceramica_jarapas", icon: "artesania",   th: "th-gastro",      bg: "../shared/tiles/ceramica.jpg",    etiquetas: ["ceramica", "artesania", "jarapas"],                        heroSub: "sub.ceramica",   unit: "unit.talleres" },
+  { id: "gastronomia", label: "cat.gastronomia",       icon: "gastronomia", th: "th-gastro",      bg: "../shared/tiles/gastronomia.jpg", srv: ["gastronomia_restaurante", "gastronomia_bar", "gastronomia_cafeteria"],           heroSub: "sub.gastro",     unit: "unit.locales" },
+  /* Agenda — se abre desde el dock inferior; no se muestra en el grid del home */
+  { id: "eventos",     label: "categorias.eventos",    icon: "eventos",     th: "th-evento",      hiddenFromGrid: true, events: true, heroSub: "sub.eventos", unit: "unit.eventos" },
 ];
 
 // ============================================================
@@ -108,8 +112,23 @@ function showView(id) {
 }
 document.querySelectorAll("[data-back]").forEach((b) => b.addEventListener("click", () => showView("view-home")));
 $("#btn-home-brand").addEventListener("click", () => showView("view-home"));
-$("#btn-open-chat").addEventListener("click", () => { showView("view-chat"); $("#chatbot-input").focus(); });
-$("#btn-open-map").addEventListener("click", abrirMapa);
+document.querySelectorAll("#btn-open-chat, [data-open-chat]").forEach((b) =>
+  b.addEventListener("click", () => { showView("view-chat"); const inp = $("#chatbot-input"); if (inp) inp.focus(); })
+);
+$("#btn-open-map")?.addEventListener("click", abrirMapa);
+document.querySelectorAll('[data-dock-action="agenda"]').forEach((b) =>
+  b.addEventListener("click", () => abrirCategoria("eventos"))
+);
+document.querySelectorAll('[data-dock-action="social"]').forEach((b) =>
+  b.addEventListener("click", () => { const d = $("#social-dialog"); if (d) { d.showModal(); resetIdle(); } })
+);
+{
+  const sd = $("#social-dialog");
+  if (sd) {
+    $("#social-close")?.addEventListener("click", () => sd.close());
+    sd.addEventListener("click", (e) => { if (e.target === sd) sd.close(); });
+  }
+}
 
 // ============================================================
 // i18n y selector de idioma
@@ -122,6 +141,8 @@ function applyLanguage(lang) {
     btn.setAttribute("aria-pressed", String(btn.dataset.lang === lang));
   });
   renderHomeCats();
+  renderTicker();
+  renderDestacado();
   pintarFechas();
   pintarMeteo();
   const listaVisible = !document.getElementById("view-list").hidden;
@@ -154,13 +175,18 @@ $("#footer-voice").addEventListener("click", () => { if (lastAnswer) hablar(last
 // ============================================================
 function updateClock() {
   const now = new Date();
-  $("#clock").textContent = now.toLocaleTimeString(currentLang, { hour: "2-digit", minute: "2-digit", hour12: false });
+  const hhmm = now.toLocaleTimeString(currentLang, { hour: "2-digit", minute: "2-digit", hour12: false });
+  ["#clock", "#header-clock", "#hero-time"].forEach((sel) => {
+    const el = $(sel); if (el) el.textContent = hhmm;
+  });
 }
 function pintarFechas() {
   const now = new Date();
   const larga = now.toLocaleDateString(currentLang, { weekday: "long", day: "numeric", month: "long", year: "numeric" });
-  $("#footer-date").textContent = larga;
-  $("#header-date-pill").textContent = now.toLocaleDateString(currentLang, { weekday: "long", day: "numeric", month: "long" });
+  const media = now.toLocaleDateString(currentLang, { weekday: "long", day: "numeric", month: "long" });
+  const fd = $("#footer-date"); if (fd) fd.textContent = larga;
+  const hp = $("#header-date-pill"); if (hp) hp.textContent = media;
+  const hd = $("#hero-date"); if (hd) hd.textContent = media;
 }
 setInterval(updateClock, 1000);
 updateClock();
@@ -178,13 +204,17 @@ let meteoCache = null;
 function pintarMeteo() {
   const el = $("#header-weather");
   if (!el) return;
-  const m = meteoCache;
-  if (!m || m.temperatura_media_c == null) { el.hidden = true; return; }
   const t = dict();
+  /* Si Bettair no está configurado, mostramos un placeholder estacional
+   * (agosto ~29°, verano soleado por defecto) para que el diseño de la home
+   * mantenga el pill. En producción con Bettair, se sustituye por datos reales. */
+  const m = meteoCache || { temperatura_media_c: 29, eaqi_peor: null };
   const temp = Math.round(m.temperatura_media_c);
   const aire = m.eaqi_peor != null ? (t[`meteo.aire.${m.eaqi_peor}`] || m.eaqi_peor_texto) : null;
-  el.innerHTML = `${ICONO_SOL} <b>${temp} °C</b>` +
-    (aire ? ` · ${escapeHtml(t["meteo.aire"] || "Aire")}: ${escapeHtml(aire)}` : "");
+  const etiqueta = aire ? escapeHtml(aire.toUpperCase()) : escapeHtml((t["meteo.soleado"] || "Soleado").toUpperCase());
+  el.innerHTML =
+    `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.4" fill="#E0912F"/><g stroke="#E0912F" stroke-width="2.2" stroke-linecap="round" fill="none"><path d="M12 2v2.4M12 19.6V22M4 12H1.6M22.4 12H20M5.1 5.1l1.7 1.7M17.2 17.2l1.7 1.7M18.9 5.1l-1.7 1.7M6.8 17.2l-1.7 1.7"/></g></svg>` +
+    `<div><span class="tmp">${temp}°</span><span class="wl">${etiqueta}</span></div>`;
   el.hidden = false;
 }
 
@@ -237,13 +267,20 @@ const catCounts = {};
 
 function renderHomeCats() {
   const t = dict();
-  $("#home-cats").innerHTML = CATS.map((c) => `
-    <button class="tt-cat" role="listitem" data-cat="${c.id}" aria-label="${escapeHtml(t[c.label] || c.id)}">
-      <span class="tt-cat-icon ${c.ic}" aria-hidden="true">${icono(c.icon)}</span>
-      <h3>${escapeHtml(t[c.label] || capitalize(c.id))}</h3>
-      <small>${catCounts[c.id] != null ? `${catCounts[c.id]} ${t[c.cnt] || ""}` : "…"}</small>
-    </button>`).join("");
-  document.querySelectorAll(".tt-cat").forEach((b) =>
+  const grid = $("#home-cats");
+  if (!grid) return;
+  grid.innerHTML = CATS.filter((c) => !c.hiddenFromGrid).map((c) => {
+    const label = escapeHtml(t[c.label] || capitalize(c.id));
+    const bgStyle = c.solid ? "" : ` style="background-image: url('${c.bg}');"`;
+    const solidCls = c.solid ? ` is-solid${c.alt ? " is-alt" : ""}` : "";
+    return (
+      `<button class="tt-ptile${solidCls}" role="listitem" data-cat="${c.id}" aria-label="${label}"${bgStyle}>` +
+        `<span class="psh" aria-hidden="true"></span>` +
+        `<span class="plabel">${label}</span>` +
+      `</button>`
+    );
+  }).join("");
+  grid.querySelectorAll(".tt-ptile").forEach((b) =>
     b.addEventListener("click", () => abrirCategoria(b.dataset.cat)));
 }
 
@@ -256,16 +293,108 @@ async function cargarConteos() {
         catCounts[c.id] = d.total ?? 0;
       } else if (c.srv) {
         catCounts[c.id] = servicios.filter((s) => c.srv.includes(s.tipo)).length;
-      } else {
+      } else if (c.res) {
         const totales = await Promise.all(c.res.map(async (cat) => {
           const d = await apiGet(`/tourism/resources?categoria=${cat}&publicado=true&page_size=1`);
           return d.total ?? 0;
         }));
         catCounts[c.id] = totales.reduce((a, b) => a + b, 0);
+      } else {
+        catCounts[c.id] = 0;
       }
     } catch { catCounts[c.id] = (DEMO_RESOURCES[c.id] || []).length || 0; }
   }));
   renderHomeCats();
+}
+
+// ============================================================
+// HOME: ticker de AVISOS municipales (mock local hasta endpoint público — Fase 6)
+// ============================================================
+const AVISOS_DEMO = {
+  es: [
+    "Abierto el plazo de inscripción de la Escuela de Verano hasta el 15 de julio",
+    "Corte de agua programado en San Isidro el martes de 9:00 a 13:00 por mejora de la red",
+    "Nueva línea de autobús San José – Villa de Níjar los fines de semana",
+    "Recogida de enseres a domicilio: solicita cita en el 950 360 012",
+  ],
+  en: [
+    "Summer School registration open until 15 July",
+    "Scheduled water cut in San Isidro on Tuesday 9:00 – 13:00 due to network works",
+    "New weekend bus line San José – Villa de Níjar",
+    "Bulky waste pickup on request: call 950 360 012",
+  ],
+  de: [
+    "Anmeldung zur Sommerschule bis 15. Juli geöffnet",
+    "Geplante Wasserabschaltung in San Isidro am Dienstag 9:00 – 13:00 wegen Netzarbeiten",
+    "Neue Wochenendbuslinie San José – Villa de Níjar",
+    "Sperrmüllabholung auf Anfrage: 950 360 012",
+  ],
+  fr: [
+    "Inscriptions à l'École d'Été ouvertes jusqu'au 15 juillet",
+    "Coupure d'eau programmée à San Isidro mardi 9h00 – 13h00 pour travaux sur le réseau",
+    "Nouvelle ligne de bus le week-end San José – Villa de Níjar",
+    "Ramassage d'encombrants à domicile : rendez-vous au 950 360 012",
+  ],
+};
+
+function renderTicker() {
+  const el = $("#home-avisos");
+  const track = $("#avisos-track");
+  if (!el || !track) return;
+  const items = (AVISOS_DEMO[currentLang] || AVISOS_DEMO.es).map(escapeHtml);
+  if (!items.length) { el.hidden = true; return; }
+  /* Se duplica para garantizar loop continuo aunque el CSS dependa del ancho renderizado */
+  track.textContent = items.concat(items).join("   •   ");
+  el.hidden = false;
+}
+
+// ============================================================
+// HOME: tarjeta "Destacado esta semana" (próximo evento del CMS)
+// ============================================================
+let destacadoEvento = null;
+
+function _fmtEvento(ev) {
+  if (!ev) return "";
+  const d = new Date(ev.fecha_inicio);
+  const fecha = d.toLocaleDateString(currentLang, { day: "numeric", month: "short" });
+  const hora = d.toLocaleTimeString(currentLang, { hour: "2-digit", minute: "2-digit", hour12: false });
+  const dir = ev.direccion ? ` · ${ev.direccion}` : "";
+  return `${fecha}${dir} · ${hora}`;
+}
+
+async function cargarDestacado() {
+  try {
+    const d = await apiGet("/tourism/events?publicado=true&page_size=1");
+    destacadoEvento = (d.items && d.items[0]) || null;
+  } catch { destacadoEvento = (DEMO_EVENTS && DEMO_EVENTS[0]) || null; }
+  renderDestacado();
+}
+
+function renderDestacado() {
+  const wrap = $("#home-feat");
+  if (!wrap || !destacadoEvento) { if (wrap) wrap.hidden = true; return; }
+  const ev = destacadoEvento;
+  const nombre = (ev.nombre_i18n && ev.nombre_i18n[currentLang]) || ev.nombre;
+  $("#feat-title").textContent = nombre;
+  $("#feat-sub").textContent = _fmtEvento(ev);
+  const img = (ev.imagenes && ev.imagenes[0]?.url) || "";
+  const fill = $("#feat-image");
+  if (fill) fill.style.backgroundImage = img ? `url('${img}')` : "";
+  wrap.hidden = false;
+  wrap.onclick = () => abrirCategoria("eventos");
+}
+
+// ============================================================
+// HOME: foto del hero (recurso destacado con imagen)
+// ============================================================
+async function cargarHeroFoto() {
+  const img = $("#hero-photo");
+  if (!img) return;
+  /* Foto local del Cabo de Gata (acantilados sobre el mar). Cuando el CMS
+   * tenga imagen del recurso destacado se sustituye con `r.imagenes[0].url`. */
+  img.src = "../shared/cabo-de-gata-hero.jpg";
+  img.alt = "Cabo de Gata";
+  img.hidden = false;
 }
 
 // ============================================================
@@ -279,7 +408,11 @@ async function abrirCategoria(catId, chip = "todas") {
   const t = dict();
 
   $("#list-title").textContent = c.events && chip !== "emergencias" ? (t["agenda.title"] || "Agenda") : (t[c.label] || capitalize(catId));
-  $("#list-count").textContent = catCounts[catId] != null ? `· ${catCounts[catId]}` : "";
+  const n = catCounts[catId];
+  const unit = t[c.unit || "unit.lugares"] || "lugares";
+  $("#list-count").textContent = n != null ? `${n} ${unit}` : "";
+  const heroTxt = $("#list-hero-txt");
+  if (heroTxt) heroTxt.textContent = t[c.heroSub || "hero.destino_generico"] || "Cabo de Gata · Níjar";
   renderChips(c);
   showView("view-list");
 
@@ -294,13 +427,24 @@ async function abrirCategoria(catId, chip = "todas") {
   if (c.srv) {
     const servicios = await getServicios();
     items = servicios.filter((s) => (chip === "todas" ? c.srv.includes(s.tipo) : s.tipo === chip));
-  } else {
-    const cats = chip === "todas" ? c.res : [chip];
+  } else if (c.res || c.etiquetas) {
+    const cats = c.res ? (chip === "todas" ? c.res : [chip]) : [];
     for (const cat of cats) {
       try {
         const d = await apiGet(`/tourism/resources?categoria=${encodeURIComponent(cat)}&publicado=true&page_size=20`);
         items.push(...(d.items || []));
       } catch { /* siguiente categoría */ }
+    }
+    /* Filtro por etiquetas: sin endpoint dedicado, se filtra en cliente sobre todos los recursos */
+    if (c.etiquetas && c.etiquetas.length) {
+      try {
+        const d = await apiGet(`/tourism/resources?publicado=true&page_size=100`);
+        const tagSet = c.etiquetas.map((t) => t.toLowerCase());
+        const matches = (d.items || []).filter((r) => (r.etiquetas || []).some((e) => tagSet.includes(String(e).toLowerCase())));
+        /* deduplica por id */
+        const seen = new Set(items.map((x) => x.id));
+        matches.forEach((m) => { if (!seen.has(m.id)) items.push(m); });
+      } catch { /* mantén lo que haya */ }
     }
   }
   if (items.length === 0 && !c.srv) items = DEMO_RESOURCES[catId] || [];
@@ -325,37 +469,31 @@ function renderChips(c) {
     b.addEventListener("click", () => abrirCategoria(c.id, b.dataset.chip)));
 }
 
-function itemCard(r, c) {
-  const t = dict();
+function itemCard(r, c, index) {
   const nombre = r.nombre_i18n?.[currentLang] || r.nombre;
   const desc = r.descripcion_i18n?.[currentLang] || r.descripcion_corta || r.descripcion || "";
   const latlon = extractLatLon(r);
   const km = latlon ? haversineKm(latlon[0], latlon[1]) : null;
-  const tags = [];
-  if ((r.etiquetas || []).some((e) => /parque/i.test(e)) || r.categoria === "parque_natural") {
-    tags.push('<span class="tt-tag">Parque Natural</span>');
-  }
-  if (r.categoria) tags.push(`<span class="tt-tag tt-tag--info">${escapeHtml(tagLabel(r.categoria))}</span>`);
-  else if (r.tipo) tags.push(`<span class="tt-tag tt-tag--info">${escapeHtml(tagLabel(r.tipo))}</span>`);
-  if (r.accesibilidad) tags.push(`<span class="tt-tag tt-tag--warn">${icono("accesible", "tt-svg--tag")} Accesible</span>`);
-
+  const sub = [r.municipio, r.direccion].filter(Boolean).join(" · ") || (desc ? String(desc).slice(0, 90) + (String(desc).length > 90 ? "…" : "") : "");
   const meta = [];
-  if (km != null) meta.push(`${icono("andar")} ${km < 1 ? Math.round(km * 1000) + " m" : km.toFixed(1) + " km"}`);
-  if (r.horario && typeof r.horario === "string") meta.push(`${icono("reloj")} ${escapeHtml(r.horario)}`);
-  if (r.telefono) meta.push(`${icono("telefono")} ${escapeHtml(String(r.telefono))}`);
-
+  if (km != null) meta.push(km < 1 ? Math.round(km * 1000) + " m" : km.toFixed(1) + " km");
+  if (r.horario && typeof r.horario === "string") meta.push(escapeHtml(r.horario));
   const img = r.imagenes?.[0];
+  const num = String((index ?? 0) + 1).padStart(2, "0");
+  const thumbBg = img
+    ? `background-image: url('${escapeAttr(img)}'); background-size: cover; background-position: center;`
+    : "";
   return `
-    <button class="tt-item" data-urn="${escapeAttr(r.urn || r.id || "")}">
-      <span class="tt-thumb ${c.th}" aria-hidden="true">${img ? `<img src="${escapeAttr(img)}" alt="">` : '<span class="sun"></span>'}</span>
-      <span class="tt-item-body">
-        <span class="tt-item-tags">${tags.join("")}</span>
-        <h3>${escapeHtml(nombre)}</h3>
-        <span class="tt-item-sub">${escapeHtml(r.municipio || "")}${r.direccion ? " · " + escapeHtml(r.direccion) : ""}</span>
-        ${meta.length ? `<span class="tt-item-meta">${meta.map((m) => `<span>${m}</span>`).join("")}</span>` : ""}
-        ${!meta.length && desc ? `<span class="tt-item-sub">${escapeHtml(String(desc).slice(0, 110))}${String(desc).length > 110 ? "…" : ""}</span>` : ""}
+    <button class="tt-lb" data-urn="${escapeAttr(r.urn || r.id || "")}">
+      <span class="tt-lb-num" aria-hidden="true">${num}</span>
+      <span class="tt-lb-thumb ${c.th}" style="${thumbBg}" aria-hidden="true"></span>
+      <span class="tt-lb-body">
+        <span class="tt-lb-title">${escapeHtml(nombre)}</span>
+        <span class="tt-lb-sub">${escapeHtml(sub)}${meta.length ? " · " + meta.join(" · ") : ""}</span>
       </span>
-      <span class="tt-item-go" aria-hidden="true">›</span>
+      <span class="tt-lb-go" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+      </span>
     </button>`;
 }
 
@@ -365,8 +503,8 @@ function renderItems(grid, items, c) {
     grid.innerHTML = `<p class="content-loading">${t["empty.contenido"] || "Sin contenidos disponibles"}</p>`;
     return;
   }
-  grid.innerHTML = items.map((r) => itemCard(r, c)).join("");
-  grid.querySelectorAll(".tt-item").forEach((btn, i) => {
+  grid.innerHTML = items.map((r, i) => itemCard(r, c, i)).join("");
+  grid.querySelectorAll(".tt-lb").forEach((btn, i) => {
     btn.addEventListener("click", () => openDetail(items[i], c));
   });
 }
@@ -400,7 +538,10 @@ async function renderAgenda(grid, chip) {
   const tiposChips = [...new Set(items.map((e) => e.tipo).filter(Boolean))];
   $("#list-chips").innerHTML =
     `<button class="tt-chip" data-chip="todas" aria-pressed="${chip === "todas"}">${t["chips.todas"] || "Todas"}</button>` +
-    tiposChips.map((x) => `<button class="tt-chip" data-chip="${x}" aria-pressed="${chip === x}">${escapeHtml(capitalize(x))}</button>`).join("");
+    tiposChips.map((x) => {
+      const label = t[`tipo_evento.${x}`] || capitalize(x);
+      return `<button class="tt-chip" data-chip="${x}" aria-pressed="${chip === x}">${escapeHtml(label)}</button>`;
+    }).join("");
   $("#list-chips").querySelectorAll(".tt-chip").forEach((b) =>
     b.addEventListener("click", () => abrirCategoria("eventos", b.dataset.chip)));
 
@@ -422,7 +563,7 @@ async function renderAgenda(grid, chip) {
           </span>
           <span class="tt-item-body">
             <span class="tt-item-tags">
-              ${ev.tipo ? `<span class="tt-tag tt-tag--rose">${escapeHtml(capitalize(ev.tipo))}</span>` : ""}
+              ${ev.tipo ? `<span class="tt-tag tt-tag--rose">${escapeHtml(t[`tipo_evento.${ev.tipo}`] || capitalize(ev.tipo))}</span>` : ""}
               ${ev.direccion ? `<span class="tt-tag tt-tag--info">${escapeHtml(ev.direccion)}</span>` : ""}
             </span>
             <h3>${escapeHtml(nombre)}</h3>
@@ -510,32 +651,67 @@ function openDetail(r, c) {
   $("#poi-title").textContent = nombre;
   $("#poi-body").textContent = r.descripcion_i18n?.[currentLang] || r.descripcion || r.descripcion_corta || "";
 
-  // Hero: imagen real o degradado por tipo
+  // Breadcrumb superior con la categoría (ej. "PLAYAS Y CALAS")
+  const bc = $("#poi-breadcrumb");
+  if (bc) bc.textContent = c ? String(t[c.label] || capitalize(c.id)).toUpperCase() : "";
+
+  // Subtítulo del hero: municipio · dirección · longitud si aplica
+  const sub = $("#poi-sub");
+  if (sub) {
+    const parts = [r.municipio, r.direccion].filter(Boolean);
+    if (r.longitud_m) parts.push(`${r.longitud_m} m`);
+    sub.textContent = parts.join(" · ");
+  }
+
+  // Hero: imagen real o color azul institucional
   const hero = $("#poi-image");
   const img = r.imagenes?.[0];
-  hero.className = `tt-dialog-hero ${c ? c.th : "th-playa"}`;
   hero.style.backgroundImage = img ? `url('${img}')` : "";
 
-  // Badge superior
+  // Badge superior naranja (kicker sobre el hero, ej. "ÍCONO DEL PARQUE NATURAL")
   const cat = r.categoria || r.tipo || "";
+  const badgeText = (r.etiquetas || []).some((e) => /parque/i.test(e)) || cat === "parque_natural"
+    ? (t["badge.parque_natural"] || "ÍCONO DEL PARQUE NATURAL")
+    : cat ? String(tagLabel(cat)).toUpperCase() : "";
   const tag = $("#poi-tag");
-  if (cat) { tag.textContent = tagLabel(cat); tag.hidden = false; } else tag.hidden = true;
+  if (badgeText) { tag.textContent = badgeText; tag.hidden = false; } else tag.hidden = true;
 
-  // Tarjetas de datos rápidos
+  // 3 tarjetas de stats en fila (formato simple: label + valor)
   const stats = [];
+  if (r.longitud_m || r.longitud) stats.push([t["info.longitud"] || "Longitud", `${r.longitud_m || r.longitud} m`]);
   const latlon = extractLatLon(r);
   if (latlon) {
     const km = haversineKm(latlon[0], latlon[1]);
-    stats.push(["andar", t["info.distancia"] || "Distancia", km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(1)} km`]);
+    stats.push([t["info.distancia"] || "Distancia", km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(1)} km`]);
   }
-  if (r.municipio) stats.push(["lugar", t["info.municipio"] || "Municipio", r.municipio]);
-  if (r.fecha_inicio) stats.push(["fecha", t["info.fecha"] || "Fecha", new Date(r.fecha_inicio).toLocaleDateString(currentLang, { day: "2-digit", month: "short" })]);
-  if (r.precio) stats.push(["precio", t["info.precio"] || "Precio", formatMeta({ format: "i18n" }, r.precio)]);
-  else if (cat) stats.push(["servicios", "Categoría", tagLabel(cat)]);
-  $("#poi-stats").innerHTML = stats.slice(0, 4).map(([ic, l, v]) =>
-    `<div class="tt-stat"><span class="ic" aria-hidden="true">${icono(ic, "tt-svg--stat")}</span><small>${escapeHtml(String(l).toUpperCase())}</small><b>${escapeHtml(String(v))}</b></div>`).join("");
+  if (r.acceso) stats.push([t["info.acceso"] || "Acceso", r.acceso]);
+  else if (r.horario && typeof r.horario === "string") stats.push([t["info.horario"] || "Horario", r.horario]);
+  if (r.temporada) stats.push([t["info.temporada"] || "Temporada", r.temporada]);
+  else if (r.servicios_disponibles && Array.isArray(r.servicios_disponibles) && r.servicios_disponibles.length) stats.push([t["info.servicios"] || "Servicios", `${r.servicios_disponibles.length}`]);
+  else if (r.fecha_inicio) stats.push([t["info.fecha"] || "Fecha", new Date(r.fecha_inicio).toLocaleDateString(currentLang, { day: "2-digit", month: "short" })]);
+  $("#poi-stats").innerHTML = stats.slice(0, 3).map(([l, v]) =>
+    `<div class="tt-poistat"><small>${escapeHtml(String(l).toUpperCase())}</small><b>${escapeHtml(String(v))}</b></div>`).join("");
 
-  // Metadatos
+  // CTA azul "CÓMO LLEGAR" (si tenemos dirección o municipio + coordenadas)
+  const cta = $("#poi-cta");
+  if (cta) {
+    const dest = r.direccion || r.municipio || "";
+    let extra = "";
+    if (latlon) {
+      const km = haversineKm(latlon[0], latlon[1]);
+      extra = km < 1 ? ` · ${Math.round(km * 1000)} m ${t["info.desde_totem"] || "desde el tótem"}` : ` · ${km.toFixed(1)} km ${t["info.desde_totem"] || "desde el tótem"}`;
+    }
+    if (dest || latlon) {
+      cta.innerHTML =
+        `<span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.5a7 7 0 017 7c0 5-7 12-7 12s-7-7-7-12a7 7 0 017-7z"/><circle cx="12" cy="9.5" r="2.6"/></svg></span>` +
+        `<span class="txt"><small>${escapeHtml(t["cta.como_llegar"] || "Cómo llegar")}</small><strong>${escapeHtml(dest)}${extra}</strong></span>`;
+      cta.hidden = false;
+      cta.onclick = latlon ? (() => { dialog.close(); abrirMapa(latlon); }) : null;
+      cta.style.cursor = latlon ? "pointer" : "default";
+    } else { cta.hidden = true; }
+  }
+
+  // Metadatos (tarjeta secundaria)
   const meta = $("#poi-meta");
   meta.innerHTML = "";
   for (const field of META_FIELDS) {
@@ -549,7 +725,8 @@ function openDetail(r, c) {
     row.innerHTML = `<dt aria-hidden="true">${icono(field.icon, "tt-svg--meta")}</dt><dd><strong>${escapeHtml(dict()[field.label] || field.label)}:</strong> ${escapeHtml(formatted)}</dd>`;
     meta.appendChild(row);
   }
-  meta.parentElement.style.display = meta.children.length ? "" : "none";
+  const metaCard = $("#poi-meta-card");
+  if (metaCard) metaCard.hidden = meta.children.length === 0;
 
   // Etiquetas
   const tagsEl = $("#poi-tags");
@@ -863,5 +1040,8 @@ translateAll(currentLang);
 document.querySelectorAll(".lang-btn").forEach((btn) =>
   btn.setAttribute("aria-pressed", String(btn.dataset.lang === currentLang)));
 renderHomeCats();
+renderTicker();
+cargarHeroFoto();
 resetChat();
 cargarConteos();
+cargarDestacado();

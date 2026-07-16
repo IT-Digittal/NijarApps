@@ -7,47 +7,55 @@
  * ========================================================================== */
 
 :root {
-  --navy: #0E3A78;
-  --navy-2: #0B2E60;
+  /* Rediseño Dirección (Totem_Nijar bundle) — paleta institucional */
+  --navy: #0B2B57;
+  --navy-2: #082246;
   --navy-3: #123F85;
-  --ink: #14305E;
-  --muted: #64748F;
-  --subtle: #94A3B8;
-  --cream: #F5F3E9;
-  --band: #EDEAD9;
+  --ink: #0B2B57;
+  --muted: #6A6858;
+  --subtle: #A8A398;
+  --cream: #F4EEE1;      /* fondo panel */
+  --body-bg: #D8D2C4;    /* fondo body (crema oscuro) */
+  --band: #EDE6D4;
   --card: #FFFFFF;
-  --line: #E4E2D4;
-  --yellow: #F5C518;
+  --line: #E4DBC7;
+  --yellow: #F5C518;     /* AVISOS */
   --yellow-2: #E8B90A;
   --teal: #17B8C4;
   --teal-2: #0E9AA5;
-  --green: #1E9E6E;
+  --green: #4B8A5D;      /* verde tile (Cerámica) */
+  --green-2: #6BA879;    /* verde tile (Gastronomía) */
   --green-bg: #E3F4EC;
-  --orange: #E2572B;
-  --orange-bg: #FCEDE6;
+  --orange: #E0912F;     /* dorado corporativo */
+  --orange-2: #C97B1F;
+  --orange-bg: #FBEBD3;
   --violet-bg: #EFEAFB;
   --sand: #C9B37E;
-  --r: 22px;
+  --r: 30px;             /* radio tile grande */
+  --r-md: 22px;
   --r-sm: 14px;
-  --sh: 0 6px 24px rgba(14, 48, 94, 0.08);
-  --sh-lg: 0 18px 50px rgba(14, 48, 94, 0.18);
-  --ff: "Geist", "Segoe UI", system-ui, sans-serif;
-  --fd: "Bricolage Grotesque", var(--ff);
-  --header-h: 92px;
-  --footer-h: 76px;
+  --sh: 0 6px 24px rgba(11, 43, 87, 0.08);
+  --sh-lg: 0 18px 50px rgba(11, 43, 87, 0.18);
+  --ff: "Montserrat", "Segoe UI", system-ui, sans-serif;
+  --fd: "Montserrat", var(--ff);
+  --thead-h: 96px;
+  --dock-h: 168px;
 }
 
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
 body {
   font-family: var(--ff);
-  background: var(--cream);
+  background: var(--body-bg);
   color: var(--ink);
   min-height: 100vh;
-  padding-top: calc(var(--header-h) + 6px);
-  padding-bottom: var(--footer-h);
+  padding-top: 0;             /* la home lleva hero a sangre; vistas internas añaden su propio thead */
+  padding-bottom: 0;          /* el dock ya está en el flujo natural, no reserva espacio extra */
+  overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
 }
+/* El thead compacto es sticky dentro del body (ver más abajo) — no requiere
+ * reserva de espacio con padding-top. */
 
 .sr-only {
   position: absolute; width: 1px; height: 1px; margin: -1px;
@@ -68,89 +76,697 @@ button { font-family: inherit; cursor: pointer; }
 
 .tt-wrap { padding-left: 28px; padding-right: 28px; max-width: 1180px; margin: 0 auto; }
 
-/* ================= CABECERA ================= */
-.tt-header {
-  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-  height: var(--header-h);
-  background: var(--navy);
-  display: flex; align-items: center; gap: 16px;
-  padding: 0 24px;
+/* ================= THEAD (cabecera compacta de vistas internas) =================
+ * En list/chat/map, arriba se muestra un thead crema con el logo del
+ * ayuntamiento, el selector compacto de idiomas y la fecha/hora.
+ * En home, este thead se oculta a favor del hero fotográfico. */
+.tt-thead {
+  position: sticky; top: 0; z-index: 100;
+  height: var(--thead-h);
+  background: var(--body-bg);
+  display: flex; align-items: center; gap: 20px;
+  padding: 14px 24px 12px;
 }
-.tt-accent {
-  position: fixed; top: var(--header-h); left: 0; right: 0; z-index: 100;
-  height: 6px; background: var(--teal);
+body:has(#view-home.is-on) .tt-thead { display: none; }
+/* Cuando thead es sticky, el body ya no necesita padding-top */
+body:not(:has(#view-home.is-on)) { padding-top: 0; }
+
+.tt-thead .tt-brand {
+  display: flex; align-items: center; gap: 12px;
+  background: #fff; border: 0; border-radius: 999px;
+  padding: 10px 20px 10px 12px; min-height: 60px;
+  box-shadow: 0 2px 10px rgba(11, 43, 87, 0.08);
 }
-.tt-brand {
-  display: flex; align-items: center; gap: 14px;
-  background: none; border: 0; padding: 6px; border-radius: 14px;
-  text-align: left; min-height: 44px;
-}
-.tt-logo-plate {
-  background: #fff; border-radius: 12px; padding: 8px 12px;
-  display: flex; align-items: center;
-}
-.tt-logo-plate img { height: 34px; width: auto; display: block; }
-.tt-brand-txt { display: flex; flex-direction: column; gap: 2px; }
-.tt-brand-txt strong { color: #fff; font-family: var(--fd); font-size: 22px; line-height: 1; }
-.tt-brand-txt small {
-  color: #A9C0E4; font-size: 11px; font-weight: 700; letter-spacing: .14em;
-}
-.tt-header-right { margin-left: auto; display: flex; align-items: center; gap: 14px; }
-.tt-datepill {
-  background: rgba(255, 255, 255, .12); color: #fff;
-  border-radius: 999px; padding: 10px 18px; font-size: 15px; font-weight: 600;
-}
-/* Chip de tiempo y calidad del aire (red Bettair) */
-.tt-weatherpill { display: inline-flex; align-items: center; gap: 8px; background: rgba(245, 197, 24, .16); }
-.tt-weatherpill[hidden] { display: none; }
-.tt-weatherpill b { font-weight: 800; }
-.tt-access-btn {
-  width: 52px; height: 52px; border-radius: 50%;
-  background: var(--yellow); border: 0; color: var(--navy-2);
+.tt-thead .tt-brand img { height: 34px; width: auto; }
+.tt-thead .tt-brand strong { font-family: var(--fd); font-weight: 800; font-size: 22px; color: var(--navy); }
+.tt-thead .tt-brand-slim { display: none; } /* subtítulo oculto en thead compacto */
+.tt-thead .tt-brand small { display: none; }
+
+/* Selector compacto de idiomas (dentro del thead) */
+.tt-thead-langs { display: flex; gap: 8px; }
+.tt-thead-langs .lang-btn {
+  width: 54px; height: 54px; padding: 0; border-radius: 50%;
+  background: #fff; border: 1.5px solid rgba(11,43,87,0.12);
+  font-weight: 800; color: var(--navy); font-size: 15px;
   display: grid; place-items: center;
 }
-.tt-access-btn svg { width: 26px; height: 26px; }
-.tt-access-btn[aria-pressed="true"] { background: #fff; }
+.tt-thead-langs .lang-btn[aria-pressed="true"] { background: var(--navy); color: #fff; border-color: var(--navy); }
+.tt-thead-langs .lang-btn .flag,
+.tt-thead-langs .lang-btn .lang-label { display: none; }
+
+.tt-thead-right { margin-left: auto; text-align: right; }
+.tt-thead-right .tt-thead-date { display: block; font-weight: 700; color: var(--navy); font-size: 22px; line-height: 1.1; }
+.tt-thead-right .tt-thead-time { display: block; font-weight: 800; color: var(--orange); font-size: 34px; line-height: 1; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.tt-thead-a11y {
+  width: 46px; height: 46px; border-radius: 50%; margin-left: 8px;
+  background: #fff; border: 1.5px solid rgba(11,43,87,0.12); color: var(--navy);
+  display: grid; place-items: center;
+}
+.tt-thead-a11y[aria-pressed="true"] { background: var(--navy); color: #fff; border-color: var(--navy); }
+.tt-thead-a11y svg { width: 22px; height: 22px; }
+.tt-thead-a11y#text-size-toggle { font-family: var(--fd); font-weight: 800; font-size: 20px; letter-spacing: -0.02em; }
+.tt-thead-a11ygroup { display: flex; gap: 8px; margin-left: 8px; }
+
+/* Grupo global de accesibilidad — fijo top-right, siempre visible (WCAG) */
+.tt-a11yfab {
+  position: fixed; top: 22px; right: 22px; z-index: 120;
+  display: flex; gap: 8px;
+}
+.tt-a11yfab .tt-thead-a11y {
+  background: rgba(255,255,255,0.94); color: var(--navy);
+  border: 0; box-shadow: 0 2px 10px rgba(11,43,87,0.14);
+}
+/* En vistas internas, se apoya sobre el thead crema — visualmente igual */
+body:not(:has(#view-home.is-on)) .tt-a11yfab { top: 26px; }
+
+/* ================= HHERO (hero fotográfico de la home) ================= */
+.tt-hhero {
+  position: relative; height: 480px;
+  color: #fff;
+  background: #0B2B57 center/cover no-repeat;
+  overflow: hidden;
+}
+.tt-hhero-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.tt-hhero-ov {
+  position: absolute; inset: 0;
+  background: linear-gradient(180deg, rgba(11,43,87,0.20) 0%, rgba(11,43,87,0.55) 65%, rgba(11,43,87,0.85) 100%);
+}
+.tt-hhero-welcome {
+  position: absolute; top: 40px; left: 40px; right: 260px;
+  font-size: 20px; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase;
+  color: rgba(255,255,255,0.92);
+  text-shadow: 0 2px 12px rgba(0,0,0,0.35);
+}
+/* Weather pill: rectángulo blanco arriba-derecha con sol amarillo, temperatura
+ * grande y etiqueta (SOLEADO) debajo — como el diseño de dirección. */
+.tt-hhero-weather {
+  position: absolute; top: 22px; right: 22px;
+  background: #FFFFFF; color: var(--navy);
+  border-radius: 18px; padding: 10px 16px; min-width: 96px;
+  display: flex; align-items: center; gap: 10px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.18);
+}
+.tt-hhero-weather[hidden] { display: none; }
+.tt-hhero-weather svg { width: 34px; height: 34px; flex: 0 0 auto; }
+.tt-hhero-weather > div { display: flex; flex-direction: column; align-items: flex-start; line-height: 1; }
+.tt-hhero-weather .tmp { font-size: 26px; font-weight: 800; color: var(--navy); font-variant-numeric: tabular-nums; }
+.tt-hhero-weather .wl { font-size: 10px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-top: 3px; display: block; }
+
+/* Fecha DENTRO del hero, abajo-derecha, texto blanco con sombra sobre la foto */
+.tt-hhero-date {
+  position: absolute; bottom: 22px; right: 24px;
+  font-size: 16px; font-weight: 700; color: #fff;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.55);
+}
+.tt-hhero-date .time { color: #fff; }
+.tt-hhero-datebar { display: none; } /* banda propia deshabilitada */
+
+/* ================= HDOCK (footer al final del documento) =================
+ * Ocupa el flujo normal al final del <body>. NO es sticky ni fixed: sólo se
+ * ve al hacer scroll hasta el final de la página. */
+.tt-hdock {
+  position: static;
+  width: 100%;
+  min-height: var(--dock-h);
+  background: var(--body-bg);
+  border-top: 1px solid rgba(11, 43, 87, 0.08);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 20px 48px calc(24px + env(safe-area-inset-bottom, 0px));
+}
+.tt-hdock .tt-hlangs { display: flex; gap: 22px; }
+.tt-hdock .tt-hactions { display: flex; gap: 22px; }
+.tt-hdock .lang-btn,
+.tt-hdock .tt-dock-btn {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  background: none; border: 0; padding: 0; color: var(--navy);
+}
+.tt-hdock .lang-btn .c,
+.tt-hdock .tt-dock-btn .c {
+  width: 92px; height: 92px; border-radius: 50%;
+  background: #fff; border: 1.5px solid rgba(11,43,87,0.10);
+  display: grid; place-items: center;
+  font-size: 26px; font-weight: 800; color: var(--navy);
+  box-shadow: 0 4px 16px rgba(11,43,87,0.06);
+  transition: transform 0.12s ease;
+}
+.tt-hdock .lang-btn .cl,
+.tt-hdock .tt-dock-btn .cl {
+  font-size: 15px; font-weight: 700; color: var(--navy);
+}
+.tt-hdock .lang-btn[aria-pressed="true"] .c { background: var(--navy); color: #fff; border-color: var(--navy); }
+.tt-hdock .lang-btn:active .c,
+.tt-hdock .tt-dock-btn:active .c { transform: scale(0.96); }
+.tt-hdock .tt-dock-btn .c svg { width: 40px; height: 40px; stroke: var(--navy); fill: none; stroke-width: 2; }
+.tt-hdock .tt-dock-btn.is-primary .c { background: var(--orange); border-color: var(--orange); }
+.tt-hdock .tt-dock-btn.is-primary .c svg { stroke: #fff; }
 
 /* ================= VISTAS ================= */
 .tt-view { display: none; }
 .tt-view.is-on { display: block; }
 
-/* ================= HERO (inicio) ================= */
-.tt-hero {
-  background:
-    radial-gradient(120% 160% at 85% -20%, #17457F 0%, transparent 55%),
-    linear-gradient(150deg, var(--navy-2) 0%, var(--navy) 60%, #0F4A93 100%);
-  color: #fff; text-align: center;
-  padding: 54px 24px 58px;
-}
-.tt-hero-badge {
-  display: inline-block; background: var(--yellow); color: var(--navy-2);
-  font-size: 13px; font-weight: 800; letter-spacing: .22em;
-  border-radius: 999px; padding: 9px 22px; margin-bottom: 18px;
-}
-.tt-hero h1 {
-  margin: 0; font-family: var(--fd); font-weight: 800;
-  font-size: clamp(44px, 7vw, 68px); line-height: 1.05;
-}
-.tt-hero h1 em { font-style: normal; color: var(--yellow); }
-.tt-hero p { margin: 14px 0 0; font-size: clamp(17px, 2.4vw, 22px); color: #C9D9F2; }
+/* Bloques `.tt-hero`, `.tt-langbar`, `.lang-btn`, `.flag` del rediseño v4
+ * eliminados. En el nuevo diseño el hero fotográfico vive en `.tt-hhero`
+ * (dentro de #view-home) y el selector de idiomas es parte del dock inferior. */
 
-/* ================= BARRA DE IDIOMAS ================= */
-.tt-langbar {
-  background: var(--band);
-  display: flex; justify-content: center; gap: 14px;
-  padding: 18px 16px;
+/* ================= PANEL crema del HOME =================
+ * Bloque principal del inicio: se solapa ligeramente con el hero fotográfico
+ * mediante margen negativo, e incluye cabecera, ticker de avisos, grid de
+ * categorías y tarjeta destacada. Curvas SVG deco en esquinas. */
+.tt-panel {
+  position: relative;
+  background: var(--cream);
+  border-top-left-radius: 42px;
+  border-top-right-radius: 42px;
+  margin-top: 4px;
+  padding: 30px 32px 40px;
+  overflow: hidden;
 }
-.lang-btn {
-  display: flex; align-items: center; gap: 9px;
-  min-height: 52px; padding: 10px 24px;
-  border-radius: 999px; border: 1.5px solid var(--line);
-  background: #fff; color: var(--ink);
-  font-size: 17px; font-weight: 700;
+.tt-panel-curve { position: absolute; pointer-events: none; }
+.tt-panel-curve--tr { top: -30px; right: -30px; width: 300px; height: 300px; opacity: 0.14; }
+.tt-panel-curve--bl { bottom: -40px; left: -30px; width: 280px; height: 280px; opacity: 0.12; }
+
+/* Pill grande "Ayuntamiento de Níjar" con escudo — encima del kicker/H2 */
+.tt-ayuntopill {
+  display: inline-flex; align-items: center; gap: 12px;
+  background: #fff; border-radius: 999px;
+  padding: 10px 22px 10px 12px; margin-bottom: 18px;
+  box-shadow: 0 4px 14px rgba(11,43,87,0.10);
+  position: relative; z-index: 2;
 }
-.lang-btn[aria-pressed="true"] { background: var(--navy); border-color: var(--navy); color: #fff; }
-.flag { width: 24px; height: 17px; display: inline-block; flex: 0 0 auto; filter: drop-shadow(0 0 1px rgba(0,0,0,.2)); }
+.tt-ayuntopill img { height: 40px; width: 40px; object-fit: contain; flex: 0 0 auto; }
+.tt-ayuntopill span {
+  font-family: var(--fd); font-size: 17px; font-weight: 600; color: var(--navy);
+  line-height: 1;
+}
+.tt-ayuntopill strong { font-weight: 800; }
+
+.tt-phead {
+  display: flex; align-items: center; gap: 18px; margin-bottom: 24px;
+  position: relative; z-index: 2;
+}
+.tt-phead .logo-pill { display: none; } /* sustituido por .tt-ayuntopill arriba del panel */
+.tt-phead .ptitle { flex: 1; min-width: 0; }
+.tt-phead .ptitle .k {
+  color: var(--orange); font-size: 15px; font-weight: 800;
+  letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 2px;
+}
+.tt-phead .ptitle h2 {
+  margin: 0; color: var(--navy); font-family: var(--fd); font-weight: 800;
+  font-size: clamp(34px, 5.2vw, 46px); line-height: 1.05; letter-spacing: -0.01em;
+}
+.tt-phead .touch {
+  flex: 0 0 auto; width: 66px; height: 66px; border-radius: 50%;
+  background: var(--navy); border: 0; color: #fff;
+  display: grid; place-items: center; box-shadow: 0 4px 14px rgba(11,43,87,0.20);
+}
+.tt-phead .touch svg { width: 30px; height: 30px; }
+
+/* ================= TICKER AVISOS ================= */
+.tt-avisos {
+  display: flex; align-items: stretch; gap: 0;
+  background: rgba(245, 197, 24, 0.18);
+  border-radius: 999px; overflow: hidden;
+  margin-bottom: 24px; position: relative; z-index: 2;
+  min-height: 54px;
+}
+.tt-avisos .lab {
+  background: var(--yellow); color: var(--navy);
+  padding: 10px 22px; font-size: 13px; font-weight: 800; letter-spacing: 0.18em;
+  display: flex; align-items: center;
+}
+.tt-avisos .track {
+  flex: 1; overflow: hidden; white-space: nowrap;
+  padding: 10px 0; position: relative;
+  font-size: 15.5px; color: var(--navy); font-weight: 600;
+}
+.tt-avisos .track > span {
+  display: inline-block; padding-left: 100%;
+  animation: tt-marquee 45s linear infinite;
+}
+@keyframes tt-marquee {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-100%); }
+}
+.tt-avisos[hidden] { display: none; }
+
+/* ================= GRID DE TILES (categorías) ================= */
+.tt-pgrid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 18px;
+  margin-bottom: 24px; position: relative; z-index: 2;
+}
+.tt-ptile {
+  position: relative; min-height: 190px; overflow: hidden;
+  border: 0; padding: 0; border-radius: 26px;
+  background: #4C89C4 center/cover no-repeat;
+  color: #fff; text-align: left; cursor: pointer;
+  box-shadow: 0 6px 18px rgba(11,43,87,0.10);
+  transition: transform 0.12s ease;
+}
+.tt-ptile:active { transform: scale(0.985); }
+.tt-ptile .psh {
+  position: absolute; inset: 0;
+  background: linear-gradient(180deg, rgba(11,43,87,0.05) 0%, rgba(11,43,87,0.55) 70%, rgba(11,43,87,0.80) 100%);
+}
+.tt-ptile .plabel {
+  position: absolute; left: 20px; right: 20px; bottom: 20px;
+  font-family: var(--fd); font-weight: 800; font-size: 24px; color: #fff;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  z-index: 1;
+}
+/* Tiles sin foto (colores planos) */
+.tt-ptile.is-solid { background: var(--green); }
+.tt-ptile.is-solid.is-alt { background: var(--green-2); }
+.tt-ptile.is-solid .psh {
+  background: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.15) 100%);
+}
+
+/* ================= TARJETA DESTACADO ESTA SEMANA ================= */
+.tt-feat {
+  position: relative; min-height: 172px; overflow: hidden;
+  border: 0; padding: 0; border-radius: 30px;
+  background: var(--navy) center/cover no-repeat;
+  color: #fff; text-align: left; cursor: pointer;
+  box-shadow: 0 10px 26px rgba(11,43,87,0.18);
+  display: block; width: 100%;
+  z-index: 2;
+}
+.tt-feat[hidden] { display: none; }
+.tt-feat .ffill { position: absolute; inset: 0; background: inherit; }
+.tt-feat .fsh {
+  position: absolute; inset: 0;
+  background: linear-gradient(90deg, rgba(11,43,87,0.85) 0%, rgba(11,43,87,0.55) 100%);
+}
+.tt-feat .fin {
+  position: relative; z-index: 1; padding: 26px 100px 26px 30px;
+}
+.tt-feat .fin .k {
+  color: var(--orange); font-size: 13px; font-weight: 800;
+  letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 6px;
+}
+.tt-feat .fin h3 {
+  margin: 0 0 4px; font-family: var(--fd); font-weight: 800;
+  font-size: clamp(24px, 3.8vw, 34px); line-height: 1.1;
+}
+.tt-feat .fin p { margin: 0; font-size: 16.5px; color: rgba(255,255,255,0.88); }
+.tt-feat .farrow {
+  position: absolute; right: 26px; top: 50%; transform: translateY(-50%);
+  z-index: 2; width: 62px; height: 62px; border-radius: 50%;
+  background: var(--orange); color: var(--navy);
+  display: grid; place-items: center;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+.tt-feat .farrow svg { width: 28px; height: 28px; }
+
+/* ================= LISTADO (view-list) ================= */
+.tt-listhead {
+  display: flex; align-items: center; gap: 20px;
+  padding-top: 22px; padding-bottom: 8px;
+}
+.tt-listhead .tt-back {
+  flex: 0 0 auto; width: 60px; height: 60px; border-radius: 50%;
+  background: #fff; border: 0; color: var(--navy);
+  display: grid; place-items: center;
+  box-shadow: 0 2px 10px rgba(11,43,87,0.10);
+}
+.tt-listhead .tt-back svg { width: 26px; height: 26px; }
+.tt-listhead-txt { flex: 1; min-width: 0; }
+.tt-listhead-txt .k {
+  color: var(--orange); font-size: 13px; font-weight: 800;
+  letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 2px;
+}
+.tt-listhead-txt h2 {
+  margin: 0; color: var(--navy); font-family: var(--fd); font-weight: 800;
+  font-size: clamp(30px, 4.6vw, 42px); line-height: 1.05;
+}
+.tt-listhead-right { display: flex; align-items: center; gap: 14px; }
+.tt-listhead-count { color: var(--muted); font-size: 15px; font-weight: 700; }
+.tt-listhead-right .tt-round-btn {
+  width: 54px; height: 54px; border-radius: 50%;
+  background: #fff; border: 0; color: var(--navy);
+  display: grid; place-items: center;
+  box-shadow: 0 2px 10px rgba(11,43,87,0.10);
+}
+.tt-listhead-right .tt-round-btn svg { width: 24px; height: 24px; }
+
+/* Hero azul del listado con el subtítulo del destino */
+.tt-listhero {
+  background: var(--navy); color: rgba(255,255,255,0.94);
+  border-radius: 24px;
+  padding: 40px 30px; margin: 14px auto 18px; max-width: 1180px;
+  font-size: 17.5px; font-weight: 600;
+  box-shadow: 0 6px 18px rgba(11,43,87,0.15);
+}
+.tt-listhero[hidden] { display: none; }
+
+/* Chips de filtro (nuevo estilo — beige) */
+#view-list .tt-chips {
+  background: transparent; border-bottom: 0;
+  padding-top: 0; padding-bottom: 12px;
+}
+#view-list .tt-chip {
+  background: #fff; border: 0; color: var(--navy);
+  min-height: 44px; padding: 8px 20px; font-size: 15px; font-weight: 700;
+  box-shadow: 0 2px 8px rgba(11,43,87,0.06);
+}
+#view-list .tt-chip[aria-pressed="true"],
+#view-list .tt-chip.is-on { background: var(--navy); color: #fff; }
+
+/* Lista de items numerados */
+#view-list .tt-list { padding-top: 6px; padding-bottom: 24px; display: grid; gap: 14px; }
+.tt-lb {
+  display: flex; align-items: center; gap: 18px;
+  background: #fff; border: 0; border-radius: 20px;
+  padding: 14px 22px 14px 20px; width: 100%; text-align: left; cursor: pointer;
+  box-shadow: 0 3px 10px rgba(11,43,87,0.06);
+  transition: transform 0.12s ease;
+}
+.tt-lb:active { transform: scale(0.995); }
+.tt-lb-num {
+  flex: 0 0 auto; width: 44px; text-align: center;
+  color: var(--muted); font-weight: 800; font-size: 15px;
+  letter-spacing: 0.02em;
+}
+.tt-lb-thumb {
+  flex: 0 0 auto; width: 78px; height: 78px; border-radius: 16px;
+  background: linear-gradient(170deg, #57C9E0 0%, #E8DFC4 130%) center/cover no-repeat;
+  position: relative; overflow: hidden;
+}
+.tt-lb-thumb.th-ruta       { background-image: linear-gradient(170deg, #35B8A4 0%, #7B5A3A 130%); }
+.tt-lb-thumb.th-naturaleza { background-image: linear-gradient(170deg, #57B87B 0%, #2E7D4F 130%); }
+.tt-lb-thumb.th-gastro     { background-image: linear-gradient(170deg, #F0A67F 0%, #D65F32 130%); }
+.tt-lb-thumb.th-evento     { background-image: linear-gradient(170deg, #7C6BF0 0%, #4B3EA8 130%); }
+.tt-lb-thumb.th-playa::after {
+  content: ""; position: absolute; inset: auto 0 0 0; height: 30%;
+  background: linear-gradient(180deg, rgba(255,255,255,.85), #C9B37E);
+  border-radius: 60% 40% 0 0 / 100% 70% 0 0;
+}
+.tt-lb-thumb.th-playa::before {
+  content: ""; position: absolute; top: 22%; right: 22%;
+  width: 14px; height: 14px; border-radius: 50%; background: var(--yellow);
+  box-shadow: 0 0 0 5px rgba(245,197,24,.30);
+}
+.tt-lb-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.tt-lb-title {
+  font-family: var(--fd); font-weight: 800; font-size: 22px; color: var(--navy);
+  line-height: 1.15;
+}
+.tt-lb-sub { color: var(--muted); font-size: 14.5px; }
+.tt-lb-go {
+  flex: 0 0 auto; width: 46px; height: 46px; border-radius: 50%;
+  background: #F1EDDF; color: var(--navy); display: grid; place-items: center;
+}
+.tt-lb-go svg { width: 20px; height: 20px; }
+
+/* Banner IA rectangular al pie del listado */
+.tt-ia-strip {
+  width: 100%; margin: 8px 0 20px;
+  display: flex; align-items: center; gap: 18px;
+  background: var(--navy); color: #fff;
+  border: 0; border-radius: 22px; padding: 18px 24px;
+  text-align: left; box-shadow: 0 6px 18px rgba(11,43,87,0.15);
+}
+.tt-ia-strip-ico {
+  flex: 0 0 auto; width: 54px; height: 54px; border-radius: 14px;
+  background: var(--orange); display: grid; place-items: center;
+}
+.tt-ia-strip-ico svg { width: 26px; height: 26px; stroke: var(--navy); fill: none; stroke-width: 2; }
+.tt-ia-strip-txt { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.tt-ia-strip-txt small {
+  color: var(--orange); font-size: 12.5px; font-weight: 800; letter-spacing: 0.18em;
+}
+.tt-ia-strip-txt strong { font-family: var(--fd); font-weight: 800; font-size: 22px; }
+.tt-ia-strip-go {
+  flex: 0 0 auto; width: 52px; height: 52px; border-radius: 50%;
+  background: var(--orange); color: var(--navy); display: grid; place-items: center;
+}
+.tt-ia-strip-go svg { width: 24px; height: 24px; }
+
+/* ================= FICHA POI (dialog rediseñado) ================= */
+.tt-poidialog {
+  border: 0; padding: 0; margin: 0;
+  width: 100vw; max-width: 100vw; height: 100vh; max-height: 100vh;
+  border-radius: 0; overflow: hidden auto;
+  background: var(--body-bg); color: var(--ink);
+}
+.tt-poidialog::backdrop { background: rgba(11, 43, 87, 0.55); }
+.tt-poidialog .poi-dialog-content {
+  min-height: 100%; padding-bottom: 30px;
+}
+.tt-poihead {
+  display: flex; align-items: center; gap: 20px;
+  padding: 22px 28px 12px;
+}
+.tt-poihead .tt-back {
+  flex: 0 0 auto; width: 60px; height: 60px; border-radius: 50%;
+  background: #fff; border: 0; color: var(--navy);
+  display: grid; place-items: center;
+  box-shadow: 0 2px 10px rgba(11,43,87,0.10);
+}
+.tt-poihead .tt-back svg { width: 26px; height: 26px; }
+.tt-poihead-txt { flex: 1; min-width: 0; }
+.tt-poihead-txt .k {
+  color: var(--orange); font-size: 13px; font-weight: 800;
+  letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 2px;
+}
+.tt-poihead-txt h2 {
+  margin: 0; color: var(--navy); font-family: var(--fd); font-weight: 800;
+  font-size: clamp(28px, 4.2vw, 38px); line-height: 1.05;
+}
+
+/* Hero azul de la ficha (título del recurso encima) */
+.tt-poihero {
+  position: relative; min-height: 340px; overflow: hidden;
+  margin: 12px 28px 22px; border-radius: 26px;
+  background: var(--navy) center/cover no-repeat;
+  color: #fff;
+  padding: 36px 30px 32px;
+  display: flex; flex-direction: column; justify-content: flex-end; gap: 12px;
+  box-shadow: 0 6px 18px rgba(11,43,87,0.18);
+}
+.tt-poihero-ov {
+  position: absolute; inset: 0;
+  background: linear-gradient(180deg, rgba(11,43,87,0.15) 0%, rgba(11,43,87,0.55) 60%, rgba(11,43,87,0.85) 100%);
+}
+.tt-poihero-badge {
+  position: relative; z-index: 1; align-self: flex-start;
+  background: transparent; color: var(--orange);
+  font-size: 13px; font-weight: 800; letter-spacing: 0.18em; text-transform: uppercase;
+  padding: 0; border-radius: 0;
+}
+.tt-poihero-badge[hidden] { display: none; }
+.tt-poihero-title {
+  position: relative; z-index: 1;
+  margin: 0; font-family: var(--fd); font-weight: 800;
+  font-size: clamp(36px, 5.4vw, 52px); line-height: 1.05;
+}
+.tt-poihero-sub {
+  position: relative; z-index: 1;
+  margin: 0; color: rgba(255,255,255,0.9); font-size: 17px; font-weight: 600;
+}
+.tt-poihero-sub:empty { display: none; }
+
+.tt-poibody { padding-top: 4px; }
+.tt-poidesc {
+  margin: 0 0 22px; padding: 0;
+  color: #3A4256; font-size: 17.5px; line-height: 1.55;
+}
+.tt-poidesc:empty { display: none; }
+
+/* Tarjetas de stats (fila horizontal) */
+.tt-poistats {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px; margin: 0 0 20px;
+}
+.tt-poistat {
+  background: #fff; border-radius: 18px;
+  padding: 16px 18px; box-shadow: 0 2px 8px rgba(11,43,87,0.06);
+  display: flex; flex-direction: column; gap: 6px;
+}
+.tt-poistat small {
+  color: var(--muted); font-size: 12px; font-weight: 800;
+  letter-spacing: 0.12em; text-transform: uppercase;
+}
+.tt-poistat b { color: var(--navy); font-size: 17px; font-weight: 800; }
+
+/* CTA "CÓMO LLEGAR" — tarjeta azul */
+.tt-poicta {
+  display: flex; align-items: center; gap: 18px;
+  background: var(--navy); color: #fff;
+  border-radius: 22px; padding: 18px 22px; margin-bottom: 22px;
+  box-shadow: 0 6px 18px rgba(11,43,87,0.18);
+}
+.tt-poicta[hidden] { display: none; }
+.tt-poicta .ico {
+  flex: 0 0 auto; width: 54px; height: 54px; border-radius: 14px;
+  background: var(--orange); display: grid; place-items: center; color: var(--navy);
+}
+.tt-poicta .ico svg { width: 26px; height: 26px; }
+.tt-poicta .txt { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.tt-poicta .txt small {
+  color: var(--orange); font-size: 12.5px; font-weight: 800; letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+.tt-poicta .txt strong { font-family: var(--fd); font-weight: 800; font-size: 20px; }
+
+/* Tarjeta de metadatos secundaria (servicios) */
+.tt-poimeta-card {
+  background: #fff; border-radius: 22px; padding: 20px 22px; margin-bottom: 18px;
+  box-shadow: 0 2px 8px rgba(11,43,87,0.06);
+}
+.tt-poimeta-card h3 {
+  margin: 0 0 14px; color: var(--navy); font-family: var(--fd);
+  font-size: 16px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase;
+}
+
+/* ================= CHAT (view-chat) — rediseño Dirección ================= */
+/* Tarjeta azul "VIVE NÍJAR · Tu guía personal" */
+.tt-chatcard {
+  display: flex; align-items: center; gap: 18px;
+  background: var(--navy); color: #fff;
+  border-radius: 22px; padding: 18px 22px;
+  margin-top: 12px; margin-bottom: 20px;
+  box-shadow: 0 6px 18px rgba(11,43,87,0.18);
+}
+.tt-chatcard-ico {
+  flex: 0 0 auto; width: 60px; height: 60px; border-radius: 16px;
+  background: var(--orange); display: grid; place-items: center; color: var(--navy);
+}
+.tt-chatcard-ico svg { width: 30px; height: 30px; }
+.tt-chatcard-txt { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.tt-chatcard-txt small {
+  color: var(--orange); font-size: 12.5px; font-weight: 800; letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+.tt-chatcard-txt strong { font-family: var(--fd); font-weight: 800; font-size: 24px; }
+.tt-chatcard-online {
+  flex: 0 0 auto; display: inline-flex; align-items: center; gap: 8px;
+  color: rgba(255,255,255,0.85); font-size: 14.5px; font-weight: 700;
+}
+.tt-chatcard-online .dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: #4EE07A; box-shadow: 0 0 0 3px rgba(78,224,122,0.20);
+}
+
+/* Área de mensajes */
+#view-chat .tt-chat-scroll {
+  padding-top: 8px; padding-bottom: 8px;
+  display: flex; flex-direction: column; gap: 14px; min-height: 120px;
+}
+#view-chat .tt-msg { display: flex; gap: 12px; align-items: flex-start; }
+#view-chat .tt-msg--user { flex-direction: row-reverse; }
+#view-chat .tt-avatar {
+  flex: 0 0 auto; width: 44px; height: 44px; border-radius: 50%;
+  display: grid; place-items: center;
+}
+#view-chat .tt-avatar--bot { background: var(--orange); color: var(--navy); }
+#view-chat .tt-avatar--user { background: var(--navy); color: #fff; }
+#view-chat .tt-bubble {
+  background: #fff; border: 0;
+  border-radius: 22px; border-top-left-radius: 8px;
+  padding: 16px 20px; font-size: 17px; line-height: 1.5; max-width: 80%;
+  box-shadow: 0 2px 8px rgba(11,43,87,0.06); color: var(--ink);
+}
+#view-chat .tt-msg--user .tt-bubble {
+  background: var(--navy); color: #fff;
+  border-top-left-radius: 22px; border-top-right-radius: 8px;
+}
+#view-chat .tt-bubble .chatbot-suggestions { margin-top: 10px; color: var(--orange); font-size: 14.5px; font-weight: 700; }
+
+/* Chips de sugerencia rápidas */
+#view-chat .tt-chat-chips { padding-top: 6px; padding-bottom: 6px; }
+#view-chat .tt-chip {
+  min-height: 46px; padding: 10px 22px; border-radius: 999px;
+  background: #fff; border: 0; color: var(--navy);
+  font-size: 15.5px; font-weight: 700;
+  box-shadow: 0 2px 8px rgba(11,43,87,0.06);
+}
+#view-chat .tt-chip[aria-pressed="true"], #view-chat .tt-chip.is-on {
+  background: var(--navy); color: #fff;
+}
+
+/* Input pill — blanco con mic gris y enviar naranja */
+#view-chat .tt-chat-inputbar {
+  position: sticky; bottom: calc(var(--dock-h) + 12px);
+  display: flex; gap: 10px; align-items: center;
+  padding: 8px 10px 8px 24px; margin-top: 14px; margin-bottom: 16px;
+  background: #fff; border: 0; border-radius: 999px;
+  box-shadow: 0 6px 22px rgba(11,43,87,0.14);
+}
+#view-chat .tt-chat-inputbar input {
+  flex: 1; border: 0; background: none; font-family: inherit;
+  font-size: 18px; color: var(--ink); min-height: 52px;
+}
+#view-chat .tt-chat-inputbar input::placeholder { color: var(--subtle); }
+#view-chat .tt-chat-inputbar input:focus { outline: none; }
+#view-chat .tt-chat-mic {
+  flex: 0 0 auto; width: 52px; height: 52px; border-radius: 50%; border: 0;
+  background: #F1EDDF; color: var(--navy);
+  display: grid; place-items: center;
+}
+#view-chat .tt-chat-mic[aria-pressed="true"] { background: var(--orange); color: #fff; }
+#view-chat .tt-chat-send {
+  flex: 0 0 auto; width: 56px; height: 56px; border-radius: 50%; border: 0;
+  background: var(--orange); color: #fff;
+  display: grid; place-items: center;
+}
+#view-chat .tt-chat-mic svg,
+#view-chat .tt-chat-send svg { width: 24px; height: 24px; }
+
+/* ================= MODAL @NIJAR (redes sociales) ================= */
+.tt-socialdialog {
+  border: 0; padding: 0; margin: auto;
+  width: min(94vw, 640px); max-height: 90vh;
+  border-radius: 30px; overflow: hidden;
+  background: var(--cream); color: var(--ink);
+  box-shadow: var(--sh-lg);
+  position: relative;
+}
+.tt-socialdialog::backdrop { background: rgba(11, 43, 87, 0.55); backdrop-filter: blur(3px); }
+.tt-social-close {
+  position: absolute; top: 22px; right: 22px; z-index: 2;
+  width: 48px; height: 48px; border-radius: 50%;
+  background: #fff; border: 0; color: var(--navy);
+  display: grid; place-items: center;
+  box-shadow: 0 2px 10px rgba(11,43,87,0.14);
+}
+.tt-social-close svg { width: 22px; height: 22px; }
+.tt-social-hero {
+  background: var(--navy); color: #fff;
+  padding: 32px 30px 34px; display: flex; align-items: center; gap: 20px;
+}
+.tt-social-mark {
+  flex: 0 0 auto; width: 68px; height: 68px; border-radius: 20px;
+  background: var(--orange); color: var(--navy);
+  display: grid; place-items: center;
+}
+.tt-social-mark svg { width: 34px; height: 34px; }
+.tt-social-hero small {
+  display: block; color: var(--orange); font-size: 12.5px; font-weight: 800;
+  letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 4px;
+}
+.tt-social-hero h2 {
+  margin: 0 0 4px; font-family: var(--fd); font-weight: 800;
+  font-size: clamp(24px, 3.8vw, 30px); line-height: 1.1;
+}
+.tt-social-hero p { margin: 0; color: rgba(255,255,255,0.85); font-size: 14.5px; }
+
+.tt-social-list { padding: 22px; display: grid; gap: 12px; }
+.tt-social-item {
+  display: flex; align-items: center; gap: 16px;
+  background: #fff; border-radius: 20px; padding: 14px 20px;
+  color: var(--navy); text-decoration: none;
+  box-shadow: 0 2px 8px rgba(11,43,87,0.06);
+  transition: transform 0.12s ease;
+}
+.tt-social-item:active { transform: scale(0.99); }
+.tt-social-item-ico {
+  flex: 0 0 auto; width: 52px; height: 52px; border-radius: 14px;
+  display: grid; place-items: center;
+}
+.tt-social-item-ico svg { width: 26px; height: 26px; }
+.tt-social-item strong { display: block; font-family: var(--fd); font-weight: 800; font-size: 19px; }
+.tt-social-item small { display: block; color: var(--muted); font-size: 14.5px; }
 
 /* --- Iconos vectoriales planos --- */
 .tt-svg { width: 22px; height: 22px; vertical-align: -5px; }
@@ -401,7 +1017,7 @@ button { font-family: inherit; cursor: pointer; }
 
 .tt-chat-chips { display: flex; gap: 12px; flex-wrap: wrap; padding-top: 14px; padding-bottom: 14px; }
 .tt-chat-inputbar {
-  position: sticky; bottom: calc(var(--footer-h) + 10px);
+  position: sticky; bottom: 12px;
   display: flex; gap: 12px; align-items: center;
   margin: 8px 28px 20px; padding: 10px 12px 10px 24px;
   background: var(--card); border: 1.5px solid var(--line); border-radius: 999px;
@@ -422,9 +1038,9 @@ button { font-family: inherit; cursor: pointer; }
 .tt-chat-mic svg, .tt-chat-send svg { width: 26px; height: 26px; }
 
 /* ================= MAPA ================= */
-.tt-mapbox { height: calc(100vh - var(--header-h) - var(--footer-h) - 120px); min-height: 480px; background: #BFE3EE; }
+.tt-mapbox { height: calc(100vh - var(--thead-h) - 120px); min-height: 480px; background: #BFE3EE; }
 .tt-mapsheet {
-  position: fixed; left: 16px; right: 16px; bottom: calc(var(--footer-h) + 14px); z-index: 120;
+  position: fixed; left: 16px; right: 16px; bottom: 16px; z-index: 120;
   background: var(--card); border-radius: var(--r); box-shadow: var(--sh-lg);
   padding: 22px 24px;
 }
@@ -515,39 +1131,63 @@ button { font-family: inherit; cursor: pointer; }
   border-radius: var(--r-sm); color: #7A5C00; font-size: 17px;
 }
 
-/* ================= PIE ================= */
-.tt-footer {
-  position: fixed; left: 0; right: 0; bottom: 0; z-index: 100;
-  height: var(--footer-h);
-  background: var(--navy-2); color: #fff;
-  display: flex; align-items: center; gap: 16px; padding: 0 22px;
-}
-.tt-clock {
-  background: rgba(255,255,255,.12); font-weight: 800; font-size: 20px;
-  padding: 8px 18px; border-radius: 12px; font-variant-numeric: tabular-nums;
-}
-.tt-date { color: #C9D9F2; font-size: 16px; }
-.tt-footer-sp { flex: 1; }
-.tt-foot-btn {
-  width: 50px; height: 50px; border-radius: 50%;
-  background: rgba(255,255,255,.14); border: 0; color: #fff;
-  font-size: 19px; font-weight: 800; display: grid; place-items: center;
-}
-.tt-foot-btn svg { width: 22px; height: 22px; }
-.tt-foot-btn[aria-pressed="true"] { background: var(--yellow); color: var(--navy-2); }
+/* Pie antiguo `.tt-footer/.tt-clock/.tt-date/.tt-foot-btn` sustituido por
+ * `.tt-hdock` (dock crema con 4 langs + accesos rápidos) definido arriba. */
 
 /* ================= MODOS DE ACCESIBILIDAD ================= */
+/* Texto grande: escala tipografía global + realza títulos y bloques de lectura */
 body.text-lg-mode { font-size: 118%; }
-body.text-lg-mode .tt-bubble { font-size: 21px; }
-body.text-lg-mode .tt-item-body h3 { font-size: 28px; }
-body.text-lg-mode .tt-item-sub, body.text-lg-mode .tt-cat small { font-size: 18px; }
+body.text-lg-mode .tt-hhero-welcome { font-size: 24px; }
+body.text-lg-mode .tt-phead .ptitle h2 { font-size: clamp(40px, 6vw, 54px); }
+body.text-lg-mode .tt-ptile .plabel { font-size: 28px; }
+body.text-lg-mode .tt-lb-title { font-size: 26px; }
+body.text-lg-mode .tt-lb-sub { font-size: 17px; }
+body.text-lg-mode .tt-listhead-txt h2 { font-size: clamp(34px, 5vw, 48px); }
+body.text-lg-mode .tt-listhero { font-size: 20px; }
+body.text-lg-mode .tt-poihero-title { font-size: clamp(40px, 6vw, 60px); }
+body.text-lg-mode .tt-poidesc { font-size: 20px; }
+body.text-lg-mode .tt-poistat b { font-size: 20px; }
+body.text-lg-mode .tt-poicta .txt strong { font-size: 23px; }
+body.text-lg-mode .tt-feat .fin h3 { font-size: clamp(28px, 4.4vw, 40px); }
+body.text-lg-mode .tt-avisos .track { font-size: 18px; }
+body.text-lg-mode .tt-chatcard-txt strong { font-size: 27px; }
+body.text-lg-mode #view-chat .tt-bubble { font-size: 20px; }
+body.text-lg-mode #view-chat .tt-chip { font-size: 18px; min-height: 52px; }
+body.text-lg-mode #view-chat .tt-chat-inputbar input { font-size: 20px; }
+body.text-lg-mode .tt-hdock .lang-btn .cl,
+body.text-lg-mode .tt-hdock .tt-dock-btn .cl { font-size: 17px; }
 
+/* Alto contraste: paleta reforzada — fondos claros, tipografía casi negra,
+ * navy y orange más saturados, bordes visibles en tarjetas. */
 body.high-contrast {
-  --cream: #FFFFFF; --band: #F1F1F1; --line: #57606E;
-  --muted: #23303F; --subtle: #3A4656; --ink: #0A1A33;
+  --body-bg: #FFFFFF;
+  --cream:   #FFFFFF;
+  --band:    #F1F1F1;
+  --line:    #0B2B57;
+  --muted:   #0B2B57;
+  --subtle:  #0B2B57;
+  --ink:     #000000;
+  --navy:    #000E33;
+  --navy-2:  #000000;
+  --orange:  #B95A00;
 }
-body.high-contrast .tt-tag { background: #DDE6D8; color: #1F4A28; }
-body.high-contrast .tt-hero p, body.high-contrast .tt-ia-txt span { color: #E8F0FF; }
+body.high-contrast .tt-thead,
+body.high-contrast .tt-hdock { background: #FFFFFF; border-top: 2px solid #000E33; }
+body.high-contrast .tt-panel,
+body.high-contrast .tt-chatcard,
+body.high-contrast .tt-lb,
+body.high-contrast .tt-poistat,
+body.high-contrast .tt-poimeta-card,
+body.high-contrast .tt-social-item,
+body.high-contrast .tt-hdock .lang-btn .c,
+body.high-contrast .tt-hdock .tt-dock-btn .c { border: 2px solid #000E33; }
+body.high-contrast .tt-avisos { background: #FFF3B0; border: 2px solid #7A5C00; }
+body.high-contrast .tt-avisos .lab { background: #B95A00; color: #FFFFFF; }
+body.high-contrast .tt-hhero-welcome,
+body.high-contrast .tt-hhero-date { text-shadow: 0 2px 4px #000, 0 0 8px #000; }
+body.high-contrast .tt-poidesc,
+body.high-contrast .tt-lb-sub { color: #000; }
+body.high-contrast :focus-visible { outline: 4px solid #B95A00; outline-offset: 2px; }
 
 body.idle::after {
   content: ""; position: fixed; inset: 0; z-index: 90;
@@ -560,9 +1200,15 @@ body.idle::after {
   .tt-dialog-meta { grid-template-columns: 1fr; }
 }
 @media (max-width: 620px) {
-  :root { --header-h: 78px; }
-  .tt-brand-txt strong { font-size: 18px; }
-  .tt-datepill { display: none; }
+  :root { --thead-h: 82px; --dock-h: 132px; }
+  .tt-hhero { height: 460px; }
+  .tt-hhero-welcome { top: 24px; left: 22px; right: 200px; font-size: 15px; }
+  .tt-hhero-weather { top: 20px; right: 20px; min-width: 140px; padding: 12px 16px; }
+  .tt-hhero-weather .tmp { font-size: 26px; }
+  .tt-hhero-date { bottom: 22px; right: 22px; font-size: 16px; }
+  .tt-hdock { padding: 12px 20px; }
+  .tt-hdock .lang-btn .c,
+  .tt-hdock .tt-dock-btn .c { width: 68px; height: 68px; font-size: 20px; }
   .tt-catgrid { grid-template-columns: 1fr; }
   .tt-thumb { flex-basis: 130px; }
   .tt-dateblock { flex-basis: 86px; }
