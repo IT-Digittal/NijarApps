@@ -283,6 +283,21 @@ export const api = {
     return _doFetch(`/tourism/resources/${id}`, { method: "DELETE" });
   },
 
+  // CMS de contenidos (avisos y publicaciones multicanal)
+  listContenidos(params = { page: 1, page_size: 100 }) {
+    const q = new URLSearchParams(params).toString();
+    return _doFetch(`/cms/content?${q}`);
+  },
+  createContenido(payload) {
+    return _doFetch("/cms/content", { method: "POST", body: payload });
+  },
+  updateContenido(id, payload) {
+    return _doFetch(`/cms/content/${id}`, { method: "PUT", body: payload });
+  },
+  deleteContenido(id) {
+    return _doFetch(`/cms/content/${id}`, { method: "DELETE" });
+  },
+
   // ------------------ Usuarios, roles y permisos (solo administrador_tic) ------------------
   listUsuarios() { return _doFetch("/usuarios"); },
   invitarUsuario(payload) {

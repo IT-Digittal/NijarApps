@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime, timezone
 from uuid import UUID
 
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from nijar_dti.models.contenido import Contenido, EstadoContenido
@@ -87,6 +87,30 @@ async def listar_contenidos(
         base.order_by(Contenido.created_at.desc()).offset(page.offset).limit(page.limit)
     )
     return list(res.scalars().all()), total
+
+
+async def contenidos_publicos_canal(
+    db: AsyncSession, canal: str, limite: int = 20
+) -> list[Contenido]:
+    """Contenidos visibles AHORA en un canal público (tótem, web, app).
+
+    Los consume el tótem sin autenticación: publicados (o programados cuya
+    ventana ya ha llegado) y dentro de ``publicar_desde``/``publicar_hasta``.
+    """
+    ahora = datetime.now(UTC)
+    q = (
+        select(Contenido)
+        .where(
+            Contenido.deleted_at.is_(None),
+            Contenido.canales.any(canal),  # type: ignore[arg-type]
+            Contenido.estado.in_([EstadoContenido.PUBLICADO, EstadoContenido.PROGRAMADO]),
+            or_(Contenido.publicar_desde.is_(None), Contenido.publicar_desde <= ahora),
+            or_(Contenido.publicar_hasta.is_(None), Contenido.publicar_hasta >= ahora),
+        )
+        .order_by(Contenido.created_at.desc())
+        .limit(limite)
+    )
+    return list((await db.execute(q)).scalars().all())
 
 
 async def obtener_contenido(db: AsyncSession, content_id: UUID) -> Contenido:

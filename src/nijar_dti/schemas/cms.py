@@ -39,3 +39,16 @@ class ContenidoOut(ContenidoBase):
     estado: str
     created_at: datetime
     updated_at: datetime
+
+
+class AvisoPublicoOut(BaseModel):
+    """Contenido publicado tal como lo consume el tótem (sin autenticación)."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    titulo: str
+    titulo_i18n: I18nText | None = None
+    cuerpo: str
+    cuerpo_i18n: I18nText | None = None
+    publicar_hasta: datetime | None = None

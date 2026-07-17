@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from nijar_dti.api.v1.dependencies import get_current_user, require_roles
 from nijar_dti.core.database import get_db
 from nijar_dti.schemas.auth import CurrentUser
-from nijar_dti.schemas.cms import ContenidoIn, ContenidoOut
+from nijar_dti.schemas.cms import AvisoPublicoOut, ContenidoIn, ContenidoOut
 from nijar_dti.schemas.common import PageParams, Paginated
 from nijar_dti.services import cms_service as svc
 
@@ -44,6 +44,18 @@ def _to_out(c) -> ContenidoOut:
         created_at=c.created_at,
         updated_at=c.updated_at,
     )
+
+
+@router.get(
+    "/publico/totem",
+    response_model=list[AvisoPublicoOut],
+    summary="Contenidos publicados para el tótem (público, sin autenticación)",
+)
+async def contenidos_publicos_totem(db: AsyncSession = Depends(get_db)) -> list[AvisoPublicoOut]:
+    """Avisos y contenidos del canal tótem visibles ahora mismo. Endpoint
+    público: el tótem lo consulta sin sesión para alimentar su ticker."""
+    filas = await svc.contenidos_publicos_canal(db, "totem")
+    return [AvisoPublicoOut.model_validate(c) for c in filas]
 
 
 @router.get(

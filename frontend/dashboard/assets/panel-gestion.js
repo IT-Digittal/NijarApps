@@ -203,6 +203,8 @@ function formRecurso(r) {
     '<div style="display:flex;gap:10px">' +
     '<div style="flex:1">' + campo("Latitud", '<input name="lat" type="number" step="any" value="' + (coords ? coords[1] : "") + '" ' + INPUT_CSS + ">") + "</div>" +
     '<div style="flex:1">' + campo("Longitud", '<input name="lon" type="number" step="any" value="' + (coords ? coords[0] : "") + '" ' + INPUT_CSS + ">") + "</div></div>" +
+    campo("Imágenes (una URL por línea; la primera es la miniatura del tótem)",
+      '<textarea name="imagenes" rows="2" placeholder="https://…/playa.jpg" ' + INPUT_CSS + ">" + esc((r && r.imagenes || []).join("\n")) + "</textarea>") +
     '<label style="display:flex;gap:8px;align-items:center;margin-top:14px;font-size:13px"><input type="checkbox" name="publicado"' + (r && r.publicado ? " checked" : "") + "> Publicado (visible en web, app y tótems)</label>",
     async (fd) => {
       const nombre = fd.get("nombre").trim();
@@ -216,6 +218,8 @@ function formRecurso(r) {
       };
       const lat = parseFloat(fd.get("lat")), lon = parseFloat(fd.get("lon"));
       if (!isNaN(lat) && !isNaN(lon)) payload.ubicacion = { type: "Point", coordinates: [lon, lat] };
+      const urls = (fd.get("imagenes") || "").split("\n").map((u) => u.trim()).filter((u) => /^https?:\/\//.test(u));
+      payload.imagenes = urls.length ? urls : null;
       const nI18n = { es: nombre }, dI18n = { es: payload.descripcion_corta };
       ["en", "de", "fr"].forEach((lang) => {
         nI18n[lang] = (fd.get("nombre_" + lang) || "").trim() || null;
@@ -267,9 +271,12 @@ async function renderEventos(el) {
     '<div style="flex:1">' + campo("Inicio", '<input name="fecha_inicio" type="datetime-local" required ' + INPUT_CSS + ">") + "</div>" +
     '<div style="flex:1">' + campo("Fin", '<input name="fecha_fin" type="datetime-local" required ' + INPUT_CSS + ">") + "</div></div>" +
     campo("Organizador", '<input name="organizador" ' + INPUT_CSS + ">") +
+    campo("Imágenes (una URL por línea; la primera sale en «Destacado» del tótem)",
+      '<textarea name="imagenes" rows="2" placeholder="https://…/evento.jpg" ' + INPUT_CSS + "></textarea>") +
     '<label style="display:flex;gap:8px;align-items:center;margin-top:14px;font-size:13px"><input type="checkbox" name="publicado" checked> Publicado</label>',
     async (fd) => {
       const nombre = fd.get("nombre").trim();
+      const urls = (fd.get("imagenes") || "").split("\n").map((u) => u.trim()).filter((u) => /^https?:\/\//.test(u));
       await api.createEvent({
         urn: "urn:ngsi-ld:EventoTuristico:nijar:" + slug(nombre) + "-" + slug(fd.get("fecha_inicio")).slice(0, 10),
         nombre,
@@ -278,6 +285,7 @@ async function renderEventos(el) {
         fecha_inicio: new Date(fd.get("fecha_inicio")).toISOString(),
         fecha_fin: new Date(fd.get("fecha_fin")).toISOString(),
         organizador: fd.get("organizador").trim() || null,
+        imagenes: urls.length ? urls : null,
         activo: true,
         publicado: fd.get("publicado") === "on",
       });
@@ -991,6 +999,102 @@ function instalarAdmin() {
   admInstalado = true;
 }
 
+/* ================= CMS DE CONTENIDOS (avisos multicanal) ================= */
+
+function formContenido(c) {
+  const ti = (c && c.titulo_i18n) || {};
+  const ci = (c && c.cuerpo_i18n) || {};
+  const canales = (c && c.canales) || ["totem"];
+  const dtLocal = (v) => (v ? String(v).slice(0, 16) : "");
+  const bloqueIdioma = (lang, etiqueta) =>
+    '<details style="margin-top:10px;border:1.5px solid var(--line);border-radius:10px;padding:8px 12px"' + ((ti[lang] || ci[lang]) ? " open" : "") + ">" +
+    '<summary style="font-size:12px;font-weight:800;color:var(--muted);cursor:pointer">' + etiqueta + "</summary>" +
+    campo("Título (" + lang.toUpperCase() + ")", '<input name="titulo_' + lang + '" maxlength="255" value="' + esc(ti[lang] || "") + '" ' + INPUT_CSS + ">") +
+    campo("Texto (" + lang.toUpperCase() + ")", '<textarea name="cuerpo_' + lang + '" rows="2" ' + INPUT_CSS + ">" + esc(ci[lang] || "") + "</textarea>") +
+    "</details>";
+  const checkCanal = (id, etiqueta) =>
+    '<label style="display:flex;gap:6px;align-items:center;font-size:13px"><input type="checkbox" name="canal_' + id + '"' +
+    (canales.includes(id) ? " checked" : "") + "> " + etiqueta + "</label>";
+
+  abrirForm(c ? "Editar contenido" : "Nuevo aviso / contenido",
+    campo("Título (aparece en el ticker del tótem)", '<input name="titulo" required maxlength="255" value="' + esc(c ? c.titulo : "") + '" ' + INPUT_CSS + ">") +
+    campo("Texto completo", '<textarea name="cuerpo" required rows="3" ' + INPUT_CSS + ">" + esc(c ? c.cuerpo || "" : "") + "</textarea>") +
+    bloqueIdioma("en", "Traducción · Inglés") +
+    bloqueIdioma("de", "Traducción · Alemán") +
+    bloqueIdioma("fr", "Traducción · Francés") +
+    campo("Canales", '<div style="display:flex;gap:16px;margin-top:4px">' +
+      checkCanal("totem", "Tótems") + checkCanal("web", "Web") + checkCanal("app", "App") + "</div>") +
+    '<div style="display:flex;gap:10px">' +
+    '<div style="flex:1">' + campo("Visible desde (opcional)", '<input name="desde" type="datetime-local" value="' + dtLocal(c && c.publicar_desde) + '" ' + INPUT_CSS + ">") + "</div>" +
+    '<div style="flex:1">' + campo("Visible hasta (opcional)", '<input name="hasta" type="datetime-local" value="' + dtLocal(c && c.publicar_hasta) + '" ' + INPUT_CSS + ">") + "</div></div>" +
+    '<label style="display:flex;gap:8px;align-items:center;margin-top:14px;font-size:13px"><input type="checkbox" name="publicar"' +
+    (!c || c.estado === "publicado" || c.estado === "programado" ? " checked" : "") + "> Publicado (visible en los canales marcados)</label>",
+    async (fd) => {
+      const tI18n = {}, cI18n = {};
+      ["en", "de", "fr"].forEach((lang) => {
+        tI18n[lang] = (fd.get("titulo_" + lang) || "").trim() || null;
+        cI18n[lang] = (fd.get("cuerpo_" + lang) || "").trim() || null;
+      });
+      const payload = {
+        titulo: fd.get("titulo").trim(),
+        cuerpo: fd.get("cuerpo").trim(),
+        titulo_i18n: { es: fd.get("titulo").trim(), ...tI18n },
+        cuerpo_i18n: { es: fd.get("cuerpo").trim(), ...cI18n },
+        canales: ["totem", "web", "app"].filter((x) => fd.get("canal_" + x) === "on"),
+        publicar_desde: fd.get("desde") ? new Date(fd.get("desde")).toISOString() : null,
+        publicar_hasta: fd.get("hasta") ? new Date(fd.get("hasta")).toISOString() : null,
+        publicar: fd.get("publicar") === "on",
+      };
+      if (c) await api.updateContenido(c.id, payload);
+      else await api.createContenido(payload);
+      UI.toast(c ? "Contenido actualizado" : "Contenido creado");
+      UI.rerenderD("contenidos");
+    });
+}
+
+async function renderContenidosCMS(el) {
+  cargando(el, "CMS de contenidos");
+  let data;
+  try { data = await api.listContenidos({ page: 1, page_size: 100 }); }
+  catch (e) { return errorCarga(el, "CMS de contenidos", e); }
+  const filas = data.items || [];
+  const rw = puedeEscribir();
+  const badgeEstado = (s) =>
+    '<span class="bdg ' + (s === "publicado" ? "bdg-ok" : s === "programado" ? "bdg-info" : s === "archivado" ? "bdg-mut" : "bdg-warn") + '">' + esc(s) + "</span>";
+
+  el.innerHTML = gsub("CMS", "CMS de contenidos",
+    "Avisos y publicaciones multicanal. Lo marcado para el canal «Tótems» aparece en el ticker de AVISOS de la pantalla de inicio del tótem (en el idioma del visitante); web y app lo consumen por API.",
+    rw ? '<button class="btn btn--pri" data-g="new-cont">＋ Nuevo aviso / contenido</button>' : "") +
+    '<div class="grid g4" style="margin-bottom:16px">' +
+    kpi("Contenidos", data.total ?? filas.length, "En el CMS", "ic-navy", "folder") +
+    kpi("Publicados", filas.filter((c) => c.estado === "publicado").length, "Visibles ahora", "ic-ok", "chart") +
+    kpi("Canal tótems", filas.filter((c) => (c.canales || []).includes("totem")).length, "En el ticker del tótem", "ic-teal", "chat") +
+    kpi("Programados", filas.filter((c) => c.estado === "programado").length, "Con fecha de inicio futura", "ic-violet", "clock") + "</div>" +
+    '<div class="card card--pad0"><div style="padding:16px 16px 4px" class="card__h"><div><div class="card__t">Contenidos</div><div class="card__s">Los más recientes primero</div></div></div>' +
+    '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Título</th><th>Canales</th><th>Estado</th><th>Ventana</th>' + (rw ? "<th></th>" : "") + "</tr></thead><tbody>" +
+    (filas.map((c, i) =>
+      '<tr><td style="white-space:normal;min-width:240px;font-weight:600">' + esc(c.titulo) + "</td>" +
+      '<td class="mini">' + esc((c.canales || []).join(", ") || "—") + "</td>" +
+      "<td>" + badgeEstado(c.estado) + "</td>" +
+      '<td class="mini tnum">' + (c.publicar_desde ? fechaCorta(c.publicar_desde) : "—") + " → " + (c.publicar_hasta ? fechaCorta(c.publicar_hasta) : "—") + "</td>" +
+      (rw ? '<td style="white-space:nowrap"><button class="btn btn--sm" data-g="ed-cont" data-i="' + i + '">Editar</button> ' +
+        '<button class="btn btn--sm" data-g="del-cont" data-i="' + i + '">Eliminar</button></td>' : "") + "</tr>").join("") ||
+      '<tr><td colspan="5" class="mini" style="text-align:center;padding:20px">Sin contenidos — crea el primer aviso para el tótem</td></tr>') +
+    "</tbody></table></div></div>";
+
+  const btn = el.querySelector('[data-g="new-cont"]');
+  if (btn) btn.onclick = () => formContenido(null);
+  el.querySelectorAll('[data-g="ed-cont"]').forEach((b) => { b.onclick = () => formContenido(filas[Number(b.dataset.i)]); });
+  el.querySelectorAll('[data-g="del-cont"]').forEach((b) => {
+    b.onclick = async () => {
+      const c = filas[Number(b.dataset.i)];
+      if (!window.confirm('¿Eliminar "' + c.titulo + '"? Dejará de mostrarse en todos los canales.')) return;
+      try { await api.deleteContenido(c.id); UI.toast("Contenido eliminado"); UI.rerenderD("contenidos"); }
+      catch (e) { UI.toast("Error: " + (e.message || e)); }
+    };
+  });
+}
+
 /* ---------------- registro de secciones ---------------- */
 
 const SECCIONES = [
@@ -1010,6 +1114,9 @@ function registrar() {
   UI = window.UI;
   U = window.__U;
   if (!DTI || !DTI.DSECTIONS || !DTI.renderDSidebar || !UI) return false;
+
+  /* La sección «CMS de contenidos» del demo pasa a ser el CRUD real */
+  DTI.DR.contenidos = renderContenidosCMS;
 
   const main = document.getElementById("dti-main");
   SECCIONES.forEach((s) => {

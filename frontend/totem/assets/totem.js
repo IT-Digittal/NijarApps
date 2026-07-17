@@ -308,7 +308,8 @@ async function cargarConteos() {
 }
 
 // ============================================================
-// HOME: ticker de AVISOS municipales (mock local hasta endpoint público — Fase 6)
+// HOME: ticker de AVISOS municipales — CMS del panel (canal «totem»);
+// el texto demo solo se usa si la API no está disponible.
 // ============================================================
 const AVISOS_DEMO = {
   es: [
@@ -337,16 +338,28 @@ const AVISOS_DEMO = {
   ],
 };
 
+let avisosCms = null; /* null = API no disponible (cae al demo); [] = sin avisos → se oculta */
+
+async function cargarAvisos() {
+  try { avisosCms = await apiGet("/cms/publico/totem"); }
+  catch { avisosCms = null; }
+  renderTicker();
+}
+
 function renderTicker() {
   const el = $("#home-avisos");
   const track = $("#avisos-track");
   if (!el || !track) return;
-  const items = (AVISOS_DEMO[currentLang] || AVISOS_DEMO.es).map(escapeHtml);
+  const items = avisosCms !== null
+    ? avisosCms.map((a) => (a.titulo_i18n && a.titulo_i18n[currentLang]) || a.titulo).filter(Boolean)
+    : (AVISOS_DEMO[currentLang] || AVISOS_DEMO.es);
   if (!items.length) { el.hidden = true; return; }
   /* Se duplica para garantizar loop continuo aunque el CSS dependa del ancho renderizado */
   track.textContent = items.concat(items).join("   •   ");
   el.hidden = false;
 }
+cargarAvisos();
+setInterval(cargarAvisos, 5 * 60 * 1000); /* el gestor puede publicar avisos en cualquier momento */
 
 // ============================================================
 // HOME: tarjeta "Destacado esta semana" (próximo evento del CMS)
@@ -377,7 +390,9 @@ function renderDestacado() {
   const nombre = (ev.nombre_i18n && ev.nombre_i18n[currentLang]) || ev.nombre;
   $("#feat-title").textContent = nombre;
   $("#feat-sub").textContent = _fmtEvento(ev);
-  const img = (ev.imagenes && ev.imagenes[0]?.url) || "";
+  /* la API guarda las imágenes como lista de URLs (texto); se admite también {url} */
+  const primera = ev.imagenes && ev.imagenes[0];
+  const img = (typeof primera === "string" ? primera : primera && primera.url) || "";
   const fill = $("#feat-image");
   if (fill) fill.style.backgroundImage = img ? `url('${img}')` : "";
   wrap.hidden = false;
