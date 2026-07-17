@@ -114,7 +114,8 @@ body:not(:has(#view-home.is-on)) { padding-top: 0; }
 .tt-thead-langs .lang-btn .flag,
 .tt-thead-langs .lang-btn .lang-label { display: none; }
 
-.tt-thead-right { margin-left: auto; text-align: right; }
+/* margin-right reserva el hueco del grupo flotante de accesibilidad */
+.tt-thead-right { margin-left: auto; text-align: right; margin-right: 138px; }
 .tt-thead-right .tt-thead-date { display: block; font-weight: 700; color: var(--navy); font-size: 22px; line-height: 1.1; }
 .tt-thead-right .tt-thead-time { display: block; font-weight: 800; color: var(--orange); font-size: 34px; line-height: 1; margin-top: 4px; font-variant-numeric: tabular-nums; }
 .tt-thead-a11y {
@@ -160,7 +161,8 @@ body:not(:has(#view-home.is-on)) .tt-a11yfab { top: 26px; }
 /* Weather pill: rectángulo blanco arriba-derecha con sol amarillo, temperatura
  * grande y etiqueta (SOLEADO) debajo — como el diseño de dirección. */
 .tt-hhero-weather {
-  position: absolute; top: 22px; right: 22px;
+  /* right reserva el hueco del grupo flotante de accesibilidad (116px + separación) */
+  position: absolute; top: 22px; right: 152px;
   background: #FFFFFF; color: var(--navy);
   border-radius: 18px; padding: 10px 16px; min-width: 96px;
   display: flex; align-items: center; gap: 10px;
@@ -1203,7 +1205,7 @@ body.idle::after {
   :root { --thead-h: 82px; --dock-h: 132px; }
   .tt-hhero { height: 460px; }
   .tt-hhero-welcome { top: 24px; left: 22px; right: 200px; font-size: 15px; }
-  .tt-hhero-weather { top: 20px; right: 20px; min-width: 140px; padding: 12px 16px; }
+  .tt-hhero-weather { top: 20px; right: 152px; min-width: 140px; padding: 12px 16px; }
   .tt-hhero-weather .tmp { font-size: 26px; }
   .tt-hhero-date { bottom: 22px; right: 22px; font-size: 16px; }
   .tt-hdock { padding: 12px 20px; }
