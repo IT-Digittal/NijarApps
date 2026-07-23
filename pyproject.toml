@@ -33,6 +33,8 @@ dependencies = [
     "python-multipart>=0.0.9",
     # Cache and pub/sub
     "redis>=5.0.0",
+    # Informes PDF (publicidad)
+    "fpdf2>=2.7.0",
     # MQTT (IoT ingestion)
     "paho-mqtt>=2.0.0",
     "asyncio-mqtt>=0.16.2",

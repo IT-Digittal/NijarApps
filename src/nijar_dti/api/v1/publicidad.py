@@ -10,7 +10,7 @@ from __future__ import annotations
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from nijar_dti.api.v1.dependencies import get_current_user, require_roles
@@ -24,6 +24,7 @@ from nijar_dti.schemas.publicidad import (
     LoteMetricasIn,
     ResumenMetricasOut,
 )
+from nijar_dti.services import informe_publicidad as informe_svc
 from nijar_dti.services import publicidad_service as svc
 
 router = APIRouter()
@@ -68,6 +69,34 @@ async def resumen_metricas(
 ) -> ResumenMetricasOut:
     dias = max(1, min(dias, 365))
     return ResumenMetricasOut(dias=dias, metricas=await svc.resumen_metricas(db, dias))
+
+
+@router.get(
+    "/{empresa_id}/informe",
+    summary="Informe mensual de visibilidad del anunciante (PDF)",
+)
+async def informe_pdf(
+    empresa_id: UUID,
+    anio: int,
+    mes: int,
+    user: Annotated[CurrentUser, Depends(_puede_gestionar)],
+    db: AsyncSession = Depends(get_db),
+) -> Response:
+    """Justificante de campaña para la facturación: impresiones y toques del
+    mes, desglosados por semana, con metodología al pie."""
+    if not 1 <= mes <= 12 or not 2020 <= anio <= 2100:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Mes o año no válidos")
+    try:
+        datos = await informe_svc.datos_informe(db, empresa_id, anio, mes)
+    except svc.EmpresaNoEncontradaError as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    pdf = informe_svc.render_pdf(datos)
+    nombre = f"informe-publicidad-{anio}-{mes:02d}.pdf"
+    return Response(
+        content=pdf,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{nombre}"'},
+    )
 
 
 @router.get("", response_model=EmpresasPage, summary="Listar empresas anunciantes")

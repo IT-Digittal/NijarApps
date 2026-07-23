@@ -7,7 +7,11 @@
  * configuración. Todo contra la API real con control de roles.
  */
 
-import { api, getCachedUser } from "./api-client.js?v=18";
+import { api, getCachedUser, tokens } from "./api-client.js?v=18";
+
+/* Base de la API para descargas binarias (informes PDF) */
+const API_BASE_G = (typeof window !== "undefined" && window.NIJAR_API_BASE)
+  || window.location.origin + "/api/v1";
 
 const CATEGORIAS = ["playa", "monumento", "ruta", "mirador", "centro_visitantes", "parque_natural", "museo", "yacimiento", "punto_interes", "oficina_turismo"];
 const TIPOS_EVENTO = ["cultural", "gastronomico", "deportivo", "musical", "festivo", "naturaleza", "educativo", "otro"];
@@ -1175,9 +1179,11 @@ async function renderPublicidad(el) {
     (!e.campana_desde || new Date(e.campana_desde) <= ahora) &&
     (!e.campana_hasta || new Date(e.campana_hasta) >= ahora);
 
+  const mesDefecto = new Date().toISOString().slice(0, 7);
   el.innerHTML = gsub("Publicidad", "Publicidad · Empresas anunciantes",
-    "Negocios locales con presencia en el apartado «Empresas» del tótem. Las destacadas aparecen primero con distintivo; la ventana de campaña controla cuándo se muestran.",
-    rw ? '<button class="btn btn--pri" data-g="new-emp">＋ Alta de empresa</button>' : "") +
+    "Negocios locales con presencia en el apartado «Empresas» del tótem. Las destacadas aparecen primero con distintivo; la ventana de campaña controla cuándo se muestran. El botón «Informe» descarga el justificante mensual en PDF para la facturación.",
+    '<input type="month" id="pub-mes" value="' + mesDefecto + '" title="Mes del informe PDF" style="border:1.5px solid var(--line);border-radius:10px;padding:8px 10px;font-family:inherit;font-size:13px"> ' +
+    (rw ? '<button class="btn btn--pri" data-g="new-emp">＋ Alta de empresa</button>' : "")) +
     '<div class="grid g4" style="margin-bottom:16px">' +
     kpi("Empresas", data.total ?? filas.length, "Dadas de alta", "ic-navy", "box") +
     kpi("Visibles ahora", filas.filter(activaAhora).length, "Publicadas y en campaña", "ic-ok", "chart") +
@@ -1193,13 +1199,32 @@ async function renderPublicidad(el) {
       '<td class="mini tnum">' + (e.campana_desde ? fechaCorta(e.campana_desde) : "—") + " → " + (e.campana_hasta ? fechaCorta(e.campana_hasta) : "—") + "</td>" +
       '<td class="mini tnum">' + (met[e.id] ? met[e.id].impresiones + " · " + met[e.id].toques : "0 · 0") + "</td>" +
       "<td>" + (activaAhora(e) ? '<span class="bdg bdg-ok">visible</span>' : e.publicado ? '<span class="bdg bdg-info">fuera de campaña</span>' : '<span class="bdg bdg-mut">borrador</span>') + "</td>" +
-      (rw ? '<td style="white-space:nowrap"><button class="btn btn--sm" data-g="ed-emp" data-i="' + i + '">Editar</button> ' +
+      (rw ? '<td style="white-space:nowrap"><button class="btn btn--sm" data-g="inf-emp" data-i="' + i + '">Informe</button> ' +
+        '<button class="btn btn--sm" data-g="ed-emp" data-i="' + i + '">Editar</button> ' +
         '<button class="btn btn--sm" data-g="del-emp" data-i="' + i + '">Eliminar</button></td>' : "") + "</tr>").join("") ||
       '<tr><td colspan="7" class="mini" style="text-align:center;padding:20px">Sin empresas — da de alta la primera</td></tr>') +
     "</tbody></table></div></div>";
 
   const btn = el.querySelector('[data-g="new-emp"]');
   if (btn) btn.onclick = () => formEmpresa(null);
+  el.querySelectorAll('[data-g="inf-emp"]').forEach((b) => {
+    b.onclick = async () => {
+      const e = filas[Number(b.dataset.i)];
+      const [anio, mes] = (el.querySelector("#pub-mes").value || "").split("-");
+      if (!anio) { UI.toast("Elige el mes del informe"); return; }
+      try {
+        const resp = await fetch(API_BASE_G + "/publicidad/" + e.id + "/informe?anio=" + anio + "&mes=" + Number(mes),
+          { headers: { Authorization: "Bearer " + tokens.access } });
+        if (!resp.ok) throw new Error("HTTP " + resp.status);
+        const url = URL.createObjectURL(await resp.blob());
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "informe-publicidad-" + slug(e.nombre) + "-" + anio + "-" + mes + ".pdf";
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 4000);
+      } catch (err) { UI.toast("No se pudo generar el informe: " + (err.message || err)); }
+    };
+  });
   el.querySelectorAll('[data-g="ed-emp"]').forEach((b) => { b.onclick = () => formEmpresa(filas[Number(b.dataset.i)]); });
   el.querySelectorAll('[data-g="del-emp"]').forEach((b) => {
     b.onclick = async () => {
