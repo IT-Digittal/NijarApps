@@ -8,10 +8,21 @@ ventana de fechas y ordenarse con destacados y prioridad.
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 from uuid import UUID, uuid4
 
-from sqlalchemy import JSON, Boolean, DateTime, Float, Integer, String, Text
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    Date,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column
@@ -61,3 +72,31 @@ class EmpresaAnunciante(Base, TimestampMixin):
     publicado: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
     campana_desde: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
     campana_hasta: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
+
+
+class MetricaPublicidad(Base, TimestampMixin):
+    """Agregado diario de visibilidad de un anunciante en el tótem.
+
+    - ``impresiones``: veces que la tarjeta se mostró en pantalla.
+    - ``toques``: veces que un visitante tocó la tarjeta.
+    El tótem las envía en lotes anónimos; sirven para justificar la
+    facturación de las campañas.
+    """
+
+    __tablename__ = "metricas_publicidad"
+    __table_args__ = (UniqueConstraint("empresa_id", "fecha", name="uq_metricas_publicidad_dia"),)
+
+    id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        primary_key=True,
+        default_factory=uuid4,
+        init=False,
+    )
+    empresa_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("empresas_anunciantes.id", ondelete="CASCADE"),
+        index=True,
+    )
+    fecha: Mapped[date] = mapped_column(Date, index=True)
+    impresiones: Mapped[int] = mapped_column(Integer, default=0)
+    toques: Mapped[int] = mapped_column(Integer, default=0)

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -66,3 +67,28 @@ class EmpresaPublicaOut(BaseModel):
 class EmpresasPage(BaseModel):
     items: list[EmpresaOut]
     total: int
+
+
+class EventoMetricaIn(BaseModel):
+    """Un evento de visibilidad registrado por el tótem (anónimo)."""
+
+    empresa_id: UUID
+    tipo: Literal["impresion", "toque"]
+    n: int = Field(1, ge=1, le=100)
+
+
+class LoteMetricasIn(BaseModel):
+    eventos: list[EventoMetricaIn] = Field(..., max_length=200)
+
+
+class MetricaEmpresaOut(BaseModel):
+    """Totales de visibilidad de un anunciante en el periodo consultado."""
+
+    empresa_id: UUID
+    impresiones: int
+    toques: int
+
+
+class ResumenMetricasOut(BaseModel):
+    dias: int
+    metricas: list[MetricaEmpresaOut]

@@ -1157,10 +1157,18 @@ function formEmpresa(e) {
 
 async function renderPublicidad(el) {
   cargando(el, "Publicidad");
-  let data;
-  try { data = await api.listEmpresas(); }
+  let data, resumen;
+  try {
+    [data, resumen] = await Promise.all([
+      api.listEmpresas(),
+      api.get("/publicidad/metricas?dias=30").catch(() => null),
+    ]);
+  }
   catch (err) { return errorCarga(el, "Publicidad", err); }
   const filas = data.items || [];
+  const met = {};
+  ((resumen && resumen.metricas) || []).forEach((m) => { met[m.empresa_id] = m; });
+  const totalImpresiones = Object.values(met).reduce((a, m) => a + m.impresiones, 0);
   const rw = puedeEscribir();
   const ahora = new Date();
   const activaAhora = (e) => e.publicado &&
@@ -1174,19 +1182,20 @@ async function renderPublicidad(el) {
     kpi("Empresas", data.total ?? filas.length, "Dadas de alta", "ic-navy", "box") +
     kpi("Visibles ahora", filas.filter(activaAhora).length, "Publicadas y en campaña", "ic-ok", "chart") +
     kpi("Destacadas", filas.filter((e) => e.destacado).length, "Posición preferente", "ic-gold", "bolt") +
-    kpi("Sectores", new Set(filas.map((e) => e.sector)).size, "Con presencia", "ic-violet", "folder") + "</div>" +
+    kpi("Impresiones (30 d)", totalImpresiones, "Apariciones en el tótem — base de facturación", "ic-violet", "chart") + "</div>" +
     '<div class="card card--pad0"><div style="padding:16px 16px 4px" class="card__h"><div><div class="card__t">Anunciantes</div><div class="card__s">Destacadas primero, luego por prioridad</div></div></div>' +
-    '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Empresa</th><th>Sector</th><th>Núcleo</th><th>Campaña</th><th>Estado</th>' + (rw ? "<th></th>" : "") + "</tr></thead><tbody>" +
+    '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Empresa</th><th>Sector</th><th>Núcleo</th><th>Campaña</th><th>Impresiones · Toques (30 d)</th><th>Estado</th>' + (rw ? "<th></th>" : "") + "</tr></thead><tbody>" +
     (filas.map((e, i) =>
       '<tr><td style="white-space:normal;min-width:200px;font-weight:600">' + esc(e.nombre) +
       (e.destacado ? ' <span class="bdg bdg-warn">destacada</span>' : "") + "</td>" +
       '<td class="mini">' + esc(e.sector.replace(/_/g, " ")) + "</td>" +
       '<td class="mini">' + esc(e.nucleo || "—") + "</td>" +
       '<td class="mini tnum">' + (e.campana_desde ? fechaCorta(e.campana_desde) : "—") + " → " + (e.campana_hasta ? fechaCorta(e.campana_hasta) : "—") + "</td>" +
+      '<td class="mini tnum">' + (met[e.id] ? met[e.id].impresiones + " · " + met[e.id].toques : "0 · 0") + "</td>" +
       "<td>" + (activaAhora(e) ? '<span class="bdg bdg-ok">visible</span>' : e.publicado ? '<span class="bdg bdg-info">fuera de campaña</span>' : '<span class="bdg bdg-mut">borrador</span>') + "</td>" +
       (rw ? '<td style="white-space:nowrap"><button class="btn btn--sm" data-g="ed-emp" data-i="' + i + '">Editar</button> ' +
         '<button class="btn btn--sm" data-g="del-emp" data-i="' + i + '">Eliminar</button></td>' : "") + "</tr>").join("") ||
-      '<tr><td colspan="6" class="mini" style="text-align:center;padding:20px">Sin empresas — da de alta la primera</td></tr>') +
+      '<tr><td colspan="7" class="mini" style="text-align:center;padding:20px">Sin empresas — da de alta la primera</td></tr>') +
     "</tbody></table></div></div>";
 
   const btn = el.querySelector('[data-g="new-emp"]');

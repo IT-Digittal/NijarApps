@@ -65,7 +65,8 @@ def main():
         pub_txt = page.inner_text("#dv-g-publicidad")
         assert "Restaurante La Ola" in pub_txt, "listado de empresas vacío"
         assert "destacada" in pub_txt and "Alta de empresa" in pub_txt, "CRUD de publicidad incompleto"
-        print("OK publicidad · empresas anunciantes")
+        assert "412 · 37" in pub_txt, "métricas de impresiones/toques ausentes: %r" % pub_txt[:300]
+        print("OK publicidad · empresas con métricas de visibilidad")
 
         # Gemelo 2D: todas las capas + aforo ThingsBoard
         page.evaluate("UI.goD('gd-mapa')")

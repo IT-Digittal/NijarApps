@@ -21,6 +21,8 @@ from nijar_dti.schemas.publicidad import (
     EmpresaOut,
     EmpresaPublicaOut,
     EmpresasPage,
+    LoteMetricasIn,
+    ResumenMetricasOut,
 )
 from nijar_dti.services import publicidad_service as svc
 
@@ -37,6 +39,35 @@ _puede_gestionar = require_roles("administrador_tic", "gestor_contenidos")
 async def empresas_publicas_totem(db: AsyncSession = Depends(get_db)) -> list[EmpresaPublicaOut]:
     filas = await svc.empresas_publicas(db)
     return [EmpresaPublicaOut.model_validate(e) for e in filas]
+
+
+@router.post(
+    "/publico/metricas",
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="Registrar impresiones/toques desde el tótem (público, anónimo)",
+)
+async def registrar_metricas_totem(
+    lote: LoteMetricasIn, db: AsyncSession = Depends(get_db)
+) -> dict[str, int]:
+    """Lote anónimo de eventos de visibilidad. Los IDs desconocidos se
+    descartan en silencio; no hay datos personales implicados."""
+    registrados = await svc.registrar_metricas(db, lote.eventos)
+    await db.commit()
+    return {"empresas_actualizadas": registrados}
+
+
+@router.get(
+    "/metricas",
+    response_model=ResumenMetricasOut,
+    summary="Resumen de impresiones/toques por anunciante (facturación)",
+)
+async def resumen_metricas(
+    dias: int = 30,
+    db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(get_current_user),
+) -> ResumenMetricasOut:
+    dias = max(1, min(dias, 365))
+    return ResumenMetricasOut(dias=dias, metricas=await svc.resumen_metricas(db, dias))
 
 
 @router.get("", response_model=EmpresasPage, summary="Listar empresas anunciantes")

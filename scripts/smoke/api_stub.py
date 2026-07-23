@@ -21,6 +21,10 @@ FAKE = {
          "descripcion": "Ficha técnica de la playa", "tipo_mime": "application/pdf",
          "tamano_bytes": 482133, "subido_por": "admin@nijar.es", "created_at": "2026-07-15T09:00:00"}], "total": 1},
 
+    # Publicidad: metricas de visibilidad (registro publico + resumen del panel)
+    r"/api/v1/publicidad/publico/metricas": {"empresas_actualizadas": 1},
+    r"/api/v1/publicidad/metricas": {"dias": 30, "metricas": [
+        {"empresa_id": "e1", "impresiones": 412, "toques": 37}]},
     # Publicidad: empresas anunciantes (publico del totem + EmpresasPage del panel)
     r"/api/v1/publicidad/publico/totem": [
         {"id": "e1", "nombre": "Restaurante La Ola", "sector": "gastronomia",

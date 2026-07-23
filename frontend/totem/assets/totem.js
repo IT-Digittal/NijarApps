@@ -478,6 +478,17 @@ async function abrirCategoria(catId, chip = "todas") {
 // ============================================================
 let empresasCache = null;
 
+/* Métricas de visibilidad (facturación de campañas): lote anónimo al backend.
+   Fallo silencioso — la publicidad nunca puede romper el tótem. */
+function registrarMetricasEmpresas(eventos) {
+  if (!eventos.length) return;
+  fetch(`${API_BASE}/publicidad/publico/metricas`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ eventos }),
+  }).catch(() => {});
+}
+
 async function renderEmpresas(grid, chip = "todas") {
   const t = dict();
   if (!empresasCache) {
@@ -494,6 +505,13 @@ async function renderEmpresas(grid, chip = "todas") {
   grid.innerHTML =
     `<p class="tt-emp-aviso">${escapeHtml(t["empresas.aviso"] || "Espacio de empresas colaboradoras del destino")}</p>` +
     items.map((e, i) => empresaCard(e, i)).join("");
+
+  /* Impresión: la tarjeta se ha mostrado en pantalla */
+  registrarMetricasEmpresas(items.map((e) => ({ empresa_id: e.id, tipo: "impresion", n: 1 })));
+  /* Toque: el visitante pulsa la tarjeta */
+  grid.querySelectorAll(".tt-emp[data-emp-id]").forEach((card) =>
+    card.addEventListener("click", () =>
+      registrarMetricasEmpresas([{ empresa_id: card.dataset.empId, tipo: "toque", n: 1 }])));
 }
 
 function empresaCard(e, index) {
@@ -508,7 +526,7 @@ function empresaCard(e, index) {
   const contacto = [e.telefono, e.web ? String(e.web).replace(/^https?:\/\//, "") : null]
     .filter(Boolean).join(" · ");
   return `
-    <div class="tt-lb tt-emp${e.destacado ? " is-dest" : ""}">
+    <div class="tt-lb tt-emp${e.destacado ? " is-dest" : ""}" data-emp-id="${escapeAttr(e.id)}">
       <span class="tt-lb-num" aria-hidden="true">${String(index + 1).padStart(2, "0")}</span>
       <span class="tt-lb-thumb th-servicio" style="${thumbBg}" aria-hidden="true"></span>
       <span class="tt-lb-body">

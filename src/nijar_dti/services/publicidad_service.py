@@ -2,14 +2,19 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 from sqlalchemy import func, or_, select
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from nijar_dti.models.empresa_anunciante import SECTORES_EMPRESA, EmpresaAnunciante
-from nijar_dti.schemas.publicidad import EmpresaIn
+from nijar_dti.models.empresa_anunciante import (
+    SECTORES_EMPRESA,
+    EmpresaAnunciante,
+    MetricaPublicidad,
+)
+from nijar_dti.schemas.publicidad import EmpresaIn, EventoMetricaIn, MetricaEmpresaOut
 
 
 class PublicidadError(Exception):
@@ -144,3 +149,80 @@ async def eliminar_empresa(db: AsyncSession, empresa_id: UUID) -> None:
     obj = await obtener_empresa(db, empresa_id)
     await db.delete(obj)
     await db.flush()
+
+
+# --------------------- Métricas de visibilidad (facturación) ---------------------
+
+
+def agrupar_eventos(eventos: list[EventoMetricaIn]) -> dict[UUID, dict[str, int]]:
+    """Suma los eventos del lote por empresa: {empresa_id: {impresiones, toques}}."""
+    grupos: dict[UUID, dict[str, int]] = {}
+    for ev in eventos:
+        g = grupos.setdefault(ev.empresa_id, {"impresiones": 0, "toques": 0})
+        g["impresiones" if ev.tipo == "impresion" else "toques"] += ev.n
+    return grupos
+
+
+async def registrar_metricas(db: AsyncSession, eventos: list[EventoMetricaIn]) -> int:
+    """Acumula un lote de eventos del tótem en el agregado diario (upsert).
+
+    Los identificadores desconocidos se descartan en silencio: el endpoint es
+    público y no debe servir para sondear qué empresas existen.
+    """
+    grupos = agrupar_eventos(eventos)
+    if not grupos:
+        return 0
+    validas = set(
+        (
+            await db.execute(
+                select(EmpresaAnunciante.id).where(EmpresaAnunciante.id.in_(grupos.keys()))
+            )
+        )
+        .scalars()
+        .all()
+    )
+    hoy = datetime.now(UTC).date()
+    registrados = 0
+    for empresa_id, tot in grupos.items():
+        if empresa_id not in validas:
+            continue
+        stmt = (
+            pg_insert(MetricaPublicidad)
+            .values(
+                empresa_id=empresa_id,
+                fecha=hoy,
+                impresiones=tot["impresiones"],
+                toques=tot["toques"],
+            )
+            .on_conflict_do_update(
+                constraint="uq_metricas_publicidad_dia",
+                set_={
+                    "impresiones": MetricaPublicidad.impresiones + tot["impresiones"],
+                    "toques": MetricaPublicidad.toques + tot["toques"],
+                    "updated_at": func.now(),
+                },
+            )
+        )
+        await db.execute(stmt)
+        registrados += 1
+    return registrados
+
+
+async def resumen_metricas(db: AsyncSession, dias: int = 30) -> list[MetricaEmpresaOut]:
+    """Totales de impresiones y toques por empresa en los últimos N días."""
+    desde = datetime.now(UTC).date() - timedelta(days=dias)
+    filas = (
+        await db.execute(
+            select(
+                MetricaPublicidad.empresa_id,
+                func.sum(MetricaPublicidad.impresiones),
+                func.sum(MetricaPublicidad.toques),
+            )
+            .where(MetricaPublicidad.fecha >= desde)
+            .group_by(MetricaPublicidad.empresa_id)
+        )
+    ).all()
+    return [
+        MetricaEmpresaOut(empresa_id=e, impresiones=int(i or 0), toques=int(t or 0))
+        for e, i, t in filas
+    ]

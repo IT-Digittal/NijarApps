@@ -84,6 +84,8 @@ def main():
         assert "destacada" in emp.lower(), "distintivo de destacada ausente"
         chips_emp = page.inner_text("#list-chips")
         assert "Gastronomía" in chips_emp, "chips de sector ausentes"
+        page.click(".tt-emp")  # toque sobre una tarjeta: registra métrica sin romper nada
+        page.wait_for_timeout(300)
         print("OK apartado Empresas (publicidad) en el tótem")
 
         # Chip meteo (Bettair) + ticker de avisos del CMS
