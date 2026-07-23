@@ -89,77 +89,187 @@ function estimadoTag() {
   return ' <span class="bdg bdg-mut" title="Valor estimado a partir de factores configurables">estimado</span>';
 }
 
+/* ---------------- estética "tipo web" (tótem) ---------------- */
+
+/* Fondos de los tiles de servicio: foto del territorio donde encaja de forma
+   natural y degradado temático en el resto (no hay foto de alumbrado, residuos
+   o seguridad en la librería compartida). */
+const OVERLAY_TILE = "linear-gradient(180deg,rgba(9,24,52,.14) 32%,rgba(7,17,38,.85) 100%)";
+const TILE_BG = {
+  turismo: OVERLAY_TILE + ",url('../shared/tiles/cabo.jpg')",
+  agua: OVERLAY_TILE + ",url('../shared/tiles/playas.jpg')",
+  movilidad: OVERLAY_TILE + ",url('../shared/tiles/rutas.jpg')",
+  energia: OVERLAY_TILE + ",url('../shared/tiles/naturaleza.jpg')",
+  alumbrado: "radial-gradient(circle at 80% 16%,rgba(255,199,90,.5),transparent 55%),linear-gradient(160deg,#14284f,#3c5b9b)",
+  residuos: "linear-gradient(160deg,#0d3b2e,#2e7d5b)",
+  seguridad: "linear-gradient(160deg,#1b2438,#46587e)",
+};
+const TILE_BG_DEF = "linear-gradient(160deg,#1c2a4a,#3d5586)";
+
+const FRASE_TILE = {
+  verde: "Funciona con normalidad",
+  ambar: "Necesita seguimiento",
+  rojo: "Requiere una decisión",
+};
+const COLOR_GLOBAL = { correcto: "#3ddc7f", atencion: "#ffc247", critico: "#ff6a5c" };
+
+function frasePortada(r) {
+  const n = (r.areas_alerta || []).length;
+  if (r.estado_texto === "critico") return "Hay servicios que requieren una decisión hoy";
+  if (r.estado_texto === "atencion") {
+    return n
+      ? "Níjar funciona bien, con " + n + (n === 1 ? " área" : " áreas") + " en seguimiento"
+      : "Níjar funciona bien, con aspectos en seguimiento";
+  }
+  return "Níjar funciona hoy con normalidad";
+}
+
+const DIR_CSS = `
+#view-direccion .dir-hero{position:relative;border-radius:20px;overflow:hidden;color:#fff;padding:26px 150px 24px 28px;margin-bottom:18px;background-image:linear-gradient(115deg,rgba(7,20,44,.88) 0%,rgba(10,30,66,.6) 48%,rgba(8,22,48,.3) 100%),url('../shared/cabo-de-gata-hero.jpg');background-size:cover;background-position:center;box-shadow:0 18px 40px rgba(10,25,50,.22)}
+#view-direccion .dir-hero-top{display:flex;align-items:center;gap:10px;font-size:11.5px;letter-spacing:.13em;text-transform:uppercase;font-weight:700;opacity:.94}
+#view-direccion .dir-hero-top img{width:26px;height:32px;filter:drop-shadow(0 2px 6px rgba(0,0,0,.45))}
+#view-direccion .dir-hero h2{color:#fff;margin:14px 0 6px;font-size:clamp(24px,3vw,33px);font-weight:800;line-height:1.16;max-width:640px;text-shadow:0 2px 14px rgba(0,0,0,.35)}
+#view-direccion .dir-hero-sub{font-size:13.5px;opacity:.86;max-width:600px}
+#view-direccion .dir-vivo{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+#view-direccion .dir-chip{display:flex;flex-direction:column;gap:2px;padding:9px 15px;border-radius:14px;background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.26);backdrop-filter:blur(8px);min-width:104px}
+#view-direccion .dir-chip b{font-size:19px;font-weight:800;font-variant-numeric:tabular-nums}
+#view-direccion .dir-chip span{font-size:10.5px;opacity:.85;letter-spacing:.02em;text-transform:uppercase}
+#view-direccion .dir-score{position:absolute;top:24px;right:26px;width:102px;height:102px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:conic-gradient(var(--dir-col) calc(var(--dir-val)*1%),rgba(255,255,255,.16) 0)}
+#view-direccion .dir-score::before{content:"";position:absolute;inset:9px;border-radius:50%;background:rgba(7,18,40,.82)}
+#view-direccion .dir-score>div{position:relative;text-align:center;line-height:1.05}
+#view-direccion .dir-sect{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:2px 2px 10px}
+#view-direccion .dir-sect h3{margin:0;font-size:17px;font-weight:800}
+#view-direccion .dir-sect span{font-size:12.5px;color:var(--muted)}
+#view-direccion .dir-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(225px,1fr));gap:14px;margin-bottom:20px}
+#view-direccion .dir-tile{position:relative;min-height:170px;border:0;border-radius:16px;overflow:hidden;cursor:pointer;color:#fff;padding:16px;display:flex;flex-direction:column;justify-content:flex-end;align-items:flex-start;text-align:left;font-family:inherit;background-size:cover;background-position:center;transition:transform .18s ease,box-shadow .18s ease}
+#view-direccion .dir-tile:hover{transform:translateY(-3px);box-shadow:0 14px 30px rgba(10,25,50,.32)}
+#view-direccion .dir-tile-ico{position:absolute;top:12px;right:12px;opacity:.32;pointer-events:none}
+#view-direccion .dir-tile-ico svg{width:42px;height:42px}
+#view-direccion .dir-estado{display:inline-flex;align-items:center;gap:7px;font-size:11px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;text-shadow:0 1px 6px rgba(0,0,0,.4)}
+#view-direccion .dir-dot{width:11px;height:11px;border-radius:50%;flex:none}
+#view-direccion .dir-dot--verde{background:#3ddc7f;box-shadow:0 0 10px 2px rgba(61,220,127,.75)}
+#view-direccion .dir-dot--ambar{background:#ffc247;box-shadow:0 0 10px 2px rgba(255,194,71,.8)}
+#view-direccion .dir-dot--rojo{background:#ff6a5c;box-shadow:0 0 10px 2px rgba(255,106,92,.85)}
+#view-direccion .dir-tile h3{color:#fff;margin:7px 0 4px;font-size:19px;font-weight:800;text-shadow:0 1px 8px rgba(0,0,0,.45)}
+#view-direccion .dir-frase{font-size:12.5px;opacity:.9;line-height:1.45;text-shadow:0 1px 6px rgba(0,0,0,.4)}
+#view-direccion .dir-week{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px;margin-bottom:20px}
+#view-direccion .dir-wcard{position:relative;overflow:hidden;border-radius:16px;padding:16px;background:var(--card,#fff);border:1.5px solid var(--line)}
+#view-direccion .dir-wcard::before{content:"";position:absolute;top:0;left:0;right:0;height:4px;background:var(--dir-acc,#2563b0)}
+#view-direccion .dir-wcard h4{display:flex;align-items:center;gap:8px;margin:2px 0 10px;font-size:12.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+#view-direccion .dir-ev{display:flex;gap:10px;align-items:center;padding:7px 0;border-bottom:1px dashed var(--line)}
+#view-direccion .dir-ev:last-of-type{border-bottom:0}
+#view-direccion .dir-ev-fecha{min-width:44px;text-align:center;border-radius:10px;padding:5px 4px;background:#eef3fb;color:#0e3a78;font-weight:800;line-height:1.05}
+#view-direccion .dir-ev-fecha small{display:block;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase}
+#view-direccion .dir-impacto{display:grid;grid-template-columns:repeat(auto-fit,minmax(225px,1fr));gap:14px;margin-bottom:20px}
+#view-direccion .dir-icard{border-radius:16px;padding:18px;color:#fff;box-shadow:0 10px 26px rgba(10,25,50,.18)}
+#view-direccion .dir-icard span{font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;opacity:.85;font-weight:700}
+#view-direccion .dir-icard b{display:block;font-size:27px;font-weight:800;margin:6px 0 4px}
+#view-direccion .dir-icard .mini{opacity:.85}
+#view-direccion .dir-icard--eco{background:linear-gradient(135deg,#0e3a78,#2563b0)}
+#view-direccion .dir-icard--ciu{background:linear-gradient(135deg,#0e6f66,#17a394)}
+#view-direccion .dir-icard--amb{background:linear-gradient(135deg,#155e38,#2f9e5f)}
+#view-direccion .dir-vhero{position:relative;border-radius:16px;overflow:hidden;color:#fff;padding:20px;margin-bottom:16px;min-height:118px;display:flex;flex-direction:column;justify-content:flex-end;background-size:cover;background-position:center}
+#view-direccion .dir-vhero h3{color:#fff;margin:6px 0 3px;font-size:22px;font-weight:800;text-shadow:0 1px 8px rgba(0,0,0,.45)}
+@media (max-width:760px){#view-direccion .dir-hero{padding-right:28px}#view-direccion .dir-score{position:static;margin-top:14px}}
+`;
+
+function inyectarEstilos() {
+  if (document.getElementById("dir-css")) return;
+  const st = document.createElement("style");
+  st.id = "dir-css";
+  st.textContent = DIR_CSS;
+  document.head.appendChild(st);
+}
+
 /* ---------------- pantalla: Resumen municipal ---------------- */
 
 async function renderResumen(el) {
+  inyectarEstilos();
   el.innerHTML = dsub("Cuadro de Mando de Dirección · Smart City Níjar",
     "Visión ejecutiva de los servicios inteligentes municipales: estado global, impacto, alertas relevantes y recomendaciones para la toma de decisiones.") +
     '<div class="card"><div class="mini" style="color:var(--muted);padding:26px 0;text-align:center">Cargando…</div></div>';
 
   let r, recs;
   try {
-    [r, recs] = await Promise.all([
-      api.getResumenDireccion(),
-      api.getRecomendacionesDireccion().catch(() => []),
-    ]);
+    [r, recs] = await Promise.all([datosResumen(), datosRecs()]);
   } catch (e) {
     el.innerHTML = dsub("Cuadro de Mando de Dirección", "Visión ejecutiva municipal.") +
       '<div class="card"><div class="mini" style="color:var(--muted);text-align:center;padding:26px 0">' +
       (e && e.status === 403 ? "Tu rol no tiene acceso al cuadro de mando de dirección." : "Error: " + esc(e && e.message || e)) + "</div></div>";
     return;
   }
+  // Datos vivos y de contexto (mejor esfuerzo: si una fuente no está, se omite)
+  const [aire, aforo, eventos, avisos] = await Promise.all([
+    api.get("/gemelo/aire/resumen").catch(() => null),
+    api.get("/gemelo/parque/aforo").catch(() => null),
+    api.get("/tourism/events?publicado=true&page_size=4").catch(() => null),
+    api.get("/cms/publico/totem").catch(() => null),
+  ]);
   const im = r.impacto;
-  const gauge = U2 && U2.gauge ? U2.gauge(r.estado_global, 168) : "";
-  const kpi = (l, v, d, cls, ic) => (UI2 && UI2.kpiCard ? UI2.kpiCard(l, esc(String(v)), d, cls, ic, "") : "");
 
-  // Estado global + resumen
   let h = dsub("Cuadro de Mando de Dirección · Smart City Níjar",
     "Visión ejecutiva de los servicios inteligentes municipales: estado global, impacto, alertas relevantes y recomendaciones para la toma de decisiones.");
 
-  h += '<div class="grid c7-5" style="margin-bottom:16px">' +
-    '<div class="card"><div class="card__h"><div><div class="card__t">Estado global de la Smart City</div>' +
-    '<div class="card__s">Índice compuesto de disponibilidad, alertas e incidencias</div></div>' +
-    '<span class="ai-chip">✦ ' + ESTADO_GLOBAL_TXT[r.estado_texto] + "</span></div>" +
-    '<div class="gauge">' + gauge +
-    '<div style="flex:1;min-width:220px"><div class="bars">' +
-    (U2 ? U2.barRow("Servicios en correcto estado", r.servicios_ok + " / " + r.servicios_total, r.servicios_ok / r.servicios_total * 100, "var(--ok)") : "") +
-    (U2 ? U2.barRow("Disponibilidad media", r.disponibilidad_media_pct.toFixed(1) + "%", r.disponibilidad_media_pct, "var(--teal2)") : "") +
-    (U2 ? U2.barRow("Satisfacción ciudadana (proxy)", (r.satisfaccion_pct != null ? r.satisfaccion_pct + "%" : "—"), r.satisfaccion_pct || 0, "var(--blue)") : "") +
-    "</div></div></div>" +
-    '<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">' +
-    r.areas_alerta.map((a) => '<span class="bdg bdg-warn">' + esc(a) + "</span>").join("") +
-    (r.areas_alerta.length ? "" : '<span class="bdg bdg-ok">Sin áreas en alerta</span>') + "</div></div>" +
-    // columna derecha: impacto rápido
-    '<div class="card"><div class="card__h"><div><div class="card__t">Impacto del mes</div>' +
-    '<div class="card__s">Estimaciones a partir de los datos de la plataforma</div></div></div>' +
-    '<div style="display:flex;align-items:baseline;gap:10px"><span class="tnum" style="font-size:30px;font-weight:800">' + eur(im.economico.ahorro_estimado_eur_mes) + "</span>" +
-    '<span style="color:var(--muted);font-weight:700">ahorro' + estimadoTag() + "</span></div>" +
-    '<div class="mini" style="color:var(--muted);margin-top:6px">CO₂ evitado ' + im.ambiental.co2_evitado_t_anio + " t/año" + estimadoTag() + "</div>" +
-    '<div class="mini" style="color:var(--muted);margin-top:4px">Coste energético del mes ' + eur(im.economico.coste_energetico_mes_eur) + "</div>" +
-    '<div class="mini" style="color:var(--muted);margin-top:4px">Autoconsumo FV ' + im.ambiental.autoconsumo_pct.toFixed(0) + "%</div></div></div>";
+  // Portada: héroe fotográfico con el estado del municipio en una frase + datos vivos
+  const hoy = new Date().toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" });
+  const chip = (v, l) => '<div class="dir-chip"><b>' + v + "</b><span>" + l + "</span></div>";
+  let chips = chip(r.servicios_ok + " / " + r.servicios_total, "servicios en verde");
+  if (aire && aire.temperatura_media_c != null) {
+    chips += chip(Math.round(aire.temperatura_media_c) + "°", "aire " + esc(aire.eaqi_peor_texto || "—"));
+  }
+  if (aforo && aforo.aforo_actual != null) chips += chip(fmtNum(aforo.aforo_actual), "ahora en el Parque");
+  chips += chip(String(r.incidencias_criticas), "incidencias críticas") +
+    chip(r.satisfaccion_pct != null ? r.satisfaccion_pct + "%" : "—", "satisfacción ciudadana");
 
-  // KPI row
-  h += '<div class="grid g4" style="margin-bottom:16px">' +
-    kpi("Estado general", r.estado_global + "/100", ESTADO_GLOBAL_TXT[r.estado_texto], r.estado_texto === "correcto" ? "ic-ok" : (r.estado_texto === "atencion" ? "ic-gold" : "ic-coral"), "chart") +
-    kpi("Servicios en correcto", r.servicios_ok + " de " + r.servicios_total, "Verticales sin alerta", "ic-teal", "chart") +
-    kpi("Incidencias críticas", r.incidencias_criticas, "Requieren decisión", r.incidencias_criticas ? "ic-coral" : "ic-ok", "bell") +
-    kpi("Satisfacción ciudadana", (r.satisfaccion_pct != null ? r.satisfaccion_pct + "%" : "—"), "Proxy (NPS " + (im.ciudadano.nps ?? "—") + ")", "ic-blue", "chart") + "</div>";
+  h += '<div class="dir-hero"><div class="dir-hero-top"><img src="../shared/escudo-nijar.svg" alt="">' +
+    "Ayuntamiento de Níjar · Smart City · " + esc(hoy) + "</div>" +
+    "<h2>" + esc(frasePortada(r)) + "</h2>" +
+    '<div class="dir-hero-sub">' + r.servicios_ok + " de " + r.servicios_total +
+    " servicios municipales en correcto estado · disponibilidad media del " + r.disponibilidad_media_pct.toFixed(1) + "%</div>" +
+    '<div class="dir-score" style="--dir-val:' + r.estado_global + ";--dir-col:" + (COLOR_GLOBAL[r.estado_texto] || "#3ddc7f") + '">' +
+    '<div><div style="font-size:26px;font-weight:800">' + r.estado_global + '</div><div style="font-size:10px;opacity:.8">de 100</div></div></div>' +
+    '<div class="dir-vivo">' + chips + "</div></div>";
 
-  // Titular interanual de turismo (los 3 más relevantes para decisión política)
-  h += bloqueInteranual(r.interanual_turismo, "Turismo · evolución interanual", ["viajeros", "gasto", "pasajeros_aena"]);
+  // Rejilla de servicios: un tile fotográfico por vertical con su semáforo
+  h += '<div class="dir-sect"><h3>Los servicios del municipio, de un vistazo</h3><span>Toca un servicio para abrir su detalle</span></div>' +
+    '<div class="dir-tiles">' +
+    r.semaforo.map((s) => {
+      const v = VERTICALES.find((x) => x.clave === s.clave);
+      const id = v ? v.id : null;
+      return '<button class="dir-tile" style="background-image:' + (TILE_BG[id] || TILE_BG_DEF) + '"' +
+        (id ? ' onclick="UI.goDir(\'' + id + '\')"' : "") + ">" +
+        '<span class="dir-tile-ico">' + icono(s.icono) + "</span>" +
+        '<span class="dir-estado"><span class="dir-dot dir-dot--' + s.estado + '"></span>' + (FRASE_TILE[s.estado] || "") + "</span>" +
+        "<h3>" + esc(s.nombre) + '</h3><span class="dir-frase">' + esc(s.indicador_clave) + "</span></button>";
+    }).join("") + "</div>";
 
-  // Semáforo por vertical
-  h += '<div class="card card--pad0" style="margin-bottom:16px"><div style="padding:16px 16px 4px" class="card__h"><div>' +
-    '<div class="card__t">Semáforo por servicio</div><div class="card__s">Estado, indicador clave y recomendación de cada vertical</div></div></div>' +
-    '<div class="grid g3" style="padding:0 16px 16px">' +
-    r.semaforo.map((s) =>
-      '<div class="card" style="box-shadow:none;border:1.5px solid var(--line)"><div style="display:flex;align-items:center;gap:8px">' +
-      '<div class="stat__chip ic-navy" style="width:30px;height:30px">' + icono(s.icono) + "</div>" +
-      '<div style="font-weight:700;flex:1">' + esc(s.nombre) + "</div>" + (ESTADO_BDG[s.estado] || "") + "</div>" +
-      '<div class="mini" style="color:var(--muted);margin-top:8px">' + esc(s.indicador_clave) + "</div>" +
-      '<div class="mini" style="margin-top:8px"><b>Riesgo:</b> ' + esc(s.riesgo) + "</div>" +
-      '<div class="mini" style="margin-top:4px;color:var(--ink)">' + esc(s.recomendacion) + "</div></div>").join("") +
-    "</div></div>";
+  // Esta semana en Níjar: agenda, comunicación en tótems y propuesta de la IA
+  const evs = ((eventos && eventos.items) || []).slice(0, 3);
+  const aviso = avisos && avisos.length ? avisos[0] : null;
+  const ordenPrio = { critica: 0, alta: 1, media: 2, informativa: 3 };
+  const recTop = (recs || []).slice().sort((a, b) => (ordenPrio[a.prioridad] ?? 9) - (ordenPrio[b.prioridad] ?? 9))[0];
+
+  h += '<div class="dir-sect"><h3>Esta semana en Níjar</h3><span>Agenda del destino, comunicación en tótems y propuesta destacada</span></div>' +
+    '<div class="dir-week">' +
+    '<div class="dir-wcard" style="--dir-acc:#2563b0"><h4>' + icono("clock") + "Próximos eventos</h4>" +
+    (evs.length ? evs.map((e) => {
+      const d = new Date(e.fecha_inicio);
+      const mesTxt = d.toLocaleDateString("es-ES", { month: "short" }).replace(".", "");
+      return '<div class="dir-ev"><span class="dir-ev-fecha">' + d.getDate() + "<small>" + esc(mesTxt) + "</small></span>" +
+        "<div><b>" + esc(e.nombre) + '</b><div class="mini" style="color:var(--muted)">' + esc(e.direccion || e.tipo || "") + "</div></div></div>";
+    }).join("") : '<div class="mini" style="color:var(--muted);padding:8px 0">Sin eventos próximos publicados.</div>') + "</div>" +
+    '<div class="dir-wcard" style="--dir-acc:#e0912f"><h4>' + icono("totem") + "En los tótems ahora</h4>" +
+    (aviso ? "<b>" + esc(aviso.titulo) + "</b>" +
+      (aviso.cuerpo ? '<div class="mini" style="color:var(--muted);margin-top:6px">' + esc(String(aviso.cuerpo).slice(0, 140)) + "</div>" : "") +
+      '<div class="mini" style="margin-top:8px;color:var(--muted)">Aviso visible en las pantallas del destino.</div>' :
+      '<div class="mini" style="color:var(--muted);padding:8px 0">No hay avisos activos en los tótems.</div>') + "</div>" +
+    '<div class="dir-wcard" style="--dir-acc:#17a394"><h4>' + icono("chat") + "Propuesta de la IA</h4>" +
+    (recTop ? '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">' + (PRIO_BDG[recTop.prioridad] || "") +
+      '<span class="bdg bdg-info">' + esc(recTop.area) + "</span></div>" +
+      '<b style="display:block;margin-top:8px">' + esc(recTop.titulo) + "</b>" +
+      '<div class="mini" style="color:var(--muted);margin-top:6px">' + esc(recTop.accion) + "</div>" +
+      '<button class="btn btn--sm" style="margin-top:10px" onclick="UI.goDir(\'recomendaciones\')">Ver todas</button>' :
+      '<div class="mini" style="color:var(--muted);padding:8px 0">Sin propuestas pendientes.</div>') + "</div></div>";
 
   // Alertas relevantes
   h += '<div class="card" style="margin-bottom:16px"><div class="card__h"><div><div class="card__t">Alertas relevantes para Dirección</div>' +
@@ -172,31 +282,19 @@ async function renderResumen(el) {
       '<div class="mini" style="margin-top:2px">→ ' + esc(a.recomendacion) + "</div></div>").join("") :
       '<div class="mini" style="color:var(--muted);padding:14px 0;text-align:center">Sin alertas relevantes.</div>') + "</div>";
 
-  // Recomendaciones IA
-  h += '<div class="card" style="margin-bottom:16px"><div class="card__h"><div><div class="card__t">Recomendaciones de la IA</div>' +
-    '<div class="card__s">Propuestas priorizadas para la toma de decisiones</div></div><span class="ai-chip">✦ IA</span></div>' +
-    '<div class="grid g2">' +
-    recs.map((x) =>
-      '<div class="card" style="box-shadow:none;border:1.5px solid var(--line)"><div style="display:flex;gap:8px;align-items:center">' +
-      (PRIO_BDG[x.prioridad] || "") + '<span class="bdg bdg-info">' + esc(x.area) + "</span></div>" +
-      '<div style="font-weight:700;margin-top:8px">' + esc(x.titulo) + "</div>" +
-      '<div class="mini" style="color:var(--muted);margin-top:6px">' + esc(x.justificacion) + "</div>" +
-      '<div class="mini" style="margin-top:6px"><b>Impacto:</b> ' + esc(x.impacto) + "</div>" +
-      '<div class="mini" style="margin-top:4px"><b>Acción:</b> ' + esc(x.accion) + "</div></div>").join("") + "</div></div>";
+  // Lo que la Smart City aporta al municipio (tarjetas visuales de impacto)
+  h += '<div class="dir-sect"><h3>Lo que la Smart City aporta al municipio</h3><span>Estimaciones a partir de los datos de la plataforma</span></div>' +
+    '<div class="dir-impacto">' +
+    '<div class="dir-icard dir-icard--eco"><span>Ahorro estimado este mes</span><b>' + eur(im.economico.ahorro_estimado_eur_mes) + "</b>" +
+    '<div class="mini">Coste energético del mes: ' + eur(im.economico.coste_energetico_mes_eur) + " · valor estimado</div></div>" +
+    '<div class="dir-icard dir-icard--ciu"><span>Ciudadanía</span><b>' + (im.ciudadano.satisfaccion_pct != null ? im.ciudadano.satisfaccion_pct + "%" : "—") + "</b>" +
+    '<div class="mini">Satisfacción (proxy) · NPS ' + (im.ciudadano.nps ?? "—") + " · " + im.ciudadano.menciones_mes + " menciones este mes</div></div>" +
+    '<div class="dir-icard dir-icard--amb"><span>Sostenibilidad</span><b>' + im.ambiental.co2_evitado_t_anio + " t CO₂/año</b>" +
+    '<div class="mini">Evitadas (estimado) · autoconsumo FV ' + im.ambiental.autoconsumo_pct.toFixed(0) + "% · " +
+    Number(im.ambiental.consumo_energetico_kwh_mes).toLocaleString("es-ES") + " kWh/mes</div></div></div>";
 
-  // Impacto detallado
-  h += '<div class="grid g3">' +
-    '<div class="card"><div class="card__t">Impacto económico' + estimadoTag() + "</div>" +
-    '<div class="mini" style="margin-top:8px">Ahorro estimado/mes: <b>' + eur(im.economico.ahorro_estimado_eur_mes) + "</b></div>" +
-    '<div class="mini" style="margin-top:4px">Coste energético/mes: ' + eur(im.economico.coste_energetico_mes_eur) + "</div></div>" +
-    '<div class="card"><div class="card__t">Impacto ciudadano</div>' +
-    '<div class="mini" style="margin-top:8px">Satisfacción (proxy): <b>' + (im.ciudadano.satisfaccion_pct ?? "—") + "%</b></div>" +
-    '<div class="mini" style="margin-top:4px">Sentimiento en redes: ' + (im.ciudadano.sentimiento_medio != null ? im.ciudadano.sentimiento_medio.toFixed(2) : "—") + "</div>" +
-    '<div class="mini" style="margin-top:4px">Menciones del mes: ' + im.ciudadano.menciones_mes + "</div></div>" +
-    '<div class="card"><div class="card__t">Sostenibilidad' + estimadoTag() + "</div>" +
-    '<div class="mini" style="margin-top:8px">CO₂ evitado: <b>' + im.ambiental.co2_evitado_t_anio + " t/año</b></div>" +
-    '<div class="mini" style="margin-top:4px">Autoconsumo FV: ' + im.ambiental.autoconsumo_pct.toFixed(0) + "%</div>" +
-    '<div class="mini" style="margin-top:4px">Consumo energético/mes: ' + Number(im.ambiental.consumo_energetico_kwh_mes).toLocaleString("es-ES") + " kWh</div></div></div>";
+  // Comparativa interanual del turismo (datos oficiales)
+  h += bloqueInteranual(r.interanual_turismo, "Turismo · evolución interanual", ["viajeros", "gasto", "pasajeros_aena"]);
 
   el.innerHTML = h;
   if (U2 && U2.animateBars) U2.animateBars(el);
@@ -303,12 +401,15 @@ function renderVertical(id) {
 
     let h = dsub(cfg.nombre + " · Resumen de Dirección",
       "Visión resumida para la toma de decisiones. Estado del servicio, indicadores clave y recomendaciones.");
+    // Cabecera fotográfica coherente con la portada (estética tótem)
+    h += '<div class="dir-vhero" style="background-image:' + (TILE_BG[id] || TILE_BG_DEF) + '">' +
+      '<span class="dir-tile-ico">' + icono(cfg.icono) + "</span>" +
+      (sem ? '<span class="dir-estado"><span class="dir-dot dir-dot--' + sem.estado + '"></span>' + (FRASE_TILE[sem.estado] || "") + "</span>" : "") +
+      "<h3>" + esc(cfg.nombre) + "</h3>" +
+      (sem ? '<span class="dir-frase">' + esc(sem.indicador_clave) + "</span>" : "") + "</div>";
     if (sem) {
-      h += '<div class="card" style="margin-bottom:16px"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
-        '<div class="stat__chip ic-navy" style="width:34px;height:34px">' + icono(cfg.icono) + "</div>" +
-        '<div style="font-weight:800;font-size:16px;flex:1">' + esc(cfg.nombre) + "</div>" + (ESTADO_BDG[sem.estado] || "") + "</div>" +
-        '<div class="mini" style="color:var(--muted);margin-top:8px">' + esc(sem.indicador_clave) + "</div>" +
-        '<div class="mini" style="margin-top:6px"><b>Recomendación:</b> ' + esc(sem.recomendacion) + "</div></div>";
+      h += '<div class="card" style="margin-bottom:16px"><div class="mini"><b>Recomendación:</b> ' +
+        esc(sem.recomendacion) + "</div></div>";
     }
     h += '<div class="grid g4" style="margin-bottom:16px">' + _kpisVertical(id, ov, extra) + "</div>";
     // Comparativa interanual REAL de la vertical (histórico mensual de 2 años).
@@ -440,6 +541,7 @@ function construirVista() {
   if (document.getElementById("view-direccion")) return;
   const home = document.getElementById("view-home");
   if (!home) return;
+  inyectarEstilos();
   const div = document.createElement("div");
   div.className = "view";
   div.id = "view-direccion";

@@ -127,6 +127,50 @@ FAKE = {
         {"codigo": "CCTV-01", "nombre": "Playa de Mónsul", "tipo": "fija", "estado": "operativo",
          "latitud": 36.7305, "longitud": -2.1442}],
 
+    # Cuadro de Mando de Dirección (ResumenMunicipal + RecomendacionIA)
+    r"/api/v1/direccion/resumen": {
+        "estado_global": 82, "estado_texto": "atencion", "servicios_ok": 6, "servicios_total": 7,
+        "areas_alerta": ["Residuos"], "incidencias_criticas": 1, "disponibilidad_media_pct": 97.3,
+        "satisfaccion_pct": 76.0, "ahorro_estimado_eur_mes": 12400.0, "co2_evitado_t_anio": 58.0,
+        "semaforo": [
+            {"clave": "dti", "nombre": "Turismo inteligente", "icono": "totem", "estado": "verde",
+             "indicador_clave": "Sentimiento del destino 0,54 con 312 menciones", "riesgo": "bajo",
+             "recomendacion": "Mantener la promoción actual"},
+            {"clave": "alumbrado", "nombre": "Alumbrado público", "icono": "bulb", "estado": "verde",
+             "indicador_clave": "Disponibilidad del 99,1%", "riesgo": "bajo", "recomendacion": "Sin actuaciones"},
+            {"clave": "agua", "nombre": "Ciclo del agua", "icono": "drop", "estado": "verde",
+             "indicador_clave": "Rendimiento de red del 84%", "riesgo": "bajo", "recomendacion": "Sin actuaciones"},
+            {"clave": "residuos", "nombre": "Residuos", "icono": "trash", "estado": "ambar",
+             "indicador_clave": "23 contenedores por encima del 80% de llenado", "riesgo": "medio",
+             "recomendacion": "Reforzar la recogida en la franja costera"},
+            {"clave": "movilidad", "nombre": "Movilidad", "icono": "car", "estado": "verde",
+             "indicador_clave": "Ocupación de parkings del 64%", "riesgo": "bajo", "recomendacion": "Sin actuaciones"},
+            {"clave": "seguridad", "nombre": "Seguridad", "icono": "cam", "estado": "verde",
+             "indicador_clave": "96% de cámaras en línea", "riesgo": "bajo", "recomendacion": "Sin actuaciones"},
+            {"clave": "energia", "nombre": "Energía municipal", "icono": "bolt", "estado": "verde",
+             "indicador_clave": "Autoconsumo FV del 22%", "riesgo": "bajo", "recomendacion": "Sin actuaciones"}],
+        "alertas": [{"nivel": "medio", "area": "Residuos", "motivo": "Llenado alto en la franja costera",
+                     "impacto": "Riesgo de desbordamiento el fin de semana",
+                     "recomendacion": "Adelantar la ruta del sábado"}],
+        "impacto": {
+            "economico": {"ahorro_estimado_eur_mes": 12400.0, "coste_energetico_mes_eur": 8300.0, "estimado": True},
+            "ciudadano": {"satisfaccion_pct": 76.0, "nps": 34.0, "sentimiento_medio": 0.54, "menciones_mes": 312},
+            "ambiental": {"co2_evitado_t_anio": 58.0, "autoconsumo_pct": 22.0,
+                          "consumo_energetico_kwh_mes": 41200.0, "estimado": True}},
+        "interanual_turismo": [
+            {"clave": "viajeros", "nombre": "Viajeros alojados", "fuente": "INE", "vertical": None,
+             "periodo": "mayo 2026", "periodo_anterior": "mayo 2025", "valor": 12800, "valor_anterior": 11400,
+             "variacion_pct": 12.3, "unidad": "viajeros", "tendencia": "sube", "sentido": "subir_bueno"}],
+        "interanual_verticales": [], "generado_en": "2026-07-10T10:00:00"},
+    r"/api/v1/direccion/recomendaciones": [
+        {"clave": "rec-residuos", "titulo": "Reforzar la recogida en la costa", "area": "Residuos",
+         "justificacion": "23 contenedores superan el 80% de llenado en plena temporada",
+         "impacto": "Evita desbordamientos y quejas en la costa", "prioridad": "alta",
+         "accion": "Adelantar la ruta del sábado a primera hora", "motor": "reglas",
+         "estado": "pendiente", "comentario": None}],
+    r"/api/v1/verticales/residuos/overview": {
+        "total": 684, "con_sensor": 684, "llenado_medio_pct": 46.0, "llenado_alto": 23, "rutas": 6},
+
     # Chatbot del totem
     r"/api/v1/chatbot/query": {"session_id": "s", "idioma": "es",
         "respuesta": "Las mejores playas son Mónsul y Genoveses.", "intent": "playas_destacadas",

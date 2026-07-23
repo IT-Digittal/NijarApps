@@ -112,6 +112,29 @@ def main():
         assert "471 KB" in docs_txt, "tamaño legible ausente"
         print("OK documentos del territorio (listado + subida)")
 
+        # Vista de Gobierno: portada "tipo web" (héroe + tiles + esta semana)
+        page.evaluate("UI.enterDireccion()")
+        page.wait_for_timeout(1300)
+        dir_txt = page.inner_text("#dir-resumen").lower()
+        assert "ayuntamiento de níjar" in dir_txt, "héroe de portada ausente"
+        assert "en seguimiento" in dir_txt, "frase de estado en lenguaje llano ausente"
+        assert "36°" in dir_txt and "86" in dir_txt, "datos vivos (aire Bettair / aforo) ausentes"
+        n_tiles = page.eval_on_selector_all("#dir-resumen .dir-tile", "els => els.length")
+        assert n_tiles == 7, "deben salir 7 tiles de servicio, hay %s" % n_tiles
+        assert "esta semana en níjar" in dir_txt, "bloque de la semana ausente"
+        assert "festival noches del castillo" in dir_txt, "agenda sin eventos"
+        assert "aviso de calor" in dir_txt, "aviso vigente del tótem ausente"
+        assert "aporta al municipio" in dir_txt, "tarjetas de impacto ausentes"
+        print("OK vista de gobierno · portada tipo tótem")
+
+        # Un tile abre el detalle ejecutivo de su vertical
+        page.click('#dir-resumen .dir-tile:has-text("Residuos")')
+        page.wait_for_timeout(900)
+        v_txt = page.inner_text("#dir-residuos").lower()
+        assert "llenado medio" in v_txt and "23" in v_txt, "detalle de residuos no renderiza"
+        assert page.query_selector("#dir-residuos .dir-vhero"), "cabecera fotográfica de la vertical ausente"
+        print("OK vista de gobierno · tile → detalle de la vertical")
+
         b.close()
 
     graves = [e for e in errores if "Failed to load resource" not in e and "favicon" not in e]
