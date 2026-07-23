@@ -11,7 +11,11 @@
  *    Sin claves ni licencias: todo son fuentes abiertas.
  */
 
-import { api } from "./api-client.js?v=18";
+import { api, tokens } from "./api-client.js?v=18";
+
+/* Base de la API para las llamadas que no son JSON (subida/descarga de ficheros) */
+const API_BASE = (typeof window !== "undefined" && window.NIJAR_API_BASE)
+  || window.location.origin + "/api/v1";
 
 let U, UI, DTI;
 let mapa2d = null;
@@ -137,16 +141,64 @@ async function cargarActivos() {
   return capas;
 }
 
-function popupActivo(capa, a) {
+/* Tipo de entidad (API de documentos) por capa del gemelo */
+const TIPO_DOC_POR_CAPA = {
+  turismo: "recurso", sensores: "sensor", alumbrado: "cuadro", residuos: "contenedor",
+  movilidad: "movilidad", seguridad: "camara", banderas: "bandera", aire: "estacion_aire",
+};
+
+function idEntidad(a) {
+  return String(a.obj.urn || a.obj.codigo || a.obj.id || a.obj.estacion || a.nombre);
+}
+
+function popupActivo(capa, a, docs) {
   const filas = Object.entries(a.obj)
     .filter(([k, v]) => v != null && v !== "" && typeof v !== "object" && !["id", "urn"].includes(k))
     .slice(0, 8)
     .map(([k, v]) => "<div style='font-size:12px'><b>" + esc(k.replace(/_/g, " ")) + ":</b> " + esc(String(v)) + "</div>")
     .join("");
+  const tipo = TIPO_DOC_POR_CAPA[capa.id] || "otro";
+  const eid = idEntidad(a);
+  const n = (docs && docs[tipo + "::" + eid]) || 0;
+  const adjuntos =
+    "<div style='margin-top:7px;border-top:1px solid #E3E8F2;padding-top:6px'>" +
+    "<a href='#' data-doc-tipo='" + esc(tipo) + "' data-doc-id='" + esc(eid) + "' data-doc-nombre='" + esc(a.nombre) + "'" +
+    " data-doc-lat='" + (a.ll ? a.ll[0] : "") + "' data-doc-lon='" + (a.ll ? a.ll[1] : "") + "'" +
+    " style='font-size:12px;font-weight:700;color:#1F6FE5;text-decoration:none'>&#128206; Documentos (" + n + ") · gestionar &raquo;</a></div>";
   return "<div style='min-width:190px'><div style='font-size:10.5px;font-weight:800;letter-spacing:.06em;color:#67769A'>" +
     esc(capa.nombre.toUpperCase()) + "</div><b style='font-size:14px'>" + esc(a.nombre) + "</b>" +
     "<div style='margin:4px 0'><span style='display:inline-block;width:9px;height:9px;border-radius:50%;background:" +
-    COLOR_ESTADO[a.sem] + "'></span> " + esc(a.estado || "operativo") + (a.extra ? " · " + esc(a.extra) : "") + "</div>" + filas + "</div>";
+    COLOR_ESTADO[a.sem] + "'></span> " + esc(a.estado || "operativo") + (a.extra ? " · " + esc(a.extra) : "") + "</div>" + filas + adjuntos + "</div>";
+}
+
+/* Al pulsar «Documentos · gestionar» en cualquier popup (2D o 3D) se abre la
+   vista de documentos filtrada por ese punto. */
+let docFiltro = null;
+document.addEventListener("click", (ev) => {
+  const enlace = ev.target && ev.target.closest && ev.target.closest("[data-doc-tipo]");
+  if (!enlace) return;
+  ev.preventDefault();
+  docFiltro = {
+    tipo: enlace.dataset.docTipo,
+    id: enlace.dataset.docId,
+    nombre: enlace.dataset.docNombre,
+    lat: parseFloat(enlace.dataset.docLat) || null,
+    lon: parseFloat(enlace.dataset.docLon) || null,
+  };
+  if (window.UI && window.UI.goD) window.UI.goD("gd-docs");
+});
+
+/* Conteo de documentos por entidad para los popups: {"tipo::id": n} */
+async function conteoDocumentos() {
+  try {
+    const d = await api.get("/documentos");
+    const m = {};
+    (d.items || []).forEach((x) => {
+      const k = x.entidad_tipo + "::" + x.entidad_id;
+      m[k] = (m[k] || 0) + 1;
+    });
+    return m;
+  } catch { return {}; }
 }
 
 /* ---------------- Leaflet / MapLibre desde CDN ---------------- */
@@ -192,9 +244,10 @@ async function renderGemelo2D(el) {
     '<div class="card card--pad0" style="overflow:hidden"><div id="gemelo-2d" style="height:600px;width:100%"></div></div>' +
     '<div class="mini" style="color:var(--muted);margin-top:8px" id="gd-refresco"></div>';
 
-  const [capas, aforo] = await Promise.all([
+  const [capas, aforo, docs] = await Promise.all([
     cargarActivos(),
     api.get("/gemelo/parque/aforo").catch(() => null), /* 503 si la vertical no está configurada */
+    conteoDocumentos(),
   ]);
 
   const total = capas.reduce((a, c) => a + c.items.length, 0);
@@ -234,7 +287,7 @@ async function renderGemelo2D(el) {
         L.circleMarker(a.ll, {
           radius: 8, weight: 2.5, color: "#fff",
           fillColor: a.sem === "ok" ? capa.color : COLOR_ESTADO[a.sem], fillOpacity: 1,
-        }).bindPopup(popupActivo(capa, a)).addTo(g);
+        }).bindPopup(popupActivo(capa, a, docs)).addTo(g);
       });
       g.addTo(mapa2d);
       grupos[
@@ -268,9 +321,9 @@ async function renderGemelo3D(el) {
     '<div class="card card--pad0" style="overflow:hidden"><div id="gemelo-3d" style="height:640px;width:100%;background:#0b1c33"></div></div>' +
     '<div class="mini" style="color:var(--muted);margin-top:8px">Terreno: Terrain Tiles (AWS Open Data, Mapzen/USGS) · Imagen: Esri World Imagery · Sin licencias ni claves.</div>';
 
-  let gl, capas;
+  let gl, capas, docs3d;
   try {
-    [gl, capas] = await Promise.all([maplibre(), cargarActivos()]);
+    [gl, capas, docs3d] = await Promise.all([maplibre(), cargarActivos(), conteoDocumentos()]);
   } catch (e) {
     document.getElementById("gemelo-3d").innerHTML =
       '<div class="mini" style="color:#fff;padding:40px;text-align:center">No se pudo cargar el visor 3D: ' + esc(e.message || e) + "</div>";
@@ -339,7 +392,7 @@ async function renderGemelo3D(el) {
             features.push({
               type: "Feature",
               geometry: { type: "Point", coordinates: [a.ll[1], a.ll[0]] },
-              properties: { color: a.sem === "ok" ? capa.color : COLOR_ESTADO[a.sem], html: popupActivo(capa, a) },
+              properties: { color: a.sem === "ok" ? capa.color : COLOR_ESTADO[a.sem], html: popupActivo(capa, a, docs3d) },
             });
           });
         });
@@ -375,72 +428,265 @@ async function renderGemelo3D(el) {
     }));
 }
 
+/* ================= DOCUMENTOS DEL TERRITORIO ================= */
+
+const NOMBRE_TIPO_DOC = {
+  recurso: "Recurso turístico", sensor: "Sensor IoT", cuadro: "Cuadro de alumbrado",
+  contenedor: "Contenedor", movilidad: "Movilidad", camara: "Cámara CCTV",
+  bandera: "Bandera de playa", estacion_aire: "Estación de aire", otro: "Otro",
+};
+
+function tamanoLegible(b) {
+  if (b == null) return "—";
+  if (b < 1024) return b + " B";
+  if (b < 1024 * 1024) return (b / 1024).toFixed(0) + " KB";
+  return (b / (1024 * 1024)).toFixed(1) + " MB";
+}
+
+async function descargarDocumento(id, nombre) {
+  const resp = await fetch(API_BASE + "/documentos/" + id + "/archivo", {
+    headers: { Authorization: "Bearer " + tokens.access },
+  });
+  if (!resp.ok) throw new Error("HTTP " + resp.status);
+  const blob = await resp.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = nombre || "documento";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+
+async function renderDocumentos(el) {
+  el.innerHTML = sub("Documentos", "Documentos del territorio",
+    "Cargando…", "") + '<div class="card"><div class="mini" style="color:var(--muted);padding:20px 0;text-align:center">Cargando documentos…</div></div>';
+
+  const filtro = docFiltro;
+  docFiltro = null; /* se consume una vez: al volver a entrar se ve todo */
+  const ruta = filtro
+    ? "/documentos?entidad_tipo=" + encodeURIComponent(filtro.tipo) + "&entidad_id=" + encodeURIComponent(filtro.id)
+    : "/documentos";
+
+  let datos, capas;
+  try {
+    [datos, capas] = await Promise.all([
+      api.get(ruta),
+      filtro ? Promise.resolve(null) : cargarActivos(), /* selector de punto solo en vista global */
+    ]);
+  } catch (e) {
+    el.innerHTML = sub("Documentos", "Documentos del territorio", "", "") +
+      '<div class="card"><div class="mini" style="color:var(--err);padding:26px 0;text-align:center">No se pudo cargar el listado: ' + esc(e.message || e) + "</div></div>";
+    return;
+  }
+  const filas = datos.items || [];
+
+  /* Selector de punto (vista global): todos los activos del gemelo */
+  let opciones = "";
+  if (capas) {
+    opciones = capas.map((capa) => {
+      const tipo = TIPO_DOC_POR_CAPA[capa.id] || "otro";
+      const opts = capa.items.map((a) =>
+        '<option value="' + esc(tipo + "|" + idEntidad(a) + "|" + a.nombre + "|" + (a.ll ? a.ll[0] : "") + "|" + (a.ll ? a.ll[1] : "")) + '">' +
+        esc(a.nombre) + "</option>").join("");
+      return opts ? '<optgroup label="' + esc(capa.nombre) + '">' + opts + "</optgroup>" : "";
+    }).join("");
+  }
+
+  const cabecera = filtro
+    ? "Documentos de «" + esc(filtro.nombre) + "» (" + esc(NOMBRE_TIPO_DOC[filtro.tipo] || filtro.tipo) + ")"
+    : "Todos los documentos adjuntos a puntos del mapa";
+
+  el.innerHTML = sub("Documentos", "Documentos del territorio",
+    "Fichas técnicas, fotos, planos o cualquier fichero adjunto a los puntos del gemelo digital. Se adjuntan desde aquí o desde la ficha de cada punto en el mapa 2D/3D.",
+    filtro ? '<button class="btn" id="doc-quitar-filtro">Ver todos</button>' : "") +
+    '<div class="grid c7-5" style="margin-bottom:16px">' +
+    '<div class="card card--pad0"><div style="padding:16px 16px 4px" class="card__h"><div><div class="card__t">' + cabecera +
+    '</div><div class="card__s">' + (datos.total ?? filas.length) + " documento(s)</div></div></div>" +
+    '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Punto</th><th>Documento</th><th>Tamaño</th><th>Fecha</th><th></th></tr></thead><tbody id="doc-tbody">' +
+    (filas.map((d, i) =>
+      "<tr><td style='white-space:normal;min-width:150px'><b>" + esc(d.entidad_nombre) + "</b><div class='mini' style='color:var(--muted)'>" +
+      esc(NOMBRE_TIPO_DOC[d.entidad_tipo] || d.entidad_tipo) + "</div></td>" +
+      "<td style='white-space:normal;min-width:170px'>" + esc(d.nombre_archivo) +
+      (d.descripcion ? "<div class='mini' style='color:var(--muted)'>" + esc(d.descripcion) + "</div>" : "") + "</td>" +
+      "<td class='mini tnum'>" + tamanoLegible(d.tamano_bytes) + "</td>" +
+      "<td class='mini tnum'>" + new Date(d.created_at).toLocaleDateString("es-ES") + "</td>" +
+      "<td style='white-space:nowrap'><button class='btn btn--sm' data-doc-dl='" + i + "'>Descargar</button> " +
+      "<button class='btn btn--sm' data-doc-del='" + i + "'>Eliminar</button></td></tr>").join("") ||
+      "<tr><td colspan='5' class='mini' style='text-align:center;padding:22px'>Sin documentos todavía — adjunta el primero desde el formulario</td></tr>") +
+    "</tbody></table></div></div>" +
+    '<div class="card"><div class="card__h"><div><div class="card__t">Adjuntar documento</div><div class="card__s">Cualquier tipo de fichero · máx. 25 MB</div></div></div>' +
+    '<form id="doc-form">' +
+    (filtro
+      ? '<div class="mini" style="margin-bottom:10px">Se adjuntará a: <b>' + esc(filtro.nombre) + "</b></div>"
+      : '<label class="mini" style="color:var(--muted)">Punto del mapa</label><select id="doc-ent" required style="width:100%;border:1.5px solid var(--line);border-radius:10px;padding:9px 12px;font-size:13.5px;font-family:inherit;margin:4px 0 12px">' +
+        '<option value="">— Elige un punto —</option>' + opciones + "</select>") +
+    '<label class="mini" style="color:var(--muted)">Fichero</label>' +
+    '<input type="file" id="doc-file" required style="width:100%;margin:4px 0 12px;font-size:13px">' +
+    '<label class="mini" style="color:var(--muted)">Descripción (opcional)</label>' +
+    '<input type="text" id="doc-desc" maxlength="500" placeholder="Ficha técnica, plano, foto…" style="width:100%;border:1.5px solid var(--line);border-radius:10px;padding:9px 12px;font-size:13.5px;font-family:inherit;margin:4px 0 14px">' +
+    '<button class="btn btn--pri" type="submit" style="width:100%">Adjuntar al punto</button>' +
+    '<div class="mini" id="doc-msg" style="color:var(--muted);margin-top:10px"></div></form></div></div>';
+
+  const qf = el.querySelector("#doc-quitar-filtro");
+  if (qf) qf.onclick = () => { docFiltro = null; UI.rerenderD("gd-docs"); };
+
+  el.querySelectorAll("[data-doc-dl]").forEach((b) => {
+    b.onclick = async () => {
+      const d = filas[Number(b.dataset.docDl)];
+      try { await descargarDocumento(d.id, d.nombre_archivo); }
+      catch (e) { if (UI.toast) UI.toast("No se pudo descargar: " + (e.message || e)); }
+    };
+  });
+  el.querySelectorAll("[data-doc-del]").forEach((b) => {
+    b.onclick = async () => {
+      const d = filas[Number(b.dataset.docDel)];
+      if (!window.confirm('¿Eliminar "' + d.nombre_archivo + '" de ' + d.entidad_nombre + "?")) return;
+      const resp = await fetch(API_BASE + "/documentos/" + d.id, {
+        method: "DELETE", headers: { Authorization: "Bearer " + tokens.access },
+      });
+      if (resp.ok) { if (UI.toast) UI.toast("Documento eliminado"); docFiltro = filtro; UI.rerenderD("gd-docs"); }
+      else if (UI.toast) UI.toast(resp.status === 403 ? "Tu rol no puede eliminar documentos" : "Error HTTP " + resp.status);
+    };
+  });
+
+  el.querySelector("#doc-form").addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    const msg = el.querySelector("#doc-msg");
+    let ent = filtro;
+    if (!ent) {
+      const v = el.querySelector("#doc-ent").value;
+      if (!v) { msg.textContent = "Elige un punto del mapa."; return; }
+      const [tipo, id, nombre, lat, lon] = v.split("|");
+      ent = { tipo, id, nombre, lat: parseFloat(lat) || null, lon: parseFloat(lon) || null };
+    }
+    const fichero = el.querySelector("#doc-file").files[0];
+    if (!fichero) { msg.textContent = "Elige un fichero."; return; }
+    const fd = new FormData();
+    fd.append("archivo", fichero);
+    fd.append("entidad_tipo", ent.tipo);
+    fd.append("entidad_id", ent.id);
+    fd.append("entidad_nombre", ent.nombre);
+    if (ent.lat != null) fd.append("latitud", String(ent.lat));
+    if (ent.lon != null) fd.append("longitud", String(ent.lon));
+    const desc = el.querySelector("#doc-desc").value.trim();
+    if (desc) fd.append("descripcion", desc);
+    msg.textContent = "Subiendo…";
+    const resp = await fetch(API_BASE + "/documentos", {
+      method: "POST", headers: { Authorization: "Bearer " + tokens.access }, body: fd,
+    });
+    if (resp.ok) {
+      if (UI.toast) UI.toast("Documento adjuntado a " + ent.nombre);
+      docFiltro = filtro; UI.rerenderD("gd-docs");
+    } else {
+      const cuerpo = await resp.json().catch(() => null);
+      msg.textContent = resp.status === 403
+        ? "Tu rol no puede adjuntar documentos (administrador, gestor u operador)."
+        : "Error: " + ((cuerpo && cuerpo.detail) || "HTTP " + resp.status);
+    }
+  });
+}
+
 /* ================= SIMULADOR DE ESCENARIOS (Fase 3) ================= */
+
+/* Eventos reales del calendario del municipio (petición del Ayuntamiento).
+   Cada uno reparte su asistencia sobre la predicción base con el perfil de
+   días propio del evento; el deslizador fija la asistencia esperada respecto
+   a la escala documentada en los supuestos. */
+function picoEvento(base, dias) {
+  /* dias = [[desplazamiento respecto al centro del horizonte, peso], …] */
+  const serie = base.slice();
+  const centro = Math.floor(serie.length / 2);
+  dias.forEach(([off, extra]) => {
+    const i = centro + off;
+    if (serie[i] != null) serie[i] = Math.round(serie[i] + extra);
+  });
+  return serie;
+}
 
 const ESCENARIOS = [
   {
-    id: "cierre_monsul",
-    n: "Cierre de acceso rodado a Mónsul",
-    d: "Restricción del acceso en coche a la playa de Mónsul. Parte de los visitantes se desvía a Genoveses y otras calas; el resto desiste.",
-    param: "Nivel de restricción",
-    supuesto: "Supuestos: Mónsul concentra ~25% de las visitas de costa; el 60% de los desviados se redistribuye dentro del destino.",
+    id: "desembarco_pirata",
+    n: "Desembarco Pirata (San José · marzo)",
+    d: "Recreación histórica del desembarco berberisco en la bahía de San José: mercado, pasacalles y batalla en la playa. Gran pico el día grande con arrastre de víspera y domingo.",
+    param: "Asistencia esperada",
+    supuesto: "Supuestos: 100% ≈ 6.000 asistentes (70% el día grande, 15% la víspera, 15% el domingo). Se proyecta sobre el centro del horizonte; el evento real es en marzo. Elasticidades pendientes de calibrar con la primera edición medida.",
     aplicar(base, p) {
-      const f = 1 - 0.25 * (p / 100) * 0.4;
-      return { serie: base.map((v) => Math.round(v * f)), nota: "Visitas redistribuidas a otras calas: " + Math.round(base.reduce((a, b) => a + b, 0) * 0.25 * (p / 100) * 0.6) };
+      const a = 6000 * (p / 100);
+      return {
+        serie: picoEvento(base, [[-1, a * 0.15], [0, a * 0.7], [1, a * 0.15]]),
+        nota: "Refuerzo recomendado: parking disuasorio y lanzadera a San José · pico +" + Math.round(a * 0.7) + " visitas",
+      };
     },
   },
   {
-    id: "lanzadera",
-    n: "Lanzadera San José – Genoveses",
-    d: "Servicio de autobús lanzadera en temporada. Aumenta la capacidad de acogida los fines de semana y reduce la presión del parking.",
-    param: "Frecuencia del servicio",
-    supuesto: "Supuestos: la lanzadera eleva la afluencia de fin de semana hasta un +12% y elimina el cuello de botella del aparcamiento.",
+    id: "noche_velas",
+    n: "Noche de las Velas (Rodalquilar)",
+    d: "Miles de velas iluminan el poblado minero de Rodalquilar en una sola noche de verano, con música y comercio local abierto.",
+    param: "Asistencia esperada",
+    supuesto: "Supuestos: 100% ≈ 5.000 asistentes concentrados en una única noche (85% el día, 15% la víspera). Elasticidades pendientes de calibrar.",
     aplicar(base, p) {
-      const serie = base.map((v, i) => Math.round(v * (i % 7 >= 5 ? 1 + 0.12 * (p / 100) : 1)));
-      return { serie, nota: "Plazas de parking liberadas estimadas por día punta: " + Math.round(140 * (p / 100)) };
+      const a = 5000 * (p / 100);
+      return {
+        serie: picoEvento(base, [[-1, a * 0.15], [0, a * 0.85]]),
+        nota: "Concentración nocturna en un núcleo pequeño: plan de tráfico y aparcamiento en la ctra. del Playazo · pico +" + Math.round(a * 0.85) + " visitas",
+      };
     },
   },
   {
-    id: "evento",
-    n: "Gran evento en Rodalquilar",
-    d: "Festival o evento cultural puntual. Añade visitantes concentrados en torno al día del evento.",
-    param: "Asistentes esperados",
-    supuesto: "Supuestos: el evento se celebra a mitad del horizonte; el 30% de asistentes llega la víspera o se queda al día siguiente.",
+    id: "festival_chio",
+    n: "Conciertos de Campohermoso · Festival Chío",
+    d: "Ciclo de conciertos en Campohermoso durante varias noches consecutivas, con público local y de municipios vecinos.",
+    param: "Asistencia esperada",
+    supuesto: "Supuestos: 100% ≈ 9.000 asistentes acumulados en 3 noches (30% · 40% · 30%). Elasticidades pendientes de calibrar.",
     aplicar(base, p) {
-      const serie = base.slice();
-      const d = Math.floor(serie.length / 2);
-      const asistentes = p * 30;
-      serie[d] = Math.round(serie[d] + asistentes * 0.7);
-      if (serie[d - 1] != null) serie[d - 1] = Math.round(serie[d - 1] + asistentes * 0.15);
-      if (serie[d + 1] != null) serie[d + 1] = Math.round(serie[d + 1] + asistentes * 0.15);
-      return { serie, nota: "Pico del evento: día " + (d + 1) + " del horizonte (+" + Math.round(asistentes * 0.7) + " visitas)" };
+      const a = 9000 * (p / 100);
+      return {
+        serie: picoEvento(base, [[-1, a * 0.3], [0, a * 0.4], [1, a * 0.3]]),
+        nota: "Tres noches seguidas en Campohermoso: reforzar limpieza y transporte nocturno · noche punta +" + Math.round(a * 0.4) + " visitas",
+      };
     },
   },
   {
-    id: "ola_calor",
-    n: "Ola de calor",
-    d: "Episodio de temperaturas extremas. Sube la demanda de playas y baja la de senderismo; crece el riesgo de saturación.",
-    param: "Intensidad del episodio",
-    supuesto: "Supuestos: cada 10 puntos de intensidad elevan ~2,4% la afluencia de costa (histórico de veranos previos, pendiente de calibrar).",
+    id: "expolevante",
+    n: "ExpoLevante (bienal · agricultura)",
+    d: "Feria bienal de la agricultura intensiva en Campohermoso: expositores, profesionales del sector y público general durante cuatro jornadas.",
+    param: "Asistencia esperada",
+    supuesto: "Supuestos: 100% ≈ 40.000 visitantes acumulados en 4 jornadas diurnas (reparto 20% · 30% · 30% · 20%). Se celebra cada 2 años. Elasticidades pendientes de calibrar.",
     aplicar(base, p) {
-      return { serie: base.map((v) => Math.round(v * (1 + 0.24 * (p / 100)))), nota: "Vigilar aforos de Genoveses y Mónsul en los días pico" };
+      const a = 40000 * (p / 100);
+      return {
+        serie: picoEvento(base, [[-1, a * 0.2], [0, a * 0.3], [1, a * 0.3], [2, a * 0.2]]),
+        nota: "Perfil profesional + general en horario diurno: presión sobre restauración y accesos de Campohermoso · jornada punta +" + Math.round(a * 0.3) + " visitas",
+      };
+    },
+  },
+  {
+    id: "nijar_cup",
+    n: "Níjar Cup / SuperCup (fútbol base)",
+    d: "Campeonato de fútbol base con equipos desplazados: partidos durante varios días y familias alojadas en el municipio toda la semana.",
+    param: "Asistencia esperada",
+    supuesto: "Supuestos: 100% ≈ 3.500 personas/día (jugadores, técnicos y familias) durante 5 jornadas seguidas — demanda sostenida, no un pico. Elasticidades pendientes de calibrar.",
+    aplicar(base, p) {
+      const a = 3500 * (p / 100);
+      return {
+        serie: picoEvento(base, [[-2, a], [-1, a], [0, a], [1, a], [2, a]]),
+        nota: "Demanda sostenida 5 días: ocupación hotelera y restauración en todo el municipio · +" + Math.round(a) + " visitas/día",
+      };
     },
   },
 ];
 
 async function renderSimulador(el) {
   el.innerHTML = sub("Simulador", "Simulador de escenarios «qué pasaría si»",
-    "Fase 3 del gemelo: simula decisiones de gestión sobre la predicción real de afluencia de la plataforma y compara el resultado con la línea base.", "") +
+    "Los grandes eventos del calendario del municipio simulados sobre la predicción real de afluencia de la plataforma, comparando el resultado con la línea base.", "") +
     '<div class="card"><div class="mini" style="color:var(--muted);padding:20px 0;text-align:center">Cargando la predicción base…</div></div>';
 
-  let base = null, aire = null;
+  let base = null;
   try {
-    const [af, res] = await Promise.all([
-      api.get("/prediccion/afluencia?metrica=totem&horizonte_dias=14"),
-      api.get("/gemelo/aire/resumen").catch(() => null), /* 503 si Bettair no está configurado */
-    ]);
+    const af = await api.get("/prediccion/afluencia?metrica=totem&horizonte_dias=14");
     base = (af.puntos || []).map((p) => p.valor_estimado ?? p.prediccion ?? p.valor ?? 0);
-    aire = res;
   } catch { /* sin predicción */ }
 
   if (!base || !base.length || !base.some((v) => v > 0)) {
@@ -452,7 +698,7 @@ async function renderSimulador(el) {
 
   const opciones = ESCENARIOS.map((e, i) => '<option value="' + i + '">' + esc(e.n) + "</option>").join("");
   el.innerHTML = sub("Simulador", "Simulador de escenarios «qué pasaría si»",
-    "Simula decisiones de gestión sobre la predicción real de afluencia (línea discontinua: base; línea sólida: escenario).", "") +
+    "Eventos del calendario del municipio sobre la predicción real de afluencia (línea discontinua: base; línea sólida: escenario).", "") +
     '<div class="grid c7-5" style="margin-bottom:16px">' +
     '<div class="card"><div class="card__h"><div><div class="card__t">Escenario</div><div class="card__s" id="sim-desc"></div></div></div>' +
     '<select id="sim-esc" style="width:100%;border:1.5px solid var(--line);border-radius:10px;padding:10px 12px;font-size:14px;font-family:inherit;margin-bottom:14px">' + opciones + "</select>" +
@@ -468,22 +714,11 @@ async function renderSimulador(el) {
 
   const sel = el.querySelector("#sim-esc");
   const slider = el.querySelector("#sim-param");
-  /* Intensidad sugerida de la ola de calor a partir de la temperatura REAL de
-     la red Bettair: 28 °C → 0% y 42 °C → 100% (lineal, acotada 10-100). */
-  const tempReal = aire && aire.temperatura_max_c != null ? aire.temperatura_max_c : null;
-  const sugerida = tempReal != null ? Math.max(10, Math.min(100, Math.round(((tempReal - 28) / 14) * 100))) : null;
   const pintarMeta = () => {
     const e = ESCENARIOS[Number(sel.value)];
     el.querySelector("#sim-desc").textContent = e.d;
     el.querySelector("#sim-param-label").textContent = e.param;
-    let supuesto = e.supuesto;
-    if (e.id === "ola_calor" && sugerida != null) {
-      slider.value = sugerida;
-      el.querySelector("#sim-param-val").textContent = String(sugerida);
-      supuesto += " Ahora mismo: " + tempReal.toLocaleString("es-ES") +
-        " °C de máxima en las estaciones Bettair del municipio → intensidad sugerida " + sugerida + "%.";
-    }
-    el.querySelector("#sim-supuesto").textContent = supuesto;
+    el.querySelector("#sim-supuesto").textContent = e.supuesto;
   };
   pintarMeta();
   sel.addEventListener("change", pintarMeta);
@@ -522,6 +757,7 @@ async function renderSimulador(el) {
     { id: "gd-mapa", n: "Gemelo vivo (2D)", i: "map", r: renderGemelo2D },
     { id: "gd-3d", n: "Vista 3D del territorio", i: "globe", r: renderGemelo3D },
     { id: "gd-sim", n: "Simulador de escenarios", i: "chart", r: renderSimulador },
+    { id: "gd-docs", n: "Documentos del territorio", i: "folder", r: renderDocumentos },
   ];
   secciones.forEach((s) => {
     if (s.g) { DTI.DSECTIONS.push({ g: s.g }); return; }

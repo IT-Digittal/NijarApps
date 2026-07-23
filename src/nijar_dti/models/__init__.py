@@ -16,6 +16,7 @@ from nijar_dti.models.cliente import Cliente
 from nijar_dti.models.consumo_ia import ConsumoIA
 from nijar_dti.models.contenido import Contenido
 from nijar_dti.models.contexto import ContextoTuristico
+from nijar_dti.models.documento_punto import DocumentoPunto
 from nijar_dti.models.evento_turistico import EventoTuristico
 from nijar_dti.models.faq import FAQ, InteraccionChatbot
 from nijar_dti.models.fuente_dato import FuenteDato
@@ -51,6 +52,7 @@ __all__ = [
     "FuenteDato",
     "Incidencia",
     "InteraccionChatbot",
+    "DocumentoPunto",
     "MetricaHistorica",
     "Luminaria",
     "Observacion",
