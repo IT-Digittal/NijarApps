@@ -168,6 +168,7 @@ const DIR_CSS = `
 #view-direccion .dir-icard--eco{background:linear-gradient(135deg,#0e3a78,#2563b0)}
 #view-direccion .dir-icard--ciu{background:linear-gradient(135deg,#0e6f66,#17a394)}
 #view-direccion .dir-icard--amb{background:linear-gradient(135deg,#155e38,#2f9e5f)}
+#view-direccion .dir-stat-v{font-size:26px;font-weight:800;margin:3px 0 4px;font-variant-numeric:tabular-nums}
 #view-direccion .dir-vhero{position:relative;border-radius:16px;overflow:hidden;color:#fff;padding:20px;margin-bottom:16px;min-height:118px;display:flex;flex-direction:column;justify-content:flex-end;background-size:cover;background-position:center}
 #view-direccion .dir-vhero h3{color:#fff;margin:6px 0 3px;font-size:22px;font-weight:800;text-shadow:0 1px 8px rgba(0,0,0,.45)}
 @media (max-width:760px){#view-direccion .dir-hero{padding-right:28px}#view-direccion .dir-score{position:static;margin-top:14px}}
@@ -340,8 +341,17 @@ const VERTICALES = [
     preguntas: ["¿Qué edificios consumen más?", "¿Qué ahorro genera el autoconsumo?", "¿Dónde conviene invertir?"] },
 ];
 
+/* Acentos de color por "tono" del indicador (mismo lenguaje que la portada). */
+const ACC_KPI = {
+  "ic-ok": "#2f9e5f", "ic-gold": "#e0912f", "ic-coral": "#e05a4d", "ic-teal": "#17a394",
+  "ic-blue": "#2563b0", "ic-navy": "#0e3a78", "ic-violet": "#7c5cd6",
+};
+
 function _kpisVertical(id, ov, extra) {
-  const k = (l, v, d, cls, ic) => (UI2 && UI2.kpiCard ? UI2.kpiCard(l, esc(String(v)), d, cls, ic, "") : "");
+  const k = (l, v, d, cls, ic) =>
+    '<div class="dir-wcard" style="--dir-acc:' + (ACC_KPI[cls] || "#2563b0") + '"><h4>' + icono(ic) + esc(l) + "</h4>" +
+    '<div class="dir-stat-v tnum">' + esc(String(v)) + "</div>" +
+    '<div class="mini" style="color:var(--muted)">' + esc(String(d)) + "</div></div>";
   const n = (x, dec) => (x == null ? "—" : Number(x).toLocaleString("es-ES", { maximumFractionDigits: dec ?? 0 }));
   if (id === "turismo") {
     const bd = ov, uso = extra || {};
@@ -408,8 +418,8 @@ function renderVertical(id) {
       "<h3>" + esc(cfg.nombre) + "</h3>" +
       (sem ? '<span class="dir-frase">' + esc(sem.indicador_clave) + "</span>" : "") + "</div>";
     if (sem) {
-      h += '<div class="card" style="margin-bottom:16px"><div class="mini"><b>Recomendación:</b> ' +
-        esc(sem.recomendacion) + "</div></div>";
+      h += '<div class="dir-wcard" style="--dir-acc:#17a394;margin-bottom:16px"><h4>' + icono("chat") +
+        "Recomendación del servicio</h4><div>" + esc(sem.recomendacion) + "</div></div>";
     }
     h += '<div class="grid g4" style="margin-bottom:16px">' + _kpisVertical(id, ov, extra) + "</div>";
     // Comparativa interanual REAL de la vertical (histórico mensual de 2 años).
@@ -422,9 +432,10 @@ function renderVertical(id) {
       h += bloqueInteranual(resumen.interanual_turismo, "Presión turística (proxy: aeropuerto de Almería)", ["pasajeros_aena"]);
     }
     h += '<div class="grid g2">' +
-      '<div class="card"><div class="card__t">Preguntas que responde</div><ul style="margin:10px 0 0;padding-left:18px;font-size:13.5px;line-height:1.9">' +
+      '<div class="dir-wcard" style="--dir-acc:#0e3a78"><h4>' + icono("chart") + "Preguntas que responde</h4>" +
+      '<ul style="margin:6px 0 0;padding-left:18px;font-size:13.5px;line-height:1.9">' +
       cfg.preguntas.map((p) => "<li>" + esc(p) + "</li>").join("") + "</ul></div>" +
-      '<div class="card"><div class="card__h"><div><div class="card__t">Recomendaciones</div></div><span class="ai-chip">✦ IA</span></div>' +
+      '<div class="dir-wcard" style="--dir-acc:#17a394"><h4>' + icono("chat") + 'Recomendaciones <span class="ai-chip">✦ IA</span></h4>' +
       (recsArea.length ? recsArea.map((r) =>
         '<div style="border-left:3px solid var(--blue);padding:6px 12px;margin:8px 0;background:var(--bg);border-radius:0 8px 8px 0">' +
         '<div>' + (PRIO_BDG[r.prioridad] || "") + " <b>" + esc(r.titulo) + "</b></div>" +
@@ -450,11 +461,18 @@ async function renderRecomendaciones(el) {
   }
   const opciones = (sel) => Object.keys(ESTADO_REC).map((k) =>
     '<option value="' + k + '"' + (k === sel ? " selected" : "") + ">" + ESTADO_REC[k] + "</option>").join("");
+  const ACC_PRIO = { critica: "#e05a4d", alta: "#e0912f", media: "#2563b0", informativa: "#67769a" };
 
   el.innerHTML = dsub("Recomendaciones de la IA",
     "Propuestas priorizadas. Marca el estado de cada una (aceptada, descartada, ejecutada…) y deja un comentario de dirección.") +
+    '<div class="dir-vhero" style="background-image:' + OVERLAY_TILE + ",url('../shared/cabo-de-gata-hero.jpg')" + '">' +
+    '<span class="dir-tile-ico">' + icono("chat") + "</span>" +
+    '<span class="dir-estado">✦ Propuestas de la IA para decidir</span>' +
+    "<h3>Recomendaciones de la IA</h3>" +
+    '<span class="dir-frase">Cada propuesta explica por qué, qué impacto tiene y qué acción concreta se recomienda.</span></div>' +
     '<div class="grid g2">' + recs.map((r) =>
-      '<div class="card" data-clave="' + esc(r.clave) + '"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">' +
+      '<div class="dir-wcard" data-clave="' + esc(r.clave) + '" style="--dir-acc:' + (ACC_PRIO[r.prioridad] || "#2563b0") + '">' +
+      '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">' +
       (PRIO_BDG[r.prioridad] || "") + '<span class="bdg bdg-info">' + esc(r.area) + '</span><span class="bdg bdg-mut" data-badge>' + ESTADO_REC[r.estado] + "</span></div>" +
       '<div style="font-weight:700;margin-top:8px">' + esc(r.titulo) + "</div>" +
       '<div class="mini" style="color:var(--muted);margin-top:6px">' + esc(r.justificacion) + "</div>" +
@@ -612,6 +630,19 @@ function instalar() {
   UI.enterDireccion = function () { UI.goDir(SECCIONES[0].id); };
   UI.rerenderDir = function (id) { rendered[id] = false; if (cur === id) UI.goDir(id); };
   UI.informeDireccion = abrirInforme;
+
+  // El perfil directivo vive SOLO en la Vista de Gobierno: si intenta volver al
+  // panel general (miga "Plataforma"), aterriza de nuevo en su portada. El
+  // backend ya le deniega los endpoints técnicos; esto evita pantallas vacías.
+  if (!UI._dirGoWrap) {
+    const origGo = UI.go;
+    UI.go = function (id) {
+      const u = getCachedUser && getCachedUser();
+      if (u && u.rol === "direccion_gobierno" && id === "home") { UI.enterDireccion(); return; }
+      return origGo.apply(this, arguments);
+    };
+    UI._dirGoWrap = true;
+  }
 
   // Mantener la tarjeta al re-renderizar el home.
   const X = window.__UI2;

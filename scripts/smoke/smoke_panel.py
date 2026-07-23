@@ -135,6 +135,15 @@ def main():
         assert page.query_selector("#dir-residuos .dir-vhero"), "cabecera fotográfica de la vertical ausente"
         print("OK vista de gobierno · tile → detalle de la vertical")
 
+        # Recomendaciones IA con la misma estética (cabecera + tarjetas acentuadas)
+        page.evaluate("UI.goDir('recomendaciones')")
+        page.wait_for_timeout(900)
+        rec_txt = page.inner_text("#dir-recomendaciones").lower()
+        assert "reforzar la recogida" in rec_txt and "guardar" in rec_txt, "recomendaciones sin CRUD de estado"
+        assert page.query_selector("#dir-recomendaciones .dir-vhero"), "cabecera de recomendaciones ausente"
+        assert page.query_selector("#dir-recomendaciones .dir-wcard"), "tarjetas rediseñadas ausentes"
+        print("OK vista de gobierno · recomendaciones con estética tótem")
+
         b.close()
 
     graves = [e for e in errores if "Failed to load resource" not in e and "favicon" not in e]
