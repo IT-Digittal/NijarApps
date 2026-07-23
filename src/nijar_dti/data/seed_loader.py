@@ -42,6 +42,7 @@ from nijar_dti.data.seeds.demo_data import (
 from nijar_dti.data.seeds.faqs import FAQS_SEED
 from nijar_dti.data.seeds.fuentes_datos import FUENTES_DATOS_SEED
 from nijar_dti.data.seeds.historico_verticales import generar_historico_seed
+from nijar_dti.data.seeds.publicidad import EMPRESAS_SEED
 from nijar_dti.data.seeds.recursos_turisticos import RECURSOS_SEED
 from nijar_dti.data.seeds.sensores import SENSORES_SEED
 from nijar_dti.data.seeds.verticales import (
@@ -72,6 +73,7 @@ from nijar_dti.models.rol import Rol
 from nijar_dti.models.sensor import Sensor
 from nijar_dti.models.alumbrado import CuadroMando, Luminaria, ZonaAlumbrado
 from nijar_dti.models.fuente_dato import FuenteDato
+from nijar_dti.models.empresa_anunciante import EmpresaAnunciante
 from nijar_dti.models.usuario import Usuario
 from nijar_dti.models.verticales import (
     CamaraCCTV,
@@ -684,6 +686,15 @@ async def backfill_coordenadas_verticales(db: AsyncSession) -> None:
         )
 
 
+async def seed_empresas_publicidad(db: AsyncSession) -> None:
+    """Empresas anunciantes de demostración para el apartado del tótem."""
+    if not await _tabla_vacia(db, EmpresaAnunciante):
+        return
+    for e in EMPRESAS_SEED:
+        db.add(EmpresaAnunciante(**e))
+    log.info("Publicidad · empresas demo creadas: %d", len(EMPRESAS_SEED))
+
+
 async def seed_fuentes_datos(db: AsyncSession) -> None:
     """Carga el catálogo de fuentes de datos e integraciones (idempotente)."""
     if not await _tabla_vacia(db, FuenteDato):
@@ -728,6 +739,7 @@ async def run() -> None:
             await seed_verticales(db)
             await backfill_coordenadas_verticales(db)
             await seed_fuentes_datos(db)
+            await seed_empresas_publicidad(db)
             await seed_historico_verticales(db)
             await db.commit()
             log.info("Seeds aplicados correctamente")

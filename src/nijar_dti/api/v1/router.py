@@ -18,6 +18,7 @@ from nijar_dti.api.v1 import (
     incidencias,
     iot,
     prediccion,
+    publicidad,
     roles,
     rutas,
     social,
@@ -49,3 +50,4 @@ api_router.include_router(roles.router, prefix="/roles", tags=["roles"])
 api_router.include_router(direccion.router, prefix="/direccion", tags=["direccion"])
 api_router.include_router(gemelo.router, prefix="/gemelo", tags=["gemelo"])
 api_router.include_router(documentos.router, prefix="/documentos", tags=["documentos"])
+api_router.include_router(publicidad.router, prefix="/publicidad", tags=["publicidad"])

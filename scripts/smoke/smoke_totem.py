@@ -73,6 +73,19 @@ def main():
         assert "playas" in page.inner_text("#chat-log").lower(), "chat sin respuesta"
         print("OK asistente IA")
 
+        # Apartado Empresas (publicidad) desde el dock
+        page.click(".tt-view.is-on [data-back]")
+        page.wait_for_timeout(300)
+        page.click('[data-dock-action="empresas"]')
+        page.wait_for_timeout(900)
+        emp = page.inner_text("#content-grid")
+        assert "Restaurante La Ola" in emp and "Kayak Cabo Activo" in emp, "empresas no renderizan"
+        assert "empresas colaboradoras" in emp.lower(), "falta el aviso de espacio patrocinado"
+        assert "destacada" in emp.lower(), "distintivo de destacada ausente"
+        chips_emp = page.inner_text("#list-chips")
+        assert "Gastronomía" in chips_emp, "chips de sector ausentes"
+        print("OK apartado Empresas (publicidad) en el tótem")
+
         # Chip meteo (Bettair) + ticker de avisos del CMS
         page.click(".tt-view.is-on [data-back]")
         page.wait_for_timeout(400)

@@ -21,6 +21,27 @@ FAKE = {
          "descripcion": "Ficha técnica de la playa", "tipo_mime": "application/pdf",
          "tamano_bytes": 482133, "subido_por": "admin@nijar.es", "created_at": "2026-07-15T09:00:00"}], "total": 1},
 
+    # Publicidad: empresas anunciantes (publico del totem + EmpresasPage del panel)
+    r"/api/v1/publicidad/publico/totem": [
+        {"id": "e1", "nombre": "Restaurante La Ola", "sector": "gastronomia",
+         "descripcion": "Pescado fresco frente al puerto.",
+         "descripcion_i18n": {"es": "Pescado fresco frente al puerto.", "en": "Fresh fish by the harbour.",
+                              "de": "Frischer Fisch am Hafen.", "fr": "Poisson frais face au port."},
+         "nucleo": "San José", "direccion": "Paseo Marítimo, 12", "telefono": "+34 950 000 001",
+         "web": "https://ejemplo-laola.es", "imagenes": None, "destacado": True},
+        {"id": "e2", "nombre": "Kayak Cabo Activo", "sector": "ocio_activo",
+         "descripcion": "Rutas guiadas en kayak.", "descripcion_i18n": None,
+         "nucleo": "Las Negras", "direccion": None, "telefono": "+34 950 000 003",
+         "web": None, "imagenes": None, "destacado": False}],
+    r"/api/v1/publicidad$": {"items": [
+        {"id": "e1", "nombre": "Restaurante La Ola", "sector": "gastronomia",
+         "descripcion": "Pescado fresco frente al puerto.", "descripcion_i18n": None,
+         "nucleo": "San José", "direccion": "Paseo Marítimo, 12", "telefono": "+34 950 000 001",
+         "web": "https://ejemplo-laola.es", "email": None, "imagenes": None,
+         "latitud": 36.7609, "longitud": -2.1062, "destacado": True, "prioridad": 10,
+         "publicado": True, "campana_desde": None, "campana_hasta": None,
+         "created_at": "2026-07-20T09:00:00", "updated_at": "2026-07-20T09:00:00"}], "total": 1},
+
     # CMS: publico del totem + ContenidoOut real
     r"/api/v1/cms/publico/totem": [
         {"id": "c1", "titulo": "Aviso de calor: playas con alta ocupación",

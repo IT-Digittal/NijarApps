@@ -1217,3 +1217,17 @@ body.idle::after {
   .tt-bubble, .tt-reco-card { max-width: 100%; }
   .tt-reco-card { margin-left: 0; }
 }
+
+/* ================= APARTADO EMPRESAS (publicidad) ================= */
+.tt-emp { cursor: default; }
+.tt-emp.is-dest { border: 2px solid var(--yellow, #F5C518); }
+.tt-emp-badge {
+  display: inline-block; margin-left: 8px; padding: 2px 10px; border-radius: 999px;
+  background: var(--yellow, #F5C518); color: #0B2B57;
+  font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase;
+  vertical-align: middle;
+}
+.tt-emp-aviso {
+  margin: 0 0 12px; font-size: 12.5px; font-weight: 700; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--muted, #67769A);
+}

@@ -1095,6 +1095,113 @@ async function renderContenidosCMS(el) {
   });
 }
 
+/* ================= PUBLICIDAD · EMPRESAS ANUNCIANTES ================= */
+
+const SECTORES_EMPRESA = ["gastronomia", "alojamiento", "ocio_activo", "comercio", "servicios", "otro"];
+
+function formEmpresa(e) {
+  const di = (e && e.descripcion_i18n) || {};
+  const dtLocal = (v) => (v ? String(v).slice(0, 16) : "");
+  const bloqueIdioma = (lang, etiqueta) =>
+    '<details style="margin-top:10px;border:1.5px solid var(--line);border-radius:10px;padding:8px 12px"' + (di[lang] ? " open" : "") + ">" +
+    '<summary style="font-size:12px;font-weight:800;color:var(--muted);cursor:pointer">' + etiqueta + "</summary>" +
+    campo("Descripción (" + lang.toUpperCase() + ")", '<textarea name="desc_' + lang + '" rows="2" ' + INPUT_CSS + ">" + esc(di[lang] || "") + "</textarea>") +
+    "</details>";
+
+  abrirForm(e ? "Editar empresa" : "Alta de empresa anunciante",
+    campo("Nombre", '<input name="nombre" required maxlength="255" value="' + esc(e ? e.nombre : "") + '" ' + INPUT_CSS + ">") +
+    campo("Sector", '<select name="sector" ' + INPUT_CSS + ">" + SECTORES_EMPRESA.map((s) =>
+      '<option value="' + s + '"' + (e && e.sector === s ? " selected" : "") + ">" + s.replace(/_/g, " ") + "</option>").join("") + "</select>") +
+    campo("Descripción (aparece en el tótem)", '<textarea name="descripcion" rows="3" ' + INPUT_CSS + ">" + esc(e ? e.descripcion || "" : "") + "</textarea>") +
+    bloqueIdioma("en", "Traducción · Inglés") +
+    bloqueIdioma("de", "Traducción · Alemán") +
+    bloqueIdioma("fr", "Traducción · Francés") +
+    '<div style="display:flex;gap:10px">' +
+    '<div style="flex:1">' + campo("Núcleo", '<input name="nucleo" placeholder="San José, Níjar…" value="' + esc(e ? e.nucleo || "" : "") + '" ' + INPUT_CSS + ">") + "</div>" +
+    '<div style="flex:1">' + campo("Teléfono", '<input name="telefono" value="' + esc(e ? e.telefono || "" : "") + '" ' + INPUT_CSS + ">") + "</div></div>" +
+    campo("Dirección", '<input name="direccion" value="' + esc(e ? e.direccion || "" : "") + '" ' + INPUT_CSS + ">") +
+    campo("Web", '<input name="web" placeholder="https://…" value="' + esc(e ? e.web || "" : "") + '" ' + INPUT_CSS + ">") +
+    campo("Imágenes (una URL por línea; la primera es la foto del tótem)",
+      '<textarea name="imagenes" rows="2" placeholder="https://…/local.jpg" ' + INPUT_CSS + ">" + esc((e && e.imagenes || []).join("\n")) + "</textarea>") +
+    '<div style="display:flex;gap:10px">' +
+    '<div style="flex:1">' + campo("Campaña desde (opcional)", '<input name="desde" type="datetime-local" value="' + dtLocal(e && e.campana_desde) + '" ' + INPUT_CSS + ">") + "</div>" +
+    '<div style="flex:1">' + campo("Campaña hasta (opcional)", '<input name="hasta" type="datetime-local" value="' + dtLocal(e && e.campana_hasta) + '" ' + INPUT_CSS + ">") + "</div></div>" +
+    '<label style="display:flex;gap:8px;align-items:center;margin-top:12px;font-size:13px"><input type="checkbox" name="destacado"' + (e && e.destacado ? " checked" : "") + "> Destacada (aparece la primera, con distintivo)</label>" +
+    '<label style="display:flex;gap:8px;align-items:center;margin-top:8px;font-size:13px"><input type="checkbox" name="publicado"' + (!e || e.publicado ? " checked" : "") + "> Publicada (visible en el tótem)</label>",
+    async (fd) => {
+      const dI18n = { es: fd.get("descripcion").trim() || null };
+      ["en", "de", "fr"].forEach((lang) => { dI18n[lang] = (fd.get("desc_" + lang) || "").trim() || null; });
+      const urls = (fd.get("imagenes") || "").split("\n").map((u) => u.trim()).filter((u) => /^https?:\/\//.test(u));
+      const payload = {
+        nombre: fd.get("nombre").trim(),
+        sector: fd.get("sector"),
+        descripcion: fd.get("descripcion").trim() || null,
+        descripcion_i18n: dI18n,
+        nucleo: fd.get("nucleo").trim() || null,
+        direccion: fd.get("direccion").trim() || null,
+        telefono: fd.get("telefono").trim() || null,
+        web: fd.get("web").trim() || null,
+        imagenes: urls.length ? urls : null,
+        destacado: fd.get("destacado") === "on",
+        prioridad: e ? e.prioridad || 0 : 0,
+        publicado: fd.get("publicado") === "on",
+        campana_desde: fd.get("desde") ? new Date(fd.get("desde")).toISOString() : null,
+        campana_hasta: fd.get("hasta") ? new Date(fd.get("hasta")).toISOString() : null,
+      };
+      if (e) await api.updateEmpresa(e.id, payload);
+      else await api.createEmpresa(payload);
+      UI.toast(e ? "Empresa actualizada" : "Empresa dada de alta");
+      UI.rerenderD("g-publicidad");
+    });
+}
+
+async function renderPublicidad(el) {
+  cargando(el, "Publicidad");
+  let data;
+  try { data = await api.listEmpresas(); }
+  catch (err) { return errorCarga(el, "Publicidad", err); }
+  const filas = data.items || [];
+  const rw = puedeEscribir();
+  const ahora = new Date();
+  const activaAhora = (e) => e.publicado &&
+    (!e.campana_desde || new Date(e.campana_desde) <= ahora) &&
+    (!e.campana_hasta || new Date(e.campana_hasta) >= ahora);
+
+  el.innerHTML = gsub("Publicidad", "Publicidad · Empresas anunciantes",
+    "Negocios locales con presencia en el apartado «Empresas» del tótem. Las destacadas aparecen primero con distintivo; la ventana de campaña controla cuándo se muestran.",
+    rw ? '<button class="btn btn--pri" data-g="new-emp">＋ Alta de empresa</button>' : "") +
+    '<div class="grid g4" style="margin-bottom:16px">' +
+    kpi("Empresas", data.total ?? filas.length, "Dadas de alta", "ic-navy", "box") +
+    kpi("Visibles ahora", filas.filter(activaAhora).length, "Publicadas y en campaña", "ic-ok", "chart") +
+    kpi("Destacadas", filas.filter((e) => e.destacado).length, "Posición preferente", "ic-gold", "bolt") +
+    kpi("Sectores", new Set(filas.map((e) => e.sector)).size, "Con presencia", "ic-violet", "folder") + "</div>" +
+    '<div class="card card--pad0"><div style="padding:16px 16px 4px" class="card__h"><div><div class="card__t">Anunciantes</div><div class="card__s">Destacadas primero, luego por prioridad</div></div></div>' +
+    '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Empresa</th><th>Sector</th><th>Núcleo</th><th>Campaña</th><th>Estado</th>' + (rw ? "<th></th>" : "") + "</tr></thead><tbody>" +
+    (filas.map((e, i) =>
+      '<tr><td style="white-space:normal;min-width:200px;font-weight:600">' + esc(e.nombre) +
+      (e.destacado ? ' <span class="bdg bdg-warn">destacada</span>' : "") + "</td>" +
+      '<td class="mini">' + esc(e.sector.replace(/_/g, " ")) + "</td>" +
+      '<td class="mini">' + esc(e.nucleo || "—") + "</td>" +
+      '<td class="mini tnum">' + (e.campana_desde ? fechaCorta(e.campana_desde) : "—") + " → " + (e.campana_hasta ? fechaCorta(e.campana_hasta) : "—") + "</td>" +
+      "<td>" + (activaAhora(e) ? '<span class="bdg bdg-ok">visible</span>' : e.publicado ? '<span class="bdg bdg-info">fuera de campaña</span>' : '<span class="bdg bdg-mut">borrador</span>') + "</td>" +
+      (rw ? '<td style="white-space:nowrap"><button class="btn btn--sm" data-g="ed-emp" data-i="' + i + '">Editar</button> ' +
+        '<button class="btn btn--sm" data-g="del-emp" data-i="' + i + '">Eliminar</button></td>' : "") + "</tr>").join("") ||
+      '<tr><td colspan="6" class="mini" style="text-align:center;padding:20px">Sin empresas — da de alta la primera</td></tr>') +
+    "</tbody></table></div></div>";
+
+  const btn = el.querySelector('[data-g="new-emp"]');
+  if (btn) btn.onclick = () => formEmpresa(null);
+  el.querySelectorAll('[data-g="ed-emp"]').forEach((b) => { b.onclick = () => formEmpresa(filas[Number(b.dataset.i)]); });
+  el.querySelectorAll('[data-g="del-emp"]').forEach((b) => {
+    b.onclick = async () => {
+      const e = filas[Number(b.dataset.i)];
+      if (!window.confirm('¿Eliminar "' + e.nombre + '"? Dejará de mostrarse en el tótem.')) return;
+      try { await api.deleteEmpresa(e.id); UI.toast("Empresa eliminada"); UI.rerenderD("g-publicidad"); }
+      catch (err) { UI.toast("Error: " + (err.message || err)); }
+    };
+  });
+}
+
 /* ---------------- registro de secciones ---------------- */
 
 const SECCIONES = [
@@ -1102,6 +1209,7 @@ const SECCIONES = [
   { id: "g-catalogo", n: "Catálogo de recursos", i: "box", r: renderCatalogo },
   { id: "g-eventos", n: "Agenda de eventos", i: "cal", r: renderEventos },
   { id: "g-campanas", n: "Campañas", i: "chart", r: renderCampanas },
+  { id: "g-publicidad", n: "Publicidad · Empresas", i: "box", r: renderPublicidad },
   { id: "g-faqs", n: "FAQs del chatbot", i: "chat", r: renderFaqs },
   { id: "g-cliente", n: "Ficha del cliente", i: "folder", r: renderCliente },
   { id: "g-prediccion", n: "Predicción de afluencia", i: "chart", r: renderPrediccion },

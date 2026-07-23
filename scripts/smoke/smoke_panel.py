@@ -59,6 +59,14 @@ def main():
         assert "totem, web" in cms_txt, "canales del contenido no visibles"
         print("OK CMS de contenidos con CRUD real")
 
+        # Publicidad: CRUD de empresas anunciantes
+        page.evaluate("UI.goD('g-publicidad')")
+        page.wait_for_timeout(700)
+        pub_txt = page.inner_text("#dv-g-publicidad")
+        assert "Restaurante La Ola" in pub_txt, "listado de empresas vacío"
+        assert "destacada" in pub_txt and "Alta de empresa" in pub_txt, "CRUD de publicidad incompleto"
+        print("OK publicidad · empresas anunciantes")
+
         # Gemelo 2D: todas las capas + aforo ThingsBoard
         page.evaluate("UI.goD('gd-mapa')")
         page.wait_for_timeout(1100)

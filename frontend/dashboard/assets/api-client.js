@@ -298,6 +298,18 @@ export const api = {
     return _doFetch(`/cms/content/${id}`, { method: "DELETE" });
   },
 
+  // Publicidad · empresas anunciantes
+  listEmpresas() { return _doFetch("/publicidad"); },
+  createEmpresa(payload) {
+    return _doFetch("/publicidad", { method: "POST", body: payload });
+  },
+  updateEmpresa(id, payload) {
+    return _doFetch(`/publicidad/${id}`, { method: "PUT", body: payload });
+  },
+  deleteEmpresa(id) {
+    return _doFetch(`/publicidad/${id}`, { method: "DELETE" });
+  },
+
   // ------------------ Usuarios, roles y permisos (solo administrador_tic) ------------------
   listUsuarios() { return _doFetch("/usuarios"); },
   invitarUsuario(payload) {

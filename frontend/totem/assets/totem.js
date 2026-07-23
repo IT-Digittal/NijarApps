@@ -77,8 +77,10 @@ const CATS = [
   { id: "naturaleza",  label: "cat.naturaleza",        icon: "naturaleza",  th: "th-naturaleza",  bg: "../shared/tiles/naturaleza.jpg",  res: ["mirador"], etiquetas: ["naturaleza"], heroSub: "sub.naturaleza", unit: "unit.lugares" },
   { id: "ceramica",    label: "cat.ceramica_jarapas", icon: "artesania",   th: "th-gastro",      bg: "../shared/tiles/ceramica.jpg",    etiquetas: ["ceramica", "artesania", "jarapas"],                        heroSub: "sub.ceramica",   unit: "unit.talleres" },
   { id: "gastronomia", label: "cat.gastronomia",       icon: "gastronomia", th: "th-gastro",      bg: "../shared/tiles/gastronomia.jpg", srv: ["gastronomia_restaurante", "gastronomia_bar", "gastronomia_cafeteria"],           heroSub: "sub.gastro",     unit: "unit.locales" },
-  /* Agenda — se abre desde el dock inferior; no se muestra en el grid del home */
+  /* Agenda y Empresas — se abren desde el dock inferior; no van en el grid del home */
   { id: "eventos",     label: "categorias.eventos",    icon: "eventos",     th: "th-evento",      hiddenFromGrid: true, events: true, heroSub: "sub.eventos", unit: "unit.eventos" },
+  { id: "empresas",    label: "cat.empresas",          icon: "edificio",    th: "th-servicio",    hiddenFromGrid: true, empresas: true,
+    sectores: ["gastronomia", "alojamiento", "ocio_activo", "comercio", "servicios"], heroSub: "sub.empresas", unit: "unit.locales" },
 ];
 
 // ============================================================
@@ -116,6 +118,9 @@ document.querySelectorAll("#btn-open-chat, [data-open-chat]").forEach((b) =>
   b.addEventListener("click", () => { showView("view-chat"); const inp = $("#chatbot-input"); if (inp) inp.focus(); })
 );
 $("#btn-open-map")?.addEventListener("click", abrirMapa);
+document.querySelectorAll('[data-dock-action="empresas"]').forEach((b) =>
+  b.addEventListener("click", () => abrirCategoria("empresas"))
+);
 document.querySelectorAll('[data-dock-action="agenda"]').forEach((b) =>
   b.addEventListener("click", () => abrirCategoria("eventos"))
 );
@@ -437,6 +442,7 @@ async function abrirCategoria(catId, chip = "todas") {
 
   if (chip === "emergencias") { renderEmergencies(grid); grid.setAttribute("aria-busy", "false"); return; }
   if (c.events) { await renderAgenda(grid, chip); grid.setAttribute("aria-busy", "false"); return; }
+  if (c.empresas) { await renderEmpresas(grid, chip); grid.setAttribute("aria-busy", "false"); return; }
 
   let items = [];
   if (c.srv) {
@@ -467,14 +473,63 @@ async function abrirCategoria(catId, chip = "todas") {
   grid.setAttribute("aria-busy", "false");
 }
 
+// ============================================================
+// EMPRESAS: apartado de publicidad (anunciantes del panel)
+// ============================================================
+let empresasCache = null;
+
+async function renderEmpresas(grid, chip = "todas") {
+  const t = dict();
+  if (!empresasCache) {
+    try { empresasCache = await apiGet("/publicidad/publico/totem"); }
+    catch { empresasCache = []; } /* sin backend: apartado vacío, sin datos inventados */
+  }
+  catCounts.empresas = empresasCache.length;
+  const items = empresasCache.filter((e) => chip === "todas" || e.sector === chip);
+  $("#list-count").textContent = `${items.length} ${t["unit.locales"] || "locales"}`;
+  if (!items.length) {
+    grid.innerHTML = `<p class="content-loading">${t["empty.contenido"] || "Sin contenidos disponibles"}</p>`;
+    return;
+  }
+  grid.innerHTML =
+    `<p class="tt-emp-aviso">${escapeHtml(t["empresas.aviso"] || "Espacio de empresas colaboradoras del destino")}</p>` +
+    items.map((e, i) => empresaCard(e, i)).join("");
+}
+
+function empresaCard(e, index) {
+  const t = dict();
+  const desc = e.descripcion_i18n?.[currentLang] || e.descripcion || "";
+  const primera = e.imagenes && e.imagenes[0];
+  const img = (typeof primera === "string" ? primera : primera && primera.url) || "";
+  const thumbBg = img
+    ? `background-image: url('${escapeAttr(img)}'); background-size: cover; background-position: center;`
+    : "";
+  const meta = [e.nucleo, e.direccion].filter(Boolean).join(" · ");
+  const contacto = [e.telefono, e.web ? String(e.web).replace(/^https?:\/\//, "") : null]
+    .filter(Boolean).join(" · ");
+  return `
+    <div class="tt-lb tt-emp${e.destacado ? " is-dest" : ""}">
+      <span class="tt-lb-num" aria-hidden="true">${String(index + 1).padStart(2, "0")}</span>
+      <span class="tt-lb-thumb th-servicio" style="${thumbBg}" aria-hidden="true"></span>
+      <span class="tt-lb-body">
+        <span class="tt-lb-title">${escapeHtml(e.nombre)}
+          ${e.destacado ? `<span class="tt-emp-badge">${escapeHtml(t["empresas.destacada"] || "Destacada")}</span>` : ""}
+          <span class="tt-tag tt-tag--info">${escapeHtml(t["sector." + e.sector] || String(e.sector).replace(/_/g, " "))}</span>
+        </span>
+        ${desc ? `<span class="tt-lb-sub">${escapeHtml(desc)}</span>` : ""}
+        ${meta || contacto ? `<span class="tt-lb-sub">${escapeHtml(meta)}${meta && contacto ? " · " : ""}${escapeHtml(contacto)}</span>` : ""}
+      </span>
+    </div>`;
+}
+
 function renderChips(c) {
   const t = dict();
   const wrap = $("#list-chips");
-  const subs = c.srv || c.res || [];
+  const subs = c.srv || c.res || c.sectores || [];
   const chips = [`<button class="tt-chip" data-chip="todas" aria-pressed="${currentChip === "todas"}">${t["chips.todas"] || "Todas"}</button>`];
   if (subs.length > 1) {
     subs.forEach((s) => chips.push(
-      `<button class="tt-chip" data-chip="${s}" aria-pressed="${currentChip === s}">${escapeHtml(tagLabel(s))}</button>`));
+      `<button class="tt-chip" data-chip="${s}" aria-pressed="${currentChip === s}">${escapeHtml(c.sectores ? (t["sector." + s] || s.replace(/_/g, " ")) : tagLabel(s))}</button>`));
   }
   if (c.emergencias) {
     chips.push(`<button class="tt-chip tt-chip--ico" data-chip="emergencias" aria-pressed="${currentChip === "emergencias"}">${icono("emergencias", "tt-svg--tag")} ${t["categorias.emergencias"] || "Emergencias"}</button>`);
