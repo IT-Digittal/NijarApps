@@ -9,7 +9,7 @@
  * - Inactividad >60 s: vuelve al inicio en español (modo público).
  */
 
-import { I18N, translateAll } from "./i18n.js?v=22";
+import { I18N, translateAll } from "./i18n.js?v=23";
 import { DEMO_RESOURCES, DEMO_EVENTS, answerChatbotDemo } from "./demo-data.js";
 
 // ============================================================
