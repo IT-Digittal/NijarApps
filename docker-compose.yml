@@ -36,6 +36,7 @@ services:
       - ./src:/app/src:ro
       - ./alembic:/app/alembic:ro
       - ./frontend:/app/frontend:ro
+      - storage_data:/data/storage
     command: >
       sh -c "alembic upgrade head &&
              uvicorn nijar_dti.main:app --host 0.0.0.0 --port 8000 --reload --reload-dir /app/src"
@@ -163,6 +164,7 @@ volumes:
   mqtt_data:
   mqtt_log:
   rasa_models:
+  storage_data:
 
 networks:
   nijar-net:
