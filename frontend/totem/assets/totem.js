@@ -9,7 +9,7 @@
  * - Inactividad >60 s: vuelve al inicio en español (modo público).
  */
 
-import { I18N, translateAll } from "./i18n.js?v=21";
+import { I18N, translateAll } from "./i18n.js?v=22";
 import { DEMO_RESOURCES, DEMO_EVENTS, answerChatbotDemo } from "./demo-data.js";
 
 // ============================================================
@@ -152,6 +152,8 @@ function applyLanguage(lang) {
   pintarMeteo();
   const listaVisible = !document.getElementById("view-list").hidden;
   if (currentCat && listaVisible) abrirCategoria(currentCat, currentChip);
+  // Repintar la ficha abierta con el nuevo idioma (título, descripción, servicios, etiquetas…)
+  if (dialog?.open && currentPoi) openDetail(currentPoi, currentPoiCat);
   resetChat();
 }
 document.querySelectorAll(".lang-btn").forEach((btn) => {
@@ -725,7 +727,9 @@ function formatMeta(field, value) {
       if (value && typeof value === "object") return Object.entries(value).map(([k, v]) => `${capitalize(k)}: ${v}`).join(" · ");
       return "";
     case "serviciosList":
-      return Array.isArray(value) ? value.map((s) => capitalize(String(s).replace(/_/g, " "))).join(" · ") : String(value);
+      return Array.isArray(value)
+        ? value.map((s) => dict()[`servicio.${s}`] || I18N.es?.[`servicio.${s}`] || capitalize(String(s).replace(/_/g, " "))).join(" · ")
+        : String(value);
     case "acc":
       if (value && typeof value === "object") return Object.entries(value).map(([k, v]) => `${capitalize(k.replace(/_/g, " "))}: ${v === true ? "✓" : v}`).join(" · ");
       return String(value);
@@ -733,7 +737,12 @@ function formatMeta(field, value) {
   }
 }
 
+let currentPoi = null;
+let currentPoiCat = null;
+
 function openDetail(r, c) {
+  currentPoi = r;
+  currentPoiCat = c;
   const t = dict();
   const nombre = r.nombre_i18n?.[currentLang] || r.nombre || "—";
   $("#poi-title").textContent = nombre;
@@ -816,10 +825,10 @@ function openDetail(r, c) {
   const metaCard = $("#poi-meta-card");
   if (metaCard) metaCard.hidden = meta.children.length === 0;
 
-  // Etiquetas
+  // Etiquetas (traducidas por tagLabel(); en formato hashtag y minúsculas)
   const tagsEl = $("#poi-tags");
   const raw = (r.etiquetas || []).filter((x) => String(x).toLowerCase() !== String(cat).toLowerCase());
-  tagsEl.innerHTML = raw.map((x) => `<span class="tag-chip">#${escapeHtml(String(x))}</span>`).join("");
+  tagsEl.innerHTML = raw.map((x) => `<span class="tag-chip">#${escapeHtml(String(tagLabel(x)).toLowerCase())}</span>`).join("");
   tagsEl.hidden = !raw.length;
 
   // Acciones
@@ -835,13 +844,15 @@ function openDetail(r, c) {
   const goMap = $("#poi-goto-map");
   if (goMap) goMap.addEventListener("click", () => { dialog.close(); abrirMapa(latlon); });
 
-  dialog.querySelector(".poi-dialog-content")?.scrollTo({ top: 0 });
-  dialog.showModal();
+  if (!dialog.open) {
+    dialog.querySelector(".poi-dialog-content")?.scrollTo({ top: 0 });
+    dialog.showModal();
+  }
   resetIdle();
 }
 
-$("#poi-close").addEventListener("click", () => dialog.close());
-dialog.addEventListener("click", (e) => { if (e.target === dialog) dialog.close(); });
+$("#poi-close").addEventListener("click", () => { dialog.close(); currentPoi = null; currentPoiCat = null; });
+dialog.addEventListener("click", (e) => { if (e.target === dialog) { dialog.close(); currentPoi = null; currentPoiCat = null; } });
 
 // ============================================================
 // MAPA DEL DESTINO (Leaflet + datos reales)

@@ -511,6 +511,8 @@ body:not(:has(#view-home.is-on)) .tt-a11yfab { top: 26px; }
   border-radius: 0; overflow: hidden auto;
   background: var(--body-bg); color: var(--ink);
 }
+/* Sube especificidad para ganar a `.tt-dialog` (definida más abajo) y permitir scroll. */
+dialog.tt-poidialog { overflow-y: auto; overscroll-behavior: contain; }
 .tt-poidialog::backdrop { background: rgba(11, 43, 87, 0.55); }
 .tt-poidialog .poi-dialog-content {
   min-height: 100%; padding-bottom: 30px;
@@ -518,6 +520,8 @@ body:not(:has(#view-home.is-on)) .tt-a11yfab { top: 26px; }
 .tt-poihead {
   display: flex; align-items: center; gap: 20px;
   padding: 22px 28px 12px;
+  position: sticky; top: 0; z-index: 5;
+  background: var(--body-bg);
 }
 .tt-poihead .tt-back {
   flex: 0 0 auto; width: 60px; height: 60px; border-radius: 50%;
