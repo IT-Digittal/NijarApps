@@ -9,7 +9,7 @@
  * - Inactividad >60 s: vuelve al inicio en español (modo público).
  */
 
-import { I18N, translateAll } from "./i18n.js?v=23";
+import { I18N, translateAll } from "./i18n.js?v=24";
 import { DEMO_RESOURCES, DEMO_EVENTS, answerChatbotDemo } from "./demo-data.js";
 
 // ============================================================
@@ -71,10 +71,10 @@ function icono(nombre, cls) {
 // - `bg`: imagen de fondo del tile (path relativo). Si falla, cae a `solid`.
 // - `solid`: color plano del tile cuando no hay foto.
 const CATS = [
-  { id: "playas",      label: "cat.playas_calas",      icon: "playa",       th: "th-playa",       bg: "../shared/tiles/playas.jpg",      res: ["playa"],              heroSub: "sub.playas",     unit: "unit.lugares" },
-  { id: "cabo",        label: "cat.cabo_gata",         icon: "naturaleza",  th: "th-naturaleza",  bg: "../shared/tiles/cabo.jpg",        res: ["parque_natural"],     heroSub: "sub.cabo",       unit: "unit.lugares" },
+  { id: "playas",      label: "cat.playas_calas",      icon: "playa",       th: "th-playa",       bg: "../shared/tiles/playas.jpg",      res: ["playa"],              subchips: ["virgen", "familiar"],                        heroSub: "sub.playas",     unit: "unit.lugares" },
+  { id: "cabo",        label: "cat.cabo_gata",         icon: "naturaleza",  th: "th-naturaleza",  bg: "../shared/tiles/cabo.jpg",        res: ["parque_natural"],     subchips: ["volcánico", "geología", "patrimonio"],       heroSub: "sub.cabo",       unit: "unit.lugares" },
   { id: "rutas",       label: "cat.rutas_senderos",    icon: "ruta",        th: "th-ruta",        bg: "../shared/tiles/rutas.jpg",       res: ["ruta"],               heroSub: "sub.rutas",      unit: "unit.rutas" },
-  { id: "naturaleza",  label: "cat.naturaleza",        icon: "naturaleza",  th: "th-naturaleza",  bg: "../shared/tiles/naturaleza.jpg",  res: ["mirador"], etiquetas: ["naturaleza"], heroSub: "sub.naturaleza", unit: "unit.lugares" },
+  { id: "naturaleza",  label: "cat.naturaleza",        icon: "naturaleza",  th: "th-naturaleza",  bg: "../shared/tiles/naturaleza.jpg",  res: ["mirador"], etiquetas: ["naturaleza"], subchips: ["mirador"],       heroSub: "sub.naturaleza", unit: "unit.lugares" },
   { id: "ceramica",    label: "cat.ceramica_jarapas", icon: "artesania",   th: "th-gastro",      bg: "../shared/tiles/ceramica.jpg",    etiquetas: ["ceramica", "artesania", "jarapas"],                        heroSub: "sub.ceramica",   unit: "unit.talleres" },
   { id: "gastronomia", label: "cat.gastronomia",       icon: "gastronomia", th: "th-gastro",      bg: "../shared/tiles/gastronomia.jpg", srv: ["gastronomia_restaurante", "gastronomia_bar", "gastronomia_cafeteria"],           heroSub: "sub.gastro",     unit: "unit.locales" },
   /* Agenda y Empresas — se abren desde el dock inferior; no van en el grid del home */
@@ -447,11 +447,13 @@ async function abrirCategoria(catId, chip = "todas") {
   if (c.empresas) { await renderEmpresas(grid, chip); grid.setAttribute("aria-busy", "false"); return; }
 
   let items = [];
+  // Sub-chip por etiqueta (playas, cabo, naturaleza): siempre se cargan todos los items de la categoría y luego se filtra por tag en cliente.
+  const chipEsSubchip = c.subchips && c.subchips.includes(chip);
   if (c.srv) {
     const servicios = await getServicios();
     items = servicios.filter((s) => (chip === "todas" ? c.srv.includes(s.tipo) : s.tipo === chip));
   } else if (c.res || c.etiquetas) {
-    const cats = c.res ? (chip === "todas" ? c.res : [chip]) : [];
+    const cats = c.res ? (chipEsSubchip ? c.res : (chip === "todas" ? c.res : [chip])) : [];
     for (const cat of cats) {
       try {
         const d = await apiGet(`/tourism/resources?categoria=${encodeURIComponent(cat)}&publicado=true&page_size=20`);
@@ -471,6 +473,10 @@ async function abrirCategoria(catId, chip = "todas") {
     }
   }
   if (items.length === 0 && !c.srv) items = DEMO_RESOURCES[catId] || [];
+  // Aplica el filtro de sub-chip por etiqueta en cliente
+  if (chipEsSubchip) {
+    items = items.filter((r) => (r.etiquetas || []).some((e) => String(e).toLowerCase() === chip.toLowerCase()));
+  }
   renderItems(grid, items, c);
   grid.setAttribute("aria-busy", "false");
 }
@@ -545,11 +551,17 @@ function empresaCard(e, index) {
 function renderChips(c) {
   const t = dict();
   const wrap = $("#list-chips");
-  const subs = c.srv || c.res || c.sectores || [];
+  // Prioridad: subchips por etiqueta (playas, cabo, naturaleza) > srv > res > sectores.
+  const subs = c.subchips || c.srv || c.res || c.sectores || [];
   const chips = [`<button class="tt-chip" data-chip="todas" aria-pressed="${currentChip === "todas"}">${t["chips.todas"] || "Todas"}</button>`];
-  if (subs.length > 1) {
-    subs.forEach((s) => chips.push(
-      `<button class="tt-chip" data-chip="${s}" aria-pressed="${currentChip === s}">${escapeHtml(c.sectores ? (t["sector." + s] || s.replace(/_/g, " ")) : tagLabel(s))}</button>`));
+  if (subs.length > 1 || (c.subchips && c.subchips.length >= 1)) {
+    subs.forEach((s) => {
+      let label;
+      if (c.subchips) label = t[`chip.${s}`] || capitalize(s);
+      else if (c.sectores) label = t["sector." + s] || s.replace(/_/g, " ");
+      else label = tagLabel(s);
+      chips.push(`<button class="tt-chip" data-chip="${s}" aria-pressed="${currentChip === s}">${escapeHtml(label)}</button>`);
+    });
   }
   if (c.emergencias) {
     chips.push(`<button class="tt-chip tt-chip--ico" data-chip="emergencias" aria-pressed="${currentChip === "emergencias"}">${icono("emergencias", "tt-svg--tag")} ${t["categorias.emergencias"] || "Emergencias"}</button>`);
