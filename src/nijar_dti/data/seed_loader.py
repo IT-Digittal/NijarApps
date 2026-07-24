@@ -287,49 +287,66 @@ async def seed_faqs(db: AsyncSession) -> None:
     log.info("FAQs creadas: %d", creadas)
 
 
+EVENTO_DEMO_URN_PREFIX = "urn:ngsi-ld:EventoTuristico:nijar:"
+
+
 async def seed_demo_eventos(db: AsyncSession) -> None:
     """Carga o refresca eventos turísticos demo.
 
-    - Si la tabla está vacía: inserta los 9 eventos.
-    - Si todos los eventos demo (por URN) tienen fecha pasada: refresca
-      fechas e i18n para que la demo siga teniendo eventos futuros.
-    - Si hay al menos un evento futuro entre los demo: salta.
+    - Limpia primero eventos huérfanos: aquellos con el prefijo URN del seed demo
+      (``urn:ngsi-ld:EventoTuristico:nijar:``) cuya URN ya no está en el seed
+      actual y cuya ``fecha_fin`` ya pasó. Sin esto, un cambio en el seed dejaba
+      los eventos antiguos colgados en la BD.
+    - Inserta los eventos del seed actual que falten.
+    - Si los que ya existen están todos pasados, refresca fechas e i18n.
     """
     from datetime import datetime, timezone
     from sqlalchemy import func as sqlfunc
     datos = generar_eventos_seed()
     urns_demo = [d["urn"] for d in datos]
-    count = int((await db.execute(select(sqlfunc.count()).select_from(EventoTuristico))).scalar_one() or 0)
-    if count == 0:
-        for d in datos:
-            db.add(EventoTuristico(**d))
-        log.info("Eventos demo creados: %d", len(datos))
-        return
-    existentes = (
-        await db.execute(select(EventoTuristico).where(EventoTuristico.urn.in_(urns_demo)))
-    ).scalars().all()
-    if not existentes:
-        # Hay eventos pero no son los demo: no tocar
-        log.info("Ya hay %d eventos no-demo — saltando", count)
-        return
     ahora = datetime.now(timezone.utc)
-    if any(e.fecha_fin > ahora for e in existentes):
-        log.info("Eventos demo tienen futuros (%d/%d) — saltando", sum(1 for e in existentes if e.fecha_fin > ahora), len(existentes))
-        return
-    # Refresco: actualizar fechas e i18n manteniendo IDs
-    por_urn = {e.urn: e for e in existentes}
-    actualizados = 0
+
+    # (0) Limpieza de huérfanos: eventos demo que ya no están en el seed y han terminado.
+    huerfanos = (await db.execute(
+        select(EventoTuristico).where(
+            EventoTuristico.urn.like(EVENTO_DEMO_URN_PREFIX + "%"),
+            EventoTuristico.urn.notin_(urns_demo),
+            EventoTuristico.fecha_fin < ahora,
+        )
+    )).scalars().all()
+    for e in huerfanos:
+        await db.delete(e)
+    if huerfanos:
+        log.info("Eventos demo huérfanos eliminados: %d", len(huerfanos))
+
+    # (1) Insertar o refrescar los eventos del seed actual.
+    existentes = {
+        e.urn: e for e in (await db.execute(
+            select(EventoTuristico).where(EventoTuristico.urn.in_(urns_demo))
+        )).scalars().all()
+    }
+    hay_futuros = any(e.fecha_fin > ahora for e in existentes.values())
+    creados = actualizados = 0
     for d in datos:
-        e = por_urn.get(d["urn"])
+        e = existentes.get(d["urn"])
         if e is None:
             db.add(EventoTuristico(**d))
-            continue
-        e.fecha_inicio = d["fecha_inicio"]
-        e.fecha_fin = d["fecha_fin"]
-        e.nombre_i18n = d.get("nombre_i18n")
-        e.descripcion_i18n = d.get("descripcion_i18n")
-        actualizados += 1
-    log.info("Eventos demo refrescados: %d (fechas + i18n)", actualizados)
+            creados += 1
+        elif not hay_futuros:
+            # Todos los eventos del seed están pasados: refrescar fechas + i18n.
+            e.fecha_inicio = d["fecha_inicio"]
+            e.fecha_fin = d["fecha_fin"]
+            e.nombre_i18n = d.get("nombre_i18n")
+            e.descripcion_i18n = d.get("descripcion_i18n")
+            actualizados += 1
+
+    if creados:
+        log.info("Eventos demo creados: %d", creados)
+    if actualizados:
+        log.info("Eventos demo refrescados: %d (fechas + i18n)", actualizados)
+    if not creados and not actualizados and existentes and hay_futuros:
+        vivos = sum(1 for e in existentes.values() if e.fecha_fin > ahora)
+        log.info("Eventos demo tienen futuros (%d/%d) — saltando", vivos, len(existentes))
 
 
 async def seed_demo_observaciones(db: AsyncSession) -> None:
