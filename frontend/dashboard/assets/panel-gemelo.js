@@ -9,6 +9,11 @@
  *  - «Vista 3D del territorio»: MapLibre GL con relieve real (DEM terrarium
  *    de AWS Open Data) e imagen satélite, con los activos superpuestos.
  *    Sin claves ni licencias: todo son fuentes abiertas.
+ *
+ * El Gemelo vivo 2D admite además cartografía oficial por capas WMS (OGC):
+ * ortofoto PNOA del IGN como capa base y parcelario del Catastro como
+ * superposición conmutable — patrón equivalente al de un geoportal municipal
+ * de urbanismo. Ver la constante WMS más abajo.
  */
 
 import { api, tokens } from "./api-client.js?v=18";
@@ -25,6 +30,26 @@ let refrescoTimer = null;
 const REFRESCO_MS = 60_000;
 const CENTRO = [36.82, -2.1];
 const CENTRO_3D = [-2.06, 36.79]; /* MapLibre usa [lon, lat] */
+
+/* Capas cartográficas oficiales servidas por WMS (OGC). Todas son servicios
+ * públicos, gratuitos y sin clave de la Administración del Estado, del mismo
+ * modo que un geoportal municipal de urbanismo:
+ *  - Ortofoto PNOA (IGN): imagen aérea de máxima actualidad.
+ *  - Catastro (Dirección General del Catastro): parcelario catastral vigente.
+ * Se añaden al Gemelo vivo 2D como «capa base» (PNOA) y «superposición»
+ * (Catastro), conmutables desde el control de capas. */
+const WMS = {
+  pnoa: {
+    url: "https://www.ign.es/wms-inspire/pnoa-ma",
+    opciones: { layers: "OI.OrthoimageCoverage", format: "image/jpeg", transparent: false,
+      version: "1.3.0", maxZoom: 20, attribution: "PNOA &copy; Instituto Geográfico Nacional" },
+  },
+  catastro: {
+    url: "https://ovc.catastro.meh.es/Cartografia/WMS/ServidorWMS.aspx",
+    opciones: { layers: "Catastro", format: "image/png", transparent: true,
+      version: "1.1.1", maxZoom: 20, attribution: "&copy; Dirección General del Catastro" },
+  },
+};
 
 const VISTAS_3D = [
   { n: "Cabo de Gata", c: [-2.19, 36.72], z: 12.5, p: 62, b: 20 },
@@ -275,9 +300,19 @@ async function renderGemelo2D(el) {
     if (!cont || cont.dataset.iniciado) return;
     cont.dataset.iniciado = "1";
     mapa2d = L.map(cont, { preferCanvas: true }).setView(CENTRO, 11); /* canvas: fluido con ~800 marcadores */
-    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 18, attribution: "&copy; OpenStreetMap" }).addTo(mapa2d);
 
-    const grupos = {};
+    /* Capas base (excluyentes): callejero OSM por defecto + ortofoto PNOA. */
+    const osm = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+      { maxZoom: 18, attribution: "&copy; OpenStreetMap" }).addTo(mapa2d);
+    const ortofoto = L.tileLayer.wms(WMS.pnoa.url, WMS.pnoa.opciones);
+    const capasBase = { "Callejero (OSM)": osm, "Ortofotografía PNOA": ortofoto };
+
+    /* Capa catastral (superposición conmutable): parcelario oficial del Catastro. */
+    const catastro = L.tileLayer.wms(WMS.catastro.url, WMS.catastro.opciones);
+
+    const grupos = {
+      '<span style="display:inline-block;width:10px;height:10px;border:1.5px solid #C8102E;background:rgba(200,16,46,.12);margin-right:4px"></span>Catastro (parcelario)': catastro,
+    };
     const puntos = [];
     capas.forEach((capa) => {
       if (!capa.disponible) return; /* fuente no configurada o caída: no listar la capa */
@@ -295,7 +330,7 @@ async function renderGemelo2D(el) {
         capa.nombre + " (" + capa.items.length + ")"
       ] = g;
     });
-    L.control.layers(null, grupos, { collapsed: false }).addTo(mapa2d);
+    L.control.layers(capasBase, grupos, { collapsed: false }).addTo(mapa2d);
     if (puntos.length) mapa2d.fitBounds(L.latLngBounds(puntos).pad(0.12));
     setTimeout(() => mapa2d.invalidateSize(), 150);
   }, 60);
