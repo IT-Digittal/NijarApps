@@ -166,6 +166,33 @@ async function cargarActivos() {
   return capas;
 }
 
+/* Capas geográficas vectoriales servidas por el backend (planeamiento
+   urbanístico, parcelario catastral, clasificación del suelo…). Se cargan
+   como GeoJSON y se conmutan igual que un geoportal municipal. */
+async function cargarCapasGeo() {
+  let catalogo;
+  try {
+    catalogo = await api.get("/geo/capas");
+  } catch { return []; }
+  if (!Array.isArray(catalogo) || !catalogo.length) return [];
+  const colecciones = await Promise.all(
+    catalogo.map((c) => api.get("/geo/capas/" + encodeURIComponent(c.codigo) + "/geojson").catch(() => null)),
+  );
+  return colecciones.filter((fc) => fc && fc.features && fc.features.length);
+}
+
+/* Popup de un rasgo vectorial: cabecera con el nombre de la capa + propiedades
+   temáticas (uso, calificación, referencia catastral, superficie…). */
+function popupFeature(capa, props) {
+  const filas = Object.entries(props || {})
+    .filter(([k, v]) => v != null && v !== "" && !k.startsWith("_"))
+    .slice(0, 10)
+    .map(([k, v]) => "<div style='font-size:12px'><b>" + esc(k.replace(/_/g, " ")) + ":</b> " + esc(String(v)) + "</div>")
+    .join("");
+  return "<div style='min-width:190px'><div style='font-size:10.5px;font-weight:800;letter-spacing:.06em;color:#67769A'>" +
+    esc(String(capa.nombre).toUpperCase()) + "</div>" + filas + "</div>";
+}
+
 /* Tipo de entidad (API de documentos) por capa del gemelo */
 const TIPO_DOC_POR_CAPA = {
   turismo: "recurso", sensores: "sensor", alumbrado: "cuadro", residuos: "contenedor",
@@ -269,10 +296,11 @@ async function renderGemelo2D(el) {
     '<div class="card card--pad0" style="overflow:hidden"><div id="gemelo-2d" style="height:600px;width:100%"></div></div>' +
     '<div class="mini" style="color:var(--muted);margin-top:8px" id="gd-refresco"></div>';
 
-  const [capas, aforo, docs] = await Promise.all([
+  const [capas, aforo, docs, capasGeo] = await Promise.all([
     cargarActivos(),
     api.get("/gemelo/parque/aforo").catch(() => null), /* 503 si la vertical no está configurada */
     conteoDocumentos(),
+    cargarCapasGeo(),
   ]);
 
   const total = capas.reduce((a, c) => a + c.items.length, 0);
@@ -311,8 +339,30 @@ async function renderGemelo2D(el) {
     const catastro = L.tileLayer.wms(WMS.catastro.url, WMS.catastro.opciones);
 
     const grupos = {
-      '<span style="display:inline-block;width:10px;height:10px;border:1.5px solid #C8102E;background:rgba(200,16,46,.12);margin-right:4px"></span>Catastro (parcelario)': catastro,
+      '<span style="display:inline-block;width:10px;height:10px;border:1.5px solid #C8102E;background:rgba(200,16,46,.12);margin-right:4px"></span>Catastro · WMS oficial': catastro,
     };
+
+    /* Capas geográficas vectoriales del backend (planeamiento, catastro,
+       clasificación del suelo…). Se registran conmutables, apagadas por
+       defecto para no recargar la vista del gemelo en vivo. */
+    (capasGeo || []).forEach((fc) => {
+      const cap = fc.capa;
+      const capaLeaflet = L.geoJSON(fc, {
+        style: (feat) => ({
+          color: cap.color_borde || "#3A2FA0",
+          weight: 1.2,
+          fillColor: (feat.properties && feat.properties._color) || cap.color,
+          fillOpacity: cap.opacidad != null ? cap.opacidad : 0.35,
+        }),
+        onEachFeature: (feat, lyr) => lyr.bindPopup(popupFeature(cap, feat.properties)),
+      });
+      grupos[
+        '<span style="display:inline-block;width:10px;height:10px;border:1.5px solid ' +
+        (cap.color_borde || "#3A2FA0") + ";background:" + (cap.color || "#7C6BF0") +
+        ';opacity:.7;margin-right:4px"></span>' + esc(cap.nombre) + " (" + fc.features.length + ")"
+      ] = capaLeaflet;
+    });
+
     const puntos = [];
     capas.forEach((capa) => {
       if (!capa.disponible) return; /* fuente no configurada o caída: no listar la capa */

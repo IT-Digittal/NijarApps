@@ -27,6 +27,7 @@ from nijar_dti.data.seeds.admin_user import (
     direccion_password_hash,
 )
 from nijar_dti.data.seeds.campanas import generar_campanas_seed
+from nijar_dti.data.seeds.capas_geograficas import generar_capas_seed
 from nijar_dti.data.seeds.cliente import CLIENTE_SEED
 from nijar_dti.data.seeds.demo_data import (
     generar_contenidos_seed,
@@ -73,6 +74,7 @@ from nijar_dti.models.rol import Rol
 from nijar_dti.models.sensor import Sensor
 from nijar_dti.models.alumbrado import CuadroMando, Luminaria, ZonaAlumbrado
 from nijar_dti.models.fuente_dato import FuenteDato
+from nijar_dti.models.geografia import CapaGeografica, ElementoGeografico
 from nijar_dti.models.empresa_anunciante import EmpresaAnunciante
 from nijar_dti.models.usuario import Usuario
 from nijar_dti.models.verticales import (
@@ -731,6 +733,50 @@ async def seed_historico_verticales(db: AsyncSession) -> None:
     log.info("Histórico mensual de verticales creado: %d puntos", len(filas))
 
 
+async def seed_capas_geograficas(db: AsyncSession) -> None:
+    """Carga el catálogo de capas geográficas del gemelo 2D (idempotente por tabla).
+
+    Capas de demostración (concepto «geoportal de urbanismo» sobre Níjar). La
+    cartografía real del PGOU y el parcelario del Catastro se cargarán como
+    filas de estas mismas tablas cuando el Ayuntamiento la aporte.
+    """
+    if not await _tabla_vacia(db, CapaGeografica):
+        return
+    capas = 0
+    elementos = 0
+    for c in generar_capas_seed():
+        capa = CapaGeografica(
+            codigo=c["codigo"],
+            nombre=c["nombre"],
+            grupo=c["grupo"],
+            tipo_geometria=c["tipo_geometria"],
+            descripcion=c.get("descripcion"),
+            color=c.get("color", "#7C6BF0"),
+            color_borde=c.get("color_borde", "#3A2FA0"),
+            opacidad=c.get("opacidad", 0.35),
+            campo_etiqueta=c.get("campo_etiqueta"),
+            orden=c.get("orden", 0),
+            fuente=c.get("fuente"),
+        )
+        db.add(capa)
+        await db.flush()  # necesitamos capa.id para los elementos
+        for i, e in enumerate(c.get("elementos", [])):
+            db.add(
+                ElementoGeografico(
+                    capa_id=capa.id,
+                    nombre=e["nombre"],
+                    geometria=WKTElement(e["wkt"], srid=4326),
+                    codigo=e.get("codigo"),
+                    referencia_catastral=e.get("referencia_catastral"),
+                    propiedades=e.get("propiedades"),
+                    orden=i,
+                )
+            )
+            elementos += 1
+        capas += 1
+    log.info("Capas geográficas creadas: %d (%d elementos)", capas, elementos)
+
+
 async def run() -> None:
     async with AsyncSessionLocal() as db:
         try:
@@ -758,6 +804,7 @@ async def run() -> None:
             await seed_fuentes_datos(db)
             await seed_empresas_publicidad(db)
             await seed_historico_verticales(db)
+            await seed_capas_geograficas(db)
             await db.commit()
             log.info("Seeds aplicados correctamente")
         except Exception:  # noqa: BLE001
