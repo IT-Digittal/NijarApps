@@ -36,17 +36,17 @@ marca lo **terminado** con casillas y se añade el trabajo reciente.
 
 **Resumen H1:** todo el contenido técnico y de diseño está entregado. Solo falta **formalizar dos actas**.
 
-## HITO 2 — Implementación intermedia · software ✅ (tótems físicos + actas pendientes)
+## HITO 2 — Implementación intermedia · ejecución ✅ (solo actas pendientes)
 
 - [x] Desarrollo del chatbot multilingüe (105 FAQs en ES/EN/DE/FR) con demo funcional
 - [x] Módulos de la plataforma con demo de funcionalidades básicas (API, dashboard, tótem)
 - [x] **Plan de Transformación Digital — versión definitiva**
-- [~] 🟡 Equipamiento Smart Office (panel operativo en software; equipamiento físico a confirmar)
-- [ ] 🏗️ **Instalación física de los 2 tótems** (obra civil, acometidas, puesta en marcha) — *camino crítico*
+- [x] Equipamiento Smart Office (panel operativo + equipamiento instalado)
+- [x] **Instalación física de los 2 tótems** (obra civil, acometidas y puesta en marcha) — *completada*
 - [ ] 🗂️ Acta de demostración funcional
 - [ ] 🗂️ Acta Go/No-Go fin S5
 
-**Resumen H2:** el software está **completo y probado**. El único bloque de peso es la **instalación de los tótems**, que depende de ubicaciones y autorizaciones del Parque Natural.
+**Resumen H2:** completado por parte del adjudicatario — software probado y **tótems instalados y operativos**. Solo restan las **dos actas** de validación (demostración funcional y Go/No-Go S5).
 
 ## HITO 3 — Integración y Pruebas · pruebas ✅ (integraciones reales, pentest y formación pendientes)
 
@@ -114,9 +114,9 @@ como valor añadido no incluido en el alcance original de la licitación.
 | Hito | Software / documentación | Qué falta para **cerrar** el hito | Depende de |
 |------|:------------------------:|-----------------------------------|-----------|
 | **H1** | ✅ Completo | 2 actas (kick-off, Go/No-Go S2) | Firma municipal |
-| **H2** | ✅ Completo | Instalación física de tótems + 2 actas | Ayto. (ubicaciones/Parque) |
-| **H3** | ✅ Completo | Pentest, formación ≥10 h, integraciones reales, simulacro | Ejecución + accesos Ayto. |
+| **H2** | ✅ **Completo** (tótems instalados) | 2 actas (demo, Go/No-Go S5) | Firma municipal |
+| **H3** | ✅ Completo | Pentest, formación ≥10 h, integraciones reales, simulacro | Fechas + accesos Ayto. |
 | **H4** | ✅ Desplegado | SAT presencial + acta de recepción | Fecha con el Ayto. |
 | **C.1** | ✅ Listo | Arranca tras la recepción del H4 | — |
 
-**Conclusión:** **toda la parte de desarrollo y documentación de los cuatro hitos está terminada y verificada.** Lo que resta para cerrar formalmente cada hito **no es más desarrollo**, sino: (1) la **instalación física de los tótems**, (2) las **integraciones que requieren credenciales/accesos municipales**, y (3) los **actos de validación** (pentest, formación, SAT y firma de actas). Todo ello depende mayoritariamente de la colaboración del Ayuntamiento (ver `correo-solicitud-ayuntamiento.md`).
+**Conclusión:** **la parte del adjudicatario está terminada en los cuatro hitos** — desarrollo, documentación, despliegue en producción y **la instalación física de los tótems (ya operativos)**. Lo que resta para el cierre formal **no depende de más trabajo por nuestra parte**, sino de la colaboración del Ayuntamiento para: (1) **facilitar credenciales/accesos** para las integraciones reales, y (2) **fijar las fechas** de los actos de validación (pentest, formación, SAT) y **firmar las actas** de gobernanza (ver `correo-solicitud-ayuntamiento.md`).
