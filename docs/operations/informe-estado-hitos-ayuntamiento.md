@@ -7,11 +7,11 @@
 | **Marco** | PRTR · NextGenerationEU · Componente 14 |
 | **De** | IT DIGITTAL |
 | **Para** | Ayuntamiento de Níjar |
-| **Fecha** | 11/08/2026 |
+| **Fecha** | 14/08/2026 |
 
 ## Introducción
 
-El presente documento resume el **estado actual de cada hito** del contrato, con su **porcentaje de avance real**, lo que **falta para completarlo** y la **colaboración necesaria por parte del Ayuntamiento**. A fecha de hoy, los **dos tótems interactivos ya están instalados** y en funcionamiento, y la plataforma está **integrada de extremo a extremo** con los sistemas y las fuentes de datos del destino (sistemas municipales, redes sociales, analítica web y plataforma DTI). Todas las piezas del proyecto (plataforma, chatbot, observatorio de datos, panel de control, tótems y herramientas de mantenimiento) están **construidas, desplegadas en producción y operativas**. Los puntos pendientes se concentran ya casi exclusivamente en los **actos formales de validación** (auditoría de seguridad, formación y prueba de aceptación) y en la **firma del acta de recepción**.
+El presente documento resume el **estado actual de cada hito** del contrato, con su **porcentaje de avance real**, lo que **falta para completarlo** y la **colaboración necesaria por parte del Ayuntamiento**. A fecha de hoy, los **dos tótems interactivos ya están instalados** y en funcionamiento, y la plataforma está **integrada y operativa en producción**, con sus **conectores a las fuentes externas** (redes sociales, analítica web y plataforma DTI) **construidos y verificados**. El Ayuntamiento ya ha facilitado el **acceso a Facebook e Instagram**, por lo que la **activación con datos reales** del Social Listening y de Google Analytics se encuentra en su **fase final de configuración**. Todas las piezas del proyecto (plataforma, chatbot, observatorio de datos, panel de control, tótems y herramientas de mantenimiento) están **construidas, desplegadas en producción y operativas**. Los puntos pendientes se concentran en la **activación con datos reales de las fuentes externas** y en los **actos formales de validación** (auditoría de seguridad, formación y prueba de aceptación) hasta la **firma del acta de recepción**.
 
 ## Resumen de avance
 
@@ -40,9 +40,10 @@ El presente documento resume el **estado actual de cada hito** del contrato, con
 
 ## H3 — Integración y pruebas · 90 %
 
-**Hecho:** pruebas funcionales y de accesibilidad (WCAG 2.1 AA), ajuste de los modelos de datos y de los cuadros de mando de Big Data, y **integración real y verificada con los sistemas municipales y las fuentes externas** (web/app y plataforma DTI existente, **redes sociales** —Facebook, Instagram, X—, **Google Analytics** del destino y sensórica de los tótems). El Social Listening y la analítica operan ya con datos reales.
+**Hecho:** pruebas funcionales y de accesibilidad (WCAG 2.1 AA), ajuste de los modelos de datos y de los cuadros de mando de Big Data, e **integración con los sistemas municipales y la plataforma DTI existente**. Los **conectores de Social Listening** (Facebook, Instagram, X) **y de Google Analytics 4 están construidos y verificados**, con sus procedimientos de **activación, verificación y renovación de credenciales** ya preparados. El Ayuntamiento ha facilitado el **acceso a Facebook e Instagram**.
 
 **Falta para cerrarlo:**
+- **Activación con datos reales de las fuentes externas**: introducir las credenciales y ejecutar la verificación — redes sociales (acceso a Facebook/Instagram ya facilitado; pendiente el token de la app de Meta) y **Google Analytics 4** (cuenta de servicio + Property ID del destino).
 - **Auditoría de seguridad (pentest)**: ejecución y entrega del informe.
 - **Formación al personal (≥ 10 h)** y su acta.
 - Simulacro de copia de seguridad y restauración (acta de resultado).
@@ -63,26 +64,28 @@ El **hosting de producción ya está operativo** (infraestructura cloud en la UE
 
 ## Qué necesitamos del Ayuntamiento para finalizar
 
-Con los tótems instalados y las integraciones resueltas, la colaboración pendiente se limita a **cerrar los actos formales de validación**:
+Con los tótems instalados y las integraciones construidas, la colaboración pendiente se limita a **activar las fuentes externas** y a **cerrar los actos formales de validación**:
 
 | # | Necesidad | Afecta a |
 |---|-----------|----------|
-| 1 | **Autorización y ventana para la auditoría de seguridad (pentest)** sobre los servicios en producción | H3 |
-| 2 | **Designación de asistentes y fecha** para la **formación al personal (≥ 10 h)** | H3 |
-| 3 | **Fecha para la prueba de aceptación (SAT)** presencial y firma del **acta de recepción** | H4 |
-| 4 | Confirmación de **dominio(s) definitivo(s)** del Ayuntamiento y, si procede, integración con el acceso interno municipal (SSO) | H4 |
-| 5 | **Contacto del Delegado de Protección de Datos** y validación de los textos legales/privacidad publicados | H3–H4 |
+| 1 | **Credenciales de las fuentes externas** para la activación: **token de la app de Meta** (el acceso a Facebook/Instagram ya está facilitado) y **cuenta de servicio + Property ID de Google Analytics 4** | H3 |
+| 2 | **Autorización y ventana para la auditoría de seguridad (pentest)** sobre los servicios en producción | H3 |
+| 3 | **Designación de asistentes y fecha** para la **formación al personal (≥ 10 h)** | H3 |
+| 4 | **Fecha para la prueba de aceptación (SAT)** presencial y firma del **acta de recepción** | H4 |
+| 5 | Confirmación de **dominio(s) definitivo(s)** del Ayuntamiento y, si procede, integración con el acceso interno municipal (SSO) | H4 |
+| 6 | **Contacto del Delegado de Protección de Datos** y validación de los textos legales/privacidad publicados | H3–H4 |
 
-> Nota: el **alojamiento, el despliegue en producción, la instalación de los tótems y las integraciones ya están resueltos** por IT DIGITTAL; no se requiere ninguna decisión de infraestructura ni de conectividad por parte del Ayuntamiento.
+> Nota: el **alojamiento, el despliegue en producción, la instalación de los tótems y los conectores de integración ya están resueltos** por IT DIGITTAL; la activación de las fuentes externas es un **último paso de configuración** (introducir credenciales y verificar), con procedimientos y herramientas ya preparados por nuestra parte.
 
 > Por seguridad, cualquier credencial o token adicional **no debe enviarse por correo en texto plano**; facilitamos un canal seguro.
 
 ## Próximos pasos propuestos
 
-1. Acordar **ventana para el pentest** y ejecutar la auditoría (cierre técnico del H3).
-2. Fijar **fecha de formación** (≥ 10 h) y levantar su acta.
-3. Acordar **fecha del SAT**, realizar la prueba de aceptación y **firmar el acta de recepción** (cierre del H4).
-4. Confirmar el/los **dominio(s)** definitivos del Ayuntamiento para consolidar la publicación de los servicios.
+1. **Facilitar las credenciales** de Meta (token) y de Google Analytics 4 (cuenta de servicio + Property ID) para **activar los datos reales** de redes sociales y analítica (cierre de la integración del H3).
+2. Acordar **ventana para el pentest** y ejecutar la auditoría (cierre técnico del H3).
+3. Fijar **fecha de formación** (≥ 10 h) y levantar su acta.
+4. Acordar **fecha del SAT**, realizar la prueba de aceptación y **firmar el acta de recepción** (cierre del H4).
+5. Confirmar el/los **dominio(s)** definitivos del Ayuntamiento para consolidar la publicación de los servicios.
 
 Con la recepción firmada, arranca formalmente el periodo de **mantenimiento y hosting (C.1, 48 meses)**, ya operativo en la práctica.
 
