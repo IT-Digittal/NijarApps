@@ -133,7 +133,53 @@ Cuando la verificación pase en verde:
    - Panel de **Social Listening** en el dashboard (sentimiento, idiomas, temas).
    - Logs del worker: `docker compose logs -f social-worker`.
 
-## 7. Rollback
+## 7. Renovación del token (solo si NO se usa System User)
+
+El token de larga duración de la **Opción A caduca a ~60 días**. Para no quedarse
+sin servicio hay dos caminos:
+
+- **Recomendado:** usar un token de **System User** (Opción B, §3.3) → **no caduca**
+  y no hay que renovar nada. Puedes ignorar esta sección.
+- Si se mantiene el de 60 días, usar el renovador incluido:
+  `scripts/renovar_token_facebook.py`.
+
+Requiere añadir al `.env` los datos de la app de Meta:
+
+```dotenv
+FACEBOOK_APP_ID=...
+FACEBOOK_APP_SECRET=...
+```
+
+Uso manual (muestra el token nuevo y su nueva caducidad):
+
+```bash
+python -m scripts.renovar_token_facebook            # token de usuario renovado
+python -m scripts.renovar_token_facebook --page     # re-deriva el Page Access Token
+```
+
+Renovación **automatizada** (reescribe `FACEBOOK_ACCESS_TOKEN` en el `.env` y no
+imprime el token en claro):
+
+```bash
+python -m scripts.renovar_token_facebook --page --quiet \
+    --update-env infra/ovh/.env.production
+```
+
+Ejemplo de **cron** (día 1 de cada mes; renueva y reinicia el worker). Al hacerse
+cada 30 días, siempre se renueva dentro de la ventana de 60:
+
+```cron
+0 4 1 * *  cd /opt/nijar-dti && \
+  python -m scripts.renovar_token_facebook --page --quiet --update-env infra/ovh/.env.production && \
+  docker compose --profile workers up -d --force-recreate social-worker \
+  >> /var/log/nijar/renovacion-token.log 2>&1
+```
+
+> El script no toca el `.env` si el intercambio falla (código de salida ≠ 0), así
+> que un fallo de renovación no deja el archivo a medias. Revisa el log tras cada
+> ejecución programada.
+
+## 8. Rollback
 
 Si algo falla, volver a `SOCIAL_DRY_RUN=true` y reiniciar el worker: la plataforma
 sigue operando con datos sintéticos sin errores mientras se resuelve.

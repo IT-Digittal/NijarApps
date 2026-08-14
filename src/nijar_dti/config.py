@@ -86,6 +86,11 @@ class Settings(BaseSettings):
 
     # --- Social Listening (Facebook / Instagram Graph API) ---
     facebook_access_token: str = ""
+    # App de Meta: solo se usan para RENOVAR el token de larga duración (60 días)
+    # con scripts/renovar_token_facebook.py. No hacen falta si el token es de
+    # System User (no caduca).
+    facebook_app_id: str = ""
+    facebook_app_secret: str = ""
     facebook_page_id: str = ""
     # Alias público de la página oficial; sirve de fallback cuando no se conoce
     # el ID numérico (la Graph API acepta el usuario en la ruta con token válido).
