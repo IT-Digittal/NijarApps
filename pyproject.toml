@@ -133,6 +133,13 @@ exclude = ["alembic/", "tests/"]
 module = ["geoalchemy2.*", "paho.*", "asyncio_mqtt.*", "jose.*", "google.*", "yaml", "passlib.*"]
 ignore_missing_imports = true
 
+[tool.bandit]
+# B104: bind a 0.0.0.0 intencionado (la API corre en contenedor tras proxy/WAF).
+# B608: la única query con nombre de tabla interpolado usa una constante interna
+#       del código (no entra por el usuario) y el id va parametrizado
+#       (ver services/tourism_service._get_ubicacion_geojson).
+skips = ["B104", "B608"]
+
 [tool.pytest.ini_options]
 minversion = "8.0"
 asyncio_mode = "auto"
