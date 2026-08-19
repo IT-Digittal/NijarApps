@@ -236,13 +236,85 @@ async function maplibre() {
 
 /* ================= GEMELO VIVO (2D) ================= */
 
+/* ---- Meteo pública (Open-Meteo) + últimas noticias del Ayuntamiento ---- */
+function _fechaCorta(s) {
+  if (!s) return "";
+  try { return new Date(s).toLocaleDateString("es-ES", { day: "numeric", month: "short" }); }
+  catch { return ""; }
+}
+
+async function pintarInfoGemelo() {
+  const cont = document.getElementById("gd-info");
+  if (!cont) return;
+
+  const [meteo, noticias] = await Promise.all([
+    api.get("/gemelo/meteo").catch(() => null),
+    api.get("/noticias/turismo?page_size=5").catch(() => null),
+  ]);
+
+  let cardMeteo = "";
+  if (meteo) {
+    const prev = (meteo.prevision || []).slice(0, 3).map((d) =>
+      '<div style="text-align:center;flex:1">' +
+        '<div class="mini" style="color:var(--muted)">' + esc(_fechaCorta(d.fecha)) + "</div>" +
+        '<div style="font-weight:600">' + esc(d.descripcion || "") + "</div>" +
+        '<div class="mini">' + (d.temp_min_c != null ? Math.round(d.temp_min_c) + "°" : "—") +
+        " / " + (d.temp_max_c != null ? Math.round(d.temp_max_c) + "°" : "—") + "</div>" +
+      "</div>").join("");
+    cardMeteo =
+      '<div class="card" style="padding:16px">' +
+        '<h3 style="margin:0 0 4px">El tiempo · Níjar</h3>' +
+        '<div class="mini" style="color:var(--muted);margin-bottom:10px">Fuente pública Open-Meteo</div>' +
+        '<div style="display:flex;align-items:baseline;gap:10px">' +
+          '<span style="font-size:34px;font-weight:700">' +
+          (meteo.temperatura_c != null ? Math.round(meteo.temperatura_c) + "°" : "—") + "</span>" +
+          '<span style="font-weight:600">' + esc(meteo.descripcion || "") + "</span></div>" +
+        '<div class="mini" style="color:var(--muted);margin:4px 0 12px">' +
+          (meteo.humedad_pct != null ? "Humedad " + meteo.humedad_pct + "% · " : "") +
+          (meteo.viento_kmh != null ? "Viento " + Math.round(meteo.viento_kmh) + " km/h " +
+            esc(meteo.viento_cardinal || "") : "") + "</div>" +
+        '<div style="display:flex;gap:8px">' + prev + "</div>" +
+      "</div>";
+  } else {
+    cardMeteo = '<div class="card" style="padding:16px"><h3 style="margin:0 0 4px">El tiempo</h3>' +
+      '<div class="mini" style="color:var(--muted)">Meteo no disponible ahora mismo.</div></div>';
+  }
+
+  let cardNoticias;
+  const items = (noticias && noticias.items) || [];
+  if (items.length) {
+    const filas = items.map((n) =>
+      '<a href="#" onclick="return false" style="display:flex;gap:10px;padding:8px 0;border-top:1px solid var(--border);text-decoration:none;color:inherit">' +
+        (n.imagen_url
+          ? '<img src="' + esc(n.imagen_url) + '" alt="" loading="lazy" style="width:56px;height:42px;object-fit:cover;border-radius:6px;flex:0 0 auto">'
+          : "") +
+        "<div><div style=\"font-weight:600;line-height:1.25\">" + esc(n.titulo || "") + "</div>" +
+        '<div class="mini" style="color:var(--muted)">' + esc(_fechaCorta(n.fecha || n.publicado_en)) +
+        (n.categorias && n.categorias.length ? " · " + esc(n.categorias[0]) : "") + "</div></div>" +
+      "</a>").join("");
+    cardNoticias =
+      '<div class="card" style="padding:16px">' +
+        '<h3 style="margin:0 0 4px">Últimas noticias de Turismo</h3>' +
+        '<div class="mini" style="color:var(--muted);margin-bottom:4px">Fuente: web del Ayuntamiento (Strapi)</div>' +
+        filas +
+      "</div>";
+  } else {
+    cardNoticias = '<div class="card" style="padding:16px">' +
+      '<h3 style="margin:0 0 4px">Últimas noticias de Turismo</h3>' +
+      '<div class="mini" style="color:var(--muted)">No hay noticias disponibles ahora mismo.</div></div>';
+  }
+
+  cont.innerHTML = cardMeteo + cardNoticias;
+}
+
 async function renderGemelo2D(el) {
   el.innerHTML = sub("Gemelo digital", "Gemelo vivo del destino",
     "Réplica digital operativa: los activos de la plataforma y de las verticales externas (IoT municipal con banderas de playa y aforo del parque; red Bettair de calidad del aire y meteorología) sobre un único mapa en tiempo real, con refresco automático cada minuto.",
     '<button class="btn btn--pri" onclick="UI.goD(\'gd-3d\')">Vista 3D →</button>') +
     '<div class="grid g4" style="margin-bottom:16px" id="gd-kpis"></div>' +
     '<div class="card card--pad0" style="overflow:hidden"><div id="gemelo-2d" style="height:600px;width:100%"></div></div>' +
-    '<div class="mini" style="color:var(--muted);margin-top:8px" id="gd-refresco"></div>';
+    '<div class="mini" style="color:var(--muted);margin-top:8px" id="gd-refresco"></div>' +
+    '<div class="grid g2" style="margin-top:16px" id="gd-info"></div>';
 
   const [capas, aforo, docs] = await Promise.all([
     cargarActivos(),
@@ -260,6 +332,8 @@ async function renderGemelo2D(el) {
       ? kpi("Aforo P.N. Cabo de Gata", aforo.aforo_actual + " vehículos",
           "Ahora dentro · " + (aforo.entradas_hoy != null ? aforo.entradas_hoy + " entradas hoy · " : "") + "IoT municipal en vivo", "ic-teal", "map")
       : kpi("Refresco", "60 s", "Telemetría de la plataforma en vivo", "ic-teal", "clock"));
+
+  pintarInfoGemelo();
 
   let L;
   try {

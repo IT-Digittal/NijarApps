@@ -13,6 +13,7 @@ from typing import Any
 
 from nijar_dti.config import Settings, get_settings
 from nijar_dti.connectors.bettair import ClienteBettair, parsear_estaciones, resumen_estaciones
+from nijar_dti.connectors.openmeteo import ClienteOpenMeteo
 from nijar_dti.connectors.thingsboard import (
     CLAVES_AFORO_PARQUE,
     ClienteThingsBoard,
@@ -26,6 +27,7 @@ from nijar_dti.schemas.gemelo import (
     EstacionAireOut,
     EstacionesAireOut,
     EstadoGemelo,
+    MeteoActualOut,
     ResumenAireOut,
 )
 
@@ -33,6 +35,7 @@ _TTL_SEGUNDOS = 60
 _cache: dict[str, tuple[float, Any]] = {}
 _cliente: ClienteThingsBoard | None = None
 _cliente_bettair: ClienteBettair | None = None
+_cliente_openmeteo: ClienteOpenMeteo | None = None
 
 ACTIVO_AFORO_PARQUE = "parque_cabo_de_gata"
 TIPO_BANDERAS = "Bandera playas"
@@ -52,7 +55,37 @@ def estado_gemelo() -> EstadoGemelo:
     return EstadoGemelo(
         thingsboard_configurado=thingsboard_configurado(),
         bettair_configurado=bettair_configurado(),
+        openmeteo_disponible=True,
     )
+
+
+def _obtener_cliente_openmeteo() -> ClienteOpenMeteo:
+    global _cliente_openmeteo
+    if _cliente_openmeteo is None:
+        s = get_settings()
+        _cliente_openmeteo = ClienteOpenMeteo(s.openmeteo_base_url, s.openmeteo_timeout_seconds)
+    return _cliente_openmeteo
+
+
+async def meteo_actual(lat: float | None = None, lon: float | None = None) -> MeteoActualOut:
+    """Meteorología pública (Open-Meteo). Público: lo muestra el tótem.
+
+    Si se pasan ``lat``/``lon`` (p. ej. la ubicación del tótem) se usan esas
+    coordenadas; si no, las de la configuración (Níjar). La caché es por
+    coordenada para que cada tótem muestre el tiempo de su ubicación.
+    """
+    s = get_settings()
+    latitud = lat if lat is not None else s.openmeteo_latitud
+    longitud = lon if lon is not None else s.openmeteo_longitud
+    clave = f"meteo:{round(latitud, 3)},{round(longitud, 3)}"
+    if (hit := _cacheado(clave)) is not None:
+        return hit  # type: ignore[no-any-return]
+    datos = await _obtener_cliente_openmeteo().actual(
+        latitud, longitud, s.openmeteo_dias_prevision
+    )
+    resultado = MeteoActualOut(**datos)
+    _cache[clave] = (time.monotonic(), resultado)
+    return resultado
 
 
 def _obtener_cliente() -> ClienteThingsBoard:

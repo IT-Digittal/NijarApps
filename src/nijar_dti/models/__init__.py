@@ -45,6 +45,7 @@ __all__ = [
     "CamaraCCTV",
     "Campana",
     "Cliente",
+    "ConsumoIA",
     "Contenedor",
     "Contenido",
     "ContextoTuristico",

@@ -77,6 +77,7 @@ const CATS = [
   { id: "naturaleza",  label: "cat.naturaleza",        icon: "naturaleza",  th: "th-naturaleza",  bg: "../shared/tiles/naturaleza.jpg",  res: ["mirador"], etiquetas: ["naturaleza"], subchips: ["mirador"],       heroSub: "sub.naturaleza", unit: "unit.lugares" },
   { id: "ceramica",    label: "cat.ceramica_jarapas", icon: "artesania",   th: "th-gastro",      bg: "../shared/tiles/ceramica.jpg",    etiquetas: ["ceramica", "artesania", "jarapas"],                        heroSub: "sub.ceramica",   unit: "unit.talleres" },
   { id: "gastronomia", label: "cat.gastronomia",       icon: "gastronomia", th: "th-gastro",      bg: "../shared/tiles/gastronomia.jpg", srv: ["gastronomia_restaurante", "gastronomia_bar", "gastronomia_cafeteria"],           heroSub: "sub.gastro",     unit: "unit.locales" },
+  { id: "noticias", label: "cat.noticias", icon: "eventos", th: "th-evento", solid: true, alt: true, noticias: true, heroSub: "sub.noticias", unit: "unit.noticias" },
   /* Agenda y Empresas — se abren desde el dock inferior; no van en el grid del home */
   { id: "eventos",     label: "categorias.eventos",    icon: "eventos",     th: "th-evento",      hiddenFromGrid: true, events: true, heroSub: "sub.eventos", unit: "unit.eventos" },
   { id: "empresas",    label: "cat.empresas",          icon: "edificio",    th: "th-servicio",    hiddenFromGrid: true, empresas: true,
@@ -200,7 +201,7 @@ updateClock();
 pintarFechas();
 
 // ============================================================
-// El tiempo y calidad del aire hoy (red Bettair, endpoint público)
+// El tiempo hoy (Open-Meteo, endpoint público /gemelo/meteo)
 // ============================================================
 const ICONO_SOL =
   '<svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><circle cx="12" cy="12" r="4.4" fill="#F5C518"/>' +
@@ -208,17 +209,48 @@ const ICONO_SOL =
 
 let meteoCache = null;
 
+/* Condiciones WMO (Open-Meteo) → texto corto multilingüe para el pill. */
+const METEO_COND = {
+  desp: { es: "Despejado", en: "Clear", de: "Klar", fr: "Dégagé" },
+  parc: { es: "Poco nuboso", en: "Partly cloudy", de: "Teils bewölkt", fr: "Partiellement nuageux" },
+  nub: { es: "Nublado", en: "Cloudy", de: "Bewölkt", fr: "Nuageux" },
+  nieb: { es: "Niebla", en: "Fog", de: "Nebel", fr: "Brouillard" },
+  llov: { es: "Llovizna", en: "Drizzle", de: "Nieselregen", fr: "Bruine" },
+  lluv: { es: "Lluvia", en: "Rain", de: "Regen", fr: "Pluie" },
+  chub: { es: "Chubascos", en: "Showers", de: "Schauer", fr: "Averses" },
+  niev: { es: "Nieve", en: "Snow", de: "Schnee", fr: "Neige" },
+  torm: { es: "Tormenta", en: "Storm", de: "Gewitter", fr: "Orage" },
+};
+function grupoWmo(c) {
+  if (c == null) return null;
+  if (c === 0) return "desp";
+  if (c === 1 || c === 2) return "parc";
+  if (c === 3) return "nub";
+  if (c === 45 || c === 48) return "nieb";
+  if (c >= 51 && c <= 57) return "llov";
+  if (c >= 61 && c <= 67) return "lluv";
+  if ((c >= 71 && c <= 77) || c === 85 || c === 86) return "niev";
+  if (c >= 80 && c <= 82) return "chub";
+  if (c >= 95) return "torm";
+  return null;
+}
+function condicionMeteo(codigo) {
+  const g = grupoWmo(codigo);
+  if (!g) return null;
+  const tr = METEO_COND[g];
+  return tr[currentLang] || tr.es;
+}
+
 function pintarMeteo() {
   const el = $("#header-weather");
   if (!el) return;
   const t = dict();
-  /* Si Bettair no está configurado, mostramos un placeholder estacional
-   * (agosto ~29°, verano soleado por defecto) para que el diseño de la home
-   * mantenga el pill. En producción con Bettair, se sustituye por datos reales. */
-  const m = meteoCache || { temperatura_media_c: 29, eaqi_peor: null };
-  const temp = Math.round(m.temperatura_media_c);
-  const aire = m.eaqi_peor != null ? (t[`meteo.aire.${m.eaqi_peor}`] || m.eaqi_peor_texto) : null;
-  const etiqueta = aire ? escapeHtml(aire.toUpperCase()) : escapeHtml((t["meteo.soleado"] || "Soleado").toUpperCase());
+  /* Fuente: Open-Meteo (endpoint público /gemelo/meteo). Si no hay red, se
+   * mantiene un placeholder estacional para no romper el diseño de la home. */
+  const m = meteoCache || { temp: 29, wmo: null };
+  const temp = m.temp != null ? Math.round(m.temp) : 29;
+  const cond = condicionMeteo(m.wmo);
+  const etiqueta = escapeHtml((cond || t["meteo.soleado"] || "Soleado").toUpperCase());
   el.innerHTML =
     `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.4" fill="#E0912F"/><g stroke="#E0912F" stroke-width="2.2" stroke-linecap="round" fill="none"><path d="M12 2v2.4M12 19.6V22M4 12H1.6M22.4 12H20M5.1 5.1l1.7 1.7M17.2 17.2l1.7 1.7M18.9 5.1l-1.7 1.7M6.8 17.2l-1.7 1.7"/></g></svg>` +
     `<div><span class="tmp">${temp}°</span><span class="wl">${etiqueta}</span></div>`;
@@ -226,12 +258,17 @@ function pintarMeteo() {
 }
 
 async function cargarMeteo() {
-  try { meteoCache = await apiGet("/gemelo/aire/resumen"); }
-  catch { meteoCache = null; } /* sin red Bettair configurada: el chip no aparece */
+  try {
+    /* Cada tótem pide el tiempo de SU ubicación (data-totem-lat/lon). */
+    const q = Number.isFinite(TOTEM_LAT) && Number.isFinite(TOTEM_LON)
+      ? `?lat=${TOTEM_LAT}&lon=${TOTEM_LON}` : "";
+    const m = await apiGet(`/gemelo/meteo${q}`);
+    meteoCache = { temp: m.temperatura_c, wmo: m.codigo_wmo };
+  } catch { meteoCache = null; } /* sin red: se usa el placeholder estacional */
   pintarMeteo();
 }
 cargarMeteo();
-setInterval(cargarMeteo, 10 * 60 * 1000); /* la red emite cada ~10 min */
+setInterval(cargarMeteo, 10 * 60 * 1000); /* Open-Meteo se refresca ~cada 15 min */
 
 // ============================================================
 // API helpers
@@ -445,6 +482,7 @@ async function abrirCategoria(catId, chip = "todas") {
   if (chip === "emergencias") { renderEmergencies(grid); grid.setAttribute("aria-busy", "false"); return; }
   if (c.events) { await renderAgenda(grid, chip); grid.setAttribute("aria-busy", "false"); return; }
   if (c.empresas) { await renderEmpresas(grid, chip); grid.setAttribute("aria-busy", "false"); return; }
+  if (c.noticias) { await renderNoticias(grid); grid.setAttribute("aria-busy", "false"); return; }
 
   let items = [];
   // Sub-chip por etiqueta (playas, cabo, naturaleza): siempre se cargan todos los items de la categoría y luego se filtra por tag en cliente.
@@ -477,6 +515,8 @@ async function abrirCategoria(catId, chip = "todas") {
   if (chipEsSubchip) {
     items = items.filter((r) => (r.etiquetas || []).some((e) => String(e).toLowerCase() === chip.toLowerCase()));
   }
+  // Banderas de playa en vivo (solo para la categoría playas)
+  if (c.id === "playas") await cargarBanderas();
   renderItems(grid, items, c);
   grid.setAttribute("aria-busy", "false");
 }
@@ -571,6 +611,58 @@ function renderChips(c) {
     b.addEventListener("click", () => abrirCategoria(c.id, b.dataset.chip)));
 }
 
+// ============================================================
+// Estado de banderas de playa en vivo (IoT municipal, /gemelo/playas/banderas)
+// ============================================================
+const FLAG_LABEL = {
+  verde: { es: "Baño libre", en: "Safe bathing", de: "Baden erlaubt", fr: "Baignade autorisée" },
+  amarilla: { es: "Precaución", en: "Caution", de: "Vorsicht", fr: "Prudence" },
+  roja: { es: "Baño prohibido", en: "No bathing", de: "Baden verboten", fr: "Baignade interdite" },
+  sin_bandera: { es: "Sin bandera", en: "No flag", de: "Keine Flagge", fr: "Pas de drapeau" },
+};
+const FLAG_COLOR = { verde: "#2e7d32", amarilla: "#f5a623", roja: "#c0392b", sin_bandera: "#9aa0a6" };
+
+function normNombre(s) {
+  return String(s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "")
+    .replace(/\b(playa|cala|de|del|la|el|los|las)\b/g, "").replace(/[^a-z0-9]/g, "");
+}
+
+let banderasCache = null; /* { nombreNormalizado: estado } · null = aún no cargado */
+
+async function cargarBanderas() {
+  try {
+    const d = await apiGet("/gemelo/playas/banderas");
+    const map = {};
+    (d.banderas || []).forEach((b) => { const k = normNombre(b.nombre); if (k) map[k] = b.estado; });
+    banderasCache = map;
+  } catch { banderasCache = {}; } /* ThingsBoard no configurado: sin banderas, sin error */
+  return banderasCache;
+}
+
+function estadoBandera(nombre) {
+  if (!banderasCache) return null;
+  const k = normNombre(nombre);
+  if (!k) return null;
+  if (banderasCache[k]) return banderasCache[k];
+  for (const bk in banderasCache) {
+    if (bk && (k.includes(bk) || bk.includes(k))) return banderasCache[bk];
+  }
+  return null;
+}
+
+function badgeBandera(nombre) {
+  const est = estadoBandera(nombre);
+  if (!est || est === "desconocido" || !FLAG_COLOR[est]) return "";
+  const color = FLAG_COLOR[est];
+  const tr = FLAG_LABEL[est];
+  const lab = (tr && (tr[currentLang] || tr.es)) || est;
+  const txt = est === "amarilla" ? "#3a2f00" : "#fff";
+  return `<span class="tt-flag" style="display:inline-flex;align-items:center;gap:5px;margin-top:7px;` +
+    `padding:3px 10px;border-radius:999px;font-size:13px;font-weight:700;background:${color};color:${txt}">` +
+    `<svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><path d="M6 3v18" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><path d="M6.5 4h10l-2.4 3 2.4 3h-10z" fill="currentColor"/></svg>` +
+    escapeHtml(lab.toUpperCase()) + `</span>`;
+}
+
 function itemCard(r, c, index) {
   const nombre = r.nombre_i18n?.[currentLang] || r.nombre;
   const desc = r.descripcion_i18n?.[currentLang] || r.descripcion_corta || r.descripcion || "";
@@ -585,6 +677,7 @@ function itemCard(r, c, index) {
   const thumbBg = img
     ? `background-image: url('${escapeAttr(img)}'); background-size: cover; background-position: center;`
     : "";
+  const flagBadge = c && c.id === "playas" ? badgeBandera(nombre) : "";
   return `
     <button class="tt-lb" data-urn="${escapeAttr(r.urn || r.id || "")}">
       <span class="tt-lb-num" aria-hidden="true">${num}</span>
@@ -592,6 +685,7 @@ function itemCard(r, c, index) {
       <span class="tt-lb-body">
         <span class="tt-lb-title">${escapeHtml(nombre)}</span>
         <span class="tt-lb-sub">${escapeHtml(sub)}${meta.length ? " · " + meta.join(" · ") : ""}</span>
+        ${flagBadge}
       </span>
       <span class="tt-lb-go" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
@@ -609,6 +703,94 @@ function renderItems(grid, items, c) {
   grid.querySelectorAll(".tt-lb").forEach((btn, i) => {
     btn.addEventListener("click", () => openDetail(items[i], c));
   });
+}
+
+// ============================================================
+// NOTICIAS del Ayuntamiento (Strapi, categoría Turismo)
+// ============================================================
+function fmtFechaNoticia(s) {
+  if (!s) return "";
+  try { return capitalize(new Date(s).toLocaleDateString(currentLang, { day: "numeric", month: "long", year: "numeric" })); }
+  catch { return ""; }
+}
+
+function stripHtml(html) {
+  return String(html || "")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<\/(p|div|h[1-6]|li)>/gi, "\n")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/gi, " ").replace(/&amp;/gi, "&")
+    .replace(/[ \t]+/g, " ").replace(/\n{2,}/g, "\n\n").trim();
+}
+
+function noticiaCard(n, index) {
+  const num = String((index ?? 0) + 1).padStart(2, "0");
+  const img = n.imagen_url;
+  const thumbBg = img ? `background-image: url('${escapeAttr(img)}'); background-size: cover; background-position: center;` : "";
+  const sub = [fmtFechaNoticia(n.fecha || n.publicado_en), (n.categorias && n.categorias[0]) || ""].filter(Boolean).join(" · ");
+  return `
+    <button class="tt-lb" data-slug="${escapeAttr(n.slug || "")}">
+      <span class="tt-lb-num" aria-hidden="true">${num}</span>
+      <span class="tt-lb-thumb th-evento" style="${thumbBg}" aria-hidden="true"></span>
+      <span class="tt-lb-body">
+        <span class="tt-lb-title">${escapeHtml(n.titulo || "")}</span>
+        <span class="tt-lb-sub">${escapeHtml(sub)}</span>
+      </span>
+      <span class="tt-lb-go" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+      </span>
+    </button>`;
+}
+
+async function renderNoticias(grid) {
+  const t = dict();
+  const chipsEl = $("#list-chips");
+  if (chipsEl) chipsEl.innerHTML = ""; /* las noticias no llevan filtros */
+  let items = [];
+  try {
+    const d = await apiGet("/noticias/turismo?page_size=12");
+    items = d.items || [];
+  } catch { items = []; }
+  const cnt = $("#list-count");
+  if (cnt) cnt.textContent = items.length ? `${items.length} ${t["unit.noticias"] || "noticias"}` : "";
+  if (!items.length) {
+    grid.innerHTML = `<p class="content-loading">${t["empty.contenido"] || "Sin contenidos disponibles"}</p>`;
+    return;
+  }
+  grid.innerHTML = items.map((n, i) => noticiaCard(n, i)).join("");
+  grid.querySelectorAll(".tt-lb").forEach((btn, i) => btn.addEventListener("click", () => openNoticia(items[i])));
+}
+
+async function openNoticia(n) {
+  const t = dict();
+  const bc = $("#poi-breadcrumb"); if (bc) bc.textContent = String(t["cat.noticias"] || "Noticias").toUpperCase();
+  $("#poi-title").textContent = n.titulo || "—";
+  const sub = $("#poi-sub");
+  if (sub) sub.textContent = [fmtFechaNoticia(n.fecha || n.publicado_en), (n.categorias || []).join(" · ")].filter(Boolean).join(" · ");
+  const hero = $("#poi-image");
+  if (hero) hero.style.backgroundImage = n.imagen_url ? `url('${n.imagen_url}')` : "";
+  const tag = $("#poi-tag");
+  if (tag) {
+    tag.style.background = ""; tag.style.color = "";
+    const cat0 = n.categorias && n.categorias[0];
+    if (cat0) { tag.textContent = String(cat0).toUpperCase(); tag.hidden = false; } else tag.hidden = true;
+  }
+  /* Cuerpo: descripción de inmediato; se completa con el contenido por slug. */
+  $("#poi-body").textContent = n.descripcion || "";
+  ["#poi-stats", "#poi-cta", "#poi-meta-card", "#poi-tags", "#poi-actions"].forEach((id) => {
+    const e = $(id); if (!e) return;
+    if (id === "#poi-stats") e.innerHTML = ""; else e.hidden = true;
+  });
+  dialog.querySelector(".poi-dialog-content")?.scrollTo({ top: 0 });
+  dialog.showModal();
+  if (typeof resetIdle === "function") resetIdle();
+  try {
+    if (n.slug) {
+      const d = await apiGet(`/noticias/${encodeURIComponent(n.slug)}`);
+      if (d && d.contenido) $("#poi-body").textContent = stripHtml(d.contenido);
+    }
+  } catch { /* se queda con la descripción */ }
 }
 
 // ============================================================
@@ -783,7 +965,20 @@ function openDetail(r, c) {
     ? (t["badge.parque_natural"] || "ÍCONO DEL PARQUE NATURAL")
     : cat ? String(tagLabel(cat)).toUpperCase() : "";
   const tag = $("#poi-tag");
-  if (badgeText) { tag.textContent = badgeText; tag.hidden = false; } else tag.hidden = true;
+  /* En playas, si hay bandera en vivo, el kicker muestra el estado con su color. */
+  const estFlag = (c && c.id === "playas") || cat === "playa" ? estadoBandera(nombre) : null;
+  if (estFlag && FLAG_COLOR[estFlag]) {
+    const tr = FLAG_LABEL[estFlag];
+    const lab = (tr && (tr[currentLang] || tr.es)) || estFlag;
+    tag.textContent = (t["info.bandera"] || "BANDERA") + " " + String(estFlag).toUpperCase() + " · " + lab.toUpperCase();
+    tag.style.background = FLAG_COLOR[estFlag];
+    tag.style.color = estFlag === "amarilla" ? "#3a2f00" : "#fff";
+    tag.hidden = false;
+  } else {
+    tag.style.background = "";
+    tag.style.color = "";
+    if (badgeText) { tag.textContent = badgeText; tag.hidden = false; } else tag.hidden = true;
+  }
 
   // 3 tarjetas de stats en fila (formato simple: label + valor)
   const stats = [];

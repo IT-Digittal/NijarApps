@@ -167,3 +167,31 @@ class TestConfig:
 
         with pytest.raises(ValidationError):
             Settings(chatbot_engine="gemini")
+
+
+class TestTitularesNoticias:
+    async def test_formatea_y_cachea(self, monkeypatch):
+        import datetime as dt
+
+        from nijar_dti.schemas.noticias import NoticiaOut, NoticiasPageOut
+
+        adapter._noticias_cache = None
+
+        async def fake(**kw):
+            noticia = NoticiaOut(
+                document_id="a", titulo="Titular X", slug="x", fecha=dt.date(2026, 7, 5)
+            )
+            return NoticiasPageOut(page=1, page_size=5, page_count=1, total=1, items=[noticia])
+
+        monkeypatch.setattr("nijar_dti.services.noticias_service.listar_turismo", fake)
+        out = await adapter._titulares_noticias()
+        assert out == ["- Titular X · 05/07/2026"]
+
+    async def test_fallo_de_la_fuente_no_rompe(self, monkeypatch):
+        adapter._noticias_cache = None
+
+        async def boom(**kw):
+            raise RuntimeError("fuente caída")
+
+        monkeypatch.setattr("nijar_dti.services.noticias_service.listar_turismo", boom)
+        assert await adapter._titulares_noticias() == []

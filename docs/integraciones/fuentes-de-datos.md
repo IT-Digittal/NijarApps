@@ -43,13 +43,15 @@ Para completar la integración real y la puesta en producción:
 | Cód. | Fuente / acceso | Qué necesitamos |
 |------|-----------------|-----------------|
 | FD-101 | Datos turísticos y contenidos oficiales | Catálogo de recursos, agenda de eventos, FAQs, material gráfico/marca y traducciones oficiales |
-| FD-102 | Analítica web/app municipal | **Property ID de GA4 + cuenta de servicio** (lectura); contenedor de Tag Manager si existe |
+| FD-101b | **Noticias del Ayuntamiento (Strapi)** | ✅ **Integrado** (API pública sin auth) — ver [runbook](runbook-noticias-strapi.md); noticias de Turismo por categoría |
+| FD-102 | Analítica web/app municipal | **Property ID de GA4 + cuenta de servicio** (lectura); contenedor de Tag Manager si existe — ver [runbook de activación](runbook-ga4.md) |
 | FD-103 | App Vive Níjar (avisos banderas/aforo, uso) | Acceso a su API/backend o export de datos de uso |
 | FD-104 | Movilidad y afluencia | Acceso a WiFi público, sensores/contadores/beacons y, si existe, dato de acceso al Parque (con DPIA) |
 | FD-105 | Perfil X (Twitter) | **Bearer Token** + confirmación del handle oficial |
-| FD-106 | Perfil Facebook | **Page Access Token + ID** de la página |
-| FD-107 | Perfil Instagram | **Instagram Business Account ID** |
+| FD-106 | Perfil Facebook | **Page Access Token + ID** de la página — ver [runbook de activación](runbook-social-listening-meta.md) |
+| FD-107 | Perfil Instagram | **Instagram Business Account ID** — ver [runbook de activación](runbook-social-listening-meta.md) |
 | FD-108 | Sensores IoT / estaciones meteo existentes | Protocolo (MQTT/HTTP), credenciales y whitelist de nodos |
+| FD-108b | **Meteorología pública (Open-Meteo)** | ✅ **Integrado** (sin clave) — `GET /gemelo/meteo`; condiciones actuales + previsión 3 días. Las estaciones Bettair requieren credenciales del proveedor (no disponibles) |
 | FD-109 | Campañas de promoción | Nombre, fechas, canales, objetivos y contenidos |
 | FD-110 | Plataforma DTI actual (plataforma.nijardti.com) | URL correcta + documentación de API o cuenta de servicio |
 | FD-111 | SSO / Directorio Activo municipal | Integración SSO/AD y titularidad de credenciales |

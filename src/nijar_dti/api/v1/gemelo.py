@@ -8,10 +8,11 @@ muestra como fuente pendiente (sin datos ficticios).
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from nijar_dti.api.v1.dependencies import get_current_user
 from nijar_dti.connectors.bettair import BettairError
+from nijar_dti.connectors.openmeteo import OpenMeteoError
 from nijar_dti.connectors.thingsboard import ThingsBoardError
 from nijar_dti.schemas.auth import CurrentUser
 from nijar_dti.schemas.gemelo import (
@@ -19,6 +20,7 @@ from nijar_dti.schemas.gemelo import (
     BanderasPlayasOut,
     EstacionesAireOut,
     EstadoGemelo,
+    MeteoActualOut,
     ResumenAireOut,
 )
 from nijar_dti.services import gemelo_service as svc
@@ -62,6 +64,24 @@ async def aforo(user: CurrentUser = Depends(get_current_user)) -> AforoParqueOut
     try:
         return await svc.aforo_parque()
     except ThingsBoardError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+
+@router.get(
+    "/meteo",
+    response_model=MeteoActualOut,
+    summary="Meteorología pública del municipio (Open-Meteo)",
+)
+async def meteo(
+    lat: float | None = Query(None, ge=-90, le=90, description="Latitud (p. ej. la del tótem)"),
+    lon: float | None = Query(None, ge=-180, le=180, description="Longitud (p. ej. la del tótem)"),
+) -> MeteoActualOut:
+    """Condiciones actuales y previsión a 3 días (fuente pública Open-Meteo).
+    Con ``lat``/``lon`` devuelve el tiempo de esa ubicación; si no, el de Níjar.
+    No requiere credenciales; lo consume el tótem público."""
+    try:
+        return await svc.meteo_actual(lat, lon)
+    except OpenMeteoError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
 
 

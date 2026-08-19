@@ -1,9 +1,10 @@
 """Motor de chatbot generativo sobre la API de OpenAI (CHATBOT_ENGINE=openai).
 
 Responde en lenguaje natural fundamentado en los datos internos de la
-plataforma (grounding): FAQs municipales, recursos turísticos publicados y
-próximos eventos de la agenda. El modelo recibe ese contexto en cada consulta
-y tiene instrucciones de no inventar horarios, precios ni servicios.
+plataforma (grounding): FAQs municipales, recursos turísticos publicados,
+próximos eventos de la agenda y las últimas noticias de Turismo del Ayuntamiento
+(fuente Strapi). El modelo recibe ese contexto en cada consulta y tiene
+instrucciones de no inventar horarios, precios ni servicios.
 
 Cadena de disponibilidad: si la API de OpenAI falla o no hay clave, delega en
 el motor Rasa (que a su vez cae al léxico), de modo que el asistente del
@@ -46,6 +47,35 @@ def _instrucciones(idioma: str) -> str:
         "Si la pregunta no tiene relación con el turismo o los servicios de Níjar, "
         "indica amablemente que solo puedes ayudar con el destino."
     )
+
+
+# Cache breve de titulares de noticias para no consultar Strapi en cada mensaje.
+_NOTICIAS_TTL_SEGUNDOS = 300
+_noticias_cache: tuple[float, list[str]] | None = None
+
+
+async def _titulares_noticias() -> list[str]:
+    """Últimos titulares de Turismo (fuente Strapi), cacheados y sin romper nunca.
+
+    Es contexto opcional: ante cualquier fallo de la fuente externa devuelve lo
+    último cacheado (o vacío) y jamás propaga la excepción al chatbot.
+    """
+    global _noticias_cache
+    if _noticias_cache and time.monotonic() - _noticias_cache[0] < _NOTICIAS_TTL_SEGUNDOS:
+        return _noticias_cache[1]
+    lineas: list[str] = _noticias_cache[1] if _noticias_cache else []
+    try:
+        from nijar_dti.services import noticias_service
+
+        page = await noticias_service.listar_turismo(page=1, page_size=5)
+        lineas = [
+            f"- {n.titulo}" + (f" · {n.fecha:%d/%m/%Y}" if n.fecha else "")
+            for n in page.items
+        ]
+    except Exception:  # noqa: BLE001 — fuente externa opcional; nunca romper el chatbot
+        log.debug("Noticias no disponibles para el contexto del chatbot", exc_info=True)
+    _noticias_cache = (time.monotonic(), lineas)
+    return lineas
 
 
 async def _contexto(db: AsyncSession, payload: ChatQueryIn) -> tuple[str, list[str]]:
@@ -108,6 +138,12 @@ async def _contexto(db: AsyncSession, payload: ChatQueryIn) -> tuple[str, list[s
             + (f" · {e.direccion}" if e.direccion else "")
             for e in eventos
         )
+
+    # Últimas noticias de Turismo del Ayuntamiento (fuente externa opcional)
+    titulares = await _titulares_noticias()
+    if titulares:
+        partes.append("Últimas noticias de Turismo del Ayuntamiento (titular · fecha):")
+        partes.extend(titulares)
 
     return "\n".join(partes), intents
 
