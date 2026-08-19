@@ -88,19 +88,20 @@ def parsear_meteo(raw: dict[str, Any], lat: float, lon: float) -> dict[str, Any]
     prevision: list[dict[str, Any]] = []
     daily = raw.get("daily") or {}
     fechas = daily.get("time") or []
-    for i, fecha in enumerate(fechas):
-        def _g(clave: str) -> Any:
-            serie = daily.get(clave) or []
-            return serie[i] if i < len(serie) else None
 
-        cod_dia = _g("weather_code")
+    def _g(clave: str, idx: int) -> Any:
+        serie = daily.get(clave) or []
+        return serie[idx] if idx < len(serie) else None
+
+    for i, fecha in enumerate(fechas):
+        cod_dia = _g("weather_code", i)
         prevision.append({
             "fecha": fecha,
             "codigo_wmo": cod_dia,
             "descripcion": descripcion_wmo(cod_dia),
-            "temp_max_c": _g("temperature_2m_max"),
-            "temp_min_c": _g("temperature_2m_min"),
-            "prob_precipitacion_pct": _g("precipitation_probability_max"),
+            "temp_max_c": _g("temperature_2m_max", i),
+            "temp_min_c": _g("temperature_2m_min", i),
+            "prob_precipitacion_pct": _g("precipitation_probability_max", i),
         })
 
     return {
