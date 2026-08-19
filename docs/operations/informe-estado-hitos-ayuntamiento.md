@@ -7,11 +7,11 @@
 | **Marco** | PRTR · NextGenerationEU · Componente 14 |
 | **De** | IT DIGITTAL |
 | **Para** | Ayuntamiento de Níjar |
-| **Fecha** | 14/08/2026 |
+| **Fecha** | 19/08/2026 |
 
 ## Introducción
 
-El presente documento resume el **estado actual de cada hito** del contrato, con su **porcentaje de avance real**, lo que **falta para completarlo** y la **colaboración necesaria por parte del Ayuntamiento**. A fecha de hoy, los **dos tótems interactivos ya están instalados** y en funcionamiento, y la plataforma está **integrada y operativa en producción**, con sus **conectores a las fuentes externas** (redes sociales, analítica web y plataforma DTI) **construidos y verificados**. El Ayuntamiento ya ha facilitado el **acceso a Facebook e Instagram**, por lo que la **activación con datos reales** del Social Listening y de Google Analytics se encuentra en su **fase final de configuración**. Todas las piezas del proyecto (plataforma, chatbot, observatorio de datos, panel de control, tótems y herramientas de mantenimiento) están **construidas, desplegadas en producción y operativas**. Los puntos pendientes se concentran en la **activación con datos reales de las fuentes externas** y en los **actos formales de validación** (auditoría de seguridad, formación y prueba de aceptación) hasta la **firma del acta de recepción**.
+El presente documento resume el **estado actual de cada hito** del contrato, con su **porcentaje de avance real**, lo que **falta para completarlo** y la **colaboración necesaria por parte del Ayuntamiento**. A fecha de hoy, los **dos tótems interactivos ya están instalados** y en funcionamiento, y la plataforma está **integrada y operativa en producción**, con sus **conectores a las fuentes externas** (redes sociales, analítica web y plataforma DTI) **construidos y verificados**. El Ayuntamiento ya ha facilitado el **acceso a Facebook e Instagram**, por lo que la **activación con datos reales** del Social Listening y de Google Analytics se encuentra en su **fase final de configuración**. Todas las piezas del proyecto (plataforma, chatbot, observatorio de datos, panel de control, tótems y herramientas de mantenimiento) están **construidas, desplegadas en producción y operativas**. Además, se ha **reforzado la calidad y la seguridad** del sistema: la **cadena de integración continua (CI/CD) está en verde** —pruebas automatizadas, análisis estático de seguridad (SAST), escaneo de dependencias y de la imagen de contenedor— y la **imagen de producción se ha endurecido hasta quedar sin vulnerabilidades altas ni críticas**, lo que **prepara y facilita la auditoría de seguridad (pentest)** pendiente. Los puntos pendientes se concentran en la **activación con datos reales de las fuentes externas** y en los **actos formales de validación** (auditoría de seguridad, formación y prueba de aceptación) hasta la **firma del acta de recepción**.
 
 ## Resumen de avance
 
@@ -19,10 +19,10 @@ El presente documento resume el **estado actual de cada hito** del contrato, con
 |------|-------------|:------:|--------|
 | **H1** | Planificación y diseños | **100 %** | Completado |
 | **H2** | Implementación intermedia | **100 %** | Completado (tótems instalados y en marcha) |
-| **H3** | Integración y pruebas | **90 %** | Integración finalizada; pendientes actos de validación |
+| **H3** | Integración y pruebas | **92 %** | Integración finalizada y calidad/seguridad reforzadas; pendientes actos de validación |
 | **H4** | Puesta en producción y aceptación (SAT) | **85 %** | En producción y operativo; pendiente la aceptación (SAT) |
 | **C.1** | Mantenimiento y hosting (48 meses) | **Listo para iniciar** | Comienza tras la recepción |
-| | **Avance global (actuaciones subvencionadas)** | **≈ 93 %** | |
+| | **Avance global (actuaciones subvencionadas)** | **≈ 94 %** | |
 
 ---
 
@@ -38,9 +38,9 @@ El presente documento resume el **estado actual de cada hito** del contrato, con
 
 **Falta para cerrarlo:** nada. Hito completado; pendiente únicamente su reflejo en el acta de recepción global (H4).
 
-## H3 — Integración y pruebas · 90 %
+## H3 — Integración y pruebas · 92 %
 
-**Hecho:** pruebas funcionales y de accesibilidad (WCAG 2.1 AA), ajuste de los modelos de datos y de los cuadros de mando de Big Data, e **integración con los sistemas municipales y la plataforma DTI existente**. Los **conectores de Social Listening** (Facebook, Instagram, X) **y de Google Analytics 4 están construidos y verificados**, con sus procedimientos de **activación, verificación y renovación de credenciales** ya preparados. El Ayuntamiento ha facilitado el **acceso a Facebook e Instagram**.
+**Hecho:** pruebas funcionales y de accesibilidad (WCAG 2.1 AA), ajuste de los modelos de datos y de los cuadros de mando de Big Data, e **integración con los sistemas municipales y la plataforma DTI existente**. Los **conectores de Social Listening** (Facebook, Instagram, X) **y de Google Analytics 4 están construidos y verificados**, con sus procedimientos de **activación, verificación y renovación de credenciales** ya preparados. El Ayuntamiento ha facilitado el **acceso a Facebook e Instagram**. Se ha **saneado y endurecido la cadena de integración continua (CI/CD)**, que queda **en verde** en todas sus comprobaciones —pruebas automatizadas (424), formato y tipado, análisis estático de seguridad (SAST), escaneo de dependencias y escaneo de la imagen de contenedor—; la **imagen de producción se ha endurecido hasta 0 vulnerabilidades altas/críticas** y el control de seguridad de la imagen bloquea de forma estricta ante nuevas vulnerabilidades altas o críticas. Esta base de calidad **reduce el riesgo y facilita la auditoría de seguridad (pentest)**.
 
 **Falta para cerrarlo:**
 - **Activación con datos reales de las fuentes externas**: introducir las credenciales y ejecutar la verificación — redes sociales (acceso a Facebook/Instagram ya facilitado; pendiente el token de la app de Meta) y **Google Analytics 4** (cuenta de servicio + Property ID del destino).
