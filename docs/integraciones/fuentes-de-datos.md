@@ -43,6 +43,7 @@ Para completar la integración real y la puesta en producción:
 | Cód. | Fuente / acceso | Qué necesitamos |
 |------|-----------------|-----------------|
 | FD-101 | Datos turísticos y contenidos oficiales | Catálogo de recursos, agenda de eventos, FAQs, material gráfico/marca y traducciones oficiales |
+| FD-101b | **Noticias del Ayuntamiento (Strapi)** | ✅ **Integrado** (API pública sin auth) — ver [runbook](runbook-noticias-strapi.md); noticias de Turismo por categoría |
 | FD-102 | Analítica web/app municipal | **Property ID de GA4 + cuenta de servicio** (lectura); contenedor de Tag Manager si existe — ver [runbook de activación](runbook-ga4.md) |
 | FD-103 | App Vive Níjar (avisos banderas/aforo, uso) | Acceso a su API/backend o export de datos de uso |
 | FD-104 | Movilidad y afluencia | Acceso a WiFi público, sensores/contadores/beacons y, si existe, dato de acceso al Parque (con DPIA) |

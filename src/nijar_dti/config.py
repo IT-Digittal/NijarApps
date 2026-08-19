@@ -142,6 +142,16 @@ class Settings(BaseSettings):
     # Ruta a un fichero JSON de service-account o JSON inline
     ga4_service_account_json: str = ""
 
+    # --- Noticias del Ayuntamiento (Strapi, acceso público de solo lectura) ---
+    # La web del Ayuntamiento publica sus noticias en Strapi (JSON abierto, sin
+    # autenticación). La plataforma las consume para el tótem, el dashboard y el
+    # chatbot. Valores por defecto = los facilitados por el Ayuntamiento.
+    noticias_strapi_base_url: str = "https://api.nijaraldia.es"
+    noticias_strapi_project_id: str = "bs261ckcuumnj68xcjncw7rf"
+    # documentId de la categoría "Turismo" (para el atajo de noticias turísticas).
+    noticias_categoria_turismo_id: str = "lj6bv606bqnpvf1u1bovf2m8"
+    noticias_timeout_seconds: int = 12
+
     # --- Almacenamiento ---
     storage_backend: Literal["local", "s3", "gcs"] = "local"
     storage_local_path: str = "/data/storage"
