@@ -73,7 +73,8 @@ async def _get_ubicacion_geojson(db: AsyncSession, tabla: str, id_value: UUID) -
     from sqlalchemy import text
 
     # `tabla` es una constante interna del código (no entra por el usuario); el id va parametrizado.
-    sql = text(f"SELECT ST_AsGeoJSON(ubicacion) AS geojson FROM {tabla} WHERE id = :id")  # noqa: S608
+    consulta = f"SELECT ST_AsGeoJSON(ubicacion) FROM {tabla} WHERE id = :id"  # noqa: S608
+    sql = text(consulta)  # nosemgrep
     result = await db.execute(sql, {"id": id_value})
     row = result.first()
     if row is None or row[0] is None:

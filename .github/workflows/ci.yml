@@ -85,7 +85,7 @@ jobs:
       - name: Build imagen para escaneo
         run: docker build -t nijar-dti-api:ci .
       - name: Trivy — vulnerabilidades alto/crítico bloquean
-        uses: aquasecurity/trivy-action@0.24.0
+        uses: aquasecurity/trivy-action@0.28.0
         with:
           image-ref: 'nijar-dti-api:ci'
           format: 'sarif'

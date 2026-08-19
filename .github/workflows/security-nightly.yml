@@ -85,7 +85,7 @@ jobs:
       - name: Build imagen
         run: docker build -t nijar-dti-api:nightly .
       - name: Trivy completo (LOW+MEDIUM+HIGH+CRITICAL)
-        uses: aquasecurity/trivy-action@0.24.0
+        uses: aquasecurity/trivy-action@0.28.0
         with:
           image-ref: 'nijar-dti-api:nightly'
           format: 'sarif'
