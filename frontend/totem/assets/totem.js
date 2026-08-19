@@ -200,7 +200,7 @@ updateClock();
 pintarFechas();
 
 // ============================================================
-// El tiempo y calidad del aire hoy (red Bettair, endpoint público)
+// El tiempo hoy (Open-Meteo, endpoint público /gemelo/meteo)
 // ============================================================
 const ICONO_SOL =
   '<svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><circle cx="12" cy="12" r="4.4" fill="#F5C518"/>' +
@@ -208,17 +208,48 @@ const ICONO_SOL =
 
 let meteoCache = null;
 
+/* Condiciones WMO (Open-Meteo) → texto corto multilingüe para el pill. */
+const METEO_COND = {
+  desp: { es: "Despejado", en: "Clear", de: "Klar", fr: "Dégagé" },
+  parc: { es: "Poco nuboso", en: "Partly cloudy", de: "Teils bewölkt", fr: "Partiellement nuageux" },
+  nub: { es: "Nublado", en: "Cloudy", de: "Bewölkt", fr: "Nuageux" },
+  nieb: { es: "Niebla", en: "Fog", de: "Nebel", fr: "Brouillard" },
+  llov: { es: "Llovizna", en: "Drizzle", de: "Nieselregen", fr: "Bruine" },
+  lluv: { es: "Lluvia", en: "Rain", de: "Regen", fr: "Pluie" },
+  chub: { es: "Chubascos", en: "Showers", de: "Schauer", fr: "Averses" },
+  niev: { es: "Nieve", en: "Snow", de: "Schnee", fr: "Neige" },
+  torm: { es: "Tormenta", en: "Storm", de: "Gewitter", fr: "Orage" },
+};
+function grupoWmo(c) {
+  if (c == null) return null;
+  if (c === 0) return "desp";
+  if (c === 1 || c === 2) return "parc";
+  if (c === 3) return "nub";
+  if (c === 45 || c === 48) return "nieb";
+  if (c >= 51 && c <= 57) return "llov";
+  if (c >= 61 && c <= 67) return "lluv";
+  if ((c >= 71 && c <= 77) || c === 85 || c === 86) return "niev";
+  if (c >= 80 && c <= 82) return "chub";
+  if (c >= 95) return "torm";
+  return null;
+}
+function condicionMeteo(codigo) {
+  const g = grupoWmo(codigo);
+  if (!g) return null;
+  const tr = METEO_COND[g];
+  return tr[currentLang] || tr.es;
+}
+
 function pintarMeteo() {
   const el = $("#header-weather");
   if (!el) return;
   const t = dict();
-  /* Si Bettair no está configurado, mostramos un placeholder estacional
-   * (agosto ~29°, verano soleado por defecto) para que el diseño de la home
-   * mantenga el pill. En producción con Bettair, se sustituye por datos reales. */
-  const m = meteoCache || { temperatura_media_c: 29, eaqi_peor: null };
-  const temp = Math.round(m.temperatura_media_c);
-  const aire = m.eaqi_peor != null ? (t[`meteo.aire.${m.eaqi_peor}`] || m.eaqi_peor_texto) : null;
-  const etiqueta = aire ? escapeHtml(aire.toUpperCase()) : escapeHtml((t["meteo.soleado"] || "Soleado").toUpperCase());
+  /* Fuente: Open-Meteo (endpoint público /gemelo/meteo). Si no hay red, se
+   * mantiene un placeholder estacional para no romper el diseño de la home. */
+  const m = meteoCache || { temp: 29, wmo: null };
+  const temp = m.temp != null ? Math.round(m.temp) : 29;
+  const cond = condicionMeteo(m.wmo);
+  const etiqueta = escapeHtml((cond || t["meteo.soleado"] || "Soleado").toUpperCase());
   el.innerHTML =
     `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.4" fill="#E0912F"/><g stroke="#E0912F" stroke-width="2.2" stroke-linecap="round" fill="none"><path d="M12 2v2.4M12 19.6V22M4 12H1.6M22.4 12H20M5.1 5.1l1.7 1.7M17.2 17.2l1.7 1.7M18.9 5.1l-1.7 1.7M6.8 17.2l-1.7 1.7"/></g></svg>` +
     `<div><span class="tmp">${temp}°</span><span class="wl">${etiqueta}</span></div>`;
@@ -226,12 +257,14 @@ function pintarMeteo() {
 }
 
 async function cargarMeteo() {
-  try { meteoCache = await apiGet("/gemelo/aire/resumen"); }
-  catch { meteoCache = null; } /* sin red Bettair configurada: el chip no aparece */
+  try {
+    const m = await apiGet("/gemelo/meteo");
+    meteoCache = { temp: m.temperatura_c, wmo: m.codigo_wmo };
+  } catch { meteoCache = null; } /* sin red: se usa el placeholder estacional */
   pintarMeteo();
 }
 cargarMeteo();
-setInterval(cargarMeteo, 10 * 60 * 1000); /* la red emite cada ~10 min */
+setInterval(cargarMeteo, 10 * 60 * 1000); /* Open-Meteo se refresca ~cada 15 min */
 
 // ============================================================
 // API helpers
