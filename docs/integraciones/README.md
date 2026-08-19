@@ -4,6 +4,10 @@
 cómo **verificarla**. El catálogo completo de fuentes está en
 [`fuentes-de-datos.md`](fuentes-de-datos.md).
 
+> **Comprobación global:** `python -m scripts.verificar_integraciones` ejecuta
+> todos los verificadores de una vez y muestra un resumen OK/FALLA por
+> integración (añade `--detalle` para el informe completo de cada uno).
+
 **Leyenda de estado**
 - ✅ **Operativo** — integrado y funcionando con datos reales.
 - 🟢 **Listo (sin credenciales)** — fuente pública; funciona por defecto.
@@ -19,7 +23,7 @@ cómo **verificarla**. El catálogo completo de fuentes está en
 |---|---|---|---|---|
 | **Noticias del Ayuntamiento** (Strapi) | 🟢 | `/api/v1/noticias`, `/noticias/turismo`, `/noticias/{slug}` | [runbook](runbook-noticias-strapi.md) | `python -m scripts.verificar_noticias_strapi` |
 | **Meteorología pública** (Open-Meteo) | 🟢 | `/api/v1/gemelo/meteo` | — (sin configuración) | `python -m scripts.verificar_openmeteo` |
-| **Banderas de playa / aforo** (ThingsBoard IoT municipal) | ✅ | `/api/v1/gemelo/playas/banderas`, `/gemelo/parque/aforo` | — | Requiere `THINGSBOARD_*` (configurado en producción) |
+| **Banderas de playa / aforo** (ThingsBoard IoT municipal) | ✅ | `/api/v1/gemelo/playas/banderas`, `/gemelo/parque/aforo` | — | `python -m scripts.verificar_thingsboard` (requiere `THINGSBOARD_*`, configurado en producción) |
 | **Social Listening** (Facebook + Instagram) | 🟡 | `/api/v1/data/social` (worker) | [runbook](runbook-social-listening-meta.md) | `python -m scripts.verificar_social_meta` |
 | **Social Listening** (X / Twitter) | 🟡 | `/api/v1/data/social` (worker) | [runbook](runbook-social-listening-meta.md) | (parte de social) |
 | **Analítica web** (Google Analytics 4) | 🟡 | Dashboard «Eficacia digital»; informe mensual | [runbook](runbook-ga4.md) | `python -m scripts.verificar_ga4` |
