@@ -36,8 +36,12 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 RUN groupadd --gid 1000 app \
     && useradd --uid 1000 --gid app --create-home --shell /bin/bash app
 
-# Dependencias mínimas en runtime
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# Parches de seguridad del sistema base + dependencias mínimas en runtime.
+# `apt-get upgrade` aplica las actualizaciones de seguridad de Debian
+# (p.ej. util-linux/bsdutils) sin cambiar de imagen base.
+RUN apt-get update \
+    && apt-get upgrade -y --no-install-recommends \
+    && apt-get install -y --no-install-recommends \
     libpq5 \
     curl \
     && rm -rf /var/lib/apt/lists/* \
@@ -47,6 +51,11 @@ WORKDIR /app
 
 # Copiar Python instalado por el builder
 COPY --from=builder /install /usr/local
+
+# Herramientas de empaquetado al día. No se usan en tiempo de ejecución
+# (el código no importa pip/setuptools/wheel), pero la imagen base las trae
+# y sus versiones vendorizadas arrastran CVEs; actualizarlas los elimina.
+RUN python -m pip install --no-cache-dir --upgrade pip setuptools wheel
 
 # Código de la aplicación + frontend + Alembic
 COPY --chown=app:app src ./src
