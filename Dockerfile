@@ -52,10 +52,22 @@ WORKDIR /app
 # Copiar Python instalado por el builder
 COPY --from=builder /install /usr/local
 
-# Herramientas de empaquetado al día. No se usan en tiempo de ejecución
-# (el código no importa pip/setuptools/wheel), pero la imagen base las trae
-# y sus versiones vendorizadas arrastran CVEs; actualizarlas los elimina.
-RUN python -m pip install --no-cache-dir --upgrade pip setuptools wheel
+# Endurecimiento de las herramientas de empaquetado, que solo se usan en
+# build y arrastran CVEs en la imagen final:
+#  - setuptools: la copia del builder + base deja metadatos .dist-info
+#    duplicados que `pip --upgrade` no limpia (provienen del COPY). Se borra
+#    por completo y se reinstala una única versión parcheada. Se conserva
+#    setuptools/pkg_resources por si alguna dependencia lo importa en runtime.
+#  - pip y wheel: no se usan en runtime. Se eliminan (pip vendoriza msgpack,
+#    que también aporta un CVE). Al quitarlos desaparecen esos hallazgos.
+RUN rm -rf /usr/local/lib/python3.11/site-packages/setuptools* \
+           /usr/local/lib/python3.11/site-packages/pkg_resources* \
+           /usr/local/lib/python3.11/site-packages/wheel* \
+    && python -m pip install --no-cache-dir --upgrade setuptools \
+    && rm -rf /usr/local/lib/python3.11/site-packages/pip \
+              /usr/local/lib/python3.11/site-packages/pip-*.dist-info \
+              /usr/local/lib/python3.11/site-packages/wheel* \
+              /usr/local/bin/pip /usr/local/bin/pip3 /usr/local/bin/pip3.11
 
 # Código de la aplicación + frontend + Alembic
 COPY --chown=app:app src ./src
