@@ -510,6 +510,8 @@ async function abrirCategoria(catId, chip = "todas") {
   if (chipEsSubchip) {
     items = items.filter((r) => (r.etiquetas || []).some((e) => String(e).toLowerCase() === chip.toLowerCase()));
   }
+  // Banderas de playa en vivo (solo para la categoría playas)
+  if (c.id === "playas") await cargarBanderas();
   renderItems(grid, items, c);
   grid.setAttribute("aria-busy", "false");
 }
@@ -604,6 +606,58 @@ function renderChips(c) {
     b.addEventListener("click", () => abrirCategoria(c.id, b.dataset.chip)));
 }
 
+// ============================================================
+// Estado de banderas de playa en vivo (IoT municipal, /gemelo/playas/banderas)
+// ============================================================
+const FLAG_LABEL = {
+  verde: { es: "Baño libre", en: "Safe bathing", de: "Baden erlaubt", fr: "Baignade autorisée" },
+  amarilla: { es: "Precaución", en: "Caution", de: "Vorsicht", fr: "Prudence" },
+  roja: { es: "Baño prohibido", en: "No bathing", de: "Baden verboten", fr: "Baignade interdite" },
+  sin_bandera: { es: "Sin bandera", en: "No flag", de: "Keine Flagge", fr: "Pas de drapeau" },
+};
+const FLAG_COLOR = { verde: "#2e7d32", amarilla: "#f5a623", roja: "#c0392b", sin_bandera: "#9aa0a6" };
+
+function normNombre(s) {
+  return String(s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "")
+    .replace(/\b(playa|cala|de|del|la|el|los|las)\b/g, "").replace(/[^a-z0-9]/g, "");
+}
+
+let banderasCache = null; /* { nombreNormalizado: estado } · null = aún no cargado */
+
+async function cargarBanderas() {
+  try {
+    const d = await apiGet("/gemelo/playas/banderas");
+    const map = {};
+    (d.banderas || []).forEach((b) => { const k = normNombre(b.nombre); if (k) map[k] = b.estado; });
+    banderasCache = map;
+  } catch { banderasCache = {}; } /* ThingsBoard no configurado: sin banderas, sin error */
+  return banderasCache;
+}
+
+function estadoBandera(nombre) {
+  if (!banderasCache) return null;
+  const k = normNombre(nombre);
+  if (!k) return null;
+  if (banderasCache[k]) return banderasCache[k];
+  for (const bk in banderasCache) {
+    if (bk && (k.includes(bk) || bk.includes(k))) return banderasCache[bk];
+  }
+  return null;
+}
+
+function badgeBandera(nombre) {
+  const est = estadoBandera(nombre);
+  if (!est || est === "desconocido" || !FLAG_COLOR[est]) return "";
+  const color = FLAG_COLOR[est];
+  const tr = FLAG_LABEL[est];
+  const lab = (tr && (tr[currentLang] || tr.es)) || est;
+  const txt = est === "amarilla" ? "#3a2f00" : "#fff";
+  return `<span class="tt-flag" style="display:inline-flex;align-items:center;gap:5px;margin-top:7px;` +
+    `padding:3px 10px;border-radius:999px;font-size:13px;font-weight:700;background:${color};color:${txt}">` +
+    `<svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><path d="M6 3v18" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><path d="M6.5 4h10l-2.4 3 2.4 3h-10z" fill="currentColor"/></svg>` +
+    escapeHtml(lab.toUpperCase()) + `</span>`;
+}
+
 function itemCard(r, c, index) {
   const nombre = r.nombre_i18n?.[currentLang] || r.nombre;
   const desc = r.descripcion_i18n?.[currentLang] || r.descripcion_corta || r.descripcion || "";
@@ -618,6 +672,7 @@ function itemCard(r, c, index) {
   const thumbBg = img
     ? `background-image: url('${escapeAttr(img)}'); background-size: cover; background-position: center;`
     : "";
+  const flagBadge = c && c.id === "playas" ? badgeBandera(nombre) : "";
   return `
     <button class="tt-lb" data-urn="${escapeAttr(r.urn || r.id || "")}">
       <span class="tt-lb-num" aria-hidden="true">${num}</span>
@@ -625,6 +680,7 @@ function itemCard(r, c, index) {
       <span class="tt-lb-body">
         <span class="tt-lb-title">${escapeHtml(nombre)}</span>
         <span class="tt-lb-sub">${escapeHtml(sub)}${meta.length ? " · " + meta.join(" · ") : ""}</span>
+        ${flagBadge}
       </span>
       <span class="tt-lb-go" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
@@ -816,7 +872,20 @@ function openDetail(r, c) {
     ? (t["badge.parque_natural"] || "ÍCONO DEL PARQUE NATURAL")
     : cat ? String(tagLabel(cat)).toUpperCase() : "";
   const tag = $("#poi-tag");
-  if (badgeText) { tag.textContent = badgeText; tag.hidden = false; } else tag.hidden = true;
+  /* En playas, si hay bandera en vivo, el kicker muestra el estado con su color. */
+  const estFlag = (c && c.id === "playas") || cat === "playa" ? estadoBandera(nombre) : null;
+  if (estFlag && FLAG_COLOR[estFlag]) {
+    const tr = FLAG_LABEL[estFlag];
+    const lab = (tr && (tr[currentLang] || tr.es)) || estFlag;
+    tag.textContent = (t["info.bandera"] || "BANDERA") + " " + String(estFlag).toUpperCase() + " · " + lab.toUpperCase();
+    tag.style.background = FLAG_COLOR[estFlag];
+    tag.style.color = estFlag === "amarilla" ? "#3a2f00" : "#fff";
+    tag.hidden = false;
+  } else {
+    tag.style.background = "";
+    tag.style.color = "";
+    if (badgeText) { tag.textContent = badgeText; tag.hidden = false; } else tag.hidden = true;
+  }
 
   // 3 tarjetas de stats en fila (formato simple: label + valor)
   const stats = [];
