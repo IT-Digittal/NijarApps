@@ -84,6 +84,11 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build imagen para escaneo
         run: docker build -t nijar-dti-api:ci .
+      - name: Smoke test — imports de runtime en la imagen endurecida
+        run: |
+          # Verifica que retirar pip/wheel del runtime no rompe ninguna
+          # dependencia (incluidas las que podrían importar pkg_resources).
+          docker run --rm --entrypoint python nijar-dti-api:ci -c "import fastapi, sqlalchemy, uvicorn, passlib.context, passlib.handlers.bcrypt, jose.jwt, google.auth, fpdf, paho.mqtt.client, structlog, redis, asyncpg, alembic, geoalchemy2, httpx, prometheus_client; print('runtime imports OK')"
       - name: Instalar Trivy (CLI, repo oficial apt)
         run: |
           sudo apt-get install -y --no-install-recommends wget gnupg
@@ -103,13 +108,12 @@ jobs:
           # JSON completo para el artefacto descargable.
           trivy image --severity CRITICAL,HIGH --ignore-unfixed \
             --format json --output trivy.json nijar-dti-api:ci
-      - name: Trivy — gate bloqueante (solo CRÍTICO con fix)
+      - name: Trivy — gate bloqueante (CRÍTICO + ALTO con fix)
         run: |
-          # Bloquea únicamente ante vulnerabilidades CRÍTICAS con parche
-          # disponible. Las de severidad HIGH del sistema base se informan
-          # (log + artefacto) pero no bloquean el PR; el escaneo nocturno
-          # mantiene la foto completa (CRITICAL..LOW).
-          trivy image --severity CRITICAL --ignore-unfixed \
+          # Con la imagen endurecida (0 HIGH/CRITICAL con fix), se restaura la
+          # política estricta: bloquea ante CRÍTICO y ALTO con parche
+          # disponible. El artefacto conserva el informe completo.
+          trivy image --severity CRITICAL,HIGH --ignore-unfixed \
             --exit-code 1 nijar-dti-api:ci
       - if: always()
         uses: actions/upload-artifact@v4

@@ -36,8 +36,12 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 RUN groupadd --gid 1000 app \
     && useradd --uid 1000 --gid app --create-home --shell /bin/bash app
 
-# Dependencias mínimas en runtime
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# Parches de seguridad del sistema base + dependencias mínimas en runtime.
+# `apt-get upgrade` aplica las actualizaciones de seguridad de Debian
+# (p.ej. util-linux/bsdutils) sin cambiar de imagen base.
+RUN apt-get update \
+    && apt-get upgrade -y --no-install-recommends \
+    && apt-get install -y --no-install-recommends \
     libpq5 \
     curl \
     && rm -rf /var/lib/apt/lists/* \
@@ -47,6 +51,24 @@ WORKDIR /app
 
 # Copiar Python instalado por el builder
 COPY --from=builder /install /usr/local
+
+# Endurecimiento de las herramientas de empaquetado, que solo se usan en
+# build y arrastran CVEs en la imagen final:
+#  - setuptools: la copia del builder + base deja metadatos .dist-info
+#    duplicados que `pip --upgrade` no limpia (provienen del COPY). Se borra
+#    por completo y se reinstala una única versión parcheada. Se conserva
+#    setuptools por prudencia (algunas libs lo importan de forma perezosa);
+#    el smoke test del CI verifica que todas las dependencias cargan.
+#  - pip y wheel: no se usan en runtime. Se eliminan (pip vendoriza msgpack,
+#    que también aporta un CVE). Al quitarlos desaparecen esos hallazgos.
+RUN rm -rf /usr/local/lib/python3.11/site-packages/setuptools* \
+           /usr/local/lib/python3.11/site-packages/pkg_resources* \
+           /usr/local/lib/python3.11/site-packages/wheel* \
+    && python -m pip install --no-cache-dir --upgrade setuptools \
+    && rm -rf /usr/local/lib/python3.11/site-packages/pip \
+              /usr/local/lib/python3.11/site-packages/pip-*.dist-info \
+              /usr/local/lib/python3.11/site-packages/wheel* \
+              /usr/local/bin/pip /usr/local/bin/pip3 /usr/local/bin/pip3.11
 
 # Código de la aplicación + frontend + Alembic
 COPY --chown=app:app src ./src
