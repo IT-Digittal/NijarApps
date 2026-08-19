@@ -95,10 +95,15 @@ jobs:
           sudo apt-get install -y trivy
       - name: Trivy completo (LOW+MEDIUM+HIGH+CRITICAL)
         run: |
-          trivy image \
-            --format sarif --output trivy-nightly.sarif \
-            --severity CRITICAL,HIGH,MEDIUM,LOW \
-            nijar-dti-api:nightly
+          trivy image --severity CRITICAL,HIGH,MEDIUM,LOW \
+            --format table --output trivy-nightly.txt nijar-dti-api:nightly
+          cat trivy-nightly.txt
+          trivy image --severity CRITICAL,HIGH,MEDIUM,LOW \
+            --format json --output trivy-nightly.json nijar-dti-api:nightly
       - if: always()
-        uses: github/codeql-action/upload-sarif@v3
-        with: { sarif_file: trivy-nightly.sarif }
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-nightly-report
+          path: |
+            trivy-nightly.txt
+            trivy-nightly.json

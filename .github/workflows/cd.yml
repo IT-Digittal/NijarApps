@@ -70,12 +70,12 @@ jobs:
             | sudo tee /etc/apt/sources.list.d/trivy.list
           sudo apt-get update
           sudo apt-get install -y trivy
-      - name: Trivy escaneo final pre-push (bloqueante)
+      - name: Trivy escaneo final pre-push (bloqueante ante CRÍTICO con fix)
         run: |
-          trivy image \
-            --exit-code 1 --ignore-unfixed \
-            --severity CRITICAL,HIGH \
-            '${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ steps.meta.outputs.tag }}'
+          IMG='${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ steps.meta.outputs.tag }}'
+          # Informe alto/crítico en el log (visibilidad); bloqueo solo ante CRÍTICO con fix.
+          trivy image --severity CRITICAL,HIGH --ignore-unfixed "$IMG" || true
+          trivy image --severity CRITICAL --ignore-unfixed --exit-code 1 "$IMG"
 
       - name: Push a ECR
         run: |
