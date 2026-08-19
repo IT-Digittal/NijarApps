@@ -67,16 +67,24 @@ def _obtener_cliente_openmeteo() -> ClienteOpenMeteo:
     return _cliente_openmeteo
 
 
-async def meteo_actual() -> MeteoActualOut:
-    """Meteorología pública (Open-Meteo). Público: lo muestra el tótem."""
-    if (hit := _cacheado("meteo")) is not None:
-        return hit  # type: ignore[no-any-return]
+async def meteo_actual(lat: float | None = None, lon: float | None = None) -> MeteoActualOut:
+    """Meteorología pública (Open-Meteo). Público: lo muestra el tótem.
+
+    Si se pasan ``lat``/``lon`` (p. ej. la ubicación del tótem) se usan esas
+    coordenadas; si no, las de la configuración (Níjar). La caché es por
+    coordenada para que cada tótem muestre el tiempo de su ubicación.
+    """
     s = get_settings()
+    latitud = lat if lat is not None else s.openmeteo_latitud
+    longitud = lon if lon is not None else s.openmeteo_longitud
+    clave = f"meteo:{round(latitud, 3)},{round(longitud, 3)}"
+    if (hit := _cacheado(clave)) is not None:
+        return hit  # type: ignore[no-any-return]
     datos = await _obtener_cliente_openmeteo().actual(
-        s.openmeteo_latitud, s.openmeteo_longitud, s.openmeteo_dias_prevision
+        latitud, longitud, s.openmeteo_dias_prevision
     )
     resultado = MeteoActualOut(**datos)
-    _cache["meteo"] = (time.monotonic(), resultado)
+    _cache[clave] = (time.monotonic(), resultado)
     return resultado
 
 

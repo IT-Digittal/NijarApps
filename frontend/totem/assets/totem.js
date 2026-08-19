@@ -258,7 +258,10 @@ function pintarMeteo() {
 
 async function cargarMeteo() {
   try {
-    const m = await apiGet("/gemelo/meteo");
+    /* Cada tótem pide el tiempo de SU ubicación (data-totem-lat/lon). */
+    const q = Number.isFinite(TOTEM_LAT) && Number.isFinite(TOTEM_LON)
+      ? `?lat=${TOTEM_LAT}&lon=${TOTEM_LON}` : "";
+    const m = await apiGet(`/gemelo/meteo${q}`);
     meteoCache = { temp: m.temperatura_c, wmo: m.codigo_wmo };
   } catch { meteoCache = null; } /* sin red: se usa el placeholder estacional */
   pintarMeteo();
