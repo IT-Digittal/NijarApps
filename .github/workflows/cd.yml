@@ -61,13 +61,21 @@ jobs:
             --tag ${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest \
             .
 
+      - name: Instalar Trivy (CLI, repo oficial apt)
+        run: |
+          sudo apt-get install -y --no-install-recommends wget gnupg
+          wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key \
+            | gpg --dearmor | sudo tee /usr/share/keyrings/trivy.gpg > /dev/null
+          echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb generic main" \
+            | sudo tee /etc/apt/sources.list.d/trivy.list
+          sudo apt-get update
+          sudo apt-get install -y trivy
       - name: Trivy escaneo final pre-push (bloqueante)
-        uses: aquasecurity/trivy-action@0.28.0
-        with:
-          image-ref: '${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ steps.meta.outputs.tag }}'
-          exit-code: '1'
-          severity: 'CRITICAL,HIGH'
-          ignore-unfixed: true
+        run: |
+          trivy image \
+            --exit-code 1 --ignore-unfixed \
+            --severity CRITICAL,HIGH \
+            '${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ steps.meta.outputs.tag }}'
 
       - name: Push a ECR
         run: |
