@@ -77,6 +77,7 @@ const CATS = [
   { id: "naturaleza",  label: "cat.naturaleza",        icon: "naturaleza",  th: "th-naturaleza",  bg: "../shared/tiles/naturaleza.jpg",  res: ["mirador"], etiquetas: ["naturaleza"], subchips: ["mirador"],       heroSub: "sub.naturaleza", unit: "unit.lugares" },
   { id: "ceramica",    label: "cat.ceramica_jarapas", icon: "artesania",   th: "th-gastro",      bg: "../shared/tiles/ceramica.jpg",    etiquetas: ["ceramica", "artesania", "jarapas"],                        heroSub: "sub.ceramica",   unit: "unit.talleres" },
   { id: "gastronomia", label: "cat.gastronomia",       icon: "gastronomia", th: "th-gastro",      bg: "../shared/tiles/gastronomia.jpg", srv: ["gastronomia_restaurante", "gastronomia_bar", "gastronomia_cafeteria"],           heroSub: "sub.gastro",     unit: "unit.locales" },
+  { id: "noticias", label: "cat.noticias", icon: "eventos", th: "th-evento", solid: true, alt: true, noticias: true, heroSub: "sub.noticias", unit: "unit.noticias" },
   /* Agenda y Empresas — se abren desde el dock inferior; no van en el grid del home */
   { id: "eventos",     label: "categorias.eventos",    icon: "eventos",     th: "th-evento",      hiddenFromGrid: true, events: true, heroSub: "sub.eventos", unit: "unit.eventos" },
   { id: "empresas",    label: "cat.empresas",          icon: "edificio",    th: "th-servicio",    hiddenFromGrid: true, empresas: true,
@@ -481,6 +482,7 @@ async function abrirCategoria(catId, chip = "todas") {
   if (chip === "emergencias") { renderEmergencies(grid); grid.setAttribute("aria-busy", "false"); return; }
   if (c.events) { await renderAgenda(grid, chip); grid.setAttribute("aria-busy", "false"); return; }
   if (c.empresas) { await renderEmpresas(grid, chip); grid.setAttribute("aria-busy", "false"); return; }
+  if (c.noticias) { await renderNoticias(grid); grid.setAttribute("aria-busy", "false"); return; }
 
   let items = [];
   // Sub-chip por etiqueta (playas, cabo, naturaleza): siempre se cargan todos los items de la categoría y luego se filtra por tag en cliente.
@@ -701,6 +703,94 @@ function renderItems(grid, items, c) {
   grid.querySelectorAll(".tt-lb").forEach((btn, i) => {
     btn.addEventListener("click", () => openDetail(items[i], c));
   });
+}
+
+// ============================================================
+// NOTICIAS del Ayuntamiento (Strapi, categoría Turismo)
+// ============================================================
+function fmtFechaNoticia(s) {
+  if (!s) return "";
+  try { return capitalize(new Date(s).toLocaleDateString(currentLang, { day: "numeric", month: "long", year: "numeric" })); }
+  catch { return ""; }
+}
+
+function stripHtml(html) {
+  return String(html || "")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<\/(p|div|h[1-6]|li)>/gi, "\n")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/gi, " ").replace(/&amp;/gi, "&")
+    .replace(/[ \t]+/g, " ").replace(/\n{2,}/g, "\n\n").trim();
+}
+
+function noticiaCard(n, index) {
+  const num = String((index ?? 0) + 1).padStart(2, "0");
+  const img = n.imagen_url;
+  const thumbBg = img ? `background-image: url('${escapeAttr(img)}'); background-size: cover; background-position: center;` : "";
+  const sub = [fmtFechaNoticia(n.fecha || n.publicado_en), (n.categorias && n.categorias[0]) || ""].filter(Boolean).join(" · ");
+  return `
+    <button class="tt-lb" data-slug="${escapeAttr(n.slug || "")}">
+      <span class="tt-lb-num" aria-hidden="true">${num}</span>
+      <span class="tt-lb-thumb th-evento" style="${thumbBg}" aria-hidden="true"></span>
+      <span class="tt-lb-body">
+        <span class="tt-lb-title">${escapeHtml(n.titulo || "")}</span>
+        <span class="tt-lb-sub">${escapeHtml(sub)}</span>
+      </span>
+      <span class="tt-lb-go" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+      </span>
+    </button>`;
+}
+
+async function renderNoticias(grid) {
+  const t = dict();
+  const chipsEl = $("#list-chips");
+  if (chipsEl) chipsEl.innerHTML = ""; /* las noticias no llevan filtros */
+  let items = [];
+  try {
+    const d = await apiGet("/noticias/turismo?page_size=12");
+    items = d.items || [];
+  } catch { items = []; }
+  const cnt = $("#list-count");
+  if (cnt) cnt.textContent = items.length ? `${items.length} ${t["unit.noticias"] || "noticias"}` : "";
+  if (!items.length) {
+    grid.innerHTML = `<p class="content-loading">${t["empty.contenido"] || "Sin contenidos disponibles"}</p>`;
+    return;
+  }
+  grid.innerHTML = items.map((n, i) => noticiaCard(n, i)).join("");
+  grid.querySelectorAll(".tt-lb").forEach((btn, i) => btn.addEventListener("click", () => openNoticia(items[i])));
+}
+
+async function openNoticia(n) {
+  const t = dict();
+  const bc = $("#poi-breadcrumb"); if (bc) bc.textContent = String(t["cat.noticias"] || "Noticias").toUpperCase();
+  $("#poi-title").textContent = n.titulo || "—";
+  const sub = $("#poi-sub");
+  if (sub) sub.textContent = [fmtFechaNoticia(n.fecha || n.publicado_en), (n.categorias || []).join(" · ")].filter(Boolean).join(" · ");
+  const hero = $("#poi-image");
+  if (hero) hero.style.backgroundImage = n.imagen_url ? `url('${n.imagen_url}')` : "";
+  const tag = $("#poi-tag");
+  if (tag) {
+    tag.style.background = ""; tag.style.color = "";
+    const cat0 = n.categorias && n.categorias[0];
+    if (cat0) { tag.textContent = String(cat0).toUpperCase(); tag.hidden = false; } else tag.hidden = true;
+  }
+  /* Cuerpo: descripción de inmediato; se completa con el contenido por slug. */
+  $("#poi-body").textContent = n.descripcion || "";
+  ["#poi-stats", "#poi-cta", "#poi-meta-card", "#poi-tags", "#poi-actions"].forEach((id) => {
+    const e = $(id); if (!e) return;
+    if (id === "#poi-stats") e.innerHTML = ""; else e.hidden = true;
+  });
+  dialog.querySelector(".poi-dialog-content")?.scrollTo({ top: 0 });
+  dialog.showModal();
+  if (typeof resetIdle === "function") resetIdle();
+  try {
+    if (n.slug) {
+      const d = await apiGet(`/noticias/${encodeURIComponent(n.slug)}`);
+      if (d && d.contenido) $("#poi-body").textContent = stripHtml(d.contenido);
+    }
+  } catch { /* se queda con la descripción */ }
 }
 
 // ============================================================
