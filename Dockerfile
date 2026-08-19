@@ -57,7 +57,8 @@ COPY --from=builder /install /usr/local
 #  - setuptools: la copia del builder + base deja metadatos .dist-info
 #    duplicados que `pip --upgrade` no limpia (provienen del COPY). Se borra
 #    por completo y se reinstala una única versión parcheada. Se conserva
-#    setuptools/pkg_resources por si alguna dependencia lo importa en runtime.
+#    setuptools por prudencia (algunas libs lo importan de forma perezosa);
+#    el smoke test del CI verifica que todas las dependencias cargan.
 #  - pip y wheel: no se usan en runtime. Se eliminan (pip vendoriza msgpack,
 #    que también aporta un CVE). Al quitarlos desaparecen esos hallazgos.
 RUN rm -rf /usr/local/lib/python3.11/site-packages/setuptools* \

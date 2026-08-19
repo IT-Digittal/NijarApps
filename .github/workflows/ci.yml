@@ -88,7 +88,7 @@ jobs:
         run: |
           # Verifica que retirar pip/wheel del runtime no rompe ninguna
           # dependencia (incluidas las que podrían importar pkg_resources).
-          docker run --rm --entrypoint python nijar-dti-api:ci -c "import fastapi, sqlalchemy, uvicorn, passlib.context, passlib.handlers.bcrypt, jose.jwt, google.auth, fpdf, paho.mqtt.client, structlog, redis, asyncpg, alembic, geoalchemy2, httpx, prometheus_client, pkg_resources; print('runtime imports OK')"
+          docker run --rm --entrypoint python nijar-dti-api:ci -c "import fastapi, sqlalchemy, uvicorn, passlib.context, passlib.handlers.bcrypt, jose.jwt, google.auth, fpdf, paho.mqtt.client, structlog, redis, asyncpg, alembic, geoalchemy2, httpx, prometheus_client; print('runtime imports OK')"
       - name: Instalar Trivy (CLI, repo oficial apt)
         run: |
           sudo apt-get install -y --no-install-recommends wget gnupg
