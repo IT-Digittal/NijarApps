@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from prometheus_client import (
     CONTENT_TYPE_LATEST,
@@ -99,36 +99,67 @@ async def refresh_domain_metrics() -> None:
     """Calcula las métricas de dominio leyendo de la BBDD."""
     try:
         async with AsyncSessionLocal() as db:
-            ahora = datetime.now(timezone.utc)
+            ahora = datetime.now(UTC)
             hace_1h = ahora - timedelta(hours=1)
             hace_24h = ahora - timedelta(hours=24)
 
             # Sensores por estado
-            for estado in ("operativo", "offline", "mantenimiento", "averia", "bateria_baja", "desconocido"):
-                n = int((await db.execute(
-                    select(func.count()).select_from(Sensor).where(Sensor.estado == estado)
-                )).scalar_one() or 0)
+            for estado in (
+                "operativo",
+                "offline",
+                "mantenimiento",
+                "averia",
+                "bateria_baja",
+                "desconocido",
+            ):
+                n = int(
+                    (
+                        await db.execute(
+                            select(func.count()).select_from(Sensor).where(Sensor.estado == estado)
+                        )
+                    ).scalar_one()
+                    or 0
+                )
                 sensores_total.labels(estado=estado).set(n)
 
             # Observaciones última hora
-            obs_total = int((await db.execute(
-                select(func.count()).select_from(Observacion).where(Observacion.observado_en >= hace_1h)
-            )).scalar_one() or 0)
-            obs_invalid = int((await db.execute(
-                select(func.count()).select_from(Observacion)
-                .where(Observacion.observado_en >= hace_1h)
-                .where(Observacion.valido.is_(False))
-            )).scalar_one() or 0)
+            obs_total = int(
+                (
+                    await db.execute(
+                        select(func.count())
+                        .select_from(Observacion)
+                        .where(Observacion.observado_en >= hace_1h)
+                    )
+                ).scalar_one()
+                or 0
+            )
+            obs_invalid = int(
+                (
+                    await db.execute(
+                        select(func.count())
+                        .select_from(Observacion)
+                        .where(Observacion.observado_en >= hace_1h)
+                        .where(Observacion.valido.is_(False))
+                    )
+                ).scalar_one()
+                or 0
+            )
             observaciones_ultima_hora.set(obs_total)
             observaciones_invalidas_ultima_hora.set(obs_invalid)
 
             # Chatbot últimas 24h por nivel de confianza
             for nivel in ("alta", "media", "fuera_de_dominio"):
-                n = int((await db.execute(
-                    select(func.count()).select_from(InteraccionChatbot)
-                    .where(InteraccionChatbot.created_at >= hace_24h)
-                    .where(InteraccionChatbot.nivel_confianza == nivel)
-                )).scalar_one() or 0)
+                n = int(
+                    (
+                        await db.execute(
+                            select(func.count())
+                            .select_from(InteraccionChatbot)
+                            .where(InteraccionChatbot.created_at >= hace_24h)
+                            .where(InteraccionChatbot.nivel_confianza == nivel)
+                        )
+                    ).scalar_one()
+                    or 0
+                )
                 chatbot_interacciones_ultimas_24h.labels(nivel_confianza=nivel).set(n)
 
             # Opiniones últimas 24h por fuente y sentimiento

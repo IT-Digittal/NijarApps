@@ -12,7 +12,7 @@ Uso:
 from __future__ import annotations
 
 import argparse
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from types import SimpleNamespace
 
 from nijar_dti.data.seeds.demo_data import _mes_anterior, generar_incidencias_seed
@@ -41,7 +41,7 @@ def _a_objeto(d: dict) -> SimpleNamespace:
 
 
 def construir_informe_ejemplo() -> tuple[MonthlyReport, object]:
-    inicio, fin = _mes_anterior(datetime.now(timezone.utc))
+    inicio, fin = _mes_anterior(datetime.now(UTC))
     incidencias = [_a_objeto(d) for d in generar_incidencias_seed()]
 
     disponibilidad = calcular_disponibilidad(incidencias, inicio, fin)

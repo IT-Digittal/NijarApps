@@ -12,7 +12,7 @@ La geometría se resuelve con las utilidades puras de ``core/geo.py``.
 from __future__ import annotations
 
 import json
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -45,20 +45,17 @@ def _nombre_idioma(nombre: str, nombre_i18n: dict | None, idioma: str) -> str:
 async def _recursos_publicados_con_coords(
     db: AsyncSession, categorias: list[str] | None
 ) -> list[tuple]:
-    q = (
-        select(
-            RecursoTuristico.id,
-            RecursoTuristico.nombre,
-            RecursoTuristico.categoria,
-            RecursoTuristico.nombre_i18n,
-            func.ST_AsGeoJSON(RecursoTuristico.ubicacion).label("geojson"),
-        )
-        .where(
-            RecursoTuristico.publicado.is_(True),
-            RecursoTuristico.activo.is_(True),
-            RecursoTuristico.deleted_at.is_(None),
-            RecursoTuristico.ubicacion.is_not(None),
-        )
+    q = select(
+        RecursoTuristico.id,
+        RecursoTuristico.nombre,
+        RecursoTuristico.categoria,
+        RecursoTuristico.nombre_i18n,
+        func.ST_AsGeoJSON(RecursoTuristico.ubicacion).label("geojson"),
+    ).where(
+        RecursoTuristico.publicado.is_(True),
+        RecursoTuristico.activo.is_(True),
+        RecursoTuristico.deleted_at.is_(None),
+        RecursoTuristico.ubicacion.is_not(None),
     )
     if categorias:
         q = q.where(RecursoTuristico.categoria.in_(categorias))
@@ -141,7 +138,7 @@ async def recomendaciones(
     dias: int = 30,
     limite: int = 6,
 ) -> RecomendacionesOut:
-    ahora = datetime.now(timezone.utc)
+    ahora = datetime.now(UTC)
     hasta = ahora + timedelta(days=dias)
 
     # Eventos próximos publicados

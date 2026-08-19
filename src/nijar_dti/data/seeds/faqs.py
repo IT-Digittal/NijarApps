@@ -49,7 +49,11 @@ FAQS_SEED: list[dict] = [
         "pregunta_en": "How do I access Mónsul Beach in summer?",
         "pregunta_de": "Wie komme ich im Sommer zum Strand von Mónsul?",
         "pregunta_fr": "Comment accéder à la plage de Mónsul en été?",
-        "frases_entrenamiento_es": ["acceso playa monsul", "como llegar monsul", "monsul restringido"],
+        "frases_entrenamiento_es": [
+            "acceso playa monsul",
+            "como llegar monsul",
+            "monsul restringido",
+        ],
         "frases_entrenamiento_en": ["monsul beach access", "monsul summer access"],
         "respuesta_es": "Durante la temporada alta (junio a septiembre) el acceso a Mónsul está regulado por aforo. Es necesario consultar el sistema de control en la web del Ayuntamiento; se recomienda llegar a primera hora o usar el bus lanzadera desde San José.",
         "respuesta_en": "During high season (June to September) Mónsul access is regulated by capacity. Check the council's online system; arriving early or using the shuttle bus from San José is recommended.",
@@ -71,7 +75,6 @@ FAQS_SEED: list[dict] = [
         "respuesta_fr": "Les chiens ne sont pas autorisés sur les plages publiques pendant la saison balnéaire (1er juin au 30 septembre), sauf sur les plages spécifiquement désignées. Consultez les panneaux à chaque accès.",
         "nivel_confianza": "alta",
     },
-
     # ============ PARQUE NATURAL ============
     {
         "intent": "horario_amoladeras",
@@ -101,7 +104,6 @@ FAQS_SEED: list[dict] = [
         "respuesta_fr": "Sont interdits : faire du feu (y compris barbecues), camper hors des zones désignées, ramasser plantes ou faune, sortir des sentiers balisés, circuler en véhicule sur des pistes non autorisées, abandonner des déchets. C'est un Parc Naturel protégé et Réserve de Biosphère UNESCO.",
         "nivel_confianza": "alta",
     },
-
     # ============ RUTAS ============
     {
         "intent": "ruta_rodalquilar_albaricoques",
@@ -130,7 +132,6 @@ FAQS_SEED: list[dict] = [
         "respuesta_fr": "L'un des sentiers côtiers les plus spectaculaires du parc, environ 4 km. Du phare de Cabo de Gata jusqu'au belvédère de Vela Blanca avec vue sur les falaises volcaniques. Adapté aux randonneurs et cyclistes.",
         "nivel_confianza": "alta",
     },
-
     # ============ SERVICIOS ============
     {
         "intent": "donde_dormir",
@@ -171,7 +172,6 @@ FAQS_SEED: list[dict] = [
         "respuesta_fr": "En haute saison (juillet-août-septembre), une navette circule depuis San José vers les plages de Mónsul et Genoveses. Des lignes régulières de bus relient Almería à San José et au village de Níjar.",
         "nivel_confianza": "media",
     },
-
     # ============ EVENTOS ============
     {
         "intent": "eventos_proximos",
@@ -186,7 +186,6 @@ FAQS_SEED: list[dict] = [
         "respuesta_fr": "Vous pouvez consulter l'agenda actualisé sur le site web touristique de la mairie ou dans la section 'Événements' de l'app Vive Níjar. Points forts : Festival du Court Métrage Féminin, fêtes de Rodalquilar (août) et Foire de l'Artisanat.",
         "nivel_confianza": "media",
     },
-
     # ============ EMERGENCIAS ============
     {
         "intent": "emergencias",
@@ -214,7 +213,6 @@ FAQS_SEED: list[dict] = [
         "respuesta_fr": "Oui, des centres de santé sont à Níjar village, San Isidro, Campohermoso et San José. Pour urgences graves, l'Hôpital Torrecárdenas à Almería ou le 112.",
         "nivel_confianza": "alta",
     },
-
     # ============ ACCESIBILIDAD ============
     {
         "intent": "accesibilidad_playas",
@@ -229,7 +227,6 @@ FAQS_SEED: list[dict] = [
         "respuesta_fr": "Oui. La plage de San José offre un service de baignade assistée et des passerelles en bois. La Fabriquilla et Las Negras ont également des accès adaptés.",
         "nivel_confianza": "alta",
     },
-
     # ============ OFICINA TURISMO ============
     {
         "intent": "oficina_turismo",
@@ -244,7 +241,6 @@ FAQS_SEED: list[dict] = [
         "respuesta_fr": "L'office de tourisme de Níjar se trouve dans le centre historique du village. Service en espagnol, anglais et français. Points d'information à San José et au Centre des Visiteurs Las Amoladeras.",
         "nivel_confianza": "alta",
     },
-
     # ============ ARTESANÍA ============
     {
         "intent": "artesania_jarapas",
@@ -259,7 +255,6 @@ FAQS_SEED: list[dict] = [
         "respuesta_fr": "La jarapa est un tissu artisanal traditionnel de Níjar, fabriqué à partir de bandes de tissu recyclé sur des métiers manuels. Elle fait partie du patrimoine culturel du village et est disponible dans de nombreux ateliers du centre historique.",
         "nivel_confianza": "alta",
     },
-
     # ============ MEJOR ÉPOCA ============
     {
         "intent": "mejor_epoca_visita",
@@ -274,7 +269,6 @@ FAQS_SEED: list[dict] = [
         "respuesta_fr": "Le printemps (avril-juin) et l'automne (septembre-octobre) sont idéaux : température agréable, moins de foule, paysages magnifiques. Juillet et août sont les mois les plus fréquentés. L'hiver est doux et excellent pour la randonnée.",
         "nivel_confianza": "alta",
     },
-
     # ============ FOTOGRAFÍA ============
     {
         "intent": "lugares_fotografia",
@@ -289,7 +283,6 @@ FAQS_SEED: list[dict] = [
         "respuesta_fr": "Les lieux les plus photogéniques : plage de Mónsul (lever ou coucher de soleil), Récif des Sirènes, Belvédère de l'Amatista, ancienne mine de Rodalquilar, Phare de Cabo de Gata et villages blancs de La Isleta del Moro et Las Negras.",
         "nivel_confianza": "alta",
     },
-
     # ============ SALUDO ============
     {
         "intent": "saludo",

@@ -69,8 +69,7 @@ async def _titulares_noticias() -> list[str]:
 
         page = await noticias_service.listar_turismo(page=1, page_size=5)
         lineas = [
-            f"- {n.titulo}" + (f" · {n.fecha:%d/%m/%Y}" if n.fecha else "")
-            for n in page.items
+            f"- {n.titulo}" + (f" · {n.fecha:%d/%m/%Y}" if n.fecha else "") for n in page.items
         ]
     except Exception:  # noqa: BLE001 — fuente externa opcional; nunca romper el chatbot
         log.debug("Noticias no disponibles para el contexto del chatbot", exc_info=True)
@@ -103,12 +102,16 @@ async def _contexto(db: AsyncSession, payload: ChatQueryIn) -> tuple[str, list[s
 
     # Recursos turísticos publicados (catálogo compacto)
     recursos = (
-        await db.execute(
-            select(RecursoTuristico)
-            .where(RecursoTuristico.publicado.is_(True), RecursoTuristico.activo.is_(True))
-            .limit(40)
+        (
+            await db.execute(
+                select(RecursoTuristico)
+                .where(RecursoTuristico.publicado.is_(True), RecursoTuristico.activo.is_(True))
+                .limit(40)
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
     if recursos:
         partes.append("Recursos turísticos del catálogo municipal (nombre · categoría · zona):")
         partes.extend(
@@ -121,16 +124,20 @@ async def _contexto(db: AsyncSession, payload: ChatQueryIn) -> tuple[str, list[s
     from datetime import UTC, datetime
 
     eventos = (
-        await db.execute(
-            select(EventoTuristico)
-            .where(
-                EventoTuristico.publicado.is_(True),
-                EventoTuristico.fecha_inicio >= datetime.now(UTC),
+        (
+            await db.execute(
+                select(EventoTuristico)
+                .where(
+                    EventoTuristico.publicado.is_(True),
+                    EventoTuristico.fecha_inicio >= datetime.now(UTC),
+                )
+                .order_by(EventoTuristico.fecha_inicio)
+                .limit(6)
             )
-            .order_by(EventoTuristico.fecha_inicio)
-            .limit(6)
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
     if eventos:
         partes.append("Próximos eventos de la agenda oficial:")
         partes.extend(
@@ -260,9 +267,7 @@ async def consultar_openai(
     )
 
 
-async def _fallback(
-    db: AsyncSession, payload: ChatQueryIn, settings: Settings
-) -> ChatResponseOut:
+async def _fallback(db: AsyncSession, payload: ChatQueryIn, settings: Settings) -> ChatResponseOut:
     """Degrada a Rasa (que a su vez cae al léxico) para no dejar el tótem mudo."""
     from nijar_dti.services import chatbot_rasa_adapter
 

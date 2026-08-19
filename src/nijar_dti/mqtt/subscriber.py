@@ -24,7 +24,6 @@ import logging
 import ssl
 import threading
 import time
-from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 
 import paho.mqtt.client as mqtt

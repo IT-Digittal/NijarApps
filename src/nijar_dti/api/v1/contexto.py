@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -71,5 +71,5 @@ async def factor_expansion(
         visitantes_oficiales_estimados=fe.visitantes_oficiales_estimados,
         es_preliminar=fe.es_preliminar,
         periodo_referencia=periodo_ref,
-        calculado_en=datetime.now(timezone.utc),
+        calculado_en=datetime.now(UTC),
     )

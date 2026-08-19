@@ -13,6 +13,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import sys
+from datetime import UTC
 
 from geoalchemy2.elements import WKTElement
 from sqlalchemy import select
@@ -58,12 +59,15 @@ from nijar_dti.data.seeds.verticales import (
     generar_sectores_agua_seed,
     generar_suministros_energia_seed,
 )
+from nijar_dti.models.alumbrado import CuadroMando, Luminaria, ZonaAlumbrado
 from nijar_dti.models.campana import Campana
 from nijar_dti.models.cliente import Cliente
 from nijar_dti.models.contenido import Contenido
 from nijar_dti.models.contexto import ContextoTuristico
+from nijar_dti.models.empresa_anunciante import EmpresaAnunciante
 from nijar_dti.models.evento_turistico import EventoTuristico
 from nijar_dti.models.faq import FAQ, InteraccionChatbot, NivelConfianza
+from nijar_dti.models.fuente_dato import FuenteDato
 from nijar_dti.models.incidencia import Incidencia
 from nijar_dti.models.metrica_historica import MetricaHistorica
 from nijar_dti.models.observacion import Observacion
@@ -71,9 +75,6 @@ from nijar_dti.models.opinion import Opinion
 from nijar_dti.models.recurso_turistico import RecursoTuristico
 from nijar_dti.models.rol import Rol
 from nijar_dti.models.sensor import Sensor
-from nijar_dti.models.alumbrado import CuadroMando, Luminaria, ZonaAlumbrado
-from nijar_dti.models.fuente_dato import FuenteDato
-from nijar_dti.models.empresa_anunciante import EmpresaAnunciante
 from nijar_dti.models.usuario import Usuario
 from nijar_dti.models.verticales import (
     CamaraCCTV,
@@ -219,9 +220,7 @@ async def seed_sensores(db: AsyncSession) -> None:
     creados = 0
     for s in SENSORES_SEED:
         urn = s["urn"]
-        existente = (
-            await db.execute(select(Sensor).where(Sensor.urn == urn))
-        ).scalar_one_or_none()
+        existente = (await db.execute(select(Sensor).where(Sensor.urn == urn))).scalar_one_or_none()
         if existente is not None:
             continue
         obj = Sensor(
@@ -251,9 +250,7 @@ async def seed_faqs(db: AsyncSession) -> None:
     creadas = 0
     for f in FAQS_SEED:
         intent = f["intent"]
-        existente = (
-            await db.execute(select(FAQ).where(FAQ.intent == intent))
-        ).scalar_one_or_none()
+        existente = (await db.execute(select(FAQ).where(FAQ.intent == intent))).scalar_one_or_none()
         if existente is not None:
             continue
         nivel = f.get("nivel_confianza", "alta")
@@ -300,20 +297,26 @@ async def seed_demo_eventos(db: AsyncSession) -> None:
     - Inserta los eventos del seed actual que falten.
     - Si los que ya existen están todos pasados, refresca fechas e i18n.
     """
-    from datetime import datetime, timezone
-    from sqlalchemy import func as sqlfunc
+    from datetime import datetime
+
     datos = generar_eventos_seed()
     urns_demo = [d["urn"] for d in datos]
-    ahora = datetime.now(timezone.utc)
+    ahora = datetime.now(UTC)
 
     # (0) Limpieza de huérfanos: eventos demo que ya no están en el seed y han terminado.
-    huerfanos = (await db.execute(
-        select(EventoTuristico).where(
-            EventoTuristico.urn.like(EVENTO_DEMO_URN_PREFIX + "%"),
-            EventoTuristico.urn.notin_(urns_demo),
-            EventoTuristico.fecha_fin < ahora,
+    huerfanos = (
+        (
+            await db.execute(
+                select(EventoTuristico).where(
+                    EventoTuristico.urn.like(EVENTO_DEMO_URN_PREFIX + "%"),
+                    EventoTuristico.urn.notin_(urns_demo),
+                    EventoTuristico.fecha_fin < ahora,
+                )
+            )
         )
-    )).scalars().all()
+        .scalars()
+        .all()
+    )
     for e in huerfanos:
         await db.delete(e)
     if huerfanos:
@@ -321,9 +324,12 @@ async def seed_demo_eventos(db: AsyncSession) -> None:
 
     # (1) Insertar o refrescar los eventos del seed actual.
     existentes = {
-        e.urn: e for e in (await db.execute(
-            select(EventoTuristico).where(EventoTuristico.urn.in_(urns_demo))
-        )).scalars().all()
+        e.urn: e
+        for e in (
+            await db.execute(select(EventoTuristico).where(EventoTuristico.urn.in_(urns_demo)))
+        )
+        .scalars()
+        .all()
     }
     hay_futuros = any(e.fecha_fin > ahora for e in existentes.values())
     creados = actualizados = 0
@@ -352,7 +358,10 @@ async def seed_demo_eventos(db: AsyncSession) -> None:
 async def seed_demo_observaciones(db: AsyncSession) -> None:
     """Carga observaciones IoT de demo si no existen."""
     from sqlalchemy import func as sqlfunc
-    count = int((await db.execute(select(sqlfunc.count()).select_from(Observacion))).scalar_one() or 0)
+
+    count = int(
+        (await db.execute(select(sqlfunc.count()).select_from(Observacion))).scalar_one() or 0
+    )
     if count > 0:
         log.info("Ya hay %d observaciones — saltando demo IoT", count)
         return
@@ -360,7 +369,12 @@ async def seed_demo_observaciones(db: AsyncSession) -> None:
     sensores = (await db.execute(select(Sensor).where(Sensor.deleted_at.is_(None)))).scalars().all()
     sensores_por_tipo: dict[str, str] = {}
     for s in sensores:
-        if s.tipo in ("ambiental_co2", "ambiental_temperatura", "ambiental_humedad", "ambiental_ruido"):
+        if s.tipo in (
+            "ambiental_co2",
+            "ambiental_temperatura",
+            "ambiental_humedad",
+            "ambiental_ruido",
+        ):
             sensores_por_tipo[s.tipo] = str(s.id)
     if not sensores_por_tipo:
         log.warning("No se encontraron sensores ambientales para demo")
@@ -374,11 +388,16 @@ async def seed_demo_observaciones(db: AsyncSession) -> None:
 async def seed_demo_observaciones_totem(db: AsyncSession) -> None:
     """Carga telemetría de salud de los tótems si no existe."""
     from sqlalchemy import func as sqlfunc
+
     sensores = (
-        await db.execute(
-            select(Sensor).where(Sensor.tipo == "totem", Sensor.deleted_at.is_(None))
+        (
+            await db.execute(
+                select(Sensor).where(Sensor.tipo == "totem", Sensor.deleted_at.is_(None))
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
     if not sensores:
         log.info("No hay sensores de tótem — saltando telemetría de tótems")
         return
@@ -406,6 +425,7 @@ async def seed_demo_observaciones_totem(db: AsyncSession) -> None:
 async def seed_demo_opiniones(db: AsyncSession) -> None:
     """Carga opiniones de social listening de demo si no existen."""
     from sqlalchemy import func as sqlfunc
+
     count = int((await db.execute(select(sqlfunc.count()).select_from(Opinion))).scalar_one() or 0)
     if count > 0:
         log.info("Ya hay %d opiniones — saltando demo social", count)
@@ -419,6 +439,7 @@ async def seed_demo_opiniones(db: AsyncSession) -> None:
 async def seed_demo_visitas_totem(db: AsyncSession) -> None:
     """Carga visitas de tótem de demo si no existen."""
     from sqlalchemy import func as sqlfunc
+
     count = int((await db.execute(select(sqlfunc.count()).select_from(Visita))).scalar_one() or 0)
     if count > 0:
         log.info("Ya hay %d visitas — saltando demo tótems", count)
@@ -432,7 +453,11 @@ async def seed_demo_visitas_totem(db: AsyncSession) -> None:
 async def seed_demo_chatbot(db: AsyncSession) -> None:
     """Carga interacciones de chatbot de demo si no existen."""
     from sqlalchemy import func as sqlfunc
-    count = int((await db.execute(select(sqlfunc.count()).select_from(InteraccionChatbot))).scalar_one() or 0)
+
+    count = int(
+        (await db.execute(select(sqlfunc.count()).select_from(InteraccionChatbot))).scalar_one()
+        or 0
+    )
     if count > 0:
         log.info("Ya hay %d interacciones chatbot — saltando demo", count)
         return
@@ -445,6 +470,7 @@ async def seed_demo_chatbot(db: AsyncSession) -> None:
 async def seed_contexto_backfill(db: AsyncSession) -> None:
     """Backfill de contexto (INE/Junta/AENA) en dry-run si la tabla está vacía."""
     from sqlalchemy import func as sqlfunc
+
     count = int(
         (await db.execute(select(sqlfunc.count()).select_from(ContextoTuristico))).scalar_one() or 0
     )
@@ -468,7 +494,10 @@ async def seed_contexto_backfill(db: AsyncSession) -> None:
 async def seed_demo_incidencias(db: AsyncSession) -> None:
     """Carga incidencias de mantenimiento de demo (mes anterior) si no existen."""
     from sqlalchemy import func as sqlfunc
-    count = int((await db.execute(select(sqlfunc.count()).select_from(Incidencia))).scalar_one() or 0)
+
+    count = int(
+        (await db.execute(select(sqlfunc.count()).select_from(Incidencia))).scalar_one() or 0
+    )
     if count > 0:
         log.info("Ya hay %d incidencias — saltando demo C.1", count)
         return
@@ -494,8 +523,10 @@ async def seed_cliente(db: AsyncSession) -> None:
 async def _recursos_por_urn(db: AsyncSession) -> dict[str, str]:
     """Devuelve un mapa urn -> id (str) de los recursos turísticos vivos."""
     recursos = (
-        await db.execute(select(RecursoTuristico).where(RecursoTuristico.deleted_at.is_(None)))
-    ).scalars().all()
+        (await db.execute(select(RecursoTuristico).where(RecursoTuristico.deleted_at.is_(None))))
+        .scalars()
+        .all()
+    )
     return {r.urn: str(r.id) for r in recursos}
 
 
@@ -520,6 +551,7 @@ async def seed_campanas(db: AsyncSession) -> None:
 async def seed_demo_visitas_web_app(db: AsyncSession) -> None:
     """Carga visitas web/app, WiFi y BLE de demo si no existen."""
     from sqlalchemy import func as sqlfunc
+
     count = int(
         (
             await db.execute(
@@ -542,6 +574,7 @@ async def seed_demo_visitas_web_app(db: AsyncSession) -> None:
 async def seed_demo_contenidos(db: AsyncSession) -> None:
     """Carga contenidos del CMS en distintos estados del flujo editorial."""
     from sqlalchemy import func as sqlfunc
+
     count = int(
         (await db.execute(select(sqlfunc.count()).select_from(Contenido))).scalar_one() or 0
     )
@@ -558,6 +591,7 @@ async def seed_demo_contenidos(db: AsyncSession) -> None:
 
 async def _tabla_vacia(db: AsyncSession, model) -> bool:
     from sqlalchemy import func as sqlfunc
+
     n = int((await db.execute(select(sqlfunc.count()).select_from(model))).scalar_one() or 0)
     return n == 0
 
@@ -567,11 +601,18 @@ async def seed_verticales(db: AsyncSession) -> None:
     # Alumbrado
     if await _tabla_vacia(db, ZonaAlumbrado):
         for z in ZONAS_ALUMBRADO:
-            db.add(ZonaAlumbrado(
-                id=z["id"], nombre=z["nombre"], luminarias=z["luminarias"],
-                led=z["led"], vsap=z["vsap"], solar=z["solar"],
-                latitud=z["latitud"], longitud=z["longitud"],
-            ))
+            db.add(
+                ZonaAlumbrado(
+                    id=z["id"],
+                    nombre=z["nombre"],
+                    luminarias=z["luminarias"],
+                    led=z["led"],
+                    vsap=z["vsap"],
+                    solar=z["solar"],
+                    latitud=z["latitud"],
+                    longitud=z["longitud"],
+                )
+            )
         log.info("Alumbrado · zonas creadas: %d", len(ZONAS_ALUMBRADO))
     if await _tabla_vacia(db, CuadroMando):
         cuadros = generar_cuadros_seed()
@@ -662,9 +703,7 @@ async def backfill_coordenadas_verticales(db: AsyncSession) -> None:
 
     # Contenedores: centro de su zona + dispersión determinista por código
     for ct in (
-        (await db.execute(select(Contenedor).where(Contenedor.latitud.is_(None))))
-        .scalars()
-        .all()
+        (await db.execute(select(Contenedor).where(Contenedor.latitud.is_(None)))).scalars().all()
     ):
         if ct.zona_id in zonas:
             zlat, zlon = zonas[ct.zona_id]

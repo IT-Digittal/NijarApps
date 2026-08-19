@@ -105,9 +105,7 @@ class TestMatchingIntent:
                 pregunta_es="¿Qué hora es?",
             ),
         ]
-        intent, score = _buscar_mejor_intent(
-            "qué playas más conocidas hay", "es", faqs
-        )
+        intent, score = _buscar_mejor_intent("qué playas más conocidas hay", "es", faqs)
         assert intent is not None
         assert intent.intent == "playas_destacadas"
         assert score > 0

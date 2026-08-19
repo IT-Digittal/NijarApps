@@ -9,7 +9,6 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from nijar_dti.schemas.common import I18nText
 
-
 CANALES_VALIDOS = {"totem", "web", "app"}
 
 

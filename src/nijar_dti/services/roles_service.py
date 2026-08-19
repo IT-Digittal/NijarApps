@@ -39,9 +39,7 @@ def _validar_permisos(permisos: list[str]) -> list[str]:
 async def contar_usuarios_por_rol(db: AsyncSession) -> dict[str, int]:
     """Nº de usuarios activos (no borrados) por slug de rol."""
     stmt = (
-        select(Usuario.rol, func.count())
-        .where(Usuario.deleted_at.is_(None))
-        .group_by(Usuario.rol)
+        select(Usuario.rol, func.count()).where(Usuario.deleted_at.is_(None)).group_by(Usuario.rol)
     )
     res = await db.execute(stmt)
     return {rol: int(n) for rol, n in res.all()}
@@ -55,9 +53,7 @@ async def listar_roles(db: AsyncSession) -> list[Rol]:
 
 
 async def obtener_rol(db: AsyncSession, slug: str) -> Rol:
-    res = await db.execute(
-        select(Rol).where(Rol.slug == slug).where(Rol.deleted_at.is_(None))
-    )
+    res = await db.execute(select(Rol).where(Rol.slug == slug).where(Rol.deleted_at.is_(None)))
     rol = res.scalar_one_or_none()
     if rol is None:
         raise RolNoEncontradoError(f"No existe el rol '{slug}'")
@@ -144,9 +140,7 @@ async def eliminar_rol(db: AsyncSession, slug: str, actor: Usuario | None = None
 
 
 async def existe_rol(db: AsyncSession, slug: str) -> bool:
-    res = await db.execute(
-        select(Rol.id).where(Rol.slug == slug).where(Rol.deleted_at.is_(None))
-    )
+    res = await db.execute(select(Rol.id).where(Rol.slug == slug).where(Rol.deleted_at.is_(None)))
     return res.scalar_one_or_none() is not None
 
 

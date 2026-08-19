@@ -79,8 +79,8 @@ class Settings(BaseSettings):
     # --- Social Listening (X / Twitter) ---
     twitter_bearer_token: str = ""
     twitter_search_query: str = (
-        "Cabo de Gata OR Níjar OR \"Playa de Mónsul\" OR \"Parque Natural Cabo de Gata\" "
-        "OR Rodalquilar OR \"San José Almería\""
+        'Cabo de Gata OR Níjar OR "Playa de Mónsul" OR "Parque Natural Cabo de Gata" '
+        'OR Rodalquilar OR "San José Almería"'
     )
     twitter_max_results_per_poll: int = 50
 

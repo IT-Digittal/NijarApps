@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from nijar_dti.core.ans import (
     SLA_ANS,
@@ -16,7 +16,7 @@ from nijar_dti.services.incidencias_service import (
     resumen_incidencias,
 )
 
-UTC = timezone.utc
+UTC = UTC
 
 
 def test_horas_entre():
@@ -82,8 +82,13 @@ def test_calcular_disponibilidad_descuenta_downtime():
     inicio = datetime(2026, 6, 1, tzinfo=UTC)
     fin = datetime(2026, 7, 1, tzinfo=UTC)
     incs = [
-        _IncFake("critica", "chatbot", datetime(2026, 6, 10, 10, 0, tzinfo=UTC),
-                 datetime(2026, 6, 10, 16, 0, tzinfo=UTC), afecta_disponibilidad=True),
+        _IncFake(
+            "critica",
+            "chatbot",
+            datetime(2026, 6, 10, 10, 0, tzinfo=UTC),
+            datetime(2026, 6, 10, 16, 0, tzinfo=UTC),
+            afecta_disponibilidad=True,
+        ),
     ]
     disp = calcular_disponibilidad(incs, inicio, fin)
     assert disp["chatbot"] < 100.0
@@ -94,8 +99,9 @@ def test_calcular_disponibilidad_descuenta_downtime():
 def test_resumen_incidencias_cuenta_por_tipo():
     det = datetime(2026, 6, 5, tzinfo=UTC)
     incs = [
-        _IncFake("critica", "plataforma", det, det,
-                 es_evento_seguridad=True, incidente_confirmado=True),
+        _IncFake(
+            "critica", "plataforma", det, det, es_evento_seguridad=True, incidente_confirmado=True
+        ),
         _IncFake("alta", "totem_1", det, det),
         _IncFake("baja", "smart_office", det, None, es_preventiva=True),
     ]

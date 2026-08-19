@@ -80,9 +80,7 @@ async def meteo_actual(lat: float | None = None, lon: float | None = None) -> Me
     clave = f"meteo:{round(latitud, 3)},{round(longitud, 3)}"
     if (hit := _cacheado(clave)) is not None:
         return hit  # type: ignore[no-any-return]
-    datos = await _obtener_cliente_openmeteo().actual(
-        latitud, longitud, s.openmeteo_dias_prevision
-    )
+    datos = await _obtener_cliente_openmeteo().actual(latitud, longitud, s.openmeteo_dias_prevision)
     resultado = MeteoActualOut(**datos)
     _cache[clave] = (time.monotonic(), resultado)
     return resultado

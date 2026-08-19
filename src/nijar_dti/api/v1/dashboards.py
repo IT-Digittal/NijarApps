@@ -134,7 +134,9 @@ async def totems_health(
 async def monthly_report(
     year: int = Query(..., ge=2025, le=2100),
     month: int = Query(..., ge=1, le=12),
-    user: Annotated[CurrentUser, Depends(require_roles("administrador_tic", "analista_datos", "auditor"))] = ...,
+    user: Annotated[
+        CurrentUser, Depends(require_roles("administrador_tic", "analista_datos", "auditor"))
+    ] = ...,
     db: AsyncSession = Depends(get_db),
 ) -> MonthlyReport:
     return await svc.informe_mensual(db, year, month)

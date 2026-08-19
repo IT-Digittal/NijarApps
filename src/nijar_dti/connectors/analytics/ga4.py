@@ -26,7 +26,6 @@ import json
 import logging
 import os
 from dataclasses import dataclass
-from datetime import date, timedelta
 from typing import Any
 
 import httpx
@@ -87,7 +86,7 @@ class GA4Connector:
             raise GA4ConnectorError("GA4_SERVICE_ACCOUNT_JSON no configurado")
         # Si es una ruta a fichero
         if os.path.exists(path_or_json):
-            with open(path_or_json, "r", encoding="utf-8") as fh:
+            with open(path_or_json, encoding="utf-8") as fh:
                 return json.load(fh)
         # Si es un JSON inline
         try:
@@ -102,8 +101,8 @@ class GA4Connector:
         # Para mantener dependencias mínimas y testabilidad, hacemos un import
         # diferido. En producción se recomienda añadir `google-auth` a las deps.
         try:
-            from google.oauth2 import service_account  # type: ignore
             from google.auth.transport.requests import Request  # type: ignore
+            from google.oauth2 import service_account  # type: ignore
         except ImportError as exc:
             raise GA4ConnectorError(
                 "google-auth no instalado. Añadir 'google-auth>=2.27' a las dependencias."
@@ -118,18 +117,18 @@ class GA4Connector:
 
     # ---------------- API calls ----------------
 
-    async def overview(
-        self, days_back: int = 30, settings: Settings | None = None
-    ) -> GA4Overview:
+    async def overview(self, days_back: int = 30, settings: Settings | None = None) -> GA4Overview:
         settings = settings or self.settings
         if not self.is_configured:
             return _overview_sintetico(days_back)
 
         body = {
-            "dateRanges": [{
-                "startDate": f"{days_back}daysAgo",
-                "endDate": "today",
-            }],
+            "dateRanges": [
+                {
+                    "startDate": f"{days_back}daysAgo",
+                    "endDate": "today",
+                }
+            ],
             "metrics": [
                 {"name": "sessions"},
                 {"name": "totalUsers"},
@@ -147,9 +146,7 @@ class GA4Connector:
                 json=body,
             )
         if resp.status_code >= 400:
-            raise GA4ConnectorError(
-                f"GA4 API error {resp.status_code}: {resp.text[:200]}"
-            )
+            raise GA4ConnectorError(f"GA4 API error {resp.status_code}: {resp.text[:200]}")
         data = resp.json()
         rows = data.get("rows") or []
         if not rows:
@@ -185,25 +182,26 @@ class GA4Connector:
                 json=body,
             )
         if resp.status_code >= 400:
-            raise GA4ConnectorError(
-                f"GA4 API error {resp.status_code}: {resp.text[:200]}"
-            )
+            raise GA4ConnectorError(f"GA4 API error {resp.status_code}: {resp.text[:200]}")
         data = resp.json()
         out: list[GA4ChannelBreakdown] = []
-        for row in (data.get("rows") or []):
+        for row in data.get("rows") or []:
             dims = row.get("dimensionValues", []) or []
             metrics = row.get("metricValues", []) or []
             if not dims or len(metrics) < 2:
                 continue
-            out.append(GA4ChannelBreakdown(
-                canal=dims[0].get("value", "(unknown)"),
-                sesiones=int(float(metrics[0].get("value", 0) or 0)),
-                usuarios=int(float(metrics[1].get("value", 0) or 0)),
-            ))
+            out.append(
+                GA4ChannelBreakdown(
+                    canal=dims[0].get("value", "(unknown)"),
+                    sesiones=int(float(metrics[0].get("value", 0) or 0)),
+                    usuarios=int(float(metrics[1].get("value", 0) or 0)),
+                )
+            )
         return out
 
 
 # ---------------- Datos sintéticos para dry-run ----------------
+
 
 def _overview_sintetico(days_back: int) -> GA4Overview:
     factor = max(days_back / 30, 1.0)

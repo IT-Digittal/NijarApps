@@ -9,7 +9,6 @@ Detiene limpiamente al recibir SIGINT/SIGTERM.
 
 from __future__ import annotations
 
-import logging
 import signal
 import sys
 

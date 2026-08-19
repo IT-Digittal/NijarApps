@@ -8,7 +8,7 @@ validación MAPE y detección de anomalías. La lógica matemática vive en
 
 from __future__ import annotations
 
-from datetime import date, datetime, timedelta, timezone
+from datetime import UTC, date, datetime, timedelta
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -41,9 +41,7 @@ METRICAS_VALIDAS = (*_METRICAS_VISITA.keys(), "chatbot")
 _Z_BANDA = 1.96  # banda de confianza al 95 %
 
 
-async def _serie_diaria(
-    db: AsyncSession, metrica: str, desde: datetime, hasta: datetime
-) -> list:
+async def _serie_diaria(db: AsyncSession, metrica: str, desde: datetime, hasta: datetime) -> list:
     """Serie diaria continua (rellena con 0) de la métrica indicada."""
     if metrica in _METRICAS_VISITA:
         bucket = func.date_trunc("day", Visita.ocurrido_en).label("dia")
@@ -85,7 +83,7 @@ async def prediccion_afluencia(
     horizonte_dias: int = 14,
     dias_historico: int = 365,
 ) -> PrediccionAfluencia:
-    hasta = datetime.now(timezone.utc)
+    hasta = datetime.now(UTC)
     desde = hasta - timedelta(days=dias_historico)
     serie = await _serie_diaria(db, metrica, desde, hasta)
 
@@ -122,7 +120,7 @@ async def validacion_modelo(
     dias_historico: int = 365,
     dias_test: int = 14,
 ) -> ValidacionModelo:
-    hasta = datetime.now(timezone.utc)
+    hasta = datetime.now(UTC)
     desde = hasta - timedelta(days=dias_historico)
     serie = await _serie_diaria(db, metrica, desde, hasta)
     r = validar_holdout(serie, dias_test=dias_test)
@@ -143,7 +141,7 @@ async def anomalias_afluencia(
     dias_historico: int = 180,
     z: float = 3.0,
 ) -> DeteccionAnomalias:
-    hasta = datetime.now(timezone.utc)
+    hasta = datetime.now(UTC)
     desde = hasta - timedelta(days=dias_historico)
     serie = await _serie_diaria(db, metrica, desde, hasta)
     anomalias = detectar_anomalias(serie, z=z)

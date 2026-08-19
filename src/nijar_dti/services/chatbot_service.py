@@ -16,57 +16,289 @@ import time
 import unicodedata
 from collections import Counter
 from collections.abc import Iterable
-from datetime import datetime, timezone
+from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import case, func, select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from nijar_dti.models.faq import FAQ, InteraccionChatbot, NivelConfianza
 from nijar_dti.schemas.chatbot import (
+    ChatbotTelemetry,
     ChatQueryIn,
     ChatResponseOut,
-    ChatbotTelemetry,
     FuenteRespuesta,
     IntentInfo,
     TopIntentItem,
 )
 from nijar_dti.schemas.common import PuntoSerieDiaria, SerieDiaria
 
-
 # Stop-words mínimas por idioma (suficientes para un motor lexical baseline).
 _STOP_WORDS: dict[str, set[str]] = {
     "es": {
-        "el","la","los","las","un","una","unos","unas","de","del","al","a","y","o",
-        "que","como","cuando","donde","cual","cuales","es","son","esta","están",
-        "para","por","con","sin","mi","mis","tu","tus","su","sus","me","te","se",
-        "lo","yo","tú","él","ella","nosotros","vosotros","ellos","muy","más","menos",
-        "poco","mucho","si","no","ni","pero","porque","qué","cómo","dónde","cuánto",
-        "hola","buenas","buenos","tardes","días","favor","gracias","quiero","quería",
-        "podría","puede","puedes","hay",
+        "el",
+        "la",
+        "los",
+        "las",
+        "un",
+        "una",
+        "unos",
+        "unas",
+        "de",
+        "del",
+        "al",
+        "a",
+        "y",
+        "o",
+        "que",
+        "como",
+        "cuando",
+        "donde",
+        "cual",
+        "cuales",
+        "es",
+        "son",
+        "esta",
+        "están",
+        "para",
+        "por",
+        "con",
+        "sin",
+        "mi",
+        "mis",
+        "tu",
+        "tus",
+        "su",
+        "sus",
+        "me",
+        "te",
+        "se",
+        "lo",
+        "yo",
+        "tú",
+        "él",
+        "ella",
+        "nosotros",
+        "vosotros",
+        "ellos",
+        "muy",
+        "más",
+        "menos",
+        "poco",
+        "mucho",
+        "si",
+        "no",
+        "ni",
+        "pero",
+        "porque",
+        "qué",
+        "cómo",
+        "dónde",
+        "cuánto",
+        "hola",
+        "buenas",
+        "buenos",
+        "tardes",
+        "días",
+        "favor",
+        "gracias",
+        "quiero",
+        "quería",
+        "podría",
+        "puede",
+        "puedes",
+        "hay",
     },
     "en": {
-        "the","a","an","of","and","or","to","in","on","at","by","for","with","without",
-        "is","are","was","were","be","been","being","i","you","he","she","it","we","they",
-        "my","your","his","her","its","our","their","this","that","these","those",
-        "what","when","where","which","how","why","who","please","thanks","thank","hi",
-        "hello","there","do","does","did","can","could","would","should","may","might",
+        "the",
+        "a",
+        "an",
+        "of",
+        "and",
+        "or",
+        "to",
+        "in",
+        "on",
+        "at",
+        "by",
+        "for",
+        "with",
+        "without",
+        "is",
+        "are",
+        "was",
+        "were",
+        "be",
+        "been",
+        "being",
+        "i",
+        "you",
+        "he",
+        "she",
+        "it",
+        "we",
+        "they",
+        "my",
+        "your",
+        "his",
+        "her",
+        "its",
+        "our",
+        "their",
+        "this",
+        "that",
+        "these",
+        "those",
+        "what",
+        "when",
+        "where",
+        "which",
+        "how",
+        "why",
+        "who",
+        "please",
+        "thanks",
+        "thank",
+        "hi",
+        "hello",
+        "there",
+        "do",
+        "does",
+        "did",
+        "can",
+        "could",
+        "would",
+        "should",
+        "may",
+        "might",
     },
     "de": {
-        "der","die","das","den","dem","des","ein","eine","einen","einem","eines",
-        "und","oder","aber","auch","nicht","kein","keine","ich","du","er","sie","es",
-        "wir","ihr","mich","dich","sich","mein","dein","sein","ihr","unser","euer",
-        "ist","sind","war","waren","sein","werden","wird","kann","könnte","soll","muss",
-        "wo","was","wann","wie","warum","wer","welche","welcher","welches",
-        "bitte","danke","hallo","guten","tag","morgen",
+        "der",
+        "die",
+        "das",
+        "den",
+        "dem",
+        "des",
+        "ein",
+        "eine",
+        "einen",
+        "einem",
+        "eines",
+        "und",
+        "oder",
+        "aber",
+        "auch",
+        "nicht",
+        "kein",
+        "keine",
+        "ich",
+        "du",
+        "er",
+        "sie",
+        "es",
+        "wir",
+        "ihr",
+        "mich",
+        "dich",
+        "sich",
+        "mein",
+        "dein",
+        "sein",
+        "unser",
+        "euer",
+        "ist",
+        "sind",
+        "war",
+        "waren",
+        "werden",
+        "wird",
+        "kann",
+        "könnte",
+        "soll",
+        "muss",
+        "wo",
+        "was",
+        "wann",
+        "wie",
+        "warum",
+        "wer",
+        "welche",
+        "welcher",
+        "welches",
+        "bitte",
+        "danke",
+        "hallo",
+        "guten",
+        "tag",
+        "morgen",
     },
     "fr": {
-        "le","la","les","un","une","des","de","du","au","aux","à","et","ou","mais",
-        "ne","pas","ni","je","tu","il","elle","nous","vous","ils","elles","moi","toi",
-        "lui","mon","ma","mes","ton","ta","tes","son","sa","ses","notre","votre","leur",
-        "est","sont","était","étaient","être","avoir","peut","peux","pourrais","doit",
-        "où","quand","comment","quoi","quel","quelle","quels","quelles","pourquoi",
-        "qui","s'il","sil","please","merci","bonjour","bonsoir",
+        "le",
+        "la",
+        "les",
+        "un",
+        "une",
+        "des",
+        "de",
+        "du",
+        "au",
+        "aux",
+        "à",
+        "et",
+        "ou",
+        "mais",
+        "ne",
+        "pas",
+        "ni",
+        "je",
+        "tu",
+        "il",
+        "elle",
+        "nous",
+        "vous",
+        "ils",
+        "elles",
+        "moi",
+        "toi",
+        "lui",
+        "mon",
+        "ma",
+        "mes",
+        "ton",
+        "ta",
+        "tes",
+        "son",
+        "sa",
+        "ses",
+        "notre",
+        "votre",
+        "leur",
+        "est",
+        "sont",
+        "était",
+        "étaient",
+        "être",
+        "avoir",
+        "peut",
+        "peux",
+        "pourrais",
+        "doit",
+        "où",
+        "quand",
+        "comment",
+        "quoi",
+        "quel",
+        "quelle",
+        "quels",
+        "quelles",
+        "pourquoi",
+        "qui",
+        "s'il",
+        "sil",
+        "please",
+        "merci",
+        "bonjour",
+        "bonsoir",
     },
 }
 
@@ -110,9 +342,7 @@ def _campos_idioma(idioma: str) -> tuple[str, str, str]:
 
 
 async def _cargar_faqs_activas(db: AsyncSession) -> list[FAQ]:
-    res = await db.execute(
-        select(FAQ).where(FAQ.activo.is_(True)).where(FAQ.deleted_at.is_(None))
-    )
+    res = await db.execute(select(FAQ).where(FAQ.activo.is_(True)).where(FAQ.deleted_at.is_(None)))
     return list(res.scalars().all())
 
 
@@ -197,9 +427,8 @@ def _sugerencias_iniciales(idioma: str) -> list[str]:
 
 # ----------------- API pública del servicio -----------------
 
-async def consultar(
-    db: AsyncSession, payload: ChatQueryIn
-) -> ChatResponseOut:
+
+async def consultar(db: AsyncSession, payload: ChatQueryIn) -> ChatResponseOut:
     inicio = time.perf_counter()
     faqs = await _cargar_faqs_activas(db)
 
@@ -258,9 +487,7 @@ async def consultar(
     await db.refresh(interaccion)
 
     sugerencias = (
-        _sugerencias_iniciales(payload.idioma)
-        if nivel == NivelConfianza.FUERA_DE_DOMINIO
-        else None
+        _sugerencias_iniciales(payload.idioma) if nivel == NivelConfianza.FUERA_DE_DOMINIO else None
     )
 
     return ChatResponseOut(
@@ -335,9 +562,7 @@ async def telemetria(
     feedback_util = [i.util for i in interacciones if i.util is not None]
 
     idiomas = Counter(i.idioma for i in interacciones)
-    idiomas_pct = (
-        {k: round(v * 100 / total, 2) for k, v in idiomas.items()} if total else {}
-    )
+    idiomas_pct = {k: round(v * 100 / total, 2) for k, v in idiomas.items()} if total else {}
 
     intents = Counter(i.intent_detectado for i in interacciones if i.intent_detectado)
     top = [TopIntentItem(nombre=k, ocurrencias=v) for k, v in intents.most_common(10)]
@@ -379,7 +604,5 @@ async def telemetria_series(
     q = q.group_by(bucket).order_by(bucket)
 
     rows = (await db.execute(q)).all()
-    puntos = [
-        PuntoSerieDiaria(fecha=row.bucket.date(), total=int(row.total)) for row in rows
-    ]
+    puntos = [PuntoSerieDiaria(fecha=row.bucket.date(), total=int(row.total)) for row in rows]
     return SerieDiaria(granularidad=granularidad, desde=desde, hasta=hasta, puntos=puntos)

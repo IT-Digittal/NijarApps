@@ -78,9 +78,7 @@ class Servicio(Base, AuditMixin):
     cif: Mapped[str | None] = mapped_column(String(20), default=None)
 
     accesibilidad: Mapped[dict | None] = mapped_column(JSON, default=None)
-    idiomas_atencion: Mapped[list[str] | None] = mapped_column(
-        ARRAY(String), default=None
-    )
+    idiomas_atencion: Mapped[list[str] | None] = mapped_column(ARRAY(String), default=None)
     etiquetas: Mapped[list[str] | None] = mapped_column(ARRAY(String), default=None)
 
     imagenes: Mapped[list[str] | None] = mapped_column(ARRAY(String), default=None)

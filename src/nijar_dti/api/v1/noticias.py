@@ -63,9 +63,7 @@ async def turismo(
         raise HTTPException(status_code=502, detail=str(exc)) from exc
 
 
-@router.get(
-    "/categorias", response_model=CategoriasNoticiasOut, summary="Categorías de noticias"
-)
+@router.get("/categorias", response_model=CategoriasNoticiasOut, summary="Categorías de noticias")
 async def categorias() -> CategoriasNoticiasOut:
     _requiere_fuente()
     try:

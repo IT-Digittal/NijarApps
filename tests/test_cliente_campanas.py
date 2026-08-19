@@ -7,6 +7,8 @@ Los tests de schemas y seeds son puramente unitarios.
 
 from __future__ import annotations
 
+from datetime import UTC
+
 import pytest
 from pydantic import ValidationError
 
@@ -52,23 +54,23 @@ class TestSchemas:
             CampanaIn(nombre="Sin fechas")
 
     def test_campana_estado_invalido(self):
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         with pytest.raises(ValidationError):
             CampanaIn(
                 nombre="X",
-                fecha_inicio=datetime(2026, 1, 1, tzinfo=timezone.utc),
-                fecha_fin=datetime(2026, 2, 1, tzinfo=timezone.utc),
+                fecha_inicio=datetime(2026, 1, 1, tzinfo=UTC),
+                fecha_fin=datetime(2026, 2, 1, tzinfo=UTC),
                 estado="inexistente",
             )
 
     def test_campana_objetivo_valido(self):
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         c = CampanaIn(
             nombre="Verano",
-            fecha_inicio=datetime(2026, 6, 1, tzinfo=timezone.utc),
-            fecha_fin=datetime(2026, 9, 1, tzinfo=timezone.utc),
+            fecha_inicio=datetime(2026, 6, 1, tzinfo=UTC),
+            fecha_fin=datetime(2026, 9, 1, tzinfo=UTC),
             objetivo="sensibilizacion",
             estado="activa",
         )

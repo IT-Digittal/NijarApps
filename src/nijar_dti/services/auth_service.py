@@ -5,13 +5,13 @@ from __future__ import annotations
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from nijar_dti.config import get_settings
 from nijar_dti.core.security import (
     create_access_token,
     create_refresh_token,
     decode_token,
     verify_password,
 )
-from nijar_dti.config import get_settings
 from nijar_dti.models.usuario import Usuario
 
 
@@ -65,6 +65,7 @@ async def refresh_tokens(db: AsyncSession, refresh_token: str) -> dict[str, str 
         raise AuthError("Token sin sujeto")
 
     from uuid import UUID
+
     try:
         uid = UUID(user_id)
     except (ValueError, TypeError) as exc:

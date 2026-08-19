@@ -3,8 +3,7 @@
 from __future__ import annotations
 
 from collections import Counter
-from datetime import datetime, timezone
-from typing import Any
+from datetime import datetime
 
 from sqlalchemy import case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -17,7 +16,6 @@ from nijar_dti.schemas.social import (
     ShareOfVoice,
     TopicItem,
 )
-
 
 _GRANULARIDADES = {
     "hora": "hour",
@@ -89,9 +87,7 @@ async def serie_sentimiento(
         )
         for row in rows
     ]
-    return SentimentSeries(
-        granularidad=granularidad, desde=desde, hasta=hasta, puntos=puntos
-    )
+    return SentimentSeries(granularidad=granularidad, desde=desde, hasta=hasta, puntos=puntos)
 
 
 async def share_of_voice(

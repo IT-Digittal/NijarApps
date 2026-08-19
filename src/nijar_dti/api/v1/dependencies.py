@@ -47,9 +47,7 @@ async def get_current_user(
 
     sub = payload.get("sub")
     if not sub:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Token sin sujeto"
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token sin sujeto")
 
     try:
         user_id = UUID(sub)
@@ -60,9 +58,7 @@ async def get_current_user(
 
     user = await db.get(Usuario, user_id)
     if user is None or not user.activo or user.deleted_at is not None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Usuario inactivo"
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Usuario inactivo")
 
     scopes = list(payload.get("scopes") or [])
     # Los permisos del rol se leen de BD en cada petición, de modo que un cambio

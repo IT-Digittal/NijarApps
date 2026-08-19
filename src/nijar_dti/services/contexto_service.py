@@ -7,7 +7,7 @@ pernoctaciones oficiales (INE EOH).
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -31,7 +31,7 @@ async def ingerir_registros(
 ) -> ContextoIngestResult:
     """Ingesta idempotente: inserta nuevos y actualiza el valor de los existentes."""
     insertados = actualizados = 0
-    ahora = datetime.now(timezone.utc)
+    ahora = datetime.now(UTC)
 
     for r in registros:
         existente = (

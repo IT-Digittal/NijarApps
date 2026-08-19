@@ -8,7 +8,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from nijar_dti.api.v1.dependencies import get_current_user, require_roles
+from nijar_dti.api.v1.dependencies import require_roles
 from nijar_dti.core.database import get_db
 from nijar_dti.schemas.auth import CurrentUser
 from nijar_dti.schemas.common import PageParams, Paginated
@@ -30,6 +30,7 @@ router = APIRouter()
 
 # -------- helpers --------
 
+
 def _page_params(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=200),
@@ -40,6 +41,7 @@ def _page_params(
 # =====================================================
 #                 RECURSOS TURÍSTICOS
 # =====================================================
+
 
 @router.get(
     "/resources",
@@ -140,6 +142,7 @@ async def delete_resource(
 #                       EVENTOS
 # =====================================================
 
+
 @router.get(
     "/events",
     response_model=Paginated[EventoTuristicoOut],
@@ -154,6 +157,7 @@ async def list_events(
     db: AsyncSession = Depends(get_db),
 ) -> Paginated[EventoTuristicoOut]:
     from datetime import datetime
+
     filtros = EventoFilter(
         desde=datetime.fromisoformat(desde) if desde else None,
         hasta=datetime.fromisoformat(hasta) if hasta else None,
@@ -170,9 +174,7 @@ async def list_events(
     response_model=EventoTuristicoOut,
     summary="Detalle de un evento",
 )
-async def get_event(
-    event_id: UUID, db: AsyncSession = Depends(get_db)
-) -> EventoTuristicoOut:
+async def get_event(event_id: UUID, db: AsyncSession = Depends(get_db)) -> EventoTuristicoOut:
     try:
         e = await svc.obtener_evento(db, event_id)
     except svc.NotFound as exc:
@@ -202,6 +204,7 @@ async def create_event(
 #                       SERVICIOS
 # =====================================================
 
+
 @router.get(
     "/services",
     response_model=Paginated[ServicioOut],
@@ -225,9 +228,7 @@ async def list_services(
     response_model=ServicioOut,
     summary="Detalle de un servicio",
 )
-async def get_service(
-    service_id: UUID, db: AsyncSession = Depends(get_db)
-) -> ServicioOut:
+async def get_service(service_id: UUID, db: AsyncSession = Depends(get_db)) -> ServicioOut:
     try:
         s = await svc.obtener_servicio(db, service_id)
     except svc.NotFound as exc:

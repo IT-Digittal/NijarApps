@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime, timezone
+from datetime import UTC, datetime
 from uuid import UUID
 
 from sqlalchemy import func, or_, select
@@ -43,12 +43,16 @@ async def crear_contenido(
     db: AsyncSession, payload: ContenidoIn, created_by: UUID | None = None
 ) -> Contenido:
     _validar_canales(payload.canales)
-    ahora = datetime.now(timezone.utc)
+    ahora = datetime.now(UTC)
     obj = Contenido(
         titulo=payload.titulo,
-        titulo_i18n=payload.titulo_i18n.model_dump(exclude_none=True) if payload.titulo_i18n else None,
+        titulo_i18n=payload.titulo_i18n.model_dump(exclude_none=True)
+        if payload.titulo_i18n
+        else None,
         cuerpo=payload.cuerpo,
-        cuerpo_i18n=payload.cuerpo_i18n.model_dump(exclude_none=True) if payload.cuerpo_i18n else None,
+        cuerpo_i18n=payload.cuerpo_i18n.model_dump(exclude_none=True)
+        if payload.cuerpo_i18n
+        else None,
         canales=list(payload.canales),
         plantilla_id=payload.plantilla_id,
         recurso_id=payload.recurso_id,
@@ -128,7 +132,7 @@ async def actualizar_contenido(
 ) -> Contenido:
     _validar_canales(payload.canales)
     obj = await obtener_contenido(db, content_id)
-    ahora = datetime.now(timezone.utc)
+    ahora = datetime.now(UTC)
     obj.titulo = payload.titulo
     obj.titulo_i18n = (
         payload.titulo_i18n.model_dump(exclude_none=True) if payload.titulo_i18n else None
@@ -158,15 +162,23 @@ async def despublicar_contenido(
     obj = await obtener_contenido(db, content_id)
     obj.estado = EstadoContenido.ARCHIVADO
     obj.updated_by = updated_by
-    obj.deleted_at = datetime.now(timezone.utc)
+    obj.deleted_at = datetime.now(UTC)
     await db.flush()
 
 
 PLANTILLAS_DISPONIBLES: list[dict] = [
     {"id": "tpl_basico", "nombre": "Plantilla básica", "descripcion": "Título + cuerpo + imagen"},
-    {"id": "tpl_evento", "nombre": "Plantilla evento", "descripcion": "Evento con fecha y ubicación"},
+    {
+        "id": "tpl_evento",
+        "nombre": "Plantilla evento",
+        "descripcion": "Evento con fecha y ubicación",
+    },
     {"id": "tpl_ruta", "nombre": "Plantilla ruta", "descripcion": "Ruta con mapa y dificultad"},
-    {"id": "tpl_alerta", "nombre": "Plantilla alerta", "descripcion": "Aviso urgente a pantalla completa"},
+    {
+        "id": "tpl_alerta",
+        "nombre": "Plantilla alerta",
+        "descripcion": "Aviso urgente a pantalla completa",
+    },
     {"id": "tpl_galeria", "nombre": "Plantilla galería", "descripcion": "Galería de imágenes"},
 ]
 

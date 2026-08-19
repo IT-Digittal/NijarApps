@@ -6,7 +6,6 @@ y de los dos tótems en la ruta Rodalquilar–Albaricoques.
 
 from __future__ import annotations
 
-
 # Smart Office: 4 sensores ambientales (CO₂, temperatura, humedad, ruido).
 # Tótems: meteo + aforo en cada uno de los 2 emplazamientos.
 # Plaza La Glorieta: 1 punto WiFi público para conteo de dispositivos únicos.
@@ -20,7 +19,8 @@ SENSORES_SEED: list[dict] = [
         "tipo": "ambiental_co2",
         "fabricante": "Sensirion",
         "modelo": "SCD41",
-        "lon": -2.207, "lat": 36.965,
+        "lon": -2.207,
+        "lat": 36.965,
         "descripcion_ubicacion": "Sala principal del Smart Office (Ayuntamiento)",
         "unidades_medida": "ppm",
         "rango_minimo": 400.0,
@@ -37,7 +37,8 @@ SENSORES_SEED: list[dict] = [
         "tipo": "ambiental_temperatura",
         "fabricante": "Sensirion",
         "modelo": "SHT4x",
-        "lon": -2.207, "lat": 36.965,
+        "lon": -2.207,
+        "lat": 36.965,
         "descripcion_ubicacion": "Sala principal del Smart Office (Ayuntamiento)",
         "unidades_medida": "°C",
         "rango_minimo": -10.0,
@@ -54,7 +55,8 @@ SENSORES_SEED: list[dict] = [
         "tipo": "ambiental_humedad",
         "fabricante": "Sensirion",
         "modelo": "SHT4x",
-        "lon": -2.207, "lat": 36.965,
+        "lon": -2.207,
+        "lat": 36.965,
         "descripcion_ubicacion": "Sala principal del Smart Office (Ayuntamiento)",
         "unidades_medida": "%",
         "rango_minimo": 0.0,
@@ -71,7 +73,8 @@ SENSORES_SEED: list[dict] = [
         "tipo": "ambiental_ruido",
         "fabricante": "GENERIC",
         "modelo": "MEMS-MIC-01",
-        "lon": -2.207, "lat": 36.965,
+        "lon": -2.207,
+        "lat": 36.965,
         "descripcion_ubicacion": "Sala principal del Smart Office (Ayuntamiento)",
         "unidades_medida": "dB",
         "rango_minimo": 30.0,
@@ -82,7 +85,6 @@ SENSORES_SEED: list[dict] = [
         "topic_mqtt": "nijar/sensors/smartoffice-01/noise",
         "etiquetas": ["smart-office", "ambiental", "salud"],
     },
-
     # ---------- Tótem Rodalquilar ----------
     {
         "urn": "urn:ngsi-ld:Device:nijar:meteo:totem-rodalquilar",
@@ -90,7 +92,8 @@ SENSORES_SEED: list[dict] = [
         "tipo": "meteo",
         "fabricante": "Davis Instruments",
         "modelo": "Vantage Pro2",
-        "lon": -2.043, "lat": 36.853,
+        "lon": -2.043,
+        "lat": 36.853,
         "descripcion_ubicacion": "Tótem digital interactivo en Rodalquilar",
         "unidades_medida": "varios",
         "frecuencia_muestreo_seg": 300,
@@ -104,7 +107,8 @@ SENSORES_SEED: list[dict] = [
         "tipo": "aforo",
         "fabricante": "GENERIC",
         "modelo": "PIR-Counter-01",
-        "lon": -2.043, "lat": 36.853,
+        "lon": -2.043,
+        "lat": 36.853,
         "descripcion_ubicacion": "Tótem digital interactivo en Rodalquilar",
         "unidades_medida": "personas",
         "frecuencia_muestreo_seg": 60,
@@ -112,7 +116,6 @@ SENSORES_SEED: list[dict] = [
         "topic_mqtt": "nijar/sensors/totem-rodalquilar/aforo",
         "etiquetas": ["totem", "aforo", "turismo"],
     },
-
     # ---------- Tótem Albaricoques ----------
     {
         "urn": "urn:ngsi-ld:Device:nijar:meteo:totem-albaricoques",
@@ -120,7 +123,8 @@ SENSORES_SEED: list[dict] = [
         "tipo": "meteo",
         "fabricante": "Davis Instruments",
         "modelo": "Vantage Pro2",
-        "lon": -2.080, "lat": 36.872,
+        "lon": -2.080,
+        "lat": 36.872,
         "descripcion_ubicacion": "Tótem digital interactivo en Los Albaricoques",
         "unidades_medida": "varios",
         "frecuencia_muestreo_seg": 300,
@@ -134,7 +138,8 @@ SENSORES_SEED: list[dict] = [
         "tipo": "aforo",
         "fabricante": "GENERIC",
         "modelo": "PIR-Counter-01",
-        "lon": -2.080, "lat": 36.872,
+        "lon": -2.080,
+        "lat": 36.872,
         "descripcion_ubicacion": "Tótem digital interactivo en Los Albaricoques",
         "unidades_medida": "personas",
         "frecuencia_muestreo_seg": 60,
@@ -142,15 +147,15 @@ SENSORES_SEED: list[dict] = [
         "topic_mqtt": "nijar/sensors/totem-albaricoques/aforo",
         "etiquetas": ["totem", "aforo", "turismo"],
     },
-
     # ---------- Salud/telemetría de los tótems (online, temperatura interna) ----------
     {
         "urn": "urn:ngsi-ld:Device:nijar:totem:rodalquilar",
         "nombre": "Tótem interactivo - Rodalquilar (salud)",
         "tipo": "totem",
         "fabricante": "PARTTEAM & OEMKIOSKS",
-        "modelo": "YUBox Outdoor 55\"",
-        "lon": -2.043, "lat": 36.853,
+        "modelo": 'YUBox Outdoor 55"',
+        "lon": -2.043,
+        "lat": 36.853,
         "descripcion_ubicacion": "Tótem digital interactivo en Rodalquilar",
         "unidades_medida": "varios",
         "umbrales_alerta": {"temperatura_interna_max": 60, "temperatura_interna_critica": 70},
@@ -164,8 +169,9 @@ SENSORES_SEED: list[dict] = [
         "nombre": "Tótem interactivo - Los Albaricoques (salud)",
         "tipo": "totem",
         "fabricante": "PARTTEAM & OEMKIOSKS",
-        "modelo": "YUBox Outdoor 55\"",
-        "lon": -2.080, "lat": 36.872,
+        "modelo": 'YUBox Outdoor 55"',
+        "lon": -2.080,
+        "lat": 36.872,
         "descripcion_ubicacion": "Tótem digital interactivo en Los Albaricoques",
         "unidades_medida": "varios",
         "umbrales_alerta": {"temperatura_interna_max": 60, "temperatura_interna_critica": 70},
@@ -174,7 +180,6 @@ SENSORES_SEED: list[dict] = [
         "topic_mqtt": "nijar/totems/albaricoques/salud",
         "etiquetas": ["totem", "salud", "disponibilidad"],
     },
-
     # ---------- WiFi público Plaza La Glorieta ----------
     {
         "urn": "urn:ngsi-ld:Device:nijar:wifi:plaza-glorieta",
@@ -182,7 +187,8 @@ SENSORES_SEED: list[dict] = [
         "tipo": "wifi_publico",
         "fabricante": "Cambium Networks",
         "modelo": "cnPilot E410",
-        "lon": -2.207, "lat": 36.966,
+        "lon": -2.207,
+        "lat": 36.966,
         "descripcion_ubicacion": "Plaza La Glorieta (centro histórico de Níjar)",
         "unidades_medida": "dispositivos_unicos",
         "rango_minimo": 0.0,

@@ -51,9 +51,7 @@ async def invitar_usuario(
     En una implementación completa se enviaría un email con el token de alta.
     """
     existing = await db.execute(
-        select(Usuario)
-        .where(Usuario.email == email)
-        .where(Usuario.deleted_at.is_(None))
+        select(Usuario).where(Usuario.email == email).where(Usuario.deleted_at.is_(None))
     )
     if existing.scalar_one_or_none() is not None:
         raise UsuarioYaExisteError(f"Ya existe un usuario con email {email}")
@@ -117,12 +115,8 @@ async def actualizar_usuario(
     es_uno_mismo = actor is not None and actor.id == usuario.id
 
     # ¿La operación retira privilegios/actividad al último admin?
-    quita_admin = (
-        usuario.rol == RolUsuario.ADMINISTRADOR_TIC.value
-        and (
-            (rol is not None and rol != RolUsuario.ADMINISTRADOR_TIC)
-            or (activo is False)
-        )
+    quita_admin = usuario.rol == RolUsuario.ADMINISTRADOR_TIC.value and (
+        (rol is not None and rol != RolUsuario.ADMINISTRADOR_TIC) or (activo is False)
     )
     if quita_admin and await _admins_activos(db, excluir=usuario.id) == 0:
         raise OperacionNoPermitidaError(
@@ -190,9 +184,7 @@ async def eliminar_usuario(
         and usuario.activo
         and await _admins_activos(db, excluir=usuario.id) == 0
     ):
-        raise OperacionNoPermitidaError(
-            "No se puede eliminar al último administrador TIC activo."
-        )
+        raise OperacionNoPermitidaError("No se puede eliminar al último administrador TIC activo.")
 
     usuario.activo = False
     usuario.deleted_at = datetime.now(UTC)

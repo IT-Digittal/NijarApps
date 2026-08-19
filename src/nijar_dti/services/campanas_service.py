@@ -8,7 +8,7 @@ esos valores tienen prioridad sobre el cálculo en vivo.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import UUID
 
 from sqlalchemy import func, select
@@ -54,9 +54,7 @@ async def crear_campana(db: AsyncSession, payload: CampanaIn) -> Campana:
     return campana
 
 
-async def actualizar_campana(
-    db: AsyncSession, campana_id: UUID, payload: CampanaUpdate
-) -> Campana:
+async def actualizar_campana(db: AsyncSession, campana_id: UUID, payload: CampanaUpdate) -> Campana:
     campana = await obtener_campana(db, campana_id)
     for campo, valor in payload.model_dump(exclude_unset=True).items():
         setattr(campana, campo, valor)
@@ -67,7 +65,7 @@ async def actualizar_campana(
 
 async def eliminar_campana(db: AsyncSession, campana_id: UUID) -> None:
     campana = await obtener_campana(db, campana_id)
-    campana.deleted_at = datetime.now(timezone.utc)
+    campana.deleted_at = datetime.now(UTC)
     await db.flush()
 
 
@@ -102,18 +100,14 @@ async def calcular_kpis(db: AsyncSession, campana: Campana) -> CampanaKPIs:
     op_ventana = list(
         (
             await db.execute(
-                select(Opinion).where(
-                    Opinion.publicado_en >= inicio, Opinion.publicado_en <= fin
-                )
+                select(Opinion).where(Opinion.publicado_en >= inicio, Opinion.publicado_en <= fin)
             )
         )
         .scalars()
         .all()
     )
     # Preferir las menciones etiquetadas con la campaña; si no hay, usar todas.
-    etiquetadas = [
-        o for o in op_ventana if (o.metricas or {}).get("campana") == campana.slug
-    ]
+    etiquetadas = [o for o in op_ventana if (o.metricas or {}).get("campana") == campana.slug]
     base = etiquetadas if (campana.slug and etiquetadas) else op_ventana
 
     menciones = len(base)
@@ -148,12 +142,8 @@ async def calcular_kpis(db: AsyncSession, campana: Campana) -> CampanaKPIs:
     visitas_prev = visitas_web_prev + visitas_app_prev
     visitas_total = visitas_web + visitas_app
 
-    incremento_menciones = (
-        _pct(menciones - op_prev, op_prev) if op_prev else None
-    )
-    incremento_visitas = (
-        _pct(visitas_total - visitas_prev, visitas_prev) if visitas_prev else None
-    )
+    incremento_menciones = _pct(menciones - op_prev, op_prev) if op_prev else None
+    incremento_visitas = _pct(visitas_total - visitas_prev, visitas_prev) if visitas_prev else None
 
     kpis = CampanaKPIs(
         campana_id=campana.id,

@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from pydantic import ValidationError
@@ -74,15 +74,15 @@ def _decode_payload(payload: bytes | str) -> dict[str, Any]:
 def _normalizar_timestamp(value: Any) -> datetime:
     """Acepta varios formatos comunes y devuelve un datetime con tz."""
     if value is None:
-        return datetime.now(timezone.utc)
+        return datetime.now(UTC)
     if isinstance(value, datetime):
-        return value if value.tzinfo else value.replace(tzinfo=timezone.utc)
+        return value if value.tzinfo else value.replace(tzinfo=UTC)
     if isinstance(value, (int, float)):
         # epoch seconds o ms
         epoch = float(value)
         if epoch > 1e12:
             epoch /= 1000.0
-        return datetime.fromtimestamp(epoch, tz=timezone.utc)
+        return datetime.fromtimestamp(epoch, tz=UTC)
     if isinstance(value, str):
         # ISO 8601, con o sin "Z"
         try:

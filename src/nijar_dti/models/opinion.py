@@ -66,9 +66,7 @@ class Opinion(Base, TimestampMixin):
     )
     score_sentimiento: Mapped[float | None] = mapped_column(Numeric(5, 4), default=None)
     temas: Mapped[list[str] | None] = mapped_column(ARRAY(String), default=None)
-    entidades_mencionadas: Mapped[list[str] | None] = mapped_column(
-        ARRAY(String), default=None
-    )
+    entidades_mencionadas: Mapped[list[str] | None] = mapped_column(ARRAY(String), default=None)
 
     # Métricas de interacción de la publicación original
     metricas: Mapped[dict | None] = mapped_column(JSON, default=None)
@@ -78,16 +76,12 @@ class Opinion(Base, TimestampMixin):
     longitud: Mapped[float | None] = mapped_column(Numeric(9, 6), default=None)
 
     # Trazabilidad / linaje
-    capturado_en: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), default=None
-    )
+    capturado_en: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
     payload_original: Mapped[dict | None] = mapped_column(JSON, default=None)
 
     # Validación humana (revisión QA modelo NLP)
     revisado_humano: Mapped[bool] = mapped_column(default=False)
-    sentimiento_humano: Mapped[Sentimiento | None] = mapped_column(
-        String(20), default=None
-    )
+    sentimiento_humano: Mapped[Sentimiento | None] = mapped_column(String(20), default=None)
 
     __table_args__ = (
         Index("ix_opiniones_fuente_publicado", "fuente", "publicado_en"),

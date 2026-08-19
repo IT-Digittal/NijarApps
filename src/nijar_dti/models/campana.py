@@ -65,9 +65,7 @@ class Campana(Base, AuditMixin):
     slug: Mapped[str | None] = mapped_column(String(120), unique=True, index=True, default=None)
 
     descripcion: Mapped[str | None] = mapped_column(Text, default=None)
-    objetivo: Mapped[ObjetivoCampana] = mapped_column(
-        String(30), default=ObjetivoCampana.DIFUSION
-    )
+    objetivo: Mapped[ObjetivoCampana] = mapped_column(String(30), default=ObjetivoCampana.DIFUSION)
     publico_objetivo: Mapped[str | None] = mapped_column(String(255), default=None)
 
     # Canales usados: web, redes, email, app, prensa, ...

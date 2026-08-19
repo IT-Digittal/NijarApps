@@ -9,11 +9,10 @@ from __future__ import annotations
 
 import json
 from datetime import datetime
-from typing import Any
 from uuid import UUID
 
 from geoalchemy2.elements import WKTElement
-from geoalchemy2.functions import ST_AsGeoJSON, ST_DWithin, ST_GeogFromText
+from geoalchemy2.functions import ST_DWithin, ST_GeogFromText
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -49,6 +48,7 @@ class Conflict(TourismError):
 
 # ---------------- helpers ----------------
 
+
 def _geo_to_wkt(geo: GeoPoint | None) -> WKTElement | None:
     if geo is None:
         return None
@@ -68,12 +68,12 @@ def _geojson_str_to_geopoint(geojson_str: str | None) -> GeoPoint | None:
         return None
 
 
-async def _get_ubicacion_geojson(
-    db: AsyncSession, tabla: str, id_value: UUID
-) -> str | None:
+async def _get_ubicacion_geojson(db: AsyncSession, tabla: str, id_value: UUID) -> str | None:
     """Lee la columna `ubicacion` como string GeoJSON."""
     from sqlalchemy import text
-    sql = text(f"SELECT ST_AsGeoJSON(ubicacion) AS geojson FROM {tabla} WHERE id = :id")
+
+    # `tabla` es una constante interna del código (no entra por el usuario); el id va parametrizado.
+    sql = text(f"SELECT ST_AsGeoJSON(ubicacion) AS geojson FROM {tabla} WHERE id = :id")  # noqa: S608
     result = await db.execute(sql, {"id": id_value})
     row = result.first()
     if row is None or row[0] is None:
@@ -85,6 +85,7 @@ async def _get_ubicacion_geojson(
 #               RECURSOS TURÍSTICOS
 # =====================================================
 
+
 async def crear_recurso(
     db: AsyncSession, payload: RecursoTuristicoIn, created_by: UUID | None = None
 ) -> RecursoTuristico:
@@ -93,8 +94,12 @@ async def crear_recurso(
         nombre=payload.nombre,
         categoria=payload.categoria,
         descripcion_corta=payload.descripcion_corta,
-        nombre_i18n=payload.nombre_i18n.model_dump(exclude_none=True) if payload.nombre_i18n else None,
-        descripcion_i18n=payload.descripcion_i18n.model_dump(exclude_none=True) if payload.descripcion_i18n else None,
+        nombre_i18n=payload.nombre_i18n.model_dump(exclude_none=True)
+        if payload.nombre_i18n
+        else None,
+        descripcion_i18n=payload.descripcion_i18n.model_dump(exclude_none=True)
+        if payload.descripcion_i18n
+        else None,
         ubicacion=_geo_to_wkt(payload.ubicacion),
         direccion=payload.direccion,
         municipio=payload.municipio,
@@ -136,9 +141,7 @@ async def listar_recursos(
 
     if filtros.cerca_de_lat is not None and filtros.cerca_de_lon is not None:
         radio = filtros.radio_metros or 5000
-        punto = ST_GeogFromText(
-            f"SRID=4326;POINT({filtros.cerca_de_lon} {filtros.cerca_de_lat})"
-        )
+        punto = ST_GeogFromText(f"SRID=4326;POINT({filtros.cerca_de_lon} {filtros.cerca_de_lat})")
         base = base.where(ST_DWithin(RecursoTuristico.ubicacion, punto, radio))
 
     total = int(
@@ -242,6 +245,7 @@ async def recurso_to_out(db: AsyncSession, r: RecursoTuristico) -> RecursoTurist
 #               EVENTOS TURÍSTICOS
 # =====================================================
 
+
 async def crear_evento(
     db: AsyncSession, payload: EventoTuristicoIn, created_by: UUID | None = None
 ) -> EventoTuristico:
@@ -250,8 +254,12 @@ async def crear_evento(
         nombre=payload.nombre,
         tipo=payload.tipo,
         descripcion=payload.descripcion,
-        nombre_i18n=payload.nombre_i18n.model_dump(exclude_none=True) if payload.nombre_i18n else None,
-        descripcion_i18n=payload.descripcion_i18n.model_dump(exclude_none=True) if payload.descripcion_i18n else None,
+        nombre_i18n=payload.nombre_i18n.model_dump(exclude_none=True)
+        if payload.nombre_i18n
+        else None,
+        descripcion_i18n=payload.descripcion_i18n.model_dump(exclude_none=True)
+        if payload.descripcion_i18n
+        else None,
         fecha_inicio=payload.fecha_inicio,
         fecha_fin=payload.fecha_fin,
         recurso_id=payload.recurso_id,
@@ -341,6 +349,7 @@ async def evento_to_out(db: AsyncSession, e: EventoTuristico) -> EventoTuristico
 #                   SERVICIOS
 # =====================================================
 
+
 async def crear_servicio(
     db: AsyncSession, payload: ServicioIn, created_by: UUID | None = None
 ) -> Servicio:
@@ -349,8 +358,12 @@ async def crear_servicio(
         nombre=payload.nombre,
         tipo=payload.tipo,
         descripcion=payload.descripcion,
-        nombre_i18n=payload.nombre_i18n.model_dump(exclude_none=True) if payload.nombre_i18n else None,
-        descripcion_i18n=payload.descripcion_i18n.model_dump(exclude_none=True) if payload.descripcion_i18n else None,
+        nombre_i18n=payload.nombre_i18n.model_dump(exclude_none=True)
+        if payload.nombre_i18n
+        else None,
+        descripcion_i18n=payload.descripcion_i18n.model_dump(exclude_none=True)
+        if payload.descripcion_i18n
+        else None,
         ubicacion=_geo_to_wkt(payload.ubicacion),
         direccion=payload.direccion,
         municipio=payload.municipio,
@@ -396,9 +409,7 @@ async def listar_servicios(
         (await db.execute(select(func.count()).select_from(base.subquery()))).scalar_one() or 0
     )
 
-    res = await db.execute(
-        base.order_by(Servicio.nombre).offset(page.offset).limit(page.limit)
-    )
+    res = await db.execute(base.order_by(Servicio.nombre).offset(page.offset).limit(page.limit))
     return list(res.scalars().all()), total
 
 

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 
@@ -72,9 +72,9 @@ class TestParseMessage:
 
     def test_timestamp_omitido_usa_now(self):
         payload = self._build_payload(valor=10)
-        antes = datetime.now(timezone.utc)
+        antes = datetime.now(UTC)
         msg = parse_message("nijar/sensors/x/y", payload)
-        despues = datetime.now(timezone.utc)
+        despues = datetime.now(UTC)
         assert antes <= msg.observacion.observado_en <= despues
 
     def test_payload_no_json(self):

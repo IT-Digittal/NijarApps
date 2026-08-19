@@ -62,9 +62,7 @@ async def list_mentions(
     db: AsyncSession = Depends(get_db),
     user: CurrentUser = Depends(get_current_user),
 ) -> Paginated[OpinionOut]:
-    rows, total = await svc.listar_menciones(
-        db, fuente, sentimiento, desde, hasta, page
-    )
+    rows, total = await svc.listar_menciones(db, fuente, sentimiento, desde, hasta, page)
     items = [_opinion_to_out(o) for o in rows]
     return Paginated[OpinionOut].build(items, total, page)
 

@@ -64,6 +64,4 @@ class Visita(Base, TimestampMixin):
     # Atributos específicos del evento (intención del chatbot, sección del tótem...)
     atributos: Mapped[dict | None] = mapped_column(JSON, default=None)
 
-    __table_args__ = (
-        Index("ix_visitas_tipo_tiempo", "tipo", "ocurrido_en"),
-    )
+    __table_args__ = (Index("ix_visitas_tipo_tiempo", "tipo", "ocurrido_en"),)

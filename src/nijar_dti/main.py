@@ -6,8 +6,8 @@ del Ayuntamiento de Níjar conforme a la norma UNE 178104.
 
 import asyncio
 import time
-from contextlib import asynccontextmanager
 from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager, suppress
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
@@ -44,6 +44,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         logger.info("Ejecutando seed_loader idempotente al arranque")
         try:
             from nijar_dti.data.seed_loader import run as seed_run
+
             await seed_run()
             logger.info("seed_loader completado")
         except Exception as exc:  # noqa: BLE001
@@ -54,10 +55,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         yield
     finally:
         metrics_task.cancel()
-        try:
+        with suppress(asyncio.CancelledError, Exception):
             await metrics_task
-        except (asyncio.CancelledError, Exception):
-            pass
         logger.info("Cerrando plataforma DTI Níjar")
 
 
@@ -117,7 +116,7 @@ async def _metrics_middleware(request: Request, call_next):
         try:
             http_requests_total.labels(method=method, path=path, status=str(status_code)).inc()
             http_request_duration_seconds.labels(method=method, path=path).observe(elapsed)
-        except Exception:  # noqa: BLE001
+        except Exception:  # noqa: BLE001, S110
             # Una métrica no debe romper la respuesta. Silenciar es seguro.
             pass
 
@@ -130,6 +129,7 @@ app.add_route("/metrics", metrics_endpoint, methods=["GET"], include_in_schema=F
 # disponible junto al despliegue. En docker-compose se monta como volumen.
 import os
 from pathlib import Path
+
 from fastapi.staticfiles import StaticFiles
 
 
@@ -170,6 +170,7 @@ else:
 
 # ----------------- Manejo global de excepciones -----------------
 # Los errores se mapean al esquema APIError uniforme (schemas/common.py).
+
 
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException) -> ORJSONResponse:

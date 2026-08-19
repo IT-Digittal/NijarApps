@@ -54,9 +54,7 @@ class Usuario(Base, AuditMixin):
     password_hash: Mapped[str] = mapped_column(String(255))
 
     rol: Mapped[RolUsuario] = mapped_column(String(50), index=True)
-    scopes_adicionales: Mapped[list[str] | None] = mapped_column(
-        ARRAY(String), default=None
-    )
+    scopes_adicionales: Mapped[list[str] | None] = mapped_column(ARRAY(String), default=None)
 
     activo: Mapped[bool] = mapped_column(default=True)
     requiere_2fa: Mapped[bool] = mapped_column(default=False)
@@ -65,6 +63,4 @@ class Usuario(Base, AuditMixin):
     # Si el usuario procede del SSO/AD municipal
     sso_subject: Mapped[str | None] = mapped_column(String(255), default=None, index=True)
 
-    __table_args__ = (
-        Index("ix_usuarios_email_activo", "email", "activo"),
-    )
+    __table_args__ = (Index("ix_usuarios_email_activo", "email", "activo"),)

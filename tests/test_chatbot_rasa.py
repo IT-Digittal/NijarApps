@@ -43,16 +43,19 @@ class TestIntentDeParse:
 class TestNivelDesdeConfianza:
     def test_alta(self):
         from nijar_dti.models.faq import NivelConfianza
+
         assert _nivel_desde_confianza(0.85) == NivelConfianza.ALTA
         assert _nivel_desde_confianza(0.99) == NivelConfianza.ALTA
 
     def test_media(self):
         from nijar_dti.models.faq import NivelConfianza
+
         assert _nivel_desde_confianza(0.55) == NivelConfianza.MEDIA
         assert _nivel_desde_confianza(0.65) == NivelConfianza.MEDIA
 
     def test_fuera_de_dominio(self):
         from nijar_dti.models.faq import NivelConfianza
+
         assert _nivel_desde_confianza(0.40) == NivelConfianza.FUERA_DE_DOMINIO
         assert _nivel_desde_confianza(0.0) == NivelConfianza.FUERA_DE_DOMINIO
 
@@ -64,6 +67,7 @@ class TestSelectorMotor:
         # Aislar del entorno: en dev/local CHATBOT_ENGINE puede estar a "rasa".
         monkeypatch.delenv("CHATBOT_ENGINE", raising=False)
         from nijar_dti.config import Settings
+
         s = Settings(
             secret_key="test-secret-key-with-enough-entropy-1234567890",
             database_url="postgresql+asyncpg://x:x@localhost/x",
@@ -72,6 +76,7 @@ class TestSelectorMotor:
 
     def test_engine_rasa(self):
         from nijar_dti.config import Settings
+
         s = Settings(
             secret_key="test-secret-key-with-enough-entropy-1234567890",
             database_url="postgresql+asyncpg://x:x@localhost/x",
@@ -84,8 +89,8 @@ class TestArtefactosRasaGenerados:
     """Comprueba que los artefactos Rasa generados desde FAQs son consistentes."""
 
     def test_domain_contiene_todos_los_intents(self):
-        from nijar_dti.workers.rasa_generator import build_domain
         from nijar_dti.data.seeds.faqs import FAQS_SEED
+        from nijar_dti.workers.rasa_generator import build_domain
 
         domain = build_domain()
         intents_seed = {f["intent"] for f in FAQS_SEED}

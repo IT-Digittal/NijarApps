@@ -11,7 +11,7 @@ Documentación: https://developers.facebook.com/docs/graph-api/reference/page/fe
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import httpx
 
@@ -60,7 +60,7 @@ class FacebookConnector(SocialListeningConnector):
             "limit": 100,
         }
         if since is not None:
-            params["since"] = int(since.astimezone(timezone.utc).timestamp())
+            params["since"] = int(since.astimezone(UTC).timestamp())
 
         async with httpx.AsyncClient(timeout=15) as client:
             resp = await client.get(
@@ -86,7 +86,7 @@ def _parse_facebook_response(data: dict) -> list[MentionRaw]:
                 post.get("created_time", "").replace("Z", "+00:00")
             )
         except (TypeError, ValueError):
-            publicado_en = datetime.now(timezone.utc)
+            publicado_en = datetime.now(UTC)
         reacciones = (post.get("reactions") or {}).get("summary", {}).get("total_count")
         comentarios = (post.get("comments") or {}).get("summary", {}).get("total_count")
         shares = (post.get("shares") or {}).get("count")
@@ -111,11 +111,29 @@ def _parse_facebook_response(data: dict) -> list[MentionRaw]:
 
 
 def _menciones_sinteticas_facebook(since: datetime | None) -> list[MentionRaw]:
-    base = since or (datetime.now(timezone.utc) - timedelta(hours=2))
+    base = since or (datetime.now(UTC) - timedelta(hours=2))
     plantilla = [
-        ("Ayuntamiento de Níjar", "Recordamos que el aforo de la playa de Mónsul es limitado durante los meses de julio y agosto. Reserva tu acceso en la web municipal.", 234, 45, 56),
-        ("Visitor de Almería", "Acabamos de pasar el fin de semana en San José y volveremos seguro. Las playas son una pasada y la gente súper amable.", 89, 6, 12),
-        ("Comercio Níjar", "Ya tenemos las nuevas jarapas hechas a mano para la temporada. ¡Os esperamos en el casco histórico!", 67, 8, 4),
+        (
+            "Ayuntamiento de Níjar",
+            "Recordamos que el aforo de la playa de Mónsul es limitado durante los meses de julio y agosto. Reserva tu acceso en la web municipal.",
+            234,
+            45,
+            56,
+        ),
+        (
+            "Visitor de Almería",
+            "Acabamos de pasar el fin de semana en San José y volveremos seguro. Las playas son una pasada y la gente súper amable.",
+            89,
+            6,
+            12,
+        ),
+        (
+            "Comercio Níjar",
+            "Ya tenemos las nuevas jarapas hechas a mano para la temporada. ¡Os esperamos en el casco histórico!",
+            67,
+            8,
+            4,
+        ),
     ]
     out: list[MentionRaw] = []
     for i, (autor, mensaje, likes, shares, comments) in enumerate(plantilla):

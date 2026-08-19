@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections import Counter
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -36,9 +36,7 @@ _TIPOS_AMBIENTAL = {
 
 
 async def smart_office_overview(db: AsyncSession) -> SmartOfficeOverview:
-    sensores = (
-        await db.execute(select(Sensor).where(Sensor.deleted_at.is_(None)))
-    ).scalars().all()
+    sensores = (await db.execute(select(Sensor).where(Sensor.deleted_at.is_(None)))).scalars().all()
     sensores_total = len(sensores)
     sensores_operativos = sum(1 for s in sensores if s.estado == "operativo")
     sensores_offline = sum(1 for s in sensores if s.estado in {"offline", "averia", "desconocido"})
@@ -63,17 +61,21 @@ async def smart_office_overview(db: AsyncSession) -> SmartOfficeOverview:
 
     # alertas activas: observaciones por encima/debajo de umbrales en última hora
     alertas = 0
-    una_hora_atras = datetime.now(timezone.utc) - timedelta(hours=1)
+    una_hora_atras = datetime.now(UTC) - timedelta(hours=1)
     for s in sensores:
         if not s.umbrales_alerta:
             continue
         umbral_max = s.umbrales_alerta.get("critical_max") or s.umbrales_alerta.get("warning_max")
         if umbral_max is None:
             continue
-        q = select(func.count()).select_from(Observacion).where(
-            Observacion.sensor_id == s.id,
-            Observacion.observado_en >= una_hora_atras,
-            Observacion.valor > umbral_max,
+        q = (
+            select(func.count())
+            .select_from(Observacion)
+            .where(
+                Observacion.sensor_id == s.id,
+                Observacion.observado_en >= una_hora_atras,
+                Observacion.valor > umbral_max,
+            )
         )
         n = int((await db.execute(q)).scalar_one() or 0)
         alertas += n
@@ -87,7 +89,7 @@ async def smart_office_overview(db: AsyncSession) -> SmartOfficeOverview:
         temperatura_actual_c=overview["temperatura_actual_c"],
         humedad_actual_porc=overview["humedad_actual_porc"],
         ruido_actual_db=overview["ruido_actual_db"],
-        timestamp=datetime.now(timezone.utc),
+        timestamp=datetime.now(UTC),
     )
 
 
@@ -107,13 +109,17 @@ async def environment_series(
     pg_unit = _GRANULARIDAD_MAP.get(granularidad, "hour")
     bucket = func.date_trunc(pg_unit, Observacion.observado_en).label("bucket")
 
-    q = select(
-        bucket,
-        Sensor.tipo,
-        func.avg(Observacion.valor).label("media"),
-    ).join(Sensor, Sensor.id == Observacion.sensor_id).where(
-        Observacion.valido.is_(True),
-        Sensor.tipo.in_(list(_TIPOS_AMBIENTAL.keys())),
+    q = (
+        select(
+            bucket,
+            Sensor.tipo,
+            func.avg(Observacion.valor).label("media"),
+        )
+        .join(Sensor, Sensor.id == Observacion.sensor_id)
+        .where(
+            Observacion.valido.is_(True),
+            Sensor.tipo.in_(list(_TIPOS_AMBIENTAL.keys())),
+        )
     )
     if desde:
         q = q.where(Observacion.observado_en >= desde)
@@ -140,17 +146,16 @@ async def environment_series(
             por_bucket[ts].ruido_db = media
 
     puntos = sorted(por_bucket.values(), key=lambda p: p.timestamp)
-    return EnvironmentSeries(
-        granularidad=granularidad, desde=desde, hasta=hasta, puntos=puntos
-    )
+    return EnvironmentSeries(granularidad=granularidad, desde=desde, hasta=hasta, puntos=puntos)
 
 
 # -------------------------- Big Data --------------------------
 
+
 async def big_data_overview(db: AsyncSession) -> BigDataOverview:
     total = int((await db.execute(select(func.count()).select_from(Opinion))).scalar_one() or 0)
 
-    hace_un_mes = datetime.now(timezone.utc) - timedelta(days=30)
+    hace_un_mes = datetime.now(UTC) - timedelta(days=30)
     ultimo_mes = int(
         (
             await db.execute(
@@ -165,14 +170,10 @@ async def big_data_overview(db: AsyncSession) -> BigDataOverview:
     )
     sentimiento_medio = sentimiento_medio_res.scalar_one_or_none()
 
-    fuentes = (
-        await db.execute(select(Opinion.fuente).distinct())
-    ).scalars().all()
+    fuentes = (await db.execute(select(Opinion.fuente).distinct())).scalars().all()
 
     # top 5 temas
-    temas_rows = (
-        await db.execute(select(Opinion.temas).where(Opinion.temas.is_not(None)))
-    ).all()
+    temas_rows = (await db.execute(select(Opinion.temas).where(Opinion.temas.is_not(None)))).all()
     contador: Counter[str] = Counter()
     for r in temas_rows:
         if r[0]:
@@ -189,6 +190,7 @@ async def big_data_overview(db: AsyncSession) -> BigDataOverview:
 
 
 # -------------------------- Tótems --------------------------
+
 
 async def totems_usage(
     db: AsyncSession,
@@ -218,9 +220,7 @@ async def totems_usage(
             seccion = v.atributos.get("seccion")
             if seccion:
                 secciones[seccion] += 1
-    top_secciones = [
-        {"seccion": s, "interacciones": n} for s, n in secciones.most_common(10)
-    ]
+    top_secciones = [{"seccion": s, "interacciones": n} for s, n in secciones.most_common(10)]
 
     return TotemUsageStats(
         desde=desde,
@@ -253,9 +253,7 @@ async def totems_usage_series(
     q = q.group_by(bucket).order_by(bucket)
 
     rows = (await db.execute(q)).all()
-    puntos = [
-        PuntoSerieDiaria(fecha=row.bucket.date(), total=int(row.total)) for row in rows
-    ]
+    puntos = [PuntoSerieDiaria(fecha=row.bucket.date(), total=int(row.total)) for row in rows]
     return SerieDiaria(desde=desde, hasta=hasta, puntos=puntos)
 
 
@@ -324,20 +322,19 @@ async def totems_health(db: AsyncSession) -> TotemsHealthOverview:
                 muestras=muestras,
             )
         )
-    media = (
-        round(sum(disponibilidades) / len(disponibilidades), 2) if disponibilidades else None
-    )
+    media = round(sum(disponibilidades) / len(disponibilidades), 2) if disponibilidades else None
     return TotemsHealthOverview(disponibilidad_media_pct=media, totems=totems)
 
 
 # -------------------------- Informe mensual (C.1) --------------------------
 
+
 async def informe_mensual(db: AsyncSession, year: int, month: int) -> MonthlyReport:
-    inicio = datetime(year, month, 1, tzinfo=timezone.utc)
+    inicio = datetime(year, month, 1, tzinfo=UTC)
     if month == 12:
-        fin = datetime(year + 1, 1, 1, tzinfo=timezone.utc)
+        fin = datetime(year + 1, 1, 1, tzinfo=UTC)
     else:
-        fin = datetime(year, month + 1, 1, tzinfo=timezone.utc)
+        fin = datetime(year, month + 1, 1, tzinfo=UTC)
 
     interacciones_totems = int(
         (
@@ -434,6 +431,7 @@ async def _ga4_overview_seguro() -> dict | None:
     """
     try:
         from nijar_dti.connectors.analytics.ga4 import GA4Connector
+
         connector = GA4Connector()
         ov = await connector.overview(days_back=30)
         channels = await connector.channels_breakdown(days_back=30)
@@ -446,11 +444,11 @@ async def _ga4_overview_seguro() -> dict | None:
             "duracion_media_sesion_seg": ov.duracion_media_sesion_seg,
             "bounce_rate": ov.bounce_rate,
             "canales": [
-                {"canal": c.canal, "sesiones": c.sesiones, "usuarios": c.usuarios}
-                for c in channels
+                {"canal": c.canal, "sesiones": c.sesiones, "usuarios": c.usuarios} for c in channels
             ],
         }
     except Exception as exc:  # noqa: BLE001
         import logging
+
         logging.getLogger(__name__).warning("GA4 no disponible: %s", exc)
         return None

@@ -16,7 +16,7 @@ Cobertura:
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import httpx
 
@@ -41,16 +41,13 @@ class InstagramConnector(SocialListeningConnector):
     @property
     def is_configured(self) -> bool:
         return bool(
-            self.settings.facebook_access_token
-            and self.settings.instagram_business_account_id
+            self.settings.facebook_access_token and self.settings.instagram_business_account_id
         )
 
     @property
     def hashtags(self) -> list[str]:
         return [
-            h.strip().lstrip("#")
-            for h in self.settings.instagram_hashtags.split(",")
-            if h.strip()
+            h.strip().lstrip("#") for h in self.settings.instagram_hashtags.split(",") if h.strip()
         ]
 
     async def fetch_mentions(self, since: datetime | None = None) -> list[MentionRaw]:
@@ -87,9 +84,7 @@ class InstagramConnector(SocialListeningConnector):
                 out.extend(_parse_instagram_response(resp.json(), tag, since))
         return out
 
-    async def _resolve_hashtag_id(
-        self, client: httpx.AsyncClient, hashtag: str
-    ) -> str | None:
+    async def _resolve_hashtag_id(self, client: httpx.AsyncClient, hashtag: str) -> str | None:
         resp = await client.get(
             f"{_GRAPH_API_BASE}/ig_hashtag_search",
             params={
@@ -107,9 +102,7 @@ class InstagramConnector(SocialListeningConnector):
         return None
 
 
-def _parse_instagram_response(
-    data: dict, hashtag: str, since: datetime | None
-) -> list[MentionRaw]:
+def _parse_instagram_response(data: dict, hashtag: str, since: datetime | None) -> list[MentionRaw]:
     posts = data.get("data", []) or []
     out: list[MentionRaw] = []
     for post in posts:
@@ -117,11 +110,9 @@ def _parse_instagram_response(
         if not caption:
             continue
         try:
-            publicado_en = datetime.fromisoformat(
-                post.get("timestamp", "").replace("Z", "+00:00")
-            )
+            publicado_en = datetime.fromisoformat(post.get("timestamp", "").replace("Z", "+00:00"))
         except (TypeError, ValueError):
-            publicado_en = datetime.now(timezone.utc)
+            publicado_en = datetime.now(UTC)
 
         if since is not None and publicado_en < since:
             continue
@@ -146,9 +137,13 @@ def _parse_instagram_response(
 def _menciones_sinteticas_instagram(
     since: datetime | None, hashtags: list[str]
 ) -> list[MentionRaw]:
-    base = since or (datetime.now(timezone.utc) - timedelta(hours=3))
+    base = since or (datetime.now(UTC) - timedelta(hours=3))
     plantilla = [
-        ("¡Atardecer mágico en la #PlayaDeMonsul! No me canso de venir 🌅 #cabodegata #nijar", 542, 28),
+        (
+            "¡Atardecer mágico en la #PlayaDeMonsul! No me canso de venir 🌅 #cabodegata #nijar",
+            542,
+            28,
+        ),
         ("Day trip to #cabodegata Natural Park — wow! Stunning landscapes everywhere.", 312, 19),
         ("Endlich wieder am Strand von #PlayaMonsul! Wir kommen jedes Jahr zurück.", 198, 11),
         ("Vue magnifique depuis le belvédère de l'Amatista. À ne pas rater à #nijar.", 167, 8),

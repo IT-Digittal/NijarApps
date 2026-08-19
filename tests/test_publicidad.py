@@ -43,12 +43,14 @@ def test_agrupar_eventos_suma_por_empresa():
 
     a = U("00000000-0000-0000-0000-00000000000a")
     b = U("00000000-0000-0000-0000-00000000000b")
-    grupos = agrupar_eventos([
-        EventoMetricaIn(empresa_id=a, tipo="impresion", n=1),
-        EventoMetricaIn(empresa_id=a, tipo="impresion", n=2),
-        EventoMetricaIn(empresa_id=a, tipo="toque", n=1),
-        EventoMetricaIn(empresa_id=b, tipo="toque", n=5),
-    ])
+    grupos = agrupar_eventos(
+        [
+            EventoMetricaIn(empresa_id=a, tipo="impresion", n=1),
+            EventoMetricaIn(empresa_id=a, tipo="impresion", n=2),
+            EventoMetricaIn(empresa_id=a, tipo="toque", n=1),
+            EventoMetricaIn(empresa_id=b, tipo="toque", n=5),
+        ]
+    )
     assert grupos[a] == {"impresiones": 3, "toques": 1}
     assert grupos[b] == {"impresiones": 0, "toques": 5}
 
