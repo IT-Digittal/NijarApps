@@ -111,7 +111,8 @@ async def _metrics_middleware(request: Request, call_next):
         elapsed = time.perf_counter() - start
         # Usamos route.path si lo conocemos, para evitar cardinalidad alta
         # con IDs en la URL. Si no, usamos el path tal cual.
-        path = request.scope.get("route").path if request.scope.get("route") else request.url.path
+        route = request.scope.get("route")
+        path = route.path if route else request.url.path
         method = request.method
         try:
             http_requests_total.labels(method=method, path=path, status=str(status_code)).inc()

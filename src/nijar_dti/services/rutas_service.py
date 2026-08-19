@@ -59,7 +59,7 @@ async def _recursos_publicados_con_coords(
     )
     if categorias:
         q = q.where(RecursoTuristico.categoria.in_(categorias))
-    return list((await db.execute(q)).all())
+    return list((await db.execute(q)).all())  # type: ignore[arg-type]
 
 
 def _parsea_coords(geojson: str | None) -> tuple[float, float] | None:
@@ -79,20 +79,20 @@ async def planificar_ruta(db: AsyncSession, payload: PlanificarRutaIn) -> RutaPl
     paradas: list[Parada] = []
     meta: dict[str, tuple] = {}
     for fila in filas:
-        coords = _parsea_coords(fila.geojson)
+        coords = _parsea_coords(fila.geojson)  # type: ignore[attr-defined]
         if coords is None:
             continue
         lat, lon = coords
         paradas.append(
             Parada(
-                id=str(fila.id),
-                nombre=fila.nombre,
-                categoria=str(fila.categoria),
+                id=str(fila.id),  # type: ignore[attr-defined]
+                nombre=fila.nombre,  # type: ignore[attr-defined]
+                categoria=str(fila.categoria),  # type: ignore[attr-defined]
                 lat=lat,
                 lon=lon,
             )
         )
-        meta[str(fila.id)] = (fila.nombre, fila.nombre_i18n, str(fila.categoria))
+        meta[str(fila.id)] = (fila.nombre, fila.nombre_i18n, str(fila.categoria))  # type: ignore[attr-defined]
 
     ruta = ordenar_itinerario(payload.lat, payload.lon, paradas, payload.max_paradas)
 

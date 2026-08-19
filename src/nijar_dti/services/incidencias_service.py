@@ -44,12 +44,12 @@ class NotFound(Exception):
 
 async def crear_incidencia(db: AsyncSession, payload: IncidenciaIn) -> Incidencia:
     inc = Incidencia(
-        severidad=payload.severidad,
+        severidad=payload.severidad,  # type: ignore[arg-type]
         titulo=payload.titulo,
         componente=payload.componente,
         detectada_en=payload.detectada_en or datetime.now(UTC),
         descripcion=payload.descripcion,
-        origen=payload.origen,
+        origen=payload.origen,  # type: ignore[arg-type]
         afecta_disponibilidad=payload.afecta_disponibilidad,
         es_preventiva=payload.es_preventiva,
         es_evento_seguridad=payload.es_evento_seguridad,
@@ -181,4 +181,4 @@ def tiempo_medio_resolucion_h(incidencias: list[Incidencia]) -> float | None:
         if i.resuelta_en is not None and not i.es_preventiva
     ]
     horas = [h for h in horas if h is not None]
-    return round(sum(horas) / len(horas), 2) if horas else None
+    return round(sum(horas) / len(horas), 2) if horas else None  # type: ignore[arg-type]

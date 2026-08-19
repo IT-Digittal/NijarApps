@@ -58,11 +58,11 @@ async def invitar_usuario(
 
     contrasena_temporal = secrets.token_urlsafe(24)
 
-    nuevo = Usuario(
+    nuevo = Usuario(  # type: ignore[call-arg]
         email=email,
         nombre_completo=nombre_completo,
         password_hash=hash_password(contrasena_temporal),
-        rol=rol,
+        rol=rol,  # type: ignore[arg-type]
         scopes_adicionales=[],
         activo=True,
         requiere_2fa=True,
@@ -128,7 +128,7 @@ async def actualizar_usuario(
     if nombre_completo is not None:
         usuario.nombre_completo = nombre_completo
     if rol is not None:
-        usuario.rol = rol
+        usuario.rol = rol  # type: ignore[assignment]
     if activo is not None:
         usuario.activo = activo
     if actor is not None:

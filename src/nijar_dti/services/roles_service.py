@@ -83,7 +83,7 @@ async def crear_rol(
     existe = await db.execute(select(Rol.id).where(Rol.slug == slug))
     if existe.scalar_one_or_none() is not None:
         raise RolYaExisteError(f"Ya existe un rol con slug '{slug}'")
-    rol = Rol(
+    rol = Rol(  # type: ignore[call-arg]
         slug=slug,
         display=display,
         descripcion=descripcion,

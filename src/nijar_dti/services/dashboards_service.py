@@ -69,7 +69,7 @@ async def smart_office_overview(db: AsyncSession) -> SmartOfficeOverview:
         if umbral_max is None:
             continue
         q = (
-            select(func.count())
+            select(func.count())  # type: ignore[assignment]
             .select_from(Observacion)
             .where(
                 Observacion.sensor_id == s.id,
@@ -212,7 +212,7 @@ async def totems_usage(
         for v in interacciones
         if v.atributos and isinstance(v.atributos.get("duracion_seg"), (int, float))
     ]
-    duracion_media = round(sum(duraciones) / len(duraciones), 2) if duraciones else None
+    duracion_media = round(sum(duraciones) / len(duraciones), 2) if duraciones else None  # type: ignore[arg-type]
 
     secciones: Counter[str] = Counter()
     for v in interacciones:

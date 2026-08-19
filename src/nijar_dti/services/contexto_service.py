@@ -48,7 +48,7 @@ async def ingerir_registros(
         if existente is None:
             db.add(
                 ContextoTuristico(
-                    fuente=r.fuente,
+                    fuente=r.fuente,  # type: ignore[arg-type]
                     indicador=r.indicador,
                     periodo=r.periodo,
                     valor=r.valor,

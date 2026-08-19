@@ -101,8 +101,8 @@ class GA4Connector:
         # Para mantener dependencias mínimas y testabilidad, hacemos un import
         # diferido. En producción se recomienda añadir `google-auth` a las deps.
         try:
-            from google.auth.transport.requests import Request  # type: ignore
-            from google.oauth2 import service_account  # type: ignore
+            from google.auth.transport.requests import Request
+            from google.oauth2 import service_account
         except ImportError as exc:
             raise GA4ConnectorError(
                 "google-auth no instalado. Añadir 'google-auth>=2.27' a las dependencias."

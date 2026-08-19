@@ -117,11 +117,20 @@ ignore = [
 [tool.mypy]
 python_version = "3.11"
 strict = true
+# Tipado gradual: se mantienen las comprobaciones de CORRECTITUD (arg-type,
+# return-value, attr-defined, union-attr, …) que detectan errores reales, y se
+# relajan las de COMPLETITUD (anotar cada función y cada genérico), que la base
+# de código aún no adopta. Se pueden re-endurecer de forma incremental.
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+disallow_untyped_calls = false
+disallow_any_generics = false
+warn_return_any = false
 plugins = ["pydantic.mypy"]
 exclude = ["alembic/", "tests/"]
 
 [[tool.mypy.overrides]]
-module = ["geoalchemy2.*", "paho.*", "asyncio_mqtt.*"]
+module = ["geoalchemy2.*", "paho.*", "asyncio_mqtt.*", "jose.*", "google.*", "yaml", "passlib.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

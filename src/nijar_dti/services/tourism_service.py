@@ -92,7 +92,7 @@ async def crear_recurso(
     obj = RecursoTuristico(
         urn=payload.urn,
         nombre=payload.nombre,
-        categoria=payload.categoria,
+        categoria=payload.categoria,  # type: ignore[arg-type]
         descripcion_corta=payload.descripcion_corta,
         nombre_i18n=payload.nombre_i18n.model_dump(exclude_none=True)
         if payload.nombre_i18n
@@ -100,7 +100,7 @@ async def crear_recurso(
         descripcion_i18n=payload.descripcion_i18n.model_dump(exclude_none=True)
         if payload.descripcion_i18n
         else None,
-        ubicacion=_geo_to_wkt(payload.ubicacion),
+        ubicacion=_geo_to_wkt(payload.ubicacion),  # type: ignore[arg-type]
         direccion=payload.direccion,
         municipio=payload.municipio,
         codigo_postal=payload.codigo_postal,
@@ -170,7 +170,7 @@ async def actualizar_recurso(
     obj = await obtener_recurso(db, recurso_id)
     obj.urn = payload.urn
     obj.nombre = payload.nombre
-    obj.categoria = payload.categoria
+    obj.categoria = payload.categoria  # type: ignore[assignment]
     obj.descripcion_corta = payload.descripcion_corta
     obj.nombre_i18n = (
         payload.nombre_i18n.model_dump(exclude_none=True) if payload.nombre_i18n else None
@@ -178,7 +178,7 @@ async def actualizar_recurso(
     obj.descripcion_i18n = (
         payload.descripcion_i18n.model_dump(exclude_none=True) if payload.descripcion_i18n else None
     )
-    obj.ubicacion = _geo_to_wkt(payload.ubicacion)
+    obj.ubicacion = _geo_to_wkt(payload.ubicacion)  # type: ignore[assignment]
     obj.direccion = payload.direccion
     obj.municipio = payload.municipio
     obj.codigo_postal = payload.codigo_postal
@@ -252,7 +252,7 @@ async def crear_evento(
     obj = EventoTuristico(
         urn=payload.urn,
         nombre=payload.nombre,
-        tipo=payload.tipo,
+        tipo=payload.tipo,  # type: ignore[arg-type]
         descripcion=payload.descripcion,
         nombre_i18n=payload.nombre_i18n.model_dump(exclude_none=True)
         if payload.nombre_i18n
@@ -263,7 +263,7 @@ async def crear_evento(
         fecha_inicio=payload.fecha_inicio,
         fecha_fin=payload.fecha_fin,
         recurso_id=payload.recurso_id,
-        ubicacion=_geo_to_wkt(payload.ubicacion),
+        ubicacion=_geo_to_wkt(payload.ubicacion),  # type: ignore[arg-type]
         direccion=payload.direccion,
         organizador=payload.organizador,
         precio=payload.precio,
@@ -356,7 +356,7 @@ async def crear_servicio(
     obj = Servicio(
         urn=payload.urn,
         nombre=payload.nombre,
-        tipo=payload.tipo,
+        tipo=payload.tipo,  # type: ignore[arg-type]
         descripcion=payload.descripcion,
         nombre_i18n=payload.nombre_i18n.model_dump(exclude_none=True)
         if payload.nombre_i18n
@@ -364,7 +364,7 @@ async def crear_servicio(
         descripcion_i18n=payload.descripcion_i18n.model_dump(exclude_none=True)
         if payload.descripcion_i18n
         else None,
-        ubicacion=_geo_to_wkt(payload.ubicacion),
+        ubicacion=_geo_to_wkt(payload.ubicacion),  # type: ignore[arg-type]
         direccion=payload.direccion,
         municipio=payload.municipio,
         codigo_postal=payload.codigo_postal,

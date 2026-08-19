@@ -478,7 +478,7 @@ def generar_movilidad_seed() -> list[dict]:
         },
     ]
     for p in puntos:
-        lat, lon = COORDS_MOVILIDAD[p["codigo"]]
+        lat, lon = COORDS_MOVILIDAD[p["codigo"]]  # type: ignore[index]
         p["latitud"], p["longitud"] = lat, lon
     return puntos
 

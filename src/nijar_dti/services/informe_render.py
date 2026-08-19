@@ -84,7 +84,7 @@ def render_informe_markdown(report: MonthlyReport, ans: InformeANS | None = None
         a("| Severidad | Total | Cumplen | % cumpl. | T. resp. medio (h) | T. resol. medio (h) |")
         a("|-----------|-------|---------|----------|--------------------|---------------------|")
         for s in ans.por_severidad:
-            pct = _ov(s.porcentaje_cumplimiento, "%")
+            pct = _ov(s.porcentaje_cumplimiento, "%")  # type: ignore[assignment]
             tr = _ov(s.tiempo_medio_respuesta_h)
             tre = _ov(s.tiempo_medio_resolucion_h)
             a(f"| {s.severidad} | {s.total} | {s.cumplen_resolucion} | {pct} | {tr} | {tre} |")

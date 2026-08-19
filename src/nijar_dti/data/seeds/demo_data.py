@@ -293,7 +293,7 @@ def generar_opiniones_seed() -> list[dict]:
         dias_atras = random.randint(0, 120)
         horas_atras = random.randint(0, 23)
         ts = _NOW - timedelta(days=dias_atras, hours=horas_atras)
-        base_alcance = _ALCANCE_BASE.get(tmpl["fuente"], 800)
+        base_alcance = _ALCANCE_BASE.get(tmpl["fuente"], 800)  # type: ignore[call-overload]
         likes = random.randint(2, 120)
         metricas = {
             "likes": likes,
@@ -312,7 +312,7 @@ def generar_opiniones_seed() -> list[dict]:
                 "publicado_en": ts,
                 "idioma": tmpl["idioma"],
                 "sentimiento": tmpl["sentimiento"],
-                "score_sentimiento": round(tmpl["score"] + random.uniform(-0.05, 0.05), 4),
+                "score_sentimiento": round(tmpl["score"] + random.uniform(-0.05, 0.05), 4),  # type: ignore[operator]
                 "temas": tmpl["temas"],
                 "metricas": metricas,
                 "autor_handle": f"@demo_user_{i % 25}",
@@ -684,9 +684,9 @@ def generar_eventos_seed(ref: datetime | None = None) -> list[dict]:
     base = ref or datetime.now(UTC)
     eventos = []
     for ev in _EVENTOS_SEED:
-        inicio = base + timedelta(days=ev["delta_dias"])
+        inicio = base + timedelta(days=ev["delta_dias"])  # type: ignore[arg-type]
         inicio = inicio.replace(hour=ev["hora_inicio"], minute=0, second=0, microsecond=0)
-        fin = inicio + timedelta(hours=ev["duracion_h"])
+        fin = inicio + timedelta(hours=ev["duracion_h"])  # type: ignore[arg-type]
         eventos.append(
             {
                 "urn": ev["urn"],
@@ -1185,14 +1185,14 @@ def generar_contenidos_seed(recursos_ids: list[str] | None = None) -> list[dict]
     recursos_ids = recursos_ids or []
     contenidos = []
     for i, c in enumerate(_CONTENIDOS_SEED):
-        creado = _NOW - timedelta(days=c["delta_creado_dias"])
+        creado = _NOW - timedelta(days=c["delta_creado_dias"])  # type: ignore[arg-type]
         fecha_aprobacion = None
         fecha_publicacion = None
         publicar_desde = None
         if c["horas_a_aprobacion"] is not None:
-            fecha_aprobacion = creado + timedelta(hours=c["horas_a_aprobacion"])
+            fecha_aprobacion = creado + timedelta(hours=c["horas_a_aprobacion"])  # type: ignore[arg-type]
         if fecha_aprobacion is not None and c["horas_aprob_a_pub"] is not None:
-            fecha_publicacion = fecha_aprobacion + timedelta(hours=c["horas_aprob_a_pub"])
+            fecha_publicacion = fecha_aprobacion + timedelta(hours=c["horas_aprob_a_pub"])  # type: ignore[arg-type]
             publicar_desde = fecha_publicacion
         if c["estado"] == "programado":
             # Programado a futuro

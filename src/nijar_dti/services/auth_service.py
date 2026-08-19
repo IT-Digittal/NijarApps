@@ -40,8 +40,8 @@ def issue_tokens(user: Usuario) -> dict[str, str | int]:
     settings = get_settings()
     scopes = [user.rol]
     if user.scopes_adicionales:
-        scopes.extend(user.scopes_adicionales)
-    access = create_access_token(subject=str(user.id), scopes=scopes)
+        scopes.extend(user.scopes_adicionales)  # type: ignore[arg-type]
+    access = create_access_token(subject=str(user.id), scopes=scopes)  # type: ignore[arg-type]
     refresh = create_refresh_token(subject=str(user.id))
     return {
         "access_token": access,

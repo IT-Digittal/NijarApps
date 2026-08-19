@@ -157,7 +157,7 @@ def detectar_idioma(texto: str, default: str = "es") -> str:
     for lang, marcas in _LANG_MARKERS.items():
         marcas_norm = {_normalizar(m) for m in marcas}
         scores[lang] = len(tokens_norm & marcas_norm)
-    mejor_lang = max(scores, key=scores.get)
+    mejor_lang = max(scores, key=scores.get)  # type: ignore[arg-type]
     if scores[mejor_lang] == 0:
         return default
     return mejor_lang

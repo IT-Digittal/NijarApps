@@ -68,7 +68,7 @@ async def telemetry(
     hasta: datetime | None = Query(None),
     user: Annotated[
         CurrentUser, Depends(require_roles("administrador_tic", "analista_datos"))
-    ] = ...,
+    ] = ...,  # type: ignore[assignment]
     db: AsyncSession = Depends(get_db),
 ) -> ChatbotTelemetry:
     return await svc.telemetria(db, desde, hasta)
@@ -85,7 +85,7 @@ async def telemetry_series(
     granularidad: str = Query("dia", pattern=r"^dia$"),
     user: Annotated[
         CurrentUser, Depends(require_roles("administrador_tic", "analista_datos"))
-    ] = ...,
+    ] = ...,  # type: ignore[assignment]
     db: AsyncSession = Depends(get_db),
 ) -> SerieDiaria:
     return await svc.telemetria_series(db, desde, hasta, granularidad)

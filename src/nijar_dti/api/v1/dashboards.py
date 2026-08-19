@@ -136,7 +136,7 @@ async def monthly_report(
     month: int = Query(..., ge=1, le=12),
     user: Annotated[
         CurrentUser, Depends(require_roles("administrador_tic", "analista_datos", "auditor"))
-    ] = ...,
+    ] = ...,  # type: ignore[assignment]
     db: AsyncSession = Depends(get_db),
 ) -> MonthlyReport:
     return await svc.informe_mensual(db, year, month)

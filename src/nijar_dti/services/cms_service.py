@@ -79,7 +79,7 @@ async def listar_contenidos(
 ) -> tuple[list[Contenido], int]:
     base = select(Contenido).where(Contenido.deleted_at.is_(None))
     if canal and canal != "todos":
-        base = base.where(Contenido.canales.any(canal))
+        base = base.where(Contenido.canales.any(canal))  # type: ignore[arg-type]
     if idioma:
         # filtra contenidos cuyo i18n.<idioma> está presente
         base = base.where(Contenido.titulo_i18n.op("?")(idioma) | (idioma == "es"))

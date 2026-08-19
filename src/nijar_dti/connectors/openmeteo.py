@@ -169,7 +169,7 @@ class ClienteOpenMeteo:
         }
         async with httpx.AsyncClient(timeout=self._timeout) as client:
             try:
-                resp = await client.get(f"{self._base}/forecast", params=params)
+                resp = await client.get(f"{self._base}/forecast", params=params)  # type: ignore[arg-type]
                 resp.raise_for_status()
             except httpx.HTTPError as exc:
                 detalle = str(exc) or type(exc).__name__

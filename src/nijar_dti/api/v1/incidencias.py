@@ -85,7 +85,7 @@ async def ans(
     hasta: datetime = Query(...),
     user: Annotated[
         CurrentUser, Depends(require_roles("administrador_tic", "auditor", "analista_datos"))
-    ] = ...,
+    ] = ...,  # type: ignore[assignment]
     db: AsyncSession = Depends(get_db),
 ) -> InformeANS:
     return await svc.informe_ans(db, desde, hasta)

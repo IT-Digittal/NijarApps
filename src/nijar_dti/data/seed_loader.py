@@ -197,7 +197,7 @@ async def seed_recursos(db: AsyncSession) -> None:
             descripcion_corta=r.get("descripcion_corta"),
             nombre_i18n=r.get("nombre_i18n"),
             descripcion_i18n=r.get("descripcion_i18n"),
-            ubicacion=_wkt(r["lon"], r["lat"]),
+            ubicacion=_wkt(r["lon"], r["lat"]),  # type: ignore[arg-type]
             municipio="Níjar",
             telefono=r.get("telefono"),
             horario=r.get("horario"),
@@ -229,7 +229,7 @@ async def seed_sensores(db: AsyncSession) -> None:
             tipo=s["tipo"],
             fabricante=s.get("fabricante"),
             modelo=s.get("modelo"),
-            ubicacion=_wkt(s["lon"], s["lat"]),
+            ubicacion=_wkt(s["lon"], s["lat"]),  # type: ignore[arg-type]
             descripcion_ubicacion=s.get("descripcion_ubicacion"),
             unidades_medida=s.get("unidades_medida"),
             rango_minimo=s.get("rango_minimo"),
@@ -334,7 +334,7 @@ async def seed_demo_eventos(db: AsyncSession) -> None:
     hay_futuros = any(e.fecha_fin > ahora for e in existentes.values())
     creados = actualizados = 0
     for d in datos:
-        e = existentes.get(d["urn"])
+        e = existentes.get(d["urn"])  # type: ignore[assignment]
         if e is None:
             db.add(EventoTuristico(**d))
             creados += 1
@@ -543,7 +543,7 @@ async def seed_campanas(db: AsyncSession) -> None:
             continue
         recurso_urn = c.pop("recurso_urn", None)
         recurso_id = por_urn.get(recurso_urn) if recurso_urn else None
-        db.add(Campana(recurso_id=recurso_id, **c))
+        db.add(Campana(recurso_id=recurso_id, **c))  # type: ignore[arg-type]
         creadas += 1
     log.info("Campañas creadas: %d", creadas)
 
@@ -766,7 +766,7 @@ async def seed_historico_verticales(db: AsyncSession) -> None:
         return
     filas = generar_historico_seed(anios=2)
     for f in filas:
-        db.add(MetricaHistorica(**f))
+        db.add(MetricaHistorica(**f))  # type: ignore[arg-type]
     log.info("Histórico mensual de verticales creado: %d puntos", len(filas))
 
 

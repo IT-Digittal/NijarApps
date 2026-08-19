@@ -79,7 +79,7 @@ async def meteo_actual(lat: float | None = None, lon: float | None = None) -> Me
     longitud = lon if lon is not None else s.openmeteo_longitud
     clave = f"meteo:{round(latitud, 3)},{round(longitud, 3)}"
     if (hit := _cacheado(clave)) is not None:
-        return hit  # type: ignore[no-any-return]
+        return hit
     datos = await _obtener_cliente_openmeteo().actual(latitud, longitud, s.openmeteo_dias_prevision)
     resultado = MeteoActualOut(**datos)
     _cache[clave] = (time.monotonic(), resultado)
@@ -121,7 +121,7 @@ def _obtener_cliente_bettair() -> ClienteBettair:
 
 async def estaciones_aire() -> EstacionesAireOut:
     if (hit := _cacheado("aire")) is not None:
-        return hit  # type: ignore[no-any-return]
+        return hit
     entidades = await _obtener_cliente_bettair().entidades()
     estaciones = [EstacionAireOut(**e) for e in parsear_estaciones(entidades)]
     resultado = EstacionesAireOut(
@@ -140,7 +140,7 @@ async def resumen_aire() -> ResumenAireOut:
 
 async def banderas_playas() -> BanderasPlayasOut:
     if (hit := _cacheado("banderas")) is not None:
-        return hit  # type: ignore[no-any-return]
+        return hit
     tb = _obtener_cliente()
     dispositivos = await tb.dispositivos(TIPO_BANDERAS)
     atributos = await asyncio.gather(*(tb.atributos("DEVICE", d["id"]["id"]) for d in dispositivos))
@@ -158,7 +158,7 @@ async def banderas_playas() -> BanderasPlayasOut:
 
 async def aforo_parque() -> AforoParqueOut:
     if (hit := _cacheado("aforo")) is not None:
-        return hit  # type: ignore[no-any-return]
+        return hit
     tb = _obtener_cliente()
     activos = await tb.activos()
     activo = next((a for a in activos if a.get("name") == ACTIVO_AFORO_PARQUE), None)
