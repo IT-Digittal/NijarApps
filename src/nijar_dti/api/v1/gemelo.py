@@ -12,6 +12,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from nijar_dti.api.v1.dependencies import get_current_user
 from nijar_dti.connectors.bettair import BettairError
+from nijar_dti.connectors.openmeteo import OpenMeteoError
 from nijar_dti.connectors.thingsboard import ThingsBoardError
 from nijar_dti.schemas.auth import CurrentUser
 from nijar_dti.schemas.gemelo import (
@@ -19,6 +20,7 @@ from nijar_dti.schemas.gemelo import (
     BanderasPlayasOut,
     EstacionesAireOut,
     EstadoGemelo,
+    MeteoActualOut,
     ResumenAireOut,
 )
 from nijar_dti.services import gemelo_service as svc
@@ -62,6 +64,20 @@ async def aforo(user: CurrentUser = Depends(get_current_user)) -> AforoParqueOut
     try:
         return await svc.aforo_parque()
     except ThingsBoardError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+
+@router.get(
+    "/meteo",
+    response_model=MeteoActualOut,
+    summary="Meteorología pública del municipio (Open-Meteo)",
+)
+async def meteo() -> MeteoActualOut:
+    """Condiciones actuales y previsión a 3 días (fuente pública Open-Meteo).
+    No requiere credenciales; lo consume el tótem público."""
+    try:
+        return await svc.meteo_actual()
+    except OpenMeteoError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
 
 

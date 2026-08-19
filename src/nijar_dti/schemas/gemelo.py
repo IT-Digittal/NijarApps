@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 
 from pydantic import BaseModel
 
@@ -12,6 +12,39 @@ class EstadoGemelo(BaseModel):
 
     thingsboard_configurado: bool
     bettair_configurado: bool = False
+    openmeteo_disponible: bool = True  # fuente pública, siempre disponible
+
+
+class MeteoDiaOut(BaseModel):
+    """Predicción diaria (Open-Meteo)."""
+
+    fecha: date
+    codigo_wmo: int | None = None
+    descripcion: str
+    temp_max_c: float | None = None
+    temp_min_c: float | None = None
+    prob_precipitacion_pct: int | None = None
+
+
+class MeteoActualOut(BaseModel):
+    """Condiciones meteorológicas actuales y previsión (Open-Meteo, público)."""
+
+    fuente: str = "open-meteo"
+    obtenido_en: datetime
+    latitud: float
+    longitud: float
+    temperatura_c: float | None = None
+    sensacion_c: float | None = None
+    humedad_pct: int | None = None
+    precipitacion_mm: float | None = None
+    viento_kmh: float | None = None
+    viento_dir_grados: int | None = None
+    viento_cardinal: str | None = None
+    codigo_wmo: int | None = None
+    descripcion: str
+    es_de_dia: bool | None = None
+    medido_en: datetime | None = None
+    prevision: list[MeteoDiaOut] = []
 
 
 class BanderaPlayaOut(BaseModel):

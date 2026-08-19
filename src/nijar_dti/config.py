@@ -137,6 +137,15 @@ class Settings(BaseSettings):
     bettair_client_secret: str = ""
     bettair_timeout_seconds: int = 12
 
+    # --- Meteorología pública: Open-Meteo (sin clave) ---
+    # Fuente meteo abierta que consume el tótem/panel. Coordenadas por defecto:
+    # Níjar (pueblo). Operativa sin credenciales.
+    openmeteo_base_url: str = "https://api.open-meteo.com/v1"
+    openmeteo_latitud: float = 36.9660
+    openmeteo_longitud: float = -2.2076
+    openmeteo_dias_prevision: int = 3
+    openmeteo_timeout_seconds: int = 12
+
     # --- Google Analytics 4 ---
     ga4_property_id: str = ""
     # Ruta a un fichero JSON de service-account o JSON inline

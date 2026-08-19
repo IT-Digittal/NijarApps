@@ -51,6 +51,7 @@ Para completar la integración real y la puesta en producción:
 | FD-106 | Perfil Facebook | **Page Access Token + ID** de la página — ver [runbook de activación](runbook-social-listening-meta.md) |
 | FD-107 | Perfil Instagram | **Instagram Business Account ID** — ver [runbook de activación](runbook-social-listening-meta.md) |
 | FD-108 | Sensores IoT / estaciones meteo existentes | Protocolo (MQTT/HTTP), credenciales y whitelist de nodos |
+| FD-108b | **Meteorología pública (Open-Meteo)** | ✅ **Integrado** (sin clave) — `GET /gemelo/meteo`; condiciones actuales + previsión 3 días. Las estaciones Bettair requieren credenciales del proveedor (no disponibles) |
 | FD-109 | Campañas de promoción | Nombre, fechas, canales, objetivos y contenidos |
 | FD-110 | Plataforma DTI actual (plataforma.nijardti.com) | URL correcta + documentación de API o cuenta de servicio |
 | FD-111 | SSO / Directorio Activo municipal | Integración SSO/AD y titularidad de credenciales |
