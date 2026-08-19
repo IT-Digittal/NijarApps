@@ -67,14 +67,10 @@ class Contenido(Base, AuditMixin):
     publicar_desde: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), default=None, index=True
     )
-    publicar_hasta: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), default=None
-    )
+    publicar_hasta: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
 
     # Trazabilidad del flujo editorial (KPI de tiempo de publicación ≤ 24 h)
-    fecha_aprobacion: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), default=None
-    )
+    fecha_aprobacion: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
     fecha_publicacion: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), default=None
     )
@@ -85,6 +81,4 @@ class Contenido(Base, AuditMixin):
 
     metadata_adicional: Mapped[dict | None] = mapped_column(JSON, default=None)
 
-    __table_args__ = (
-        Index("ix_contenidos_estado_publicar", "estado", "publicar_desde"),
-    )
+    __table_args__ = (Index("ix_contenidos_estado_publicar", "estado", "publicar_desde"),)

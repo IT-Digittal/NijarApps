@@ -52,7 +52,9 @@ def _obs_to_out(o) -> ObservacionOut:
 )
 async def ingest(
     payload: ObservacionIn,
-    user: Annotated[CurrentUser, Depends(require_roles("administrador_tic", "operador_smart_office"))],
+    user: Annotated[
+        CurrentUser, Depends(require_roles("administrador_tic", "operador_smart_office"))
+    ],
     db: AsyncSession = Depends(get_db),
 ) -> IngestResponse:
     try:

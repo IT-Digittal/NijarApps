@@ -30,9 +30,7 @@ async def get_sensor_by_urn(db: AsyncSession, urn: str) -> Sensor | None:
     return res.scalar_one_or_none()
 
 
-async def ingerir_observacion(
-    db: AsyncSession, payload: ObservacionIn
-) -> IngestResponse:
+async def ingerir_observacion(db: AsyncSession, payload: ObservacionIn) -> IngestResponse:
     sensor = await get_sensor_by_urn(db, payload.sensor_urn)
     if sensor is None:
         raise SensorNotFound(f"Sensor con URN '{payload.sensor_urn}' no encontrado")
@@ -79,9 +77,7 @@ async def listar_sensores(
     total = int(
         (await db.execute(select(func.count()).select_from(base.subquery()))).scalar_one() or 0
     )
-    res = await db.execute(
-        base.order_by(Sensor.nombre).offset(page.offset).limit(page.limit)
-    )
+    res = await db.execute(base.order_by(Sensor.nombre).offset(page.offset).limit(page.limit))
     return list(res.scalars().all()), total
 
 
@@ -98,7 +94,8 @@ def _geojson_str_to_geopoint(geojson_str: str | None) -> GeoPoint | None:
 
 
 async def _get_ubicacion_geojson(
-    db: AsyncSession, id_value: UUID,
+    db: AsyncSession,
+    id_value: UUID,
 ) -> str | None:
     sql = text("SELECT ST_AsGeoJSON(ubicacion) AS geojson FROM sensores WHERE id = :id")
     result = await db.execute(sql, {"id": id_value})

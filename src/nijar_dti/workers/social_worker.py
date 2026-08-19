@@ -23,7 +23,7 @@ import asyncio
 import logging
 import signal
 import sys
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from nijar_dti.config import Settings, get_settings
 from nijar_dti.connectors.social.facebook import FacebookConnector
@@ -58,22 +58,24 @@ class SocialWorker:
     async def _poll(self) -> None:
         # Primer poll: pedimos solo lo último (1h hacia atrás) para no
         # saturar las APIs ni pasar la ventana máxima de cada plataforma.
-        since = self._last_poll or (datetime.now(timezone.utc) - timedelta(hours=1))
+        since = self._last_poll or (datetime.now(UTC) - timedelta(hours=1))
         async with AsyncSessionLocal() as db:
-            stats = await ejecutar_poll(
-                db, self.conectores, desde=since, settings=self.settings
-            )
+            stats = await ejecutar_poll(db, self.conectores, desde=since, settings=self.settings)
         log.info(
             "Poll completado por_fuente=%s nuevas=%s duplicadas=%s",
-            stats.por_fuente, stats.nuevas, stats.duplicadas,
+            stats.por_fuente,
+            stats.nuevas,
+            stats.duplicadas,
         )
-        self._last_poll = datetime.now(timezone.utc)
+        self._last_poll = datetime.now(UTC)
 
     async def run(self) -> None:
         intervalo = max(self.settings.social_polling_interval_minutes, 1) * 60
 
         if not self.settings.social_listening_enabled:
-            log.info("Social Listening DESHABILITADO (SOCIAL_LISTENING_ENABLED=false). El worker queda dormido.")
+            log.info(
+                "Social Listening DESHABILITADO (SOCIAL_LISTENING_ENABLED=false). El worker queda dormido."
+            )
             await self._stop.wait()
             return
 
@@ -91,7 +93,7 @@ class SocialWorker:
 
             try:
                 await asyncio.wait_for(self._stop.wait(), timeout=intervalo)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 continue
 
         log.info("Social worker detenido")

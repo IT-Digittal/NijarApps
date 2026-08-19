@@ -140,9 +140,9 @@ resource "aws_elasticache_replication_group" "main" {
   replication_group_id = "${local.name_prefix}-redis"
   description          = "Cache + pub/sub Plataforma DTI Níjar"
 
-  engine          = "redis"
-  engine_version  = "7.1"
-  node_type       = var.redis_node_type
+  engine             = "redis"
+  engine_version     = "7.1"
+  node_type          = var.redis_node_type
   num_cache_clusters = var.environment == "production" ? 2 : 1
 
   parameter_group_name = "default.redis7"

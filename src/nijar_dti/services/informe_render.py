@@ -12,8 +12,19 @@ from nijar_dti.schemas.dashboards import MonthlyReport
 from nijar_dti.schemas.incidencias import InformeANS
 
 _MESES = [
-    "", "enero", "febrero", "marzo", "abril", "mayo", "junio",
-    "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
+    "",
+    "enero",
+    "febrero",
+    "marzo",
+    "abril",
+    "mayo",
+    "junio",
+    "julio",
+    "agosto",
+    "septiembre",
+    "octubre",
+    "noviembre",
+    "diciembre",
 ]
 
 
@@ -73,7 +84,7 @@ def render_informe_markdown(report: MonthlyReport, ans: InformeANS | None = None
         a("| Severidad | Total | Cumplen | % cumpl. | T. resp. medio (h) | T. resol. medio (h) |")
         a("|-----------|-------|---------|----------|--------------------|---------------------|")
         for s in ans.por_severidad:
-            pct = _ov(s.porcentaje_cumplimiento, "%")
+            pct = _ov(s.porcentaje_cumplimiento, "%")  # type: ignore[assignment]
             tr = _ov(s.tiempo_medio_respuesta_h)
             tre = _ov(s.tiempo_medio_resolucion_h)
             a(f"| {s.severidad} | {s.total} | {s.cumplen_resolucion} | {pct} | {tr} | {tre} |")
@@ -113,7 +124,9 @@ def render_informe_markdown(report: MonthlyReport, ans: InformeANS | None = None
 
     a("---")
     a("")
-    a("_Informe generado por la Plataforma DTI Níjar a partir del ticketing y "
-      "las métricas de la plataforma. Datos verificables y auditables._")
+    a(
+        "_Informe generado por la Plataforma DTI Níjar a partir del ticketing y "
+        "las métricas de la plataforma. Datos verificables y auditables._"
+    )
     a("")
     return "\n".join(lineas)

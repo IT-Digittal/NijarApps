@@ -53,9 +53,7 @@ class FAQ(Base, AuditMixin):
     respuesta_de: Mapped[str | None] = mapped_column(Text, default=None)
     respuesta_fr: Mapped[str | None] = mapped_column(Text, default=None)
 
-    nivel_confianza: Mapped[NivelConfianza] = mapped_column(
-        String(20), default=NivelConfianza.ALTA
-    )
+    nivel_confianza: Mapped[NivelConfianza] = mapped_column(String(20), default=NivelConfianza.ALTA)
     fuente_url: Mapped[str | None] = mapped_column(String(500), default=None)
     fuente_descripcion: Mapped[str | None] = mapped_column(String(255), default=None)
     fecha_validez_hasta: Mapped[datetime | None] = mapped_column(
@@ -67,9 +65,7 @@ class FAQ(Base, AuditMixin):
 
     metadata_adicional: Mapped[dict | None] = mapped_column(JSON, default=None)
 
-    __table_args__ = (
-        Index("ix_faqs_categoria_activo", "categoria", "activo"),
-    )
+    __table_args__ = (Index("ix_faqs_categoria_activo", "categoria", "activo"),)
 
 
 class InteraccionChatbot(Base, AuditMixin):

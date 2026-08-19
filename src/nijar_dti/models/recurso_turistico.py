@@ -76,9 +76,7 @@ class RecursoTuristico(Base, AuditMixin):
     # Atributos turísticos
     horario: Mapped[dict | None] = mapped_column(JSON, default=None)
     accesibilidad: Mapped[dict | None] = mapped_column(JSON, default=None)
-    servicios_disponibles: Mapped[list[str] | None] = mapped_column(
-        ARRAY(String), default=None
-    )
+    servicios_disponibles: Mapped[list[str] | None] = mapped_column(ARRAY(String), default=None)
     etiquetas: Mapped[list[str] | None] = mapped_column(ARRAY(String), default=None)
 
     # Multimedia y enlaces

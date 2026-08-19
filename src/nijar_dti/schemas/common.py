@@ -25,9 +25,9 @@ class GeoPoint(BaseModel):
     type: str = Field(default="Point", pattern=r"^Point$")
     coordinates: list[float] = Field(..., min_length=2, max_length=2)
 
-    model_config = ConfigDict(json_schema_extra={
-        "example": {"type": "Point", "coordinates": [-2.139, 36.752]}
-    })
+    model_config = ConfigDict(
+        json_schema_extra={"example": {"type": "Point", "coordinates": [-2.139, 36.752]}}
+    )
 
 
 class I18nText(BaseModel):
@@ -72,7 +72,7 @@ class Paginated(BaseModel, Generic[T]):
     page_size: int
 
     @classmethod
-    def build(cls, items: list[T], total: int, params: PageParams) -> "Paginated[T]":
+    def build(cls, items: list[T], total: int, params: PageParams) -> Paginated[T]:
         return cls(items=items, total=total, page=params.page, page_size=params.page_size)
 
 

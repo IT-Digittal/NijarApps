@@ -12,7 +12,7 @@ Uso:
 from __future__ import annotations
 
 import argparse
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from types import SimpleNamespace
 
 from nijar_dti.data.seeds.demo_data import _mes_anterior, generar_incidencias_seed
@@ -41,11 +41,11 @@ def _a_objeto(d: dict) -> SimpleNamespace:
 
 
 def construir_informe_ejemplo() -> tuple[MonthlyReport, object]:
-    inicio, fin = _mes_anterior(datetime.now(timezone.utc))
+    inicio, fin = _mes_anterior(datetime.now(UTC))
     incidencias = [_a_objeto(d) for d in generar_incidencias_seed()]
 
-    disponibilidad = calcular_disponibilidad(incidencias, inicio, fin)
-    resumen = resumen_incidencias(incidencias)
+    disponibilidad = calcular_disponibilidad(incidencias, inicio, fin)  # type: ignore[arg-type]
+    resumen = resumen_incidencias(incidencias)  # type: ignore[arg-type]
     ans = agregar_cumplimiento_ans(incidencias, inicio, fin)
 
     report = MonthlyReport(
@@ -81,7 +81,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     report, ans = construir_informe_ejemplo()
-    md = render_informe_markdown(report, ans)
+    md = render_informe_markdown(report, ans)  # type: ignore[arg-type]
 
     if args.output:
         with open(args.output, "w", encoding="utf-8") as fh:

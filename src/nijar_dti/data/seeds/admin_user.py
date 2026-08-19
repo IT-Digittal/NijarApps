@@ -10,7 +10,6 @@ import os
 
 from nijar_dti.core.security import hash_password
 
-
 _DEFAULT_ADMIN_PASSWORD = "CambiarEnPrimerArranque#2026"
 _DEFAULT_DIRECCION_PASSWORD = "Direccion#Nijar2026"
 

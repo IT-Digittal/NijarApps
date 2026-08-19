@@ -18,7 +18,7 @@ desarrollo y demos.
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import httpx
 
@@ -65,9 +65,7 @@ class TwitterConnector(SocialListeningConnector):
         }
         if since is not None:
             # X exige ISO 8601 con Z (UTC)
-            params["start_time"] = since.astimezone(timezone.utc).strftime(
-                "%Y-%m-%dT%H:%M:%SZ"
-            )
+            params["start_time"] = since.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
         headers = {"Authorization": f"Bearer {self.settings.twitter_bearer_token}"}
 
@@ -80,17 +78,13 @@ class TwitterConnector(SocialListeningConnector):
         if resp.status_code == 429:
             raise SocialConnectorError("Rate limit X excedido")
         if resp.status_code >= 400:
-            raise SocialConnectorError(
-                f"X API error {resp.status_code}: {resp.text[:200]}"
-            )
+            raise SocialConnectorError(f"X API error {resp.status_code}: {resp.text[:200]}")
         return _parse_twitter_response(resp.json())
 
 
 def _parse_twitter_response(data: dict) -> list[MentionRaw]:
     tweets = data.get("data", []) or []
-    users_index = {
-        u["id"]: u for u in (data.get("includes", {}) or {}).get("users", []) or []
-    }
+    users_index = {u["id"]: u for u in (data.get("includes", {}) or {}).get("users", []) or []}
     out: list[MentionRaw] = []
     for tw in tweets:
         author = users_index.get(tw.get("author_id"), {}) if tw.get("author_id") else {}
@@ -103,11 +97,9 @@ def _parse_twitter_response(data: dict) -> list[MentionRaw]:
             lon, lat = float(coords[0]), float(coords[1])
 
         try:
-            publicado_en = datetime.fromisoformat(
-                tw.get("created_at", "").replace("Z", "+00:00")
-            )
+            publicado_en = datetime.fromisoformat(tw.get("created_at", "").replace("Z", "+00:00"))
         except (TypeError, ValueError):
-            publicado_en = datetime.now(timezone.utc)
+            publicado_en = datetime.now(UTC)
 
         out.append(
             MentionRaw(
@@ -136,12 +128,40 @@ def _parse_twitter_response(data: dict) -> list[MentionRaw]:
 
 def _menciones_sinteticas_x(since: datetime | None) -> list[MentionRaw]:
     """Genera menciones de ejemplo realistas para modo dry-run."""
-    base = since or (datetime.now(timezone.utc) - timedelta(hours=1))
+    base = since or (datetime.now(UTC) - timedelta(hours=1))
     plantilla = [
-        ("@viajero_anonimo", "El atardecer en la Playa de Mónsul es algo único. Cabo de Gata sigue siendo mágico. #Níjar #CaboDeGata", "es", 142, 18, 7),
-        ("@traveler_eu", "Best beach in Spain hands down — Mónsul Beach in Cabo de Gata. Worth the drive!", "en", 86, 12, 4),
-        ("@nature_lover_de", "Wahnsinnige Landschaft im Naturpark Cabo de Gata-Níjar. Ein absolutes Highlight!", "de", 53, 6, 2),
-        ("@famille_voyage", "Vacances incroyables à Níjar, on recommande le centre des visiteurs Las Amoladeras.", "fr", 31, 4, 1),
+        (
+            "@viajero_anonimo",
+            "El atardecer en la Playa de Mónsul es algo único. Cabo de Gata sigue siendo mágico. #Níjar #CaboDeGata",
+            "es",
+            142,
+            18,
+            7,
+        ),
+        (
+            "@traveler_eu",
+            "Best beach in Spain hands down — Mónsul Beach in Cabo de Gata. Worth the drive!",
+            "en",
+            86,
+            12,
+            4,
+        ),
+        (
+            "@nature_lover_de",
+            "Wahnsinnige Landschaft im Naturpark Cabo de Gata-Níjar. Ein absolutes Highlight!",
+            "de",
+            53,
+            6,
+            2,
+        ),
+        (
+            "@famille_voyage",
+            "Vacances incroyables à Níjar, on recommande le centre des visiteurs Las Amoladeras.",
+            "fr",
+            31,
+            4,
+            1,
+        ),
     ]
     out: list[MentionRaw] = []
     for i, (autor, texto, lang, likes, rt, reply) in enumerate(plantilla):

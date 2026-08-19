@@ -154,9 +154,7 @@ async def _cambiar_estado(
 ) -> UsuarioResponse:
     try:
         actor = await _actor(db, current)
-        usuario = await usuarios_service.cambiar_estado(
-            db, usuario_id, activo=activo, actor=actor
-        )
+        usuario = await usuarios_service.cambiar_estado(db, usuario_id, activo=activo, actor=actor)
     except usuarios_service.UsuarioNoEncontradoError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     except usuarios_service.OperacionNoPermitidaError as exc:
@@ -176,14 +174,10 @@ async def reset_password(
 ) -> PasswordTemporalResponse:
     try:
         actor = await _actor(db, current)
-        usuario, temporal = await usuarios_service.restablecer_password(
-            db, usuario_id, actor=actor
-        )
+        usuario, temporal = await usuarios_service.restablecer_password(db, usuario_id, actor=actor)
     except usuarios_service.UsuarioNoEncontradoError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
-    return PasswordTemporalResponse(
-        id=usuario.id, email=usuario.email, password_temporal=temporal
-    )
+    return PasswordTemporalResponse(id=usuario.id, email=usuario.email, password_temporal=temporal)
 
 
 @router.delete(

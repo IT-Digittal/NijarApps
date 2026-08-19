@@ -84,13 +84,26 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build imagen
         run: docker build -t nijar-dti-api:nightly .
+      - name: Instalar Trivy (CLI, repo oficial apt)
+        run: |
+          sudo apt-get install -y --no-install-recommends wget gnupg
+          wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key \
+            | gpg --dearmor | sudo tee /usr/share/keyrings/trivy.gpg > /dev/null
+          echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb generic main" \
+            | sudo tee /etc/apt/sources.list.d/trivy.list
+          sudo apt-get update
+          sudo apt-get install -y trivy
       - name: Trivy completo (LOW+MEDIUM+HIGH+CRITICAL)
-        uses: aquasecurity/trivy-action@0.24.0
-        with:
-          image-ref: 'nijar-dti-api:nightly'
-          format: 'sarif'
-          output: 'trivy-nightly.sarif'
-          severity: 'CRITICAL,HIGH,MEDIUM,LOW'
+        run: |
+          trivy image --severity CRITICAL,HIGH,MEDIUM,LOW \
+            --format table --output trivy-nightly.txt nijar-dti-api:nightly
+          cat trivy-nightly.txt
+          trivy image --severity CRITICAL,HIGH,MEDIUM,LOW \
+            --format json --output trivy-nightly.json nijar-dti-api:nightly
       - if: always()
-        uses: github/codeql-action/upload-sarif@v3
-        with: { sarif_file: trivy-nightly.sarif }
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-nightly-report
+          path: |
+            trivy-nightly.txt
+            trivy-nightly.json

@@ -62,9 +62,7 @@ class Incidencia(Base, TimestampMixin):
     estado: Mapped[EstadoIncidencia] = mapped_column(
         String(20), default=EstadoIncidencia.ABIERTA, index=True
     )
-    origen: Mapped[OrigenIncidencia] = mapped_column(
-        String(20), default=OrigenIncidencia.TICKETING
-    )
+    origen: Mapped[OrigenIncidencia] = mapped_column(String(20), default=OrigenIncidencia.TICKETING)
     # Si True, su duración cuenta como indisponibilidad del componente.
     afecta_disponibilidad: Mapped[bool] = mapped_column(Boolean, default=False)
     # Si True, es una acción preventiva ejecutada (no una incidencia reactiva).
@@ -72,12 +70,8 @@ class Incidencia(Base, TimestampMixin):
     es_evento_seguridad: Mapped[bool] = mapped_column(Boolean, default=False)
     incidente_confirmado: Mapped[bool] = mapped_column(Boolean, default=False)
 
-    respondida_en: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), default=None
-    )
-    resuelta_en: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), default=None
-    )
+    respondida_en: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
+    resuelta_en: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
 
     __table_args__ = (
         Index("ix_incidencias_severidad_detectada", "severidad", "detectada_en"),

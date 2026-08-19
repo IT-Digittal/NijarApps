@@ -46,81 +46,102 @@ def _reglas(k: dict[str, Any]) -> list[RecomendacionIA]:
     big, inc = k["big_data"], k["incidencias"]
 
     if inc["criticas"] > 0:
-        recs.append(RecomendacionIA(
-            titulo="Resolver las incidencias críticas abiertas",
-            area="Servicio público", prioridad="critica",
-            justificacion=(
-                f"Hay {inc['criticas']} incidencia(s) crítica(s) que afectan al servicio."
-            ),
-            impacto="Evita degradación del servicio y reclamaciones ciudadanas.",
-            accion="Elevar a seguimiento prioritario y confirmar resolución dentro del SLA.",
-        ))
+        recs.append(
+            RecomendacionIA(
+                titulo="Resolver las incidencias críticas abiertas",
+                area="Servicio público",
+                prioridad="critica",
+                justificacion=(
+                    f"Hay {inc['criticas']} incidencia(s) crítica(s) que afectan al servicio."
+                ),
+                impacto="Evita degradación del servicio y reclamaciones ciudadanas.",
+                accion="Elevar a seguimiento prioritario y confirmar resolución dentro del SLA.",
+            )
+        )
     if alum.sin_comunicacion > 0 or alum.cuadros_alerta > 0 or alum.incidencias_abiertas > 0:
-        recs.append(RecomendacionIA(
-            titulo="Priorizar renovación LED y revisión de cuadros en alumbrado",
-            area="Alumbrado público", prioridad="alta",
-            justificacion=(
-                f"{alum.sin_comunicacion} cuadro(s) sin comunicación, "
-                f"{alum.cuadros_alerta} en alerta y {alum.incidencias_abiertas} "
-                "incidencia(s) abiertas concentran el riesgo."
-            ),
-            impacto="Reduce averías, consumo energético y reclamaciones vecinales.",
-            accion=(
-                "Incluir las zonas afectadas en el próximo lote de renovación "
-                "y revisar comunicaciones."
-            ),
-        ))
+        recs.append(
+            RecomendacionIA(
+                titulo="Priorizar renovación LED y revisión de cuadros en alumbrado",
+                area="Alumbrado público",
+                prioridad="alta",
+                justificacion=(
+                    f"{alum.sin_comunicacion} cuadro(s) sin comunicación, "
+                    f"{alum.cuadros_alerta} en alerta y {alum.incidencias_abiertas} "
+                    "incidencia(s) abiertas concentran el riesgo."
+                ),
+                impacto="Reduce averías, consumo energético y reclamaciones vecinales.",
+                accion=(
+                    "Incluir las zonas afectadas en el próximo lote de renovación "
+                    "y revisar comunicaciones."
+                ),
+            )
+        )
     if agua.fugas_detectadas > 0:
-        recs.append(RecomendacionIA(
-            titulo="Inspeccionar los sectores de agua con fugas",
-            area="Ciclo del agua", prioridad="alta",
-            justificacion=(
-                f"Se detectan {agua.fugas_detectadas} sector(es) con fuga o consumo anómalo."
-            ),
-            impacto="Reduce pérdidas de agua y sobrecoste; mejora el rendimiento de la red.",
-            accion=(
-                "Programar inspección y comparar el consumo con el mismo periodo "
-                "del año anterior."
-            ),
-        ))
+        recs.append(
+            RecomendacionIA(
+                titulo="Inspeccionar los sectores de agua con fugas",
+                area="Ciclo del agua",
+                prioridad="alta",
+                justificacion=(
+                    f"Se detectan {agua.fugas_detectadas} sector(es) con fuga o consumo anómalo."
+                ),
+                impacto="Reduce pérdidas de agua y sobrecoste; mejora el rendimiento de la red.",
+                accion=(
+                    "Programar inspección y comparar el consumo con el mismo periodo "
+                    "del año anterior."
+                ),
+            )
+        )
     if res.llenado_alto >= 20:
-        recs.append(RecomendacionIA(
-            titulo="Reforzar la recogida en zonas de mayor llenado",
-            area="Residuos", prioridad="media",
-            justificacion=f"{res.llenado_alto} contenedores superan el 80% de llenado.",
-            impacto="Evita desbordamientos y quejas en zonas de alta demanda.",
-            accion="Anticipar la recogida en los puntos críticos y ajustar rutas al llenado real.",
-        ))
+        recs.append(
+            RecomendacionIA(
+                titulo="Reforzar la recogida en zonas de mayor llenado",
+                area="Residuos",
+                prioridad="media",
+                justificacion=f"{res.llenado_alto} contenedores superan el 80% de llenado.",
+                impacto="Evita desbordamientos y quejas en zonas de alta demanda.",
+                accion="Anticipar la recogida en los puntos críticos y ajustar rutas al llenado real.",
+            )
+        )
     if ener.autoconsumo_pct < 10:
-        recs.append(RecomendacionIA(
-            titulo="Ampliar el autoconsumo fotovoltaico municipal",
-            area="Energía municipal", prioridad="media",
-            justificacion=(
-                f"El autoconsumo actual es del {ener.autoconsumo_pct:.0f}%, con margen de mejora."
-            ),
-            impacto="Reduce el coste energético y las emisiones de los edificios municipales.",
-            accion="Priorizar instalación FV en los edificios con mayor consumo diurno.",
-        ))
+        recs.append(
+            RecomendacionIA(
+                titulo="Ampliar el autoconsumo fotovoltaico municipal",
+                area="Energía municipal",
+                prioridad="media",
+                justificacion=(
+                    f"El autoconsumo actual es del {ener.autoconsumo_pct:.0f}%, con margen de mejora."
+                ),
+                impacto="Reduce el coste energético y las emisiones de los edificios municipales.",
+                accion="Priorizar instalación FV en los edificios con mayor consumo diurno.",
+            )
+        )
     if big.sentimiento_medio is not None and big.sentimiento_medio < 0.1:
-        recs.append(RecomendacionIA(
-            titulo="Reforzar la comunicación y contenidos del destino",
-            area="Turismo / reputación", prioridad="informativa",
-            justificacion=(
-                f"El sentimiento medio en redes es {big.sentimiento_medio:+.2f}, "
-                "con margen de mejora."
-            ),
-            impacto="Mejora la percepción del destino y la experiencia del visitante.",
-            accion="Actualizar contenidos del chatbot y potenciar el canal con mayor alcance.",
-        ))
+        recs.append(
+            RecomendacionIA(
+                titulo="Reforzar la comunicación y contenidos del destino",
+                area="Turismo / reputación",
+                prioridad="informativa",
+                justificacion=(
+                    f"El sentimiento medio en redes es {big.sentimiento_medio:+.2f}, "
+                    "con margen de mejora."
+                ),
+                impacto="Mejora la percepción del destino y la experiencia del visitante.",
+                accion="Actualizar contenidos del chatbot y potenciar el canal con mayor alcance.",
+            )
+        )
 
     if not recs:
-        recs.append(RecomendacionIA(
-            titulo="Mantener el plan de seguimiento actual",
-            area="General", prioridad="informativa",
-            justificacion="Todos los servicios están dentro de los parámetros esperados.",
-            impacto="Sostiene la calidad del servicio y el ahorro conseguido.",
-            accion="Continuar el seguimiento semanal y preparar la temporada alta.",
-        ))
+        recs.append(
+            RecomendacionIA(
+                titulo="Mantener el plan de seguimiento actual",
+                area="General",
+                prioridad="informativa",
+                justificacion="Todos los servicios están dentro de los parámetros esperados.",
+                impacto="Sostiene la calidad del servicio y el ahorro conseguido.",
+                accion="Continuar el seguimiento semanal y preparar la temporada alta.",
+            )
+        )
     return recs
 
 
@@ -136,10 +157,14 @@ async def _merge_estados(db: AsyncSession, recs: list[RecomendacionIA]) -> list[
         return recs
     claves = [r.clave for r in recs]
     filas = (
-        await db.execute(
-            select(RecomendacionDireccion).where(RecomendacionDireccion.clave.in_(claves))
+        (
+            await db.execute(
+                select(RecomendacionDireccion).where(RecomendacionDireccion.clave.in_(claves))
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
     por_clave = {f.clave: f for f in filas}
     for r in recs:
         f = por_clave.get(r.clave)
@@ -199,18 +224,28 @@ async def generar_openai(db: AsyncSession) -> list[RecomendacionIA]:
         recs: list[RecomendacionIA] = []
         for d in datos:
             prioridad = d.get("prioridad") if d.get("prioridad") in _PRIORIDADES else "media"
-            recs.append(RecomendacionIA(
-                titulo=str(d["titulo"])[:255], area=str(d.get("area", "General"))[:80],
-                justificacion=str(d.get("justificacion", "")), impacto=str(d.get("impacto", "")),
-                prioridad=prioridad, accion=str(d.get("accion", "")), motor="openai",
-            ))
+            recs.append(
+                RecomendacionIA(
+                    titulo=str(d["titulo"])[:255],
+                    area=str(d.get("area", "General"))[:80],
+                    justificacion=str(d.get("justificacion", "")),
+                    impacto=str(d.get("impacto", "")),
+                    prioridad=prioridad,
+                    accion=str(d.get("accion", "")),
+                    motor="openai",
+                )
+            )
         if not recs:
             raise ValueError("respuesta OpenAI sin recomendaciones")
         try:
             await consumo_ia_service.registrar(
-                db, modelo=settings.openai_model, servicio="recomendaciones_direccion",
-                canal="panel", tokens_entrada=int(uso.get("prompt_tokens", 0)),
-                tokens_salida=int(uso.get("completion_tokens", 0)), latencia_ms=latencia_ms,
+                db,
+                modelo=settings.openai_model,
+                servicio="recomendaciones_direccion",
+                canal="panel",
+                tokens_entrada=int(uso.get("prompt_tokens", 0)),
+                tokens_salida=int(uso.get("completion_tokens", 0)),
+                latencia_ms=latencia_ms,
             )
         except Exception:  # noqa: BLE001
             log.warning("No se pudo registrar el consumo de IA de recomendaciones", exc_info=True)
@@ -246,8 +281,12 @@ async def actualizar_estado(
     if fila is None:
         base = recs[clave]
         fila = RecomendacionDireccion(
-            clave=clave, titulo=base.titulo, area=base.area, prioridad=base.prioridad,
-            estado=estado or "pendiente", comentario=comentario,
+            clave=clave,
+            titulo=base.titulo,
+            area=base.area,
+            prioridad=base.prioridad,
+            estado=estado or "pendiente",
+            comentario=comentario,
         )
         if actor is not None:
             fila.created_by = actor.id
@@ -268,6 +307,13 @@ async def actualizar_estado(
         vigente.comentario = fila.comentario
         return vigente
     return RecomendacionIA(
-        clave=fila.clave, titulo=fila.titulo, area=fila.area, justificacion="", impacto="",
-        prioridad=fila.prioridad, accion="", estado=fila.estado, comentario=fila.comentario,
+        clave=fila.clave,
+        titulo=fila.titulo,
+        area=fila.area,
+        justificacion="",
+        impacto="",
+        prioridad=fila.prioridad,
+        accion="",
+        estado=fila.estado,
+        comentario=fila.comentario,
     )

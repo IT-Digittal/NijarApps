@@ -114,11 +114,13 @@ class ClienteNoticiasStrapi:
         data = await self._get("/api/categories", [])
         out: list[dict[str, str]] = []
         for c in data.get("data") or []:
-            out.append({
-                "document_id": str(c.get("documentId") or ""),
-                "nombre": str(c.get("name") or c.get("title") or ""),
-                "slug": str(c.get("slug") or ""),
-            })
+            out.append(
+                {
+                    "document_id": str(c.get("documentId") or ""),
+                    "nombre": str(c.get("name") or c.get("title") or ""),
+                    "slug": str(c.get("slug") or ""),
+                }
+            )
         return out
 
     # ---------------- parsing ----------------

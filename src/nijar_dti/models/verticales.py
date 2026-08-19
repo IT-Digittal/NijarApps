@@ -71,9 +71,7 @@ class Contenedor(Base, TimestampMixin):
     tiene_sensor: Mapped[bool] = mapped_column(default=False, index=True)
     llenado_pct: Mapped[int | None] = mapped_column(default=None)
     ruta: Mapped[str | None] = mapped_column(String(40), default=None)
-    estado: Mapped[EstadoVertical] = mapped_column(
-        String(30), default=EstadoVertical.OPERATIVO
-    )
+    estado: Mapped[EstadoVertical] = mapped_column(String(30), default=EstadoVertical.OPERATIVO)
     latitud: Mapped[float | None] = mapped_column(Numeric(9, 6), default=None)
     longitud: Mapped[float | None] = mapped_column(Numeric(9, 6), default=None)
 
@@ -103,9 +101,7 @@ class PuntoMovilidad(Base, TimestampMixin):
     valor_actual: Mapped[int | None] = mapped_column(default=None)  # vehículos/plazas/kw
     capacidad: Mapped[int | None] = mapped_column(default=None)
     unidad: Mapped[str | None] = mapped_column(String(30), default=None)
-    estado: Mapped[EstadoVertical] = mapped_column(
-        String(30), default=EstadoVertical.OPERATIVO
-    )
+    estado: Mapped[EstadoVertical] = mapped_column(String(30), default=EstadoVertical.OPERATIVO)
     latitud: Mapped[float | None] = mapped_column(Numeric(9, 6), default=None)
     longitud: Mapped[float | None] = mapped_column(Numeric(9, 6), default=None)
     metadatos: Mapped[dict | None] = mapped_column(JSON, default=None)
@@ -150,7 +146,5 @@ class SuministroEnergia(Base, TimestampMixin):
     autoconsumo_mes_kwh: Mapped[float] = mapped_column(Numeric(10, 2), default=0)
     coste_mes_eur: Mapped[float] = mapped_column(Numeric(10, 2), default=0)
     tiene_fotovoltaica: Mapped[bool] = mapped_column(default=False)
-    estado: Mapped[EstadoVertical] = mapped_column(
-        String(30), default=EstadoVertical.OPERATIVO
-    )
+    estado: Mapped[EstadoVertical] = mapped_column(String(30), default=EstadoVertical.OPERATIVO)
     metadatos: Mapped[dict | None] = mapped_column(JSON, default=None)

@@ -9,15 +9,16 @@ from pydantic import BaseModel, ConfigDict, EmailStr, Field, HttpUrl, field_vali
 
 from nijar_dti.schemas.common import GeoPoint, I18nText
 
-
 # ---------------- Recurso Turístico ----------------
+
 
 class RecursoTuristicoBase(BaseModel):
     urn: str = Field(..., pattern=r"^urn:ngsi-ld:RecursoTuristico:nijar:[a-z0-9-]+$")
     nombre: str = Field(..., max_length=255)
-    categoria: str = Field(...,
+    categoria: str = Field(
+        ...,
         pattern=r"^(playa|monumento|ruta|mirador|centro_visitantes|"
-                r"parque_natural|museo|yacimiento|punto_interes|oficina_turismo)$"
+        r"parque_natural|museo|yacimiento|punto_interes|oficina_turismo)$",
     )
     descripcion_corta: str | None = None
     nombre_i18n: I18nText | None = None
@@ -62,10 +63,14 @@ class RecursoTuristicoFilter(BaseModel):
 
 # ---------------- Evento Turístico ----------------
 
+
 class EventoTuristicoBase(BaseModel):
     urn: str = Field(..., pattern=r"^urn:ngsi-ld:EventoTuristico:nijar:[a-z0-9-]+$")
     nombre: str = Field(..., max_length=255)
-    tipo: str = Field(..., pattern=r"^(cultural|gastronomico|deportivo|musical|festivo|naturaleza|educativo|otro)$")
+    tipo: str = Field(
+        ...,
+        pattern=r"^(cultural|gastronomico|deportivo|musical|festivo|naturaleza|educativo|otro)$",
+    )
     descripcion: str | None = None
     nombre_i18n: I18nText | None = None
     descripcion_i18n: I18nText | None = None
@@ -114,14 +119,16 @@ class EventoFilter(BaseModel):
 
 # ---------------- Servicio ----------------
 
+
 class ServicioBase(BaseModel):
     urn: str = Field(..., pattern=r"^urn:ngsi-ld:Servicio:nijar:[a-z0-9-]+$")
     nombre: str = Field(..., max_length=255)
-    tipo: str = Field(...,
+    tipo: str = Field(
+        ...,
         pattern=r"^(alojamiento_hotel|alojamiento_apartamento|alojamiento_rural|"
-                r"alojamiento_camping|gastronomia_restaurante|gastronomia_bar|"
-                r"gastronomia_cafeteria|ocio_actividad|ocio_alquiler|transporte|"
-                r"guia_turistico|comercio|otro)$"
+        r"alojamiento_camping|gastronomia_restaurante|gastronomia_bar|"
+        r"gastronomia_cafeteria|ocio_actividad|ocio_alquiler|transporte|"
+        r"guia_turistico|comercio|otro)$",
     )
     descripcion: str | None = None
     nombre_i18n: I18nText | None = None

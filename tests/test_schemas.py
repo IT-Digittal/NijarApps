@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import date, datetime, timezone
-from uuid import uuid4
+from datetime import UTC, date, datetime
 
 import pytest
 
@@ -24,8 +23,8 @@ from nijar_dti.schemas.tourism import (
     ServicioIn,
 )
 
-
 # -------------------------- Common --------------------------
+
 
 class TestCommonSchemas:
     def test_geopoint_valido(self):
@@ -57,11 +56,12 @@ class TestCommonSchemas:
 
 # -------------------------- Series diarias --------------------------
 
+
 class TestSerieDiariaSchemas:
     def test_serie_diaria_valida(self):
         s = SerieDiaria(
-            desde=datetime(2026, 7, 1, tzinfo=timezone.utc),
-            hasta=datetime(2026, 7, 3, tzinfo=timezone.utc),
+            desde=datetime(2026, 7, 1, tzinfo=UTC),
+            hasta=datetime(2026, 7, 3, tzinfo=UTC),
             puntos=[
                 PuntoSerieDiaria(fecha=date(2026, 7, 1), total=12),
                 PuntoSerieDiaria(fecha=date(2026, 7, 2), total=0),
@@ -93,6 +93,7 @@ class TestSerieDiariaSchemas:
 
 
 # -------------------------- Tourism --------------------------
+
 
 class TestTourismSchemas:
     def test_recurso_valido(self):
@@ -136,8 +137,8 @@ class TestTourismSchemas:
                 urn="urn:ngsi-ld:EventoTuristico:nijar:test",
                 nombre="Test",
                 tipo="cultural",
-                fecha_inicio=datetime(2026, 8, 17, tzinfo=timezone.utc),
-                fecha_fin=datetime(2026, 8, 15, tzinfo=timezone.utc),
+                fecha_inicio=datetime(2026, 8, 17, tzinfo=UTC),
+                fecha_fin=datetime(2026, 8, 15, tzinfo=UTC),
             )
 
     def test_evento_valido(self):
@@ -145,8 +146,8 @@ class TestTourismSchemas:
             urn="urn:ngsi-ld:EventoTuristico:nijar:fiesta",
             nombre="Fiesta",
             tipo="festivo",
-            fecha_inicio=datetime(2026, 8, 15, tzinfo=timezone.utc),
-            fecha_fin=datetime(2026, 8, 17, tzinfo=timezone.utc),
+            fecha_inicio=datetime(2026, 8, 15, tzinfo=UTC),
+            fecha_fin=datetime(2026, 8, 17, tzinfo=UTC),
         )
         assert e.tipo == "festivo"
 
@@ -171,11 +172,12 @@ class TestTourismSchemas:
 
 # -------------------------- IoT --------------------------
 
+
 class TestIoTSchemas:
     def test_observacion_valida(self):
         o = ObservacionIn(
             sensor_urn="urn:ngsi-ld:Device:nijar:co2:smartoffice-01",
-            observado_en=datetime.now(timezone.utc),
+            observado_en=datetime.now(UTC),
             valor=825.5,
             unidades="ppm",
         )
@@ -185,12 +187,13 @@ class TestIoTSchemas:
         with pytest.raises(Exception):
             ObservacionIn(
                 sensor_urn="invalid-urn",
-                observado_en=datetime.now(timezone.utc),
+                observado_en=datetime.now(UTC),
                 valor=825,
             )
 
 
 # -------------------------- CMS --------------------------
+
 
 class TestCMSSchemas:
     def test_contenido_valido(self):
@@ -204,6 +207,7 @@ class TestCMSSchemas:
 
 
 # -------------------------- Chatbot --------------------------
+
 
 class TestChatbotSchemas:
     def test_query_valida(self):

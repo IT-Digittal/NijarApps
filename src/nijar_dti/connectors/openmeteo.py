@@ -49,8 +49,22 @@ WMO: dict[int, str] = {
 }
 
 _CARDINALES = [
-    "N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE",
-    "S", "SSO", "SO", "OSO", "O", "ONO", "NO", "NNO",
+    "N",
+    "NNE",
+    "NE",
+    "ENE",
+    "E",
+    "ESE",
+    "SE",
+    "SSE",
+    "S",
+    "SSO",
+    "SO",
+    "OSO",
+    "O",
+    "ONO",
+    "NO",
+    "NNO",
 ]
 
 
@@ -95,14 +109,16 @@ def parsear_meteo(raw: dict[str, Any], lat: float, lon: float) -> dict[str, Any]
 
     for i, fecha in enumerate(fechas):
         cod_dia = _g("weather_code", i)
-        prevision.append({
-            "fecha": fecha,
-            "codigo_wmo": cod_dia,
-            "descripcion": descripcion_wmo(cod_dia),
-            "temp_max_c": _g("temperature_2m_max", i),
-            "temp_min_c": _g("temperature_2m_min", i),
-            "prob_precipitacion_pct": _g("precipitation_probability_max", i),
-        })
+        prevision.append(
+            {
+                "fecha": fecha,
+                "codigo_wmo": cod_dia,
+                "descripcion": descripcion_wmo(cod_dia),
+                "temp_max_c": _g("temperature_2m_max", i),
+                "temp_min_c": _g("temperature_2m_min", i),
+                "prob_precipitacion_pct": _g("precipitation_probability_max", i),
+            }
+        )
 
     return {
         "fuente": "open-meteo",
@@ -146,15 +162,14 @@ class ClienteOpenMeteo:
                 "precipitation,weather_code,wind_speed_10m,wind_direction_10m"
             ),
             "daily": (
-                "weather_code,temperature_2m_max,temperature_2m_min,"
-                "precipitation_probability_max"
+                "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max"
             ),
             "timezone": "auto",
             "forecast_days": max(1, min(dias_prevision, 7)),
         }
         async with httpx.AsyncClient(timeout=self._timeout) as client:
             try:
-                resp = await client.get(f"{self._base}/forecast", params=params)
+                resp = await client.get(f"{self._base}/forecast", params=params)  # type: ignore[arg-type]
                 resp.raise_for_status()
             except httpx.HTTPError as exc:
                 detalle = str(exc) or type(exc).__name__

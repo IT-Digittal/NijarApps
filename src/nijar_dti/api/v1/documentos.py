@@ -23,9 +23,7 @@ from nijar_dti.services import documentos_service as svc
 
 router = APIRouter()
 
-_puede_gestionar = require_roles(
-    "administrador_tic", "gestor_contenidos", "operador_smart_office"
-)
+_puede_gestionar = require_roles("administrador_tic", "gestor_contenidos", "operador_smart_office")
 
 
 @router.post(
@@ -79,9 +77,7 @@ async def listar(
     user: CurrentUser = Depends(get_current_user),
 ) -> DocumentosPage:
     filas, total = await svc.listar_documentos(db, entidad_tipo, entidad_id, buscar)
-    return DocumentosPage(
-        items=[DocumentoPuntoOut.model_validate(d) for d in filas], total=total
-    )
+    return DocumentosPage(items=[DocumentoPuntoOut.model_validate(d) for d in filas], total=total)
 
 
 @router.get("/{doc_id}/archivo", summary="Descargar el fichero de un documento")

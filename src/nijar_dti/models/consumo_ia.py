@@ -36,6 +36,4 @@ class ConsumoIA(Base):
     tokens_salida: Mapped[int] = mapped_column(Integer, default=0)
     coste_estimado_usd: Mapped[float] = mapped_column(Float, default=0.0)
     latencia_ms: Mapped[int | None] = mapped_column(Integer, default=None)
-    interaccion_id: Mapped[UUID | None] = mapped_column(
-        PGUUID(as_uuid=True), default=None
-    )
+    interaccion_id: Mapped[UUID | None] = mapped_column(PGUUID(as_uuid=True), default=None)

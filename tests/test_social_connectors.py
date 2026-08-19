@@ -7,9 +7,7 @@ menciones sintéticas tienen el formato esperado.
 from __future__ import annotations
 
 import asyncio
-from datetime import datetime, timedelta, timezone
-
-import pytest
+from datetime import UTC, datetime, timedelta
 
 from nijar_dti.config import Settings
 from nijar_dti.connectors.social.facebook import FacebookConnector
@@ -36,9 +34,8 @@ class TestTwitterConnector:
         conn = TwitterConnector(_settings_dry_run())
 
         async def _get():
-            return await conn.fetch_mentions(
-                since=datetime.now(timezone.utc) - timedelta(hours=1)
-            )
+            return await conn.fetch_mentions(since=datetime.now(UTC) - timedelta(hours=1))
+
         menciones = asyncio.run(_get())
         assert len(menciones) > 0
         for m in menciones:

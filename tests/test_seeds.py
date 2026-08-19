@@ -24,8 +24,15 @@ class TestRecursosSeed:
 
     def test_categorias_validas(self):
         validas = {
-            "playa", "monumento", "ruta", "mirador", "centro_visitantes",
-            "parque_natural", "museo", "yacimiento", "punto_interes",
+            "playa",
+            "monumento",
+            "ruta",
+            "mirador",
+            "centro_visitantes",
+            "parque_natural",
+            "museo",
+            "yacimiento",
+            "punto_interes",
             "oficina_turismo",
         }
         for r in RECURSOS_SEED:
@@ -64,8 +71,10 @@ class TestSensoresSeed:
     def test_minimo_sensores_smart_office(self):
         # Compromiso A.2: sensores ambientales (CO2, temp, hum, ruido)
         tipos_smart_office = {
-            "ambiental_co2", "ambiental_temperatura",
-            "ambiental_humedad", "ambiental_ruido",
+            "ambiental_co2",
+            "ambiental_temperatura",
+            "ambiental_humedad",
+            "ambiental_ruido",
         }
         encontrados = {s["tipo"] for s in SENSORES_SEED if "smartoffice" in s["urn"]}
         assert tipos_smart_office.issubset(encontrados)

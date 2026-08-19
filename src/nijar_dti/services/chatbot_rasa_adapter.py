@@ -80,9 +80,7 @@ def _nivel_desde_confianza(score: float, fallback_threshold: float = 0.55) -> Ni
     return NivelConfianza.FUERA_DE_DOMINIO
 
 
-async def _respuesta_traducida(
-    db: AsyncSession, intent: str, idioma: str
-) -> str | None:
+async def _respuesta_traducida(db: AsyncSession, intent: str, idioma: str) -> str | None:
     """Devuelve la respuesta de la FAQ del intent en el idioma solicitado.
 
     Rasa se entrena solo con contenido en español; para servir la misma
@@ -198,6 +196,7 @@ async def consultar_rasa(
 
 
 # ---------------- Selector de motor ----------------
+
 
 async def consultar(db: AsyncSession, payload: ChatQueryIn) -> ChatResponseOut:
     """Punto de entrada unificado: respeta CHATBOT_ENGINE."""

@@ -45,16 +45,32 @@ from nijar_dti.services import (
 # comparativa interanual real. offset = nº de periodos de un año (mensual=12,
 # trimestral=4).
 _INTERANUAL_TURISMO: list[tuple[str, str, str, str, str, int]] = [
-    ("viajeros", "Viajeros alojados",
-     "junta_andalucia", "viajeros_alojados", "provincia_almeria", 12),
-    ("pernoctaciones", "Pernoctaciones",
-     "ine_eoh", "pernoctaciones", "provincia_almeria", 12),
-    ("gasto", "Gasto turístico",
-     "ine_egatur", "gasto_turistico_total_eur", "andalucia", 4),
-    ("pasajeros_aena", "Pasajeros aeropuerto Almería",
-     "aena", "pasajeros_aeropuerto_almeria", "almeria", 12),
-    ("turistas", "Turistas internacionales (Andalucía)",
-     "ine_frontur", "turistas_internacionales", "andalucia", 12),
+    (
+        "viajeros",
+        "Viajeros alojados",
+        "junta_andalucia",
+        "viajeros_alojados",
+        "provincia_almeria",
+        12,
+    ),
+    ("pernoctaciones", "Pernoctaciones", "ine_eoh", "pernoctaciones", "provincia_almeria", 12),
+    ("gasto", "Gasto turístico", "ine_egatur", "gasto_turistico_total_eur", "andalucia", 4),
+    (
+        "pasajeros_aena",
+        "Pasajeros aeropuerto Almería",
+        "aena",
+        "pasajeros_aeropuerto_almeria",
+        "almeria",
+        12,
+    ),
+    (
+        "turistas",
+        "Turistas internacionales (Andalucía)",
+        "ine_frontur",
+        "turistas_internacionales",
+        "andalucia",
+        12,
+    ),
 ]
 
 
@@ -75,11 +91,15 @@ def _semaforo_alumbrado(o: AlumbradoOverview) -> EstadoVertical:
         else "Mantener el plan de mantenimiento preventivo."
     )
     return EstadoVertical(
-        clave="alumbrado", nombre="Alumbrado público", icono="bulb", estado=estado,
+        clave="alumbrado",
+        nombre="Alumbrado público",
+        icono="bulb",
+        estado=estado,
         indicador_clave=(
             f"{o.disponibilidad_pct:.1f}% disp. · {o.incidencias_abiertas} incidencias"
         ),
-        riesgo=_riesgo(estado), recomendacion=rec,
+        riesgo=_riesgo(estado),
+        recomendacion=rec,
     )
 
 
@@ -96,9 +116,13 @@ def _semaforo_agua(o: AguaOverview) -> EstadoVertical:
         else "Continuar la telelectura y el seguimiento de rendimiento."
     )
     return EstadoVertical(
-        clave="agua", nombre="Ciclo del agua", icono="drop", estado=estado,
+        clave="agua",
+        nombre="Ciclo del agua",
+        icono="drop",
+        estado=estado,
         indicador_clave=f"{o.fugas_detectadas} fugas · rendimiento {o.rendimiento_medio_pct:.0f}%",
-        riesgo=_riesgo(estado), recomendacion=rec,
+        riesgo=_riesgo(estado),
+        recomendacion=rec,
     )
 
 
@@ -110,9 +134,13 @@ def _semaforo_residuos(o: ResiduosOverview) -> EstadoVertical:
         else "Mantener el seguimiento semanal de rutas."
     )
     return EstadoVertical(
-        clave="residuos", nombre="Residuos", icono="trash", estado=estado,
+        clave="residuos",
+        nombre="Residuos",
+        icono="trash",
+        estado=estado,
         indicador_clave=f"{o.llenado_alto} contenedores ≥ 80% · media {o.llenado_medio_pct:.0f}%",
-        riesgo=_riesgo(estado), recomendacion=rec,
+        riesgo=_riesgo(estado),
+        recomendacion=rec,
     )
 
 
@@ -124,11 +152,15 @@ def _semaforo_movilidad(o: MovilidadOverview) -> EstadoVertical:
         else "Afluencia dentro de lo normal; preparar temporada alta."
     )
     return EstadoVertical(
-        clave="movilidad", nombre="Movilidad", icono="car", estado=estado,
+        clave="movilidad",
+        nombre="Movilidad",
+        icono="car",
+        estado=estado,
         indicador_clave=(
             f"{o.trafico_actual_veh_h} veh/h · ocup. parking {o.ocupacion_parking_pct:.0f}%"
         ),
-        riesgo=_riesgo(estado), recomendacion=rec,
+        riesgo=_riesgo(estado),
+        recomendacion=rec,
     )
 
 
@@ -140,11 +172,15 @@ def _semaforo_seguridad(o: SeguridadOverview) -> EstadoVertical:
         else "Cobertura CCTV operativa; mantener seguimiento."
     )
     return EstadoVertical(
-        clave="seguridad", nombre="Seguridad", icono="cam", estado=estado,
+        clave="seguridad",
+        nombre="Seguridad",
+        icono="cam",
+        estado=estado,
         indicador_clave=(
             f"{o.pct_online:.0f}% cámaras online · {o.sin_comunicacion} sin comunicación"
         ),
-        riesgo=_riesgo(estado), recomendacion=rec,
+        riesgo=_riesgo(estado),
+        recomendacion=rec,
     )
 
 
@@ -157,9 +193,13 @@ def _semaforo_energia(o: EnergiaOverview) -> EstadoVertical:
         else "Autoconsumo positivo; continuar la optimización."
     )
     return EstadoVertical(
-        clave="energia", nombre="Energía municipal", icono="bolt", estado=estado,
+        clave="energia",
+        nombre="Energía municipal",
+        icono="bolt",
+        estado=estado,
         indicador_clave=f"{o.consumo_mes_kwh:,.0f} kWh/mes · autoconsumo {o.autoconsumo_pct:.0f}%",
-        riesgo=_riesgo(estado), recomendacion=rec,
+        riesgo=_riesgo(estado),
+        recomendacion=rec,
     )
 
 
@@ -177,9 +217,13 @@ def _semaforo_dti(big: BigDataOverview) -> EstadoVertical:
         else "Buena percepción del destino; potenciar los canales con más alcance."
     )
     return EstadoVertical(
-        clave="dti", nombre="Turismo inteligente", icono="totem", estado=estado,
+        clave="dti",
+        nombre="Turismo inteligente",
+        icono="totem",
+        estado=estado,
         indicador_clave=f"{big.menciones_ultimo_mes} menciones/mes · sentimiento {s:+.2f}",
-        riesgo=_riesgo(estado), recomendacion=rec,
+        riesgo=_riesgo(estado),
+        recomendacion=rec,
     )
 
 
@@ -215,44 +259,59 @@ def _construir_semaforo(k: dict[str, Any]) -> list[EstadoVertical]:
 def _alertas(k: dict[str, Any], semaforo: list[EstadoVertical]) -> list[AlertaDireccion]:
     alertas: list[AlertaDireccion] = []
     if k["incidencias"]["criticas"] > 0:
-        alertas.append(AlertaDireccion(
-            nivel="alto", area="Servicio público",
-            motivo=f"{k['incidencias']['criticas']} incidencia(s) crítica(s) registradas",
-            impacto="Posible afección al servicio y a la percepción ciudadana",
-            recomendacion="Elevar a seguimiento prioritario y confirmar resolución en plazo.",
-        ))
+        alertas.append(
+            AlertaDireccion(
+                nivel="alto",
+                area="Servicio público",
+                motivo=f"{k['incidencias']['criticas']} incidencia(s) crítica(s) registradas",
+                impacto="Posible afección al servicio y a la percepción ciudadana",
+                recomendacion="Elevar a seguimiento prioritario y confirmar resolución en plazo.",
+            )
+        )
     if k["agua"].fugas_detectadas > 0:
-        alertas.append(AlertaDireccion(
-            nivel="medio", area="Ciclo del agua",
-            motivo=f"{k['agua'].fugas_detectadas} sector(es) con fuga o consumo anómalo",
-            impacto="Pérdida de agua y sobrecoste evitable",
-            recomendacion="Priorizar inspección de los sectores afectados.",
-        ))
+        alertas.append(
+            AlertaDireccion(
+                nivel="medio",
+                area="Ciclo del agua",
+                motivo=f"{k['agua'].fugas_detectadas} sector(es) con fuga o consumo anómalo",
+                impacto="Pérdida de agua y sobrecoste evitable",
+                recomendacion="Priorizar inspección de los sectores afectados.",
+            )
+        )
     if k["alumbrado"].sin_comunicacion > 0 or k["alumbrado"].cuadros_alerta > 0:
-        alertas.append(AlertaDireccion(
-            nivel="medio", area="Alumbrado público",
-            motivo=(
-                f"{k['alumbrado'].sin_comunicacion} cuadro(s) sin comunicación / "
-                f"{k['alumbrado'].cuadros_alerta} en alerta"
-            ),
-            impacto="Riesgo de averías y reclamaciones vecinales",
-            recomendacion="Revisar los cuadros afectados y priorizar renovación LED.",
-        ))
+        alertas.append(
+            AlertaDireccion(
+                nivel="medio",
+                area="Alumbrado público",
+                motivo=(
+                    f"{k['alumbrado'].sin_comunicacion} cuadro(s) sin comunicación / "
+                    f"{k['alumbrado'].cuadros_alerta} en alerta"
+                ),
+                impacto="Riesgo de averías y reclamaciones vecinales",
+                recomendacion="Revisar los cuadros afectados y priorizar renovación LED.",
+            )
+        )
     if k["residuos"].llenado_alto >= 20:
-        alertas.append(AlertaDireccion(
-            nivel="medio", area="Residuos",
-            motivo=f"{k['residuos'].llenado_alto} contenedores con llenado ≥ 80%",
-            impacto="Riesgo de desbordamiento en zonas de alta demanda",
-            recomendacion="Anticipar recogida en los puntos con mayor llenado.",
-        ))
+        alertas.append(
+            AlertaDireccion(
+                nivel="medio",
+                area="Residuos",
+                motivo=f"{k['residuos'].llenado_alto} contenedores con llenado ≥ 80%",
+                impacto="Riesgo de desbordamiento en zonas de alta demanda",
+                recomendacion="Anticipar recogida en los puntos con mayor llenado.",
+            )
+        )
     big = k["big_data"]
     if big.sentimiento_medio is not None and big.sentimiento_medio < 0:
-        alertas.append(AlertaDireccion(
-            nivel="bajo", area="Turismo / reputación",
-            motivo="Sentimiento negativo detectado en redes sobre el destino",
-            impacto="Percepción pública del destino turístico",
-            recomendacion="Revisar temas recurrentes y reforzar la comunicación.",
-        ))
+        alertas.append(
+            AlertaDireccion(
+                nivel="bajo",
+                area="Turismo / reputación",
+                motivo="Sentimiento negativo detectado en redes sobre el destino",
+                impacto="Percepción pública del destino turístico",
+                recomendacion="Revisar temas recurrentes y reforzar la comunicación.",
+            )
+        )
     return alertas
 
 
@@ -275,12 +334,16 @@ def _impacto(k: dict[str, Any]) -> ImpactoDireccion:
             ahorro_estimado_eur_mes=ahorro_eur, coste_energetico_mes_eur=coste_eur, estimado=True
         ),
         ciudadano=ImpactoCiudadano(
-            satisfaccion_pct=satisfaccion, nps=nps.nps,
-            sentimiento_medio=big.sentimiento_medio, menciones_mes=big.menciones_ultimo_mes,
+            satisfaccion_pct=satisfaccion,
+            nps=nps.nps,
+            sentimiento_medio=big.sentimiento_medio,
+            menciones_mes=big.menciones_ultimo_mes,
         ),
         ambiental=ImpactoAmbiental(
-            co2_evitado_t_anio=co2_evitado_t, autoconsumo_pct=ener.autoconsumo_pct,
-            consumo_energetico_kwh_mes=consumo_total_kwh, estimado=True,
+            co2_evitado_t_anio=co2_evitado_t,
+            autoconsumo_pct=ener.autoconsumo_pct,
+            consumo_energetico_kwh_mes=consumo_total_kwh,
+            estimado=True,
         ),
     )
 
@@ -298,12 +361,20 @@ async def _interanual_turismo(db: AsyncSession) -> list[KpiInteranual]:
             continue
         var = round((actual.valor - anterior.valor) / anterior.valor * 100, 1)
         tendencia = "sube" if var > 0.5 else ("baja" if var < -0.5 else "estable")
-        kpis.append(KpiInteranual(
-            clave=clave, nombre=nombre, fuente=fuente,
-            periodo=actual.periodo, periodo_anterior=anterior.periodo,
-            valor=actual.valor, valor_anterior=anterior.valor,
-            variacion_pct=var, unidad=actual.unidad, tendencia=tendencia,
-        ))
+        kpis.append(
+            KpiInteranual(
+                clave=clave,
+                nombre=nombre,
+                fuente=fuente,
+                periodo=actual.periodo,
+                periodo_anterior=anterior.periodo,
+                valor=actual.valor,
+                valor_anterior=anterior.valor,
+                variacion_pct=var,
+                unidad=actual.unidad,
+                tendencia=tendencia,
+            )
+        )
     return kpis
 
 
@@ -316,8 +387,10 @@ async def _interanual_verticales(db: AsyncSession) -> list[KpiInteranual]:
 
     meta = {(v, i): (nom, uni, sent) for v, i, nom, uni, *_rest, sent in INDICADORES}
     filas = (
-        await db.execute(select(MetricaHistorica).order_by(MetricaHistorica.periodo))
-    ).scalars().all()
+        (await db.execute(select(MetricaHistorica).order_by(MetricaHistorica.periodo)))
+        .scalars()
+        .all()
+    )
     grupos: dict[tuple[str, str], list[MetricaHistorica]] = {}
     for f in filas:
         grupos.setdefault((f.vertical, f.indicador), []).append(f)
@@ -332,13 +405,22 @@ async def _interanual_verticales(db: AsyncSession) -> list[KpiInteranual]:
         var = round((actual.valor - anterior.valor) / anterior.valor * 100, 1)
         tendencia = "sube" if var > 0.5 else ("baja" if var < -0.5 else "estable")
         nombre, unidad, sentido = meta.get((vertical, indicador), (indicador, None, "neutro"))
-        kpis.append(KpiInteranual(
-            clave=indicador, nombre=nombre, fuente="plataforma", vertical=vertical,
-            periodo=actual.periodo, periodo_anterior=anterior.periodo,
-            valor=float(actual.valor), valor_anterior=float(anterior.valor),
-            variacion_pct=var, unidad=actual.unidad or unidad,
-            tendencia=tendencia, sentido=sentido,
-        ))
+        kpis.append(
+            KpiInteranual(
+                clave=indicador,
+                nombre=nombre,
+                fuente="plataforma",
+                vertical=vertical,
+                periodo=actual.periodo,
+                periodo_anterior=anterior.periodo,
+                valor=float(actual.valor),
+                valor_anterior=float(anterior.valor),
+                variacion_pct=var,
+                unidad=actual.unidad or unidad,
+                tendencia=tendencia,
+                sentido=sentido,
+            )
+        )
     return kpis
 
 
@@ -355,9 +437,7 @@ async def resumen_municipal(db: AsyncSession) -> ResumenMunicipal:
 
     estado_global = max(0, min(100, round(100 - 8 * rojos - 3 * ambares - 4 * criticas)))
     estado_texto = (
-        "correcto" if estado_global >= 85
-        else "atencion" if estado_global >= 70
-        else "critico"
+        "correcto" if estado_global >= 85 else "atencion" if estado_global >= 70 else "critico"
     )
 
     disp = round(

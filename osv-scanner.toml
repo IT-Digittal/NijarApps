@@ -1,0 +1,9 @@
+# Vulnerabilidades sin fix upstream, revisadas y aceptadas temporalmente.
+# Se revisan periódicamente por si aparece versión corregida.
+[[IgnoredVulns]]
+id = "PYSEC-2026-1325"  # ecdsa: dep transitiva de python-jose; sin parche disponible
+reason = "Sin fix upstream; el JWT se firma con HS256 (no ECDSA) en esta plataforma"
+
+[[IgnoredVulns]]
+id = "PYSEC-2026-3447"  # setuptools del entorno de build
+reason = "Herramienta de build; se actualiza en la imagen; no es dependencia de runtime"

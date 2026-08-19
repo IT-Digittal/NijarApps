@@ -71,12 +71,22 @@ async def alumbrado_overview(db: AsyncSession) -> AlumbradoOverview:
     incidencias = sum(1 for c in cuadros if c.alarmas) + averia + sincom
 
     return AlumbradoOverview(
-        total_luminarias=total, led=led, vsap=vsap, solar=solar, pct_led=_pct(led, total),
-        operativas=operativas, en_averia=averia, sin_comunicacion=sincom,
+        total_luminarias=total,
+        led=led,
+        vsap=vsap,
+        solar=solar,
+        pct_led=_pct(led, total),
+        operativas=operativas,
+        en_averia=averia,
+        sin_comunicacion=sincom,
         disponibilidad_pct=_pct(operativas, total),
-        cuadros_total=len(cuadros), cuadros_online=cuadros_online, cuadros_alerta=cuadros_alerta,
-        circuitos_total=circuitos, potencia_instalada_kw=potencia,
-        consumo_mes_kwh=round(consumo, 1), ahorro_energetico_pct=31.0,
+        cuadros_total=len(cuadros),
+        cuadros_online=cuadros_online,
+        cuadros_alerta=cuadros_alerta,
+        circuitos_total=circuitos,
+        potencia_instalada_kw=potencia,
+        consumo_mes_kwh=round(consumo, 1),
+        ahorro_energetico_pct=31.0,
         incidencias_abiertas=incidencias,
         zonas=[ZonaAlumbradoOut.model_validate(z) for z in zonas],
     )
@@ -113,12 +123,18 @@ async def alumbrado_luminarias(
         q = q.where(Luminaria.codigo.ilike(like) | Luminaria.direccion.ilike(like))
     total = int((await db.execute(select(func.count()).select_from(q.subquery()))).scalar_one())
     rows = (
-        await db.execute(
-            q.order_by(Luminaria.codigo).offset((page - 1) * page_size).limit(page_size)
+        (
+            await db.execute(
+                q.order_by(Luminaria.codigo).offset((page - 1) * page_size).limit(page_size)
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
     return LuminariasPage(
-        total=total, page=page, page_size=page_size,
+        total=total,
+        page=page,
+        page_size=page_size,
         items=[LuminariaOut.model_validate(r) for r in rows],
     )
 
@@ -132,8 +148,11 @@ async def agua_overview(db: AsyncSession) -> AguaOverview:
     fugas = sum(s.fugas_detectadas for s in secs)
     rend = [float(s.rendimiento_pct) for s in secs if s.rendimiento_pct is not None]
     return AguaOverview(
-        sectores=len(secs), contadores=contadores, contadores_telelectura=tele,
-        pct_telelectura=_pct(tele, contadores), caudal_total_ls=round(caudal, 1),
+        sectores=len(secs),
+        contadores=contadores,
+        contadores_telelectura=tele,
+        pct_telelectura=_pct(tele, contadores),
+        caudal_total_ls=round(caudal, 1),
         fugas_detectadas=fugas,
         rendimiento_medio_pct=round(sum(rend) / len(rend), 1) if rend else 0.0,
         sectores_en_alerta=sum(1 for s in secs if s.estado != "operativo"),
@@ -151,9 +170,13 @@ async def residuos_overview(db: AsyncSession) -> ResiduosOverview:
     por_frac = Counter(c.fraccion for c in cont)
     rutas = len({c.ruta for c in cont if c.ruta})
     return ResiduosOverview(
-        total=total, con_sensor=con_sensor, pct_sensor=_pct(con_sensor, total),
-        llenado_alto=alto, llenado_medio_pct=round(sum(llenos) / len(llenos), 1) if llenos else 0.0,
-        rutas=rutas, por_fraccion=dict(por_frac),
+        total=total,
+        con_sensor=con_sensor,
+        pct_sensor=_pct(con_sensor, total),
+        llenado_alto=alto,
+        llenado_medio_pct=round(sum(llenos) / len(llenos), 1) if llenos else 0.0,
+        rutas=rutas,
+        por_fraccion=dict(por_frac),
     )
 
 
@@ -171,12 +194,18 @@ async def residuos_contenedores(
         q = q.where(Contenedor.fraccion == fraccion)
     total = int((await db.execute(select(func.count()).select_from(q.subquery()))).scalar_one())
     rows = (
-        await db.execute(
-            q.order_by(Contenedor.codigo).offset((page - 1) * page_size).limit(page_size)
+        (
+            await db.execute(
+                q.order_by(Contenedor.codigo).offset((page - 1) * page_size).limit(page_size)
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
     return ContenedoresPage(
-        total=total, page=page, page_size=page_size,
+        total=total,
+        page=page,
+        page_size=page_size,
         items=[ContenedorOut.model_validate(r) for r in rows],
     )
 
@@ -191,11 +220,15 @@ async def movilidad_overview(db: AsyncSession) -> MovilidadOverview:
     plazas_occ = sum(p.valor_actual or 0 for p in parkings)
     tomas_libres = sum((p.capacidad or 0) - (p.valor_actual or 0) for p in ev)
     return MovilidadOverview(
-        puntos=len(pts), aforos=len(aforos),
+        puntos=len(pts),
+        aforos=len(aforos),
         trafico_actual_veh_h=sum(p.valor_actual or 0 for p in aforos),
-        parkings=len(parkings), plazas_totales=plazas_tot, plazas_ocupadas=plazas_occ,
+        parkings=len(parkings),
+        plazas_totales=plazas_tot,
+        plazas_ocupadas=plazas_occ,
         ocupacion_parking_pct=_pct(plazas_occ, plazas_tot),
-        puntos_recarga_ev=len(ev), tomas_ev_libres=tomas_libres,
+        puntos_recarga_ev=len(ev),
+        tomas_ev_libres=tomas_libres,
         detalle=[PuntoMovilidadOut.model_validate(p) for p in pts],
     )
 
@@ -206,7 +239,9 @@ async def seguridad_overview(db: AsyncSession) -> SeguridadOverview:
     online = sum(1 for c in cams if c.estado == "operativo")
     sincom = sum(1 for c in cams if c.estado == "sin_comunicacion")
     return SeguridadOverview(
-        camaras=len(cams), online=online, sin_comunicacion=sincom,
+        camaras=len(cams),
+        online=online,
+        sin_comunicacion=sincom,
         pct_online=_pct(online, len(cams)),
         con_analitica=sum(1 for c in cams if c.con_analitica),
         retencion_dias=max((c.retencion_dias for c in cams), default=30),
@@ -222,8 +257,11 @@ async def energia_overview(db: AsyncSession) -> EnergiaOverview:
     coste = float(sum(float(s.coste_mes_eur) for s in sums))
     edificios = len({s.edificio.split(" (CUPS")[0] for s in sums})
     return EnergiaOverview(
-        cups=len(sums), edificios=edificios, consumo_mes_kwh=round(consumo, 1),
-        autoconsumo_mes_kwh=round(auto, 1), autoconsumo_pct=_pct(auto, consumo + auto),
+        cups=len(sums),
+        edificios=edificios,
+        consumo_mes_kwh=round(consumo, 1),
+        autoconsumo_mes_kwh=round(auto, 1),
+        autoconsumo_pct=_pct(auto, consumo + auto),
         coste_mes_eur=round(coste, 2),
         cups_con_fotovoltaica=sum(1 for s in sums if s.tiene_fotovoltaica),
         coste_medio_kwh=round(coste / consumo, 3) if consumo else 0.0,
@@ -236,12 +274,20 @@ async def energia_suministros(
     q = select(SuministroEnergia)
     total = int((await db.execute(select(func.count()).select_from(q.subquery()))).scalar_one())
     rows = (
-        await db.execute(
-            q.order_by(SuministroEnergia.edificio).offset((page - 1) * page_size).limit(page_size)
+        (
+            await db.execute(
+                q.order_by(SuministroEnergia.edificio)
+                .offset((page - 1) * page_size)
+                .limit(page_size)
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
     return SuministrosPage(
-        total=total, page=page, page_size=page_size,
+        total=total,
+        page=page,
+        page_size=page_size,
         items=[SuministroEnergiaOut.model_validate(r) for r in rows],
     )
 

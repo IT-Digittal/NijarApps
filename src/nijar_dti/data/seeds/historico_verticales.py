@@ -19,12 +19,30 @@ from datetime import date
 INDICADORES: list[tuple[str, str, str, str, float, str, float, str]] = [
     ("energia", "consumo_kwh", "Consumo energético", "kWh", 900000, "verano", -0.04, "bajar_bueno"),
     ("energia", "coste_eur", "Coste / facturación", "€", 148000, "verano", 0.06, "bajar_bueno"),
-    ("alumbrado", "consumo_kwh", "Consumo de alumbrado", "kWh", 112000, "invierno", -0.12, "bajar_bueno"),
+    (
+        "alumbrado",
+        "consumo_kwh",
+        "Consumo de alumbrado",
+        "kWh",
+        112000,
+        "invierno",
+        -0.12,
+        "bajar_bueno",
+    ),
     ("agua", "consumo_m3", "Consumo de agua", "m³", 210000, "verano", -0.02, "bajar_bueno"),
     ("agua", "perdidas_m3", "Pérdidas de agua", "m³", 38000, "verano", -0.08, "bajar_bueno"),
     ("residuos", "toneladas", "Residuos recogidos", "t", 1450, "verano", 0.03, "bajar_bueno"),
     ("movilidad", "accesos", "Accesos al municipio", "veh", 96000, "verano", 0.05, "subir_bueno"),
-    ("seguridad", "incidencias", "Incidencias de seguridad", "nº", 42, "verano", -0.06, "bajar_bueno"),
+    (
+        "seguridad",
+        "incidencias",
+        "Incidencias de seguridad",
+        "nº",
+        42,
+        "verano",
+        -0.06,
+        "bajar_bueno",
+    ),
 ]
 
 # Perfiles estacionales normalizados (media ≈ 1), por mes Ene..Dic.
@@ -62,11 +80,13 @@ def generar_historico_seed(anios: int = 2) -> list[dict[str, object]]:
             factor_tendencia = (1.0 + trend) ** (-meses_atras / 12.0)
             valor = base * est[mes - 1] * factor_tendencia
             valor = round(valor) if unidad == "nº" else round(valor, 2)
-            filas.append({
-                "vertical": vertical,
-                "indicador": indicador,
-                "periodo": periodo,
-                "valor": float(valor),
-                "unidad": unidad,
-            })
+            filas.append(
+                {
+                    "vertical": vertical,
+                    "indicador": indicador,
+                    "periodo": periodo,
+                    "valor": float(valor),
+                    "unidad": unidad,
+                }
+            )
     return filas

@@ -42,9 +42,7 @@ class TestMatrizPermisos:
         assert RolUsuario.OPERADOR_SMART_OFFICE.value not in con_resumen
 
         # administrar_usuarios solo lo tiene el superadministrador.
-        assert permisos.roles_con("administrar_usuarios") == (
-            RolUsuario.ADMINISTRADOR_TIC.value,
-        )
+        assert permisos.roles_con("administrar_usuarios") == (RolUsuario.ADMINISTRADOR_TIC.value,)
 
     def test_permisos_solo_referencian_modulos_conocidos(self):
         ids = {m["id"] for m in permisos.MODULOS}

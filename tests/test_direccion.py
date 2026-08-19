@@ -27,8 +27,13 @@ class TestSemaforo:
         assert ds._semaforo_agua(o).estado == "verde"
 
     def test_alumbrado_ambar_por_incidencias(self):
-        o = SimpleNamespace(en_averia=5, disponibilidad_pct=98.0, sin_comunicacion=1,
-                            cuadros_alerta=0, incidencias_abiertas=2)
+        o = SimpleNamespace(
+            en_averia=5,
+            disponibilidad_pct=98.0,
+            sin_comunicacion=1,
+            cuadros_alerta=0,
+            incidencias_abiertas=2,
+        )
         assert ds._semaforo_alumbrado(o).estado == "ambar"
 
     def test_energia_verde_con_autoconsumo(self):
@@ -74,7 +79,10 @@ class TestClaveEstable:
         assert " " not in c1 and c1 == c1.lower()
 
     def test_clave_sin_acentos_ni_simbolos(self):
-        assert rs._clave("Energía municipal", "Ampliar autoconsumo") == "energia-municipal--ampliar-autoconsumo"
+        assert (
+            rs._clave("Energía municipal", "Ampliar autoconsumo")
+            == "energia-municipal--ampliar-autoconsumo"
+        )
 
     def test_reglas_llevan_clave_tras_con_clave(self):
         recs = rs._con_clave(rs._reglas(_k(incidencias={"criticas": 1})))
@@ -95,6 +103,7 @@ class TestInteranual:
 
     def test_resumen_incluye_campo_interanual(self):
         from nijar_dti.schemas.direccion import ResumenMunicipal
+
         assert "interanual_turismo" in ResumenMunicipal.model_fields
 
 
@@ -112,4 +121,9 @@ class TestRutasDireccion:
         assert client.get("/api/v1/direccion/recomendaciones").status_code == 401
 
     def test_patch_recomendacion_requiere_auth(self, client):
-        assert client.patch("/api/v1/direccion/recomendaciones/x", json={"estado": "aceptada"}).status_code == 401
+        assert (
+            client.patch(
+                "/api/v1/direccion/recomendaciones/x", json={"estado": "aceptada"}
+            ).status_code
+            == 401
+        )

@@ -57,9 +57,7 @@ def evalua_ans(
     objetivos = SLA_ANS.get(severidad, SLA_ANS["media"])
     respuesta_h = horas_entre(detectada_en, respondida_en)
     resolucion_h = horas_entre(detectada_en, resuelta_en)
-    cumple_respuesta = (
-        respuesta_h <= objetivos["respuesta_h"] if respuesta_h is not None else None
-    )
+    cumple_respuesta = respuesta_h <= objetivos["respuesta_h"] if respuesta_h is not None else None
     cumple_resolucion = (
         resolucion_h <= objetivos["resolucion_h"] if resolucion_h is not None else None
     )

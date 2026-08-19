@@ -5,8 +5,6 @@ Validan rutas montadas, esquema OpenAPI generado y manejo de errores.
 
 from __future__ import annotations
 
-import pytest
-
 
 class TestOpenAPI:
     def test_openapi_disponible(self, client):
@@ -89,9 +87,9 @@ class TestSeriesDiariasAuth:
 
     def test_chatbot_telemetry_series_granularidad_en_openapi(self, client):
         """La granularidad solo admite 'dia' según el esquema OpenAPI."""
-        params = client.get("/openapi.json").json()["paths"][
-            "/api/v1/chatbot/telemetry/series"
-        ]["get"]["parameters"]
+        params = client.get("/openapi.json").json()["paths"]["/api/v1/chatbot/telemetry/series"][
+            "get"
+        ]["parameters"]
         granularidad = next(p for p in params if p["name"] == "granularidad")
         assert granularidad["schema"]["pattern"] == "^dia$"
         assert granularidad["schema"]["default"] == "dia"

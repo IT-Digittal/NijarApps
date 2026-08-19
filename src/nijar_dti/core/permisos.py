@@ -41,7 +41,11 @@ MODULOS: list[dict[str, str]] = [
     {"id": "exportar_datos", "nombre": "Exportar datos", "grupo": "Gestión"},
     {"id": "administrar_usuarios", "nombre": "Administrar usuarios", "grupo": "Administración"},
     {"id": "administrar_roles", "nombre": "Administrar roles", "grupo": "Administración"},
-    {"id": "configurar_integraciones", "nombre": "Configurar integraciones", "grupo": "Administración"},
+    {
+        "id": "configurar_integraciones",
+        "nombre": "Configurar integraciones",
+        "grupo": "Administración",
+    },
 ]
 
 _TODOS: set[str] = {m["id"] for m in MODULOS}
@@ -136,9 +140,7 @@ def roles_con(permiso: str) -> tuple[str, ...]:
     Pensado para usarse en las guardas de los routers:
     `require_roles(*roles_con("ver_resumen_municipal"))`.
     """
-    return tuple(
-        rol for rol, permisos in PERMISOS_POR_ROL.items() if permiso in permisos
-    )
+    return tuple(rol for rol, permisos in PERMISOS_POR_ROL.items() if permiso in permisos)
 
 
 def matriz() -> dict[str, object]:

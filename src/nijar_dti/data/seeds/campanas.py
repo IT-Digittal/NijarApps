@@ -12,7 +12,7 @@ etiquetadas con la campaña.
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 # delta_inicio_dias / delta_fin_dias: offset en días respecto a "ahora".
 # recurso_urn: recurso turístico asociado (se resuelve a recurso_id en la carga).
@@ -126,7 +126,7 @@ CAMPANAS_SEED: list[dict] = [
 
 def generar_campanas_seed(ref: datetime | None = None) -> list[dict]:
     """Materializa las campañas con fechas absolutas relativas a ``ref``."""
-    base = ref or datetime.now(timezone.utc)
+    base = ref or datetime.now(UTC)
     campanas = []
     for c in CAMPANAS_SEED:
         inicio = (base + timedelta(days=c["delta_inicio_dias"])).replace(

@@ -9,11 +9,11 @@ from __future__ import annotations
 
 import hashlib
 import random
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 # ---------- Observaciones IoT (últimas 48h, cada 15 min) ----------
 
-_NOW = datetime.now(timezone.utc)
+_NOW = datetime.now(UTC)
 _INTERVALO_MIN = 15
 _HORAS_ATRAS = 48
 _NUM_PUNTOS = (_HORAS_ATRAS * 60) // _INTERVALO_MIN  # 192
@@ -47,13 +47,15 @@ def generar_observaciones_seed(sensores_por_tipo: dict[str, str]) -> list[dict]:
             delta = random.uniform(-amplitud * 0.05, amplitud * 0.05)
             valor_actual += delta + (centro - valor_actual) * 0.02
             valor_actual = max(vmin, min(vmax, valor_actual))
-            observaciones.append({
-                "sensor_id": sensor_id,
-                "observado_en": ts,
-                "valor": round(valor_actual, 2),
-                "unidades": unidades,
-                "valido": True,
-            })
+            observaciones.append(
+                {
+                    "sensor_id": sensor_id,
+                    "observado_en": ts,
+                    "valor": round(valor_actual, 2),
+                    "unidades": unidades,
+                    "valido": True,
+                }
+            )
     return observaciones
 
 
@@ -90,18 +92,20 @@ def generar_observaciones_totem_seed(sensores_totem: dict[str, str]) -> list[dic
             # Temperatura interna: base 32 °C + ciclo diario + ruido
             hora_dia = ts.hour
             temp = 32 + 8 * (1 if 12 <= hora_dia <= 18 else 0) + random.uniform(-3, 4)
-            observaciones.append({
-                "sensor_id": sensor_id,
-                "observado_en": ts,
-                "unidades": "estado",
-                "valores": {
-                    "online": 1 if online else 0,
-                    "temperatura_interna": round(temp, 1),
-                    "reinicios_acumulados": reinicios_acum,
-                    "conectividad_pct": round(random.uniform(96, 100), 1) if online else 0.0,
-                },
-                "valido": True,
-            })
+            observaciones.append(
+                {
+                    "sensor_id": sensor_id,
+                    "observado_en": ts,
+                    "unidades": "estado",
+                    "valores": {
+                        "online": 1 if online else 0,
+                        "temperatura_interna": round(temp, 1),
+                        "reinicios_acumulados": reinicios_acum,
+                        "conectividad_pct": round(random.uniform(96, 100), 1) if online else 0.0,
+                    },
+                    "valido": True,
+                }
+            )
     return observaciones
 
 
@@ -289,7 +293,7 @@ def generar_opiniones_seed() -> list[dict]:
         dias_atras = random.randint(0, 120)
         horas_atras = random.randint(0, 23)
         ts = _NOW - timedelta(days=dias_atras, hours=horas_atras)
-        base_alcance = _ALCANCE_BASE.get(tmpl["fuente"], 800)
+        base_alcance = _ALCANCE_BASE.get(tmpl["fuente"], 800)  # type: ignore[call-overload]
         likes = random.randint(2, 120)
         metricas = {
             "likes": likes,
@@ -300,19 +304,21 @@ def generar_opiniones_seed() -> list[dict]:
         campana = _campana_para(dias_atras)
         if campana:
             metricas["campana"] = campana
-        opiniones.append({
-            "fuente": tmpl["fuente"],
-            "fuente_id_externo": f"demo-{i:04d}",
-            "texto_original": tmpl["texto"],
-            "publicado_en": ts,
-            "idioma": tmpl["idioma"],
-            "sentimiento": tmpl["sentimiento"],
-            "score_sentimiento": round(tmpl["score"] + random.uniform(-0.05, 0.05), 4),
-            "temas": tmpl["temas"],
-            "metricas": metricas,
-            "autor_handle": f"@demo_user_{i % 25}",
-            "capturado_en": ts + timedelta(minutes=random.randint(1, 30)),
-        })
+        opiniones.append(
+            {
+                "fuente": tmpl["fuente"],
+                "fuente_id_externo": f"demo-{i:04d}",
+                "texto_original": tmpl["texto"],
+                "publicado_en": ts,
+                "idioma": tmpl["idioma"],
+                "sentimiento": tmpl["sentimiento"],
+                "score_sentimiento": round(tmpl["score"] + random.uniform(-0.05, 0.05), 4),  # type: ignore[operator]
+                "temas": tmpl["temas"],
+                "metricas": metricas,
+                "autor_handle": f"@demo_user_{i % 25}",
+                "capturado_en": ts + timedelta(minutes=random.randint(1, 30)),
+            }
+        )
     return opiniones
 
 
@@ -328,33 +334,98 @@ def generar_visitas_totem_seed() -> list[dict]:
         dias_atras = random.randint(0, 7)
         horas_atras = random.randint(8, 21)  # horario diurno
         ts = _NOW - timedelta(days=dias_atras, hours=horas_atras - 12)
-        visitas.append({
-            "tipo": "interaccion_totem",
-            "ocurrido_en": ts,
-            "visitante_hash": hashlib.sha256(f"visitor-{i % 40}".encode()).hexdigest(),
-            "idioma": random.choice(["es", "en", "de", "fr"]),
-            "canal": random.choice(["totem_rodalquilar", "totem_albaricoques"]),
-            "atributos": {
-                "seccion": random.choice(_SECCIONES_TOTEM),
-                "duracion_seg": random.randint(15, 180),
-            },
-        })
+        visitas.append(
+            {
+                "tipo": "interaccion_totem",
+                "ocurrido_en": ts,
+                "visitante_hash": hashlib.sha256(f"visitor-{i % 40}".encode()).hexdigest(),
+                "idioma": random.choice(["es", "en", "de", "fr"]),
+                "canal": random.choice(["totem_rodalquilar", "totem_albaricoques"]),
+                "atributos": {
+                    "seccion": random.choice(_SECCIONES_TOTEM),
+                    "duracion_seg": random.randint(15, 180),
+                },
+            }
+        )
     return visitas
 
 
 # ---------- Interacciones de chatbot (últimos 14 días) ----------
 
 _CHATBOT_SAMPLES = [
-    ("playas_destacadas", "es", "¿Cuáles son las mejores playas?", "Las playas más conocidas son: Mónsul, Genoveses, Playazo y Cala de Enmedio.", "alta", 0.92),
-    ("acceso_playa_monsul", "es", "¿Cómo llego a Mónsul en verano?", "Durante la temporada alta el acceso está regulado por aforo.", "alta", 0.88),
-    ("ruta_rodalquilar_albaricoques", "en", "Tell me about the cycling route", "An 8.5 km route of low-medium difficulty connecting Rodalquilar with Los Albaricoques.", "alta", 0.85),
-    ("donde_comer", "es", "¿Dónde puedo comer bien?", "La gastronomía local se basa en pescado fresco, gurullos y ajoblanco.", "alta", 0.90),
+    (
+        "playas_destacadas",
+        "es",
+        "¿Cuáles son las mejores playas?",
+        "Las playas más conocidas son: Mónsul, Genoveses, Playazo y Cala de Enmedio.",
+        "alta",
+        0.92,
+    ),
+    (
+        "acceso_playa_monsul",
+        "es",
+        "¿Cómo llego a Mónsul en verano?",
+        "Durante la temporada alta el acceso está regulado por aforo.",
+        "alta",
+        0.88,
+    ),
+    (
+        "ruta_rodalquilar_albaricoques",
+        "en",
+        "Tell me about the cycling route",
+        "An 8.5 km route of low-medium difficulty connecting Rodalquilar with Los Albaricoques.",
+        "alta",
+        0.85,
+    ),
+    (
+        "donde_comer",
+        "es",
+        "¿Dónde puedo comer bien?",
+        "La gastronomía local se basa en pescado fresco, gurullos y ajoblanco.",
+        "alta",
+        0.90,
+    ),
     ("emergencias", "de", "Notrufnummer?", "Die Notrufnummer in Spanien ist 112.", "alta", 0.95),
-    ("mejor_epoca_visita", "fr", "Meilleure période pour visiter?", "Le printemps et l'automne sont idéaux.", "alta", 0.87),
-    ("saludo", "es", "Hola, buenos días", "¡Hola! Soy el asistente turístico de Níjar.", "alta", 0.99),
-    ("artesania_jarapas", "en", "What are jarapas?", "The jarapa is a traditional handcrafted textile from Níjar.", "alta", 0.83),
-    ("horario_amoladeras", "es", "¿Horario del centro de visitantes?", "El Centro de Visitantes Las Amoladeras abre de 10:00 a 14:00.", "media", 0.72),
-    ("normativa_parque", "es", "¿Qué está prohibido en el parque?", "Está prohibido hacer fuego, acampar fuera de zonas habilitadas...", "alta", 0.91),
+    (
+        "mejor_epoca_visita",
+        "fr",
+        "Meilleure période pour visiter?",
+        "Le printemps et l'automne sont idéaux.",
+        "alta",
+        0.87,
+    ),
+    (
+        "saludo",
+        "es",
+        "Hola, buenos días",
+        "¡Hola! Soy el asistente turístico de Níjar.",
+        "alta",
+        0.99,
+    ),
+    (
+        "artesania_jarapas",
+        "en",
+        "What are jarapas?",
+        "The jarapa is a traditional handcrafted textile from Níjar.",
+        "alta",
+        0.83,
+    ),
+    (
+        "horario_amoladeras",
+        "es",
+        "¿Horario del centro de visitantes?",
+        "El Centro de Visitantes Las Amoladeras abre de 10:00 a 14:00.",
+        "media",
+        0.72,
+    ),
+    (
+        "normativa_parque",
+        "es",
+        "¿Qué está prohibido en el parque?",
+        "Está prohibido hacer fuego, acampar fuera de zonas habilitadas...",
+        "alta",
+        0.91,
+    ),
 ]
 
 # Preguntas fuera de dominio / no cubiertas (KPI de "preguntas sin respuesta").
@@ -610,29 +681,31 @@ _EVENTOS_SEED = [
 
 
 def generar_eventos_seed(ref: datetime | None = None) -> list[dict]:
-    base = ref or datetime.now(timezone.utc)
+    base = ref or datetime.now(UTC)
     eventos = []
     for ev in _EVENTOS_SEED:
-        inicio = base + timedelta(days=ev["delta_dias"])
+        inicio = base + timedelta(days=ev["delta_dias"])  # type: ignore[arg-type]
         inicio = inicio.replace(hour=ev["hora_inicio"], minute=0, second=0, microsecond=0)
-        fin = inicio + timedelta(hours=ev["duracion_h"])
-        eventos.append({
-            "urn": ev["urn"],
-            "nombre": ev["nombre"],
-            "tipo": ev["tipo"],
-            "descripcion": ev.get("descripcion"),
-            "nombre_i18n": ev.get("nombre_i18n"),
-            "descripcion_i18n": ev.get("descripcion_i18n"),
-            "direccion": ev.get("direccion"),
-            "organizador": ev.get("organizador"),
-            "precio": ev.get("precio"),
-            "capacidad_aforo": ev.get("capacidad_aforo"),
-            "etiquetas": ev.get("etiquetas"),
-            "fecha_inicio": inicio,
-            "fecha_fin": fin,
-            "publicado": True,
-            "activo": True,
-        })
+        fin = inicio + timedelta(hours=ev["duracion_h"])  # type: ignore[arg-type]
+        eventos.append(
+            {
+                "urn": ev["urn"],
+                "nombre": ev["nombre"],
+                "tipo": ev["tipo"],
+                "descripcion": ev.get("descripcion"),
+                "nombre_i18n": ev.get("nombre_i18n"),
+                "descripcion_i18n": ev.get("descripcion_i18n"),
+                "direccion": ev.get("direccion"),
+                "organizador": ev.get("organizador"),
+                "precio": ev.get("precio"),
+                "capacidad_aforo": ev.get("capacidad_aforo"),
+                "etiquetas": ev.get("etiquetas"),
+                "fecha_inicio": inicio,
+                "fecha_fin": fin,
+                "publicado": True,
+                "activo": True,
+            }
+        )
     return eventos
 
 
@@ -642,47 +715,50 @@ def generar_interacciones_chatbot_seed() -> list[dict]:
     for i in range(_NUM_INTERACCIONES_CHATBOT):
         sample = _CHATBOT_SAMPLES[i % len(_CHATBOT_SAMPLES)]
         intent, idioma, pregunta, respuesta, nivel, score = sample
-        dias_atras = random.randint(0, 30)
-        ts = _NOW - timedelta(days=dias_atras, hours=random.randint(0, 23))
-        interacciones.append({
-            "sesion_id": f"demo-session-{i % 30:03d}",
-            "canal": random.choice(["web", "web", "app", "totem"]),
-            "idioma": idioma,
-            "pregunta": pregunta,
-            "respuesta": respuesta,
-            "intent_detectado": intent,
-            "nivel_confianza": nivel,
-            "score_confianza": round(score + random.uniform(-0.03, 0.03), 3),
-            # ~82 % útil, algo de feedback negativo y sin feedback
-            "util": random.choice([True, True, True, True, False, None]),
-            "latencia_ms": random.randint(50, 400),
-        })
+        interacciones.append(
+            {
+                "sesion_id": f"demo-session-{i % 30:03d}",
+                "canal": random.choice(["web", "web", "app", "totem"]),
+                "idioma": idioma,
+                "pregunta": pregunta,
+                "respuesta": respuesta,
+                "intent_detectado": intent,
+                "nivel_confianza": nivel,
+                "score_confianza": round(score + random.uniform(-0.03, 0.03), 3),
+                # ~82 % útil, algo de feedback negativo y sin feedback
+                "util": random.choice([True, True, True, True, False, None]),
+                "latencia_ms": random.randint(50, 400),
+            }
+        )
     # Consultas no resueltas (fuera de dominio → derivación a humano)
     for j in range(_NUM_CHATBOT_NO_RESUELTAS):
         idioma, pregunta = _CHATBOT_NO_RESUELTAS[j % len(_CHATBOT_NO_RESUELTAS)]
         derivada = j % 3 == 0
-        interacciones.append({
-            "sesion_id": f"demo-session-nr-{j % 20:03d}",
-            "canal": random.choice(["web", "app", "totem"]),
-            "idioma": idioma,
-            "pregunta": pregunta,
-            "respuesta": (
-                "No dispongo de información suficiente sobre eso. Te derivo con la "
-                "oficina de turismo de Níjar (turismo@nijar.es)."
-                if derivada
-                else "Lo siento, todavía no tengo una respuesta para esa consulta."
-            ),
-            "intent_detectado": None,
-            "nivel_confianza": "fuera_de_dominio",
-            "score_confianza": round(random.uniform(0.1, 0.45), 3),
-            "util": random.choice([False, False, None]),
-            "comentario": "derivada_a_humano" if derivada else "pregunta_no_cubierta",
-            "latencia_ms": random.randint(60, 500),
-        })
+        interacciones.append(
+            {
+                "sesion_id": f"demo-session-nr-{j % 20:03d}",
+                "canal": random.choice(["web", "app", "totem"]),
+                "idioma": idioma,
+                "pregunta": pregunta,
+                "respuesta": (
+                    "No dispongo de información suficiente sobre eso. Te derivo con la "
+                    "oficina de turismo de Níjar (turismo@nijar.es)."
+                    if derivada
+                    else "Lo siento, todavía no tengo una respuesta para esa consulta."
+                ),
+                "intent_detectado": None,
+                "nivel_confianza": "fuera_de_dominio",
+                "score_confianza": round(random.uniform(0.1, 0.45), 3),
+                "util": random.choice([False, False, None]),
+                "comentario": "derivada_a_humano" if derivada else "pregunta_no_cubierta",
+                "latencia_ms": random.randint(60, 500),
+            }
+        )
     return interacciones
 
 
 # ---------- Incidencias del mantenimiento (mes natural anterior) ----------
+
 
 def _mes_anterior(ref: datetime) -> tuple[datetime, datetime]:
     """Devuelve (inicio, fin) del último mes natural completo respecto a ``ref``."""
@@ -708,73 +784,111 @@ def generar_incidencias_seed() -> list[dict]:
     incidencias = [
         # Crítica resuelta dentro de ANS (respuesta <1h, resolución <8h)
         {
-            "severidad": "critica", "titulo": "Caída temporal de la API de la plataforma",
-            "componente": "plataforma", "origen": "monitorizacion",
+            "severidad": "critica",
+            "titulo": "Caída temporal de la API de la plataforma",
+            "componente": "plataforma",
+            "origen": "monitorizacion",
             "descripcion": "Errores 5xx por saturación de conexiones a BBDD durante un pico.",
-            "detectada_en": en(6, 11), "respondida_en": en(6, 11) + timedelta(minutes=25),
+            "detectada_en": en(6, 11),
+            "respondida_en": en(6, 11) + timedelta(minutes=25),
             "resuelta_en": en(6, 11) + timedelta(hours=3, minutes=40),
-            "estado": "resuelta", "afecta_disponibilidad": True, "incidente_confirmado": False,
+            "estado": "resuelta",
+            "afecta_disponibilidad": True,
+            "incidente_confirmado": False,
         },
         # Alta resuelta en ANS
         {
-            "severidad": "alta", "titulo": "Tótem de Rodalquilar sin conexión",
-            "componente": "totem_1", "origen": "monitorizacion",
+            "severidad": "alta",
+            "titulo": "Tótem de Rodalquilar sin conexión",
+            "componente": "totem_1",
+            "origen": "monitorizacion",
             "descripcion": "Pérdida de enlace 4G; conmutación a modo local degradado.",
-            "detectada_en": en(12, 8), "respondida_en": en(12, 8) + timedelta(hours=1),
+            "detectada_en": en(12, 8),
+            "respondida_en": en(12, 8) + timedelta(hours=1),
             "resuelta_en": en(12, 8) + timedelta(hours=6),
-            "estado": "resuelta", "afecta_disponibilidad": True,
+            "estado": "resuelta",
+            "afecta_disponibilidad": True,
         },
         # Alta que INCUMPLE resolución (para mostrar cumplimiento <100 %)
         {
-            "severidad": "alta", "titulo": "Retraso en sincronización del CMS al tótem",
-            "componente": "totem_2", "origen": "usuario",
+            "severidad": "alta",
+            "titulo": "Retraso en sincronización del CMS al tótem",
+            "componente": "totem_2",
+            "origen": "usuario",
             "descripcion": "Contenido publicado tardó en propagarse por incidencia en caché.",
-            "detectada_en": en(18, 17), "respondida_en": en(18, 17) + timedelta(hours=2),
+            "detectada_en": en(18, 17),
+            "respondida_en": en(18, 17) + timedelta(hours=2),
             "resuelta_en": en(18, 17) + timedelta(hours=20),
-            "estado": "resuelta", "afecta_disponibilidad": True,
+            "estado": "resuelta",
+            "afecta_disponibilidad": True,
         },
         # Media resuelta
         {
-            "severidad": "media", "titulo": "Sensor de ruido con lecturas erráticas",
-            "componente": "smart_office", "origen": "monitorizacion",
+            "severidad": "media",
+            "titulo": "Sensor de ruido con lecturas erráticas",
+            "componente": "smart_office",
+            "origen": "monitorizacion",
             "descripcion": "Calibración desviada; sustituido y recalibrado.",
-            "detectada_en": en(9, 10), "respondida_en": en(9, 12),
-            "resuelta_en": en(10, 10), "estado": "resuelta", "afecta_disponibilidad": False,
+            "detectada_en": en(9, 10),
+            "respondida_en": en(9, 12),
+            "resuelta_en": en(10, 10),
+            "estado": "resuelta",
+            "afecta_disponibilidad": False,
         },
         # Baja resuelta
         {
-            "severidad": "baja", "titulo": "Ajuste de copy en una FAQ del chatbot",
-            "componente": "chatbot", "origen": "ticketing",
+            "severidad": "baja",
+            "titulo": "Ajuste de copy en una FAQ del chatbot",
+            "componente": "chatbot",
+            "origen": "ticketing",
             "descripcion": "Corrección menor de redacción en respuesta de horarios.",
-            "detectada_en": en(22, 9), "respondida_en": en(22, 15),
-            "resuelta_en": en(23, 12), "estado": "resuelta", "afecta_disponibilidad": False,
+            "detectada_en": en(22, 9),
+            "respondida_en": en(22, 15),
+            "resuelta_en": en(23, 12),
+            "estado": "resuelta",
+            "afecta_disponibilidad": False,
         },
         # Evento de seguridad contenido (WAF), confirmado, sin impacto
         {
-            "severidad": "alta", "titulo": "Intento de inyección bloqueado por WAF",
-            "componente": "plataforma", "origen": "monitorizacion",
+            "severidad": "alta",
+            "titulo": "Intento de inyección bloqueado por WAF",
+            "componente": "plataforma",
+            "origen": "monitorizacion",
             "descripcion": "Patrón SQLi bloqueado por el WAF; sin acceso a datos.",
-            "detectada_en": en(15, 3), "respondida_en": en(15, 3) + timedelta(minutes=20),
+            "detectada_en": en(15, 3),
+            "respondida_en": en(15, 3) + timedelta(minutes=20),
             "resuelta_en": en(15, 3) + timedelta(hours=2),
-            "estado": "resuelta", "afecta_disponibilidad": False,
-            "es_evento_seguridad": True, "incidente_confirmado": True,
+            "estado": "resuelta",
+            "afecta_disponibilidad": False,
+            "es_evento_seguridad": True,
+            "incidente_confirmado": True,
         },
         # Acciones preventivas ejecutadas
         {
-            "severidad": "baja", "titulo": "Patching mensual en ventana nocturna",
-            "componente": "plataforma", "origen": "preventivo",
+            "severidad": "baja",
+            "titulo": "Patching mensual en ventana nocturna",
+            "componente": "plataforma",
+            "origen": "preventivo",
             "descripcion": "Actualización de dependencias con verificación de regresión.",
-            "detectada_en": en(2, 2), "respondida_en": en(2, 2),
-            "resuelta_en": en(2, 4), "estado": "resuelta",
-            "afecta_disponibilidad": False, "es_preventiva": True,
+            "detectada_en": en(2, 2),
+            "respondida_en": en(2, 2),
+            "resuelta_en": en(2, 4),
+            "estado": "resuelta",
+            "afecta_disponibilidad": False,
+            "es_preventiva": True,
         },
         {
-            "severidad": "baja", "titulo": "Inspección de tótems (protocolo costero)",
-            "componente": "totem_1", "origen": "preventivo",
+            "severidad": "baja",
+            "titulo": "Inspección de tótems (protocolo costero)",
+            "componente": "totem_1",
+            "origen": "preventivo",
             "descripcion": "Revisión de juntas IP65, filtros y brillo; sin incidencias.",
-            "detectada_en": en(20, 9), "respondida_en": en(20, 9),
-            "resuelta_en": en(20, 13), "estado": "resuelta",
-            "afecta_disponibilidad": False, "es_preventiva": True,
+            "detectada_en": en(20, 9),
+            "respondida_en": en(20, 9),
+            "resuelta_en": en(20, 13),
+            "estado": "resuelta",
+            "afecta_disponibilidad": False,
+            "es_preventiva": True,
         },
     ]
     return incidencias
@@ -784,20 +898,42 @@ def generar_incidencias_seed() -> list[dict]:
 
 # Origen geográfico (procedencia del visitante) con peso aproximado.
 _ORIGENES = [
-    ("ES", "Almería", 0.28), ("ES", "Madrid", 0.14), ("ES", "Granada", 0.08),
-    ("ES", "Barcelona", 0.07), ("GB", "Londres", 0.09), ("DE", "Múnich", 0.08),
-    ("FR", "París", 0.07), ("NL", "Ámsterdam", 0.05), ("BE", "Bruselas", 0.03),
-    ("IT", "Milán", 0.03), ("US", "Nueva York", 0.02),
+    ("ES", "Almería", 0.28),
+    ("ES", "Madrid", 0.14),
+    ("ES", "Granada", 0.08),
+    ("ES", "Barcelona", 0.07),
+    ("GB", "Londres", 0.09),
+    ("DE", "Múnich", 0.08),
+    ("FR", "París", 0.07),
+    ("NL", "Ámsterdam", 0.05),
+    ("BE", "Bruselas", 0.03),
+    ("IT", "Milán", 0.03),
+    ("US", "Nueva York", 0.02),
 ]
 _DISPOSITIVOS = [("movil", 0.68), ("escritorio", 0.22), ("tablet", 0.10)]
 _PANTALLAS_WEB = [
-    "inicio", "playas", "rutas", "eventos", "mapa", "recurso-detalle",
-    "servicios", "como-llegar", "chatbot", "buscador",
+    "inicio",
+    "playas",
+    "rutas",
+    "eventos",
+    "mapa",
+    "recurso-detalle",
+    "servicios",
+    "como-llegar",
+    "chatbot",
+    "buscador",
 ]
 _BUSQUEDAS = [
-    "mónsul aparcamiento", "rutas senderismo", "playas nudistas", "san josé restaurantes",
-    "cabo de gata mapa", "eventos julio", "cala de enmedio", "rodalquilar mina",
-    "horario oficina turismo", "alojamiento rural",
+    "mónsul aparcamiento",
+    "rutas senderismo",
+    "playas nudistas",
+    "san josé restaurantes",
+    "cabo de gata mapa",
+    "eventos julio",
+    "cala de enmedio",
+    "rodalquilar mina",
+    "horario oficina turismo",
+    "alojamiento rural",
 ]
 _IDIOMAS_APP = [("es", 0.55), ("en", 0.22), ("de", 0.12), ("fr", 0.11)]
 
@@ -859,73 +995,88 @@ def generar_visitas_web_app_seed(recursos_ids: list[str] | None = None) -> list[
             recurso_id = random.choice(recursos_ids)
         else:
             recurso_id = None
-        visitas.append({
-            "tipo": "web_vista",
-            "ocurrido_en": ts,
-            "visitante_hash": _hash(i % 130),
-            "recurso_id": recurso_id,
-            "idioma": idioma,
-            "canal": "web",
-            "atributos": atributos,
-        })
+        visitas.append(
+            {
+                "tipo": "web_vista",
+                "ocurrido_en": ts,
+                "visitante_hash": _hash(i % 130),
+                "recurso_id": recurso_id,
+                "idioma": idioma,
+                "canal": "web",
+                "atributos": atributos,
+            }
+        )
 
     # App Vive Níjar (pantallas, clics en rutas/POIs, descargas de mapas)
-    eventos_app = ["ver_ruta", "abrir_mapa", "descargar_mapa", "clic_poi", "ver_evento", "abrir_chatbot"]
+    eventos_app = [
+        "ver_ruta",
+        "abrir_mapa",
+        "descargar_mapa",
+        "clic_poi",
+        "ver_evento",
+        "abrir_chatbot",
+    ]
     for i in range(_NUM_VISITAS_APP):
         dias = random.randint(0, 30)
         ts = _NOW - timedelta(days=dias, hours=random.randint(7, 22), minutes=random.randint(0, 59))
         pais, ciudad, _ = _elegir_pesado(_ORIGENES)
         idioma, _ = _elegir_pesado(_IDIOMAS_APP)
         recurso_id = random.choice(recursos_ids) if recursos_ids and random.random() < 0.6 else None
-        visitas.append({
-            "tipo": "app_vista",
-            "ocurrido_en": ts,
-            "visitante_hash": _hash(1000 + i % 80),
-            "recurso_id": recurso_id,
-            "idioma": idioma,
-            "canal": "app",
-            "atributos": {
-                "evento": random.choice(eventos_app),
-                "dispositivo": random.choice(["movil", "tablet"]),
-                "pais": pais,
-                "ciudad": ciudad,
-                "duracion_seg": random.randint(10, 360),
-            },
-        })
+        visitas.append(
+            {
+                "tipo": "app_vista",
+                "ocurrido_en": ts,
+                "visitante_hash": _hash(1000 + i % 80),
+                "recurso_id": recurso_id,
+                "idioma": idioma,
+                "canal": "app",
+                "atributos": {
+                    "evento": random.choice(eventos_app),
+                    "dispositivo": random.choice(["movil", "tablet"]),
+                    "pais": pais,
+                    "ciudad": ciudad,
+                    "duracion_seg": random.randint(10, 360),
+                },
+            }
+        )
 
     # WiFi público (dispositivos únicos diarios — afluencia aproximada)
     for i in range(_NUM_CONEXIONES_WIFI):
         dias = random.randint(0, 30)
         ts = _NOW - timedelta(days=dias, hours=random.randint(9, 21), minutes=random.randint(0, 59))
-        visitas.append({
-            "tipo": "wifi_conexion",
-            "ocurrido_en": ts,
-            "visitante_hash": _hash(2000 + i % 60),
-            "canal": "wifi_plaza_glorieta",
-            "idioma": None,
-            "atributos": {
-                "tiempo_conexion_seg": random.randint(120, 5400),
-                "zona": "plaza_glorieta",
-            },
-        })
+        visitas.append(
+            {
+                "tipo": "wifi_conexion",
+                "ocurrido_en": ts,
+                "visitante_hash": _hash(2000 + i % 60),
+                "canal": "wifi_plaza_glorieta",
+                "idioma": None,
+                "atributos": {
+                    "tiempo_conexion_seg": random.randint(120, 5400),
+                    "zona": "plaza_glorieta",
+                },
+            }
+        )
 
     # Proximidad BLE (beacons en POIs — visitas a puntos de interés)
     for i in range(_NUM_PROXIMIDAD_BLE):
         dias = random.randint(0, 30)
         ts = _NOW - timedelta(days=dias, hours=random.randint(9, 20), minutes=random.randint(0, 59))
         recurso_id = random.choice(recursos_ids) if recursos_ids else None
-        visitas.append({
-            "tipo": "proximidad_ble",
-            "ocurrido_en": ts,
-            "visitante_hash": _hash(3000 + i % 50),
-            "recurso_id": recurso_id,
-            "canal": "beacon",
-            "idioma": None,
-            "atributos": {
-                "permanencia_seg": random.randint(30, 1800),
-                "rssi": random.randint(-90, -55),
-            },
-        })
+        visitas.append(
+            {
+                "tipo": "proximidad_ble",
+                "ocurrido_en": ts,
+                "visitante_hash": _hash(3000 + i % 50),
+                "recurso_id": recurso_id,
+                "canal": "beacon",
+                "idioma": None,
+                "atributos": {
+                    "permanencia_seg": random.randint(30, 1800),
+                    "rssi": random.randint(-90, -55),
+                },
+            }
+        )
 
     return visitas
 
@@ -936,75 +1087,91 @@ _CONTENIDOS_SEED = [
     {
         "titulo": "Guía de playas vírgenes de Cabo de Gata",
         "cuerpo": "Recorrido por las calas y playas más singulares del Parque Natural: Mónsul, "
-                  "Genoveses, Cala de Enmedio y el Playazo de Rodalquilar, con consejos de acceso "
-                  "responsable y aforo.",
+        "Genoveses, Cala de Enmedio y el Playazo de Rodalquilar, con consejos de acceso "
+        "responsable y aforo.",
         "canales": ["web", "app", "totem"],
         "etiquetas": ["playas", "guia", "naturaleza"],
         "estado": "publicado",
-        "delta_creado_dias": 20, "horas_a_aprobacion": 30, "horas_aprob_a_pub": 6,
+        "delta_creado_dias": 20,
+        "horas_a_aprobacion": 30,
+        "horas_aprob_a_pub": 6,
     },
     {
         "titulo": "Rutas de senderismo para el otoño",
         "cuerpo": "Selección de senderos de dificultad baja y media ideales para los meses de "
-                  "temporada media, con desniveles, duración y puntos de interés.",
+        "temporada media, con desniveles, duración y puntos de interés.",
         "canales": ["web", "app"],
         "etiquetas": ["rutas", "senderismo", "otono"],
         "estado": "publicado",
-        "delta_creado_dias": 14, "horas_a_aprobacion": 18, "horas_aprob_a_pub": 20,
+        "delta_creado_dias": 14,
+        "horas_a_aprobacion": 18,
+        "horas_aprob_a_pub": 20,
     },
     {
         "titulo": "La artesanía de Níjar: cerámica y jarapas",
         "cuerpo": "Historia y talleres vivos de la cerámica nijareña y las jarapas, un textil "
-                  "tradicional tejido a mano en el casco histórico.",
+        "tradicional tejido a mano en el casco histórico.",
         "canales": ["web", "totem"],
         "etiquetas": ["artesania", "cultura", "compras"],
         "estado": "publicado",
-        "delta_creado_dias": 10, "horas_a_aprobacion": 40, "horas_aprob_a_pub": 12,
+        "delta_creado_dias": 10,
+        "horas_a_aprobacion": 40,
+        "horas_aprob_a_pub": 12,
     },
     {
         "titulo": "Agenda de eventos del verano",
         "cuerpo": "Conciertos, mercados artesanales, cine al aire libre y actividades náuticas "
-                  "programadas para la temporada estival.",
+        "programadas para la temporada estival.",
         "canales": ["web", "app", "totem"],
         "etiquetas": ["eventos", "agenda", "verano"],
         "estado": "programado",
-        "delta_creado_dias": 5, "horas_a_aprobacion": 10, "horas_aprob_a_pub": None,
+        "delta_creado_dias": 5,
+        "horas_a_aprobacion": 10,
+        "horas_aprob_a_pub": None,
     },
     {
         "titulo": "Consejos de turismo sostenible en el Parque Natural",
         "cuerpo": "Buenas prácticas para disfrutar del espacio protegido: gestión de residuos, "
-                  "respeto a la fauna y uso del transporte público.",
+        "respeto a la fauna y uso del transporte público.",
         "canales": ["web", "app"],
         "etiquetas": ["sostenibilidad", "parque", "concienciacion"],
         "estado": "aprobado",
-        "delta_creado_dias": 3, "horas_a_aprobacion": 22, "horas_aprob_a_pub": None,
+        "delta_creado_dias": 3,
+        "horas_a_aprobacion": 22,
+        "horas_aprob_a_pub": None,
     },
     {
         "titulo": "Astroturismo: cielos de Cabo de Gata",
         "cuerpo": "Los mejores miradores para la observación de estrellas y consejos para la "
-                  "fotografía nocturna en el Parque Natural.",
+        "fotografía nocturna en el Parque Natural.",
         "canales": ["web"],
         "etiquetas": ["astroturismo", "naturaleza", "fotografia"],
         "estado": "pendiente_aprobacion",
-        "delta_creado_dias": 2, "horas_a_aprobacion": None, "horas_aprob_a_pub": None,
+        "delta_creado_dias": 2,
+        "horas_a_aprobacion": None,
+        "horas_aprob_a_pub": None,
     },
     {
         "titulo": "Gastronomía del mar: recetas de Níjar",
         "cuerpo": "Borrador sobre platos típicos de pescado y marisco, gurullos y ajoblanco de "
-                  "la cocina local. Pendiente de completar imágenes.",
+        "la cocina local. Pendiente de completar imágenes.",
         "canales": ["web", "app"],
         "etiquetas": ["gastronomia", "cultura"],
         "estado": "borrador",
-        "delta_creado_dias": 1, "horas_a_aprobacion": None, "horas_aprob_a_pub": None,
+        "delta_creado_dias": 1,
+        "horas_a_aprobacion": None,
+        "horas_aprob_a_pub": None,
     },
     {
         "titulo": "Campaña Primavera 2026 (cerrada)",
         "cuerpo": "Contenido de la campaña de primavera ya finalizada, archivado para consulta "
-                  "histórica y trazabilidad.",
+        "histórica y trazabilidad.",
         "canales": ["web", "app"],
         "etiquetas": ["primavera", "campana", "archivo"],
         "estado": "archivado",
-        "delta_creado_dias": 110, "horas_a_aprobacion": 24, "horas_aprob_a_pub": 8,
+        "delta_creado_dias": 110,
+        "horas_a_aprobacion": 24,
+        "horas_aprob_a_pub": 8,
     },
 ]
 
@@ -1018,27 +1185,29 @@ def generar_contenidos_seed(recursos_ids: list[str] | None = None) -> list[dict]
     recursos_ids = recursos_ids or []
     contenidos = []
     for i, c in enumerate(_CONTENIDOS_SEED):
-        creado = _NOW - timedelta(days=c["delta_creado_dias"])
+        creado = _NOW - timedelta(days=c["delta_creado_dias"])  # type: ignore[arg-type]
         fecha_aprobacion = None
         fecha_publicacion = None
         publicar_desde = None
         if c["horas_a_aprobacion"] is not None:
-            fecha_aprobacion = creado + timedelta(hours=c["horas_a_aprobacion"])
+            fecha_aprobacion = creado + timedelta(hours=c["horas_a_aprobacion"])  # type: ignore[arg-type]
         if fecha_aprobacion is not None and c["horas_aprob_a_pub"] is not None:
-            fecha_publicacion = fecha_aprobacion + timedelta(hours=c["horas_aprob_a_pub"])
+            fecha_publicacion = fecha_aprobacion + timedelta(hours=c["horas_aprob_a_pub"])  # type: ignore[arg-type]
             publicar_desde = fecha_publicacion
         if c["estado"] == "programado":
             # Programado a futuro
             publicar_desde = _NOW + timedelta(days=random.randint(2, 10))
-        contenidos.append({
-            "titulo": c["titulo"],
-            "cuerpo": c["cuerpo"],
-            "canales": c["canales"],
-            "etiquetas": c["etiquetas"],
-            "estado": c["estado"],
-            "recurso_id": (recursos_ids[i % len(recursos_ids)] if recursos_ids else None),
-            "fecha_aprobacion": fecha_aprobacion,
-            "fecha_publicacion": fecha_publicacion,
-            "publicar_desde": publicar_desde,
-        })
+        contenidos.append(
+            {
+                "titulo": c["titulo"],
+                "cuerpo": c["cuerpo"],
+                "canales": c["canales"],
+                "etiquetas": c["etiquetas"],
+                "estado": c["estado"],
+                "recurso_id": (recursos_ids[i % len(recursos_ids)] if recursos_ids else None),
+                "fecha_aprobacion": fecha_aprobacion,
+                "fecha_publicacion": fecha_publicacion,
+                "publicar_desde": publicar_desde,
+            }
+        )
     return contenidos

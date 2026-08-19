@@ -57,9 +57,7 @@ async def validacion(
     db: AsyncSession = Depends(get_db),
     user: CurrentUser = Depends(get_current_user),
 ) -> ValidacionModelo:
-    return await svc.validacion_modelo(
-        db, _validar_metrica(metrica), dias_historico, dias_test
-    )
+    return await svc.validacion_modelo(db, _validar_metrica(metrica), dias_historico, dias_test)
 
 
 @router.get(

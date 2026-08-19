@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -64,9 +64,7 @@ async def _ya_existe(db: AsyncSession, fuente: str, externo_id: str) -> bool:
     return res.scalar_one_or_none() is not None
 
 
-async def procesar_mencion(
-    db: AsyncSession, mention: MentionRaw, stats: PipelineStats
-) -> None:
+async def procesar_mencion(db: AsyncSession, mention: MentionRaw, stats: PipelineStats) -> None:
     if await _ya_existe(db, mention.fuente, mention.fuente_id_externo):
         stats.duplicadas += 1
         return
@@ -101,7 +99,7 @@ async def procesar_mencion(
         metricas=metricas or None,
         latitud=mention.latitud,
         longitud=mention.longitud,
-        capturado_en=datetime.now(timezone.utc),
+        capturado_en=datetime.now(UTC),
         payload_original=mention.payload_original or None,
     )
     db.add(opinion)
@@ -125,9 +123,7 @@ async def ejecutar_poll(
         try:
             menciones = await conector.fetch_mentions(since=desde)
         except Exception as exc:  # noqa: BLE001
-            log.exception(
-                "Error en conector %s: %s", conector.fuente, exc
-            )
+            log.exception("Error en conector %s: %s", conector.fuente, exc)
             stats.errores += 1
             continue
 
@@ -144,6 +140,9 @@ async def ejecutar_poll(
     await db.commit()
     log.info(
         "Poll Social Listening completado — capturadas=%d nuevas=%d duplicadas=%d errores=%d",
-        stats.capturadas, stats.nuevas, stats.duplicadas, stats.errores,
+        stats.capturadas,
+        stats.nuevas,
+        stats.duplicadas,
+        stats.errores,
     )
     return stats

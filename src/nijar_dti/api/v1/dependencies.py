@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, Sequence
+from collections.abc import Awaitable, Callable, Sequence
 from uuid import UUID
 
 from fastapi import Depends, HTTPException, status
@@ -47,9 +47,7 @@ async def get_current_user(
 
     sub = payload.get("sub")
     if not sub:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Token sin sujeto"
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token sin sujeto")
 
     try:
         user_id = UUID(sub)
@@ -60,9 +58,7 @@ async def get_current_user(
 
     user = await db.get(Usuario, user_id)
     if user is None or not user.activo or user.deleted_at is not None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Usuario inactivo"
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Usuario inactivo")
 
     scopes = list(payload.get("scopes") or [])
     # Los permisos del rol se leen de BD en cada petición, de modo que un cambio
@@ -81,7 +77,7 @@ async def get_current_user(
     )
 
 
-def require_roles(*allowed_roles: str) -> Callable[[CurrentUser], CurrentUser]:
+def require_roles(*allowed_roles: str) -> Callable[..., Awaitable[CurrentUser]]:
     """Crea una dependencia que exige uno de los roles indicados."""
 
     async def _dep(user: CurrentUser = Depends(get_current_user)) -> CurrentUser:
@@ -95,7 +91,7 @@ def require_roles(*allowed_roles: str) -> Callable[[CurrentUser], CurrentUser]:
     return _dep
 
 
-def require_permiso(*permisos_requeridos: str) -> Callable[[CurrentUser], CurrentUser]:
+def require_permiso(*permisos_requeridos: str) -> Callable[..., Awaitable[CurrentUser]]:
     """Crea una dependencia que exige que el rol tenga TODOS los permisos dados.
 
     Los permisos se resuelven en `get_current_user` desde la matriz de roles en
@@ -115,7 +111,7 @@ def require_permiso(*permisos_requeridos: str) -> Callable[[CurrentUser], Curren
     return _dep
 
 
-def require_scopes(*required: str) -> Callable[[CurrentUser], CurrentUser]:
+def require_scopes(*required: str) -> Callable[..., Awaitable[CurrentUser]]:
     """Exige que el token contenga todos los scopes indicados."""
 
     required_set: Sequence[str] = required

@@ -12,7 +12,7 @@ La geometría se resuelve con las utilidades puras de ``core/geo.py``.
 from __future__ import annotations
 
 import json
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -45,24 +45,21 @@ def _nombre_idioma(nombre: str, nombre_i18n: dict | None, idioma: str) -> str:
 async def _recursos_publicados_con_coords(
     db: AsyncSession, categorias: list[str] | None
 ) -> list[tuple]:
-    q = (
-        select(
-            RecursoTuristico.id,
-            RecursoTuristico.nombre,
-            RecursoTuristico.categoria,
-            RecursoTuristico.nombre_i18n,
-            func.ST_AsGeoJSON(RecursoTuristico.ubicacion).label("geojson"),
-        )
-        .where(
-            RecursoTuristico.publicado.is_(True),
-            RecursoTuristico.activo.is_(True),
-            RecursoTuristico.deleted_at.is_(None),
-            RecursoTuristico.ubicacion.is_not(None),
-        )
+    q = select(
+        RecursoTuristico.id,
+        RecursoTuristico.nombre,
+        RecursoTuristico.categoria,
+        RecursoTuristico.nombre_i18n,
+        func.ST_AsGeoJSON(RecursoTuristico.ubicacion).label("geojson"),
+    ).where(
+        RecursoTuristico.publicado.is_(True),
+        RecursoTuristico.activo.is_(True),
+        RecursoTuristico.deleted_at.is_(None),
+        RecursoTuristico.ubicacion.is_not(None),
     )
     if categorias:
         q = q.where(RecursoTuristico.categoria.in_(categorias))
-    return list((await db.execute(q)).all())
+    return list((await db.execute(q)).all())  # type: ignore[arg-type]
 
 
 def _parsea_coords(geojson: str | None) -> tuple[float, float] | None:
@@ -82,20 +79,20 @@ async def planificar_ruta(db: AsyncSession, payload: PlanificarRutaIn) -> RutaPl
     paradas: list[Parada] = []
     meta: dict[str, tuple] = {}
     for fila in filas:
-        coords = _parsea_coords(fila.geojson)
+        coords = _parsea_coords(fila.geojson)  # type: ignore[attr-defined]
         if coords is None:
             continue
         lat, lon = coords
         paradas.append(
             Parada(
-                id=str(fila.id),
-                nombre=fila.nombre,
-                categoria=str(fila.categoria),
+                id=str(fila.id),  # type: ignore[attr-defined]
+                nombre=fila.nombre,  # type: ignore[attr-defined]
+                categoria=str(fila.categoria),  # type: ignore[attr-defined]
                 lat=lat,
                 lon=lon,
             )
         )
-        meta[str(fila.id)] = (fila.nombre, fila.nombre_i18n, str(fila.categoria))
+        meta[str(fila.id)] = (fila.nombre, fila.nombre_i18n, str(fila.categoria))  # type: ignore[attr-defined]
 
     ruta = ordenar_itinerario(payload.lat, payload.lon, paradas, payload.max_paradas)
 
@@ -141,7 +138,7 @@ async def recomendaciones(
     dias: int = 30,
     limite: int = 6,
 ) -> RecomendacionesOut:
-    ahora = datetime.now(timezone.utc)
+    ahora = datetime.now(UTC)
     hasta = ahora + timedelta(days=dias)
 
     # Eventos próximos publicados

@@ -76,3 +76,9 @@ reports/
 
 # Capturas de pantalla locales (tótem)
 totem-*.png
+
+# Terraform (providers/estado locales, no versionar)
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*

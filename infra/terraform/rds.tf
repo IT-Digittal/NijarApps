@@ -114,9 +114,9 @@ resource "aws_db_instance" "main" {
   performance_insights_enabled    = true
   performance_insights_kms_key_id = aws_kms_key.rds.arn
 
-  deletion_protection      = var.environment == "production"
-  delete_automated_backups = false
-  skip_final_snapshot      = false
+  deletion_protection       = var.environment == "production"
+  delete_automated_backups  = false
+  skip_final_snapshot       = false
   final_snapshot_identifier = "${local.name_prefix}-db-final-${formatdate("YYYYMMDD-hhmm", timestamp())}"
 
   tags = { Name = "${local.name_prefix}-db" }

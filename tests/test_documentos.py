@@ -74,8 +74,14 @@ def test_nombre_seguro_sanea_rutas_y_control():
 
 def test_tipos_entidad_cubren_todas_las_capas_del_gemelo():
     assert {
-        "recurso", "sensor", "cuadro", "contenedor",
-        "movilidad", "camara", "bandera", "estacion_aire",
+        "recurso",
+        "sensor",
+        "cuadro",
+        "contenedor",
+        "movilidad",
+        "camara",
+        "bandera",
+        "estacion_aire",
     } <= TIPOS_ENTIDAD_VALIDOS
 
 

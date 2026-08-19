@@ -29,8 +29,14 @@ def _entidad_info(sid: str, lat: float | None = 36.84688, lon: float | None = -2
 
 def _entidad_data(sid: str):
     valores = {
-        "NO2": 10.4, "O3": 66.7, "PM1": 6, "PM10": 33, "PM2P5": 7,
-        "pressure": 1002.9, "relativeHumidity": 26.2, "temperature": 36.63,
+        "NO2": 10.4,
+        "O3": 66.7,
+        "PM1": 6,
+        "PM10": 33,
+        "PM2P5": 7,
+        "pressure": 1002.9,
+        "relativeHumidity": 26.2,
+        "temperature": 36.63,
     }
     ent: dict = {"id": sid, "type": "data"}
     for k, v in valores.items():
@@ -72,17 +78,23 @@ def test_parsear_estaciones_eaqi_desconocido():
 
 def _estacion(sid, temperatura, eaqi, estado="active", medido="2026-07-10T09:35:00Z"):
     return {
-        "id": sid, "estado": estado, "temperatura_c": temperatura,
-        "humedad_pct": 30.0, "eaqi": eaqi, "medido_en": medido,
+        "id": sid,
+        "estado": estado,
+        "temperatura_c": temperatura,
+        "humedad_pct": 30.0,
+        "eaqi": eaqi,
+        "medido_en": medido,
     }
 
 
 def test_resumen_estaciones_agrega_activas():
-    r = resumen_estaciones([
-        _estacion("A", 36.6, 1),
-        _estacion("B", 32.8, 2, medido="2026-07-10T09:40:00Z"),
-        _estacion("C", 99.0, 6, estado="inactive"),  # inactiva: no cuenta
-    ])
+    r = resumen_estaciones(
+        [
+            _estacion("A", 36.6, 1),
+            _estacion("B", 32.8, 2, medido="2026-07-10T09:40:00Z"),
+            _estacion("C", 99.0, 6, estado="inactive"),  # inactiva: no cuenta
+        ]
+    )
     assert r["estaciones_activas"] == 2
     assert r["temperatura_media_c"] == 34.7
     assert r["temperatura_max_c"] == 36.6

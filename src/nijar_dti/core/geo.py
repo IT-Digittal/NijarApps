@@ -66,9 +66,7 @@ def ordenar_itinerario(
     return ruta
 
 
-def distancia_total_m(
-    inicio_lat: float, inicio_lon: float, ruta: list[Parada]
-) -> float:
+def distancia_total_m(inicio_lat: float, inicio_lon: float, ruta: list[Parada]) -> float:
     """Distancia total recorrida (origen → parada 1 → … → parada n) en metros."""
     total = 0.0
     lat, lon = inicio_lat, inicio_lon

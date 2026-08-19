@@ -89,9 +89,7 @@ def ajustar_modelo_estacional(serie: list[PuntoSerie]) -> ModeloEstacional:
     return modelo
 
 
-def prever_serie(
-    modelo: ModeloEstacional, desde: date, horizonte_dias: int
-) -> list[PuntoSerie]:
+def prever_serie(modelo: ModeloEstacional, desde: date, horizonte_dias: int) -> list[PuntoSerie]:
     """Genera la predicción para los próximos ``horizonte_dias`` desde ``desde``."""
     salida: list[PuntoSerie] = []
     for i in range(horizonte_dias):
@@ -136,8 +134,12 @@ def validar_holdout(
     """
     if len(serie) <= dias_test + 1:
         return ResultadoValidacion(
-            mape=None, n_test=0, n_evaluable=0, dias_holdout=dias_test,
-            umbral=umbral_mape, cumple_umbral=False,
+            mape=None,
+            n_test=0,
+            n_evaluable=0,
+            dias_holdout=dias_test,
+            umbral=umbral_mape,
+            cumple_umbral=False,
         )
 
     train = serie[:-dias_test]
@@ -200,9 +202,7 @@ def detectar_anomalias(
     return anomalias
 
 
-def rellenar_dias(
-    conteos: dict[date, float], desde: date, hasta: date
-) -> list[PuntoSerie]:
+def rellenar_dias(conteos: dict[date, float], desde: date, hasta: date) -> list[PuntoSerie]:
     """Construye una serie diaria continua rellenando con 0 los días sin dato.
 
     Imprescindible para que la estacionalidad y la predicción no se sesguen

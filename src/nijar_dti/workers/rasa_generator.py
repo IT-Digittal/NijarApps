@@ -22,7 +22,6 @@ from __future__ import annotations
 import argparse
 import logging
 import os
-import sys
 from pathlib import Path
 
 # El generador es una herramienta CLI puramente offline: no necesita BBDD
@@ -79,22 +78,34 @@ def build_domain() -> dict:
             txt = faq.get(f"respuesta_{lang}")
             if not txt:
                 continue
-            variantes.append({"text": txt, "condition": [{"type": "slot", "name": "language", "value": lang}]})
+            variantes.append(
+                {"text": txt, "condition": [{"type": "slot", "name": "language", "value": lang}]}
+            )
         # fallback: respuesta en español sin condición
         variantes.append({"text": faq["respuesta_es"]})
         responses[utter] = variantes
 
     # Respuesta de fallback fuera de dominio
     responses["utter_default"] = [
-        {"text": "No dispongo de información sobre esa consulta. ¿Puedo ayudarte con rutas, playas, eventos o servicios turísticos de Níjar?",
-         "condition": [{"type": "slot", "name": "language", "value": "es"}]},
-        {"text": "I don't have information about that. Can I help you with routes, beaches, events, or services in Níjar?",
-         "condition": [{"type": "slot", "name": "language", "value": "en"}]},
-        {"text": "Dazu habe ich leider keine Informationen. Kann ich Ihnen bei Routen, Stränden, Veranstaltungen oder Dienstleistungen in Níjar helfen?",
-         "condition": [{"type": "slot", "name": "language", "value": "de"}]},
-        {"text": "Je ne dispose pas d'informations sur ce sujet. Puis-je vous aider avec les itinéraires, plages, événements ou services à Níjar ?",
-         "condition": [{"type": "slot", "name": "language", "value": "fr"}]},
-        {"text": "No dispongo de información sobre esa consulta. ¿Puedo ayudarte con rutas, playas, eventos o servicios turísticos de Níjar?"},
+        {
+            "text": "No dispongo de información sobre esa consulta. ¿Puedo ayudarte con rutas, playas, eventos o servicios turísticos de Níjar?",
+            "condition": [{"type": "slot", "name": "language", "value": "es"}],
+        },
+        {
+            "text": "I don't have information about that. Can I help you with routes, beaches, events, or services in Níjar?",
+            "condition": [{"type": "slot", "name": "language", "value": "en"}],
+        },
+        {
+            "text": "Dazu habe ich leider keine Informationen. Kann ich Ihnen bei Routen, Stränden, Veranstaltungen oder Dienstleistungen in Níjar helfen?",
+            "condition": [{"type": "slot", "name": "language", "value": "de"}],
+        },
+        {
+            "text": "Je ne dispose pas d'informations sur ce sujet. Puis-je vous aider avec les itinéraires, plages, événements ou services à Níjar ?",
+            "condition": [{"type": "slot", "name": "language", "value": "fr"}],
+        },
+        {
+            "text": "No dispongo de información sobre esa consulta. ¿Puedo ayudarte con rutas, playas, eventos o servicios turísticos de Níjar?"
+        },
     ]
 
     return {
@@ -149,33 +160,39 @@ def build_nlu() -> dict:
 def build_rules() -> dict:
     rules: list[dict] = []
     for faq in FAQS_SEED:
-        rules.append({
-            "rule": f"Responder a {faq['intent']}",
+        rules.append(
+            {
+                "rule": f"Responder a {faq['intent']}",
+                "steps": [
+                    {"intent": faq["intent"]},
+                    {"action": _utter_name(faq["intent"])},
+                ],
+            }
+        )
+    rules.append(
+        {
+            "rule": "Fallback fuera de dominio",
             "steps": [
-                {"intent": faq["intent"]},
-                {"action": _utter_name(faq["intent"])},
+                {"intent": "nlu_fallback"},
+                {"action": "utter_default"},
             ],
-        })
-    rules.append({
-        "rule": "Fallback fuera de dominio",
-        "steps": [
-            {"intent": "nlu_fallback"},
-            {"action": "utter_default"},
-        ],
-    })
+        }
+    )
     return {"version": "3.1", "rules": rules}
 
 
 def build_stories() -> dict:
     stories: list[dict] = []
     for faq in FAQS_SEED[:5]:
-        stories.append({
-            "story": f"happy path {faq['intent']}",
-            "steps": [
-                {"intent": faq["intent"]},
-                {"action": _utter_name(faq["intent"])},
-            ],
-        })
+        stories.append(
+            {
+                "story": f"happy path {faq['intent']}",
+                "steps": [
+                    {"intent": faq["intent"]},
+                    {"action": _utter_name(faq["intent"])},
+                ],
+            }
+        )
     return {"version": "3.1", "stories": stories}
 
 

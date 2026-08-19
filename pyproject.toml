@@ -92,24 +92,53 @@ select = [
 ignore = [
     "S101",  # Use of assert (allowed in tests)
     "B008",  # Function call in default argument (FastAPI Depends pattern)
+    "S311",  # random no criptográfico (datos demo/seed/simulación, no seguridad)
+    "S104",  # bind a 0.0.0.0 intencionado (la API corre en contenedor)
+    "N818",  # convención de excepciones del proyecto (NotFound, Conflict, …) sin sufijo Error
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/*" = ["S101", "S105", "S106"]
+"tests/*" = ["S101", "S105", "S106", "B017"]  # asserts, credenciales de prueba y raises(Exception)
 "alembic/*" = ["E501"]
 # Los seeds contienen textos largos legibles (respuestas del chatbot en 4
-# idiomas, descripciones); las líneas largas son intencionadas.
-"src/nijar_dti/data/seeds/*" = ["E501"]
+# idiomas, descripciones) y contraseñas por defecto documentadas.
+"src/nijar_dti/data/seeds/*" = ["E501", "S105", "S106"]
+"src/nijar_dti/main.py" = ["E402"]  # imports tras el arranque de la app (montaje estático condicional)
+"src/nijar_dti/schemas/auth.py" = ["S105"]  # campo OAuth2 "token_type" = "bearer"
+"src/nijar_dti/connectors/analytics/ga4.py" = ["S105"]  # URL de OAuth, no una contraseña
+# Ficheros con contenido/plantillas/mensajes largos (posts sintéticos, respuestas
+# multilingües, plantillas Rasa generadas): las líneas largas son intencionadas.
+"src/nijar_dti/connectors/social/*" = ["E501"]
+"src/nijar_dti/services/chatbot_service.py" = ["E501"]
+"src/nijar_dti/services/recomendaciones_service.py" = ["E501"]
+"src/nijar_dti/workers/rasa_generator.py" = ["E501"]
+"src/nijar_dti/workers/social_worker.py" = ["E501"]
 
 [tool.mypy]
 python_version = "3.11"
 strict = true
+# Tipado gradual: se mantienen las comprobaciones de CORRECTITUD (arg-type,
+# return-value, attr-defined, union-attr, …) que detectan errores reales, y se
+# relajan las de COMPLETITUD (anotar cada función y cada genérico), que la base
+# de código aún no adopta. Se pueden re-endurecer de forma incremental.
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+disallow_untyped_calls = false
+disallow_any_generics = false
+warn_return_any = false
 plugins = ["pydantic.mypy"]
 exclude = ["alembic/", "tests/"]
 
 [[tool.mypy.overrides]]
-module = ["geoalchemy2.*", "paho.*", "asyncio_mqtt.*"]
+module = ["geoalchemy2.*", "paho.*", "asyncio_mqtt.*", "jose.*", "google.*", "yaml", "passlib.*"]
 ignore_missing_imports = true
+
+[tool.bandit]
+# B104: bind a 0.0.0.0 intencionado (la API corre en contenedor tras proxy/WAF).
+# B608: la única query con nombre de tabla interpolado usa una constante interna
+#       del código (no entra por el usuario) y el id va parametrizado
+#       (ver services/tourism_service._get_ubicacion_geojson).
+skips = ["B104", "B608"]
 
 [tool.pytest.ini_options]
 minversion = "8.0"

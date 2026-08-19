@@ -10,7 +10,6 @@ multilingüe consistente al turista.
 
 from __future__ import annotations
 
-
 RECURSOS_SEED: list[dict] = [
     # ----------- Playas -----------
     {
@@ -101,7 +100,6 @@ RECURSOS_SEED: list[dict] = [
         "etiquetas": ["playa", "cala", "parque-natural", "senderismo"],
         "publicado": True,
     },
-
     # ----------- Centros y oficinas -----------
     {
         "urn": "urn:ngsi-ld:RecursoTuristico:nijar:centro-amoladeras",
@@ -152,7 +150,6 @@ RECURSOS_SEED: list[dict] = [
         "etiquetas": ["oficina", "informacion"],
         "publicado": True,
     },
-
     # ----------- Rutas -----------
     {
         "urn": "urn:ngsi-ld:RecursoTuristico:nijar:ruta-rodalquilar-albaricoques",
@@ -199,7 +196,6 @@ RECURSOS_SEED: list[dict] = [
         "etiquetas": ["ruta", "senderismo", "panoramica"],
         "publicado": True,
     },
-
     # ----------- Patrimonio -----------
     {
         "urn": "urn:ngsi-ld:RecursoTuristico:nijar:rodalquilar-mina",
@@ -311,7 +307,6 @@ RECURSOS_SEED: list[dict] = [
         "etiquetas": ["pueblo", "patrimonio", "artesania"],
         "publicado": True,
     },
-
     # ----------- Miradores -----------
     {
         "urn": "urn:ngsi-ld:RecursoTuristico:nijar:mirador-amatista",

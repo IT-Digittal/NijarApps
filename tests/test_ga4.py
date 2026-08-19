@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 import asyncio
-import json
-from pathlib import Path
 
 import pytest
 
@@ -14,16 +12,15 @@ from nijar_dti.connectors.analytics.ga4 import (
     GA4Connector,
     GA4ConnectorError,
     GA4Overview,
-    _channels_sintetico,
     _overview_sintetico,
 )
 
 
 def _settings(**kwargs) -> Settings:
-    base = dict(
-        secret_key="test-secret-key-with-enough-entropy-1234567890",
-        database_url="postgresql+asyncpg://x:x@localhost/x",
-    )
+    base = {
+        "secret_key": "test-secret-key-with-enough-entropy-1234567890",
+        "database_url": "postgresql+asyncpg://x:x@localhost/x",
+    }
     base.update(kwargs)
     return Settings(**base)
 
@@ -34,10 +31,12 @@ class TestIsConfigured:
         assert c.is_configured is False
 
     def test_configurado(self):
-        c = GA4Connector(_settings(
-            ga4_property_id="123456789",
-            ga4_service_account_json='{"type":"service_account","client_email":"x"}',
-        ))
+        c = GA4Connector(
+            _settings(
+                ga4_property_id="123456789",
+                ga4_service_account_json='{"type":"service_account","client_email":"x"}',
+            )
+        )
         assert c.is_configured is True
 
 
@@ -69,28 +68,34 @@ class TestDryRun:
 
 class TestServiceAccountLoader:
     def test_carga_json_inline(self, tmp_path):
-        c = GA4Connector(_settings(
-            ga4_property_id="x",
-            ga4_service_account_json='{"type":"service_account","client_email":"x"}',
-        ))
+        c = GA4Connector(
+            _settings(
+                ga4_property_id="x",
+                ga4_service_account_json='{"type":"service_account","client_email":"x"}',
+            )
+        )
         data = c._load_service_account()
         assert data["type"] == "service_account"
 
     def test_carga_desde_fichero(self, tmp_path):
         sa_file = tmp_path / "sa.json"
         sa_file.write_text('{"type":"service_account","client_email":"y"}')
-        c = GA4Connector(_settings(
-            ga4_property_id="x",
-            ga4_service_account_json=str(sa_file),
-        ))
+        c = GA4Connector(
+            _settings(
+                ga4_property_id="x",
+                ga4_service_account_json=str(sa_file),
+            )
+        )
         data = c._load_service_account()
         assert data["client_email"] == "y"
 
     def test_error_si_json_invalido(self):
-        c = GA4Connector(_settings(
-            ga4_property_id="x",
-            ga4_service_account_json="no-es-json-ni-fichero",
-        ))
+        c = GA4Connector(
+            _settings(
+                ga4_property_id="x",
+                ga4_service_account_json="no-es-json-ni-fichero",
+            )
+        )
         with pytest.raises(GA4ConnectorError):
             c._load_service_account()
 

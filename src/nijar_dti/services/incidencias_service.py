@@ -7,7 +7,7 @@ indisponibilidad real), recuento por severidad y cumplimiento ANS.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -44,12 +44,12 @@ class NotFound(Exception):
 
 async def crear_incidencia(db: AsyncSession, payload: IncidenciaIn) -> Incidencia:
     inc = Incidencia(
-        severidad=payload.severidad,
+        severidad=payload.severidad,  # type: ignore[arg-type]
         titulo=payload.titulo,
         componente=payload.componente,
-        detectada_en=payload.detectada_en or datetime.now(timezone.utc),
+        detectada_en=payload.detectada_en or datetime.now(UTC),
         descripcion=payload.descripcion,
-        origen=payload.origen,
+        origen=payload.origen,  # type: ignore[arg-type]
         afecta_disponibilidad=payload.afecta_disponibilidad,
         es_preventiva=payload.es_preventiva,
         es_evento_seguridad=payload.es_evento_seguridad,
@@ -85,7 +85,7 @@ async def resolver_incidencia(
     inc = await db.get(Incidencia, incidencia_id)
     if inc is None:
         raise NotFound(f"Incidencia {incidencia_id} no encontrada")
-    ahora = datetime.now(timezone.utc)
+    ahora = datetime.now(UTC)
     if payload.respondida_en is not None or inc.respondida_en is None:
         inc.respondida_en = payload.respondida_en or inc.respondida_en or ahora
     inc.resuelta_en = payload.resuelta_en or ahora
@@ -118,10 +118,7 @@ def calcular_disponibilidad(
             continue
         minutos = (inc.resuelta_en - inc.detectada_en).total_seconds() / 60
         downtime[inc.componente] = downtime.get(inc.componente, 0.0) + max(minutos, 0.0)
-    return {
-        comp: disponibilidad_porcentaje(mins, periodo_min)
-        for comp, mins in downtime.items()
-    }
+    return {comp: disponibilidad_porcentaje(mins, periodo_min) for comp, mins in downtime.items()}
 
 
 def resumen_incidencias(incidencias: list[Incidencia]) -> dict[str, int]:
@@ -146,9 +143,7 @@ def agregar_cumplimiento_ans(incidencias: list, inicio: datetime, fin: datetime)
         if not grupo:
             por_sev.append(CumplimientoANSSeveridad(severidad=sev))
             continue
-        evals = [
-            evalua_ans(sev, i.detectada_en, i.respondida_en, i.resuelta_en) for i in grupo
-        ]
+        evals = [evalua_ans(sev, i.detectada_en, i.respondida_en, i.resuelta_en) for i in grupo]
         resueltas = [e for e in evals if e.cumple_resolucion is not None]
         cumplen = sum(1 for e in resueltas if e.cumple_resolucion)
         resp = [e.respuesta_h for e in evals if e.respuesta_h is not None]
@@ -186,4 +181,4 @@ def tiempo_medio_resolucion_h(incidencias: list[Incidencia]) -> float | None:
         if i.resuelta_en is not None and not i.es_preventiva
     ]
     horas = [h for h in horas if h is not None]
-    return round(sum(horas) / len(horas), 2) if horas else None
+    return round(sum(horas) / len(horas), 2) if horas else None  # type: ignore[arg-type]

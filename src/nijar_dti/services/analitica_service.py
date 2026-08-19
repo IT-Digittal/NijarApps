@@ -201,9 +201,7 @@ async def composicion_linguistica(
             conteos[_normaliza_idioma(idioma)] += int(n)
 
     # Señal C — idioma de las menciones en RRSS sobre el destino
-    q_o = select(Opinion.idioma, func.count().label("n")).where(
-        Opinion.idioma.is_not(None)
-    )
+    q_o = select(Opinion.idioma, func.count().label("n")).where(Opinion.idioma.is_not(None))
     if desde:
         q_o = q_o.where(Opinion.publicado_en >= desde)
     if hasta:

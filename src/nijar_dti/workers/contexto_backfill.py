@@ -37,11 +37,7 @@ def generar_dataset(dry_run: bool = True, anios: int = 3) -> dict:
 
 
 def _ultimo_eoh(registros: list[dict]) -> float | None:
-    eoh = [
-        r
-        for r in registros
-        if r["fuente"] == "ine_eoh" and r["indicador"] == "pernoctaciones"
-    ]
+    eoh = [r for r in registros if r["fuente"] == "ine_eoh" and r["indicador"] == "pernoctaciones"]
     if not eoh:
         return None
     eoh.sort(key=lambda r: r["periodo"])
