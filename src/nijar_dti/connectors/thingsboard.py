@@ -152,12 +152,15 @@ def parsear_aforo_parque(telemetria: dict[str, Any]) -> dict[str, Any]:
 
     ThingsBoard devuelve ``{clave: [{"ts": ms, "value": "86"}, ...]}``; se toma
     el punto más reciente y el ``ts`` máximo como marca de actualización.
+    El contador municipal de entradas/salidas puede desfasarse y arrojar
+    valores negativos sin sentido físico; se acotan a 0.
     """
     valores: dict[str, int | None] = {}
     ts_max = 0
     for clave in CLAVES_AFORO_PARQUE:
         puntos = telemetria.get(clave) or []
-        valores[clave] = _entero(puntos[0]["value"]) if puntos else None
+        entero = _entero(puntos[0]["value"]) if puntos else None
+        valores[clave] = max(0, entero) if entero is not None else None
         if puntos:
             ts_max = max(ts_max, int(puntos[0].get("ts", 0)))
     valores["ts_ms"] = ts_max or None
