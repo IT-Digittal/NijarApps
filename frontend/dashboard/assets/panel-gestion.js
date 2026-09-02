@@ -927,6 +927,108 @@ async function renderCapasGemelo(el) {
   });
 }
 
+/* ================= MEDICIONES GUARDADAS DEL GEMELO ================= */
+/* Listado de las mediciones de la regla del Gemelo vivo 2D (persistidas por
+   la plataforma) con exportación a CSV. Se crean desde el propio mapa (📏 +
+   💾); aquí se consultan, exportan y eliminan. */
+
+function fmtDistM(m) {
+  if (m == null) return "—";
+  if (m >= 9950) return (m / 1000).toFixed(1) + " km";
+  if (m >= 995) return (m / 1000).toFixed(2) + " km";
+  return Math.round(m) + " m";
+}
+function fmtAreaM2(m2) {
+  if (m2 == null) return "—";
+  if (m2 >= 1e6) return (m2 / 1e6).toFixed(2) + " km²";
+  if (m2 >= 1e4) return (m2 / 1e4).toFixed(2) + " ha";
+  return Math.round(m2) + " m²";
+}
+
+/* CSV para Excel en español: separador «;», decimales con coma y BOM UTF-8 */
+function csvMediciones(mediciones) {
+  const q = (v) => '"' + String(v ?? "").replace(/"/g, '""') + '"';
+  const num = (v) => (v == null ? "" : String(v).replace(".", ","));
+  const filas = mediciones.map((m) => [
+    q(m.nombre),
+    q(m.tipo === "poligono" ? "polígono" : "línea"),
+    num(m.distancia_m),
+    num(m.area_m2),
+    (m.puntos || []).length,
+    q(m.creado_por || ""),
+    q(m.created_at ? new Date(m.created_at).toLocaleString("es-ES") : ""),
+    q((m.puntos || []).map((p) => p[0] + " " + p[1]).join("; ")),
+  ].join(";"));
+  return "﻿" + ["Nombre;Tipo;Distancia (m);Área (m²);Vértices;Guardada por;Fecha;Coordenadas (lat lon)", ...filas].join("\r\n");
+}
+
+function descargarCsv(nombreFichero, contenido) {
+  const blob = new Blob([contenido], { type: "text/csv;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = nombreFichero;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+}
+
+async function renderMediciones(el) {
+  cargando(el, "Mediciones");
+  let mediciones;
+  try { mediciones = await api.listMedicionesGemelo(); }
+  catch (e) { return errorCarga(el, "Mediciones", e); }
+
+  const lineas = mediciones.filter((m) => m.tipo !== "poligono");
+  const poligonos = mediciones.filter((m) => m.tipo === "poligono");
+  const distanciaTotal = mediciones.reduce((s, m) => s + (m.distancia_m || 0), 0);
+
+  const filas = mediciones.map((m, i) =>
+    '<tr><td style="white-space:normal;min-width:200px;font-weight:600">' + esc(m.nombre) + "</td>" +
+    "<td>" + (m.tipo === "poligono" ? '<span class="bdg bdg-info">polígono</span>' : '<span class="bdg bdg-mut">línea</span>') + "</td>" +
+    '<td class="mini tnum">' + fmtDistM(m.distancia_m) + '</td><td class="mini tnum">' + fmtAreaM2(m.area_m2) + "</td>" +
+    '<td class="mini tnum">' + (m.puntos || []).length + '</td><td class="mini">' + esc(m.creado_por || "—") + "</td>" +
+    '<td class="mini tnum">' + fechaCorta(m.created_at) + "</td>" +
+    '<td><div class="chip-row">' +
+    '<button class="btn btn--sm" data-g="ver-med" data-i="' + i + '">Ver en el mapa</button>' +
+    '<button class="btn btn--sm btn--ghost" data-g="del-med" data-i="' + i + '">Eliminar</button></div></td></tr>').join("");
+
+  el.innerHTML = gsub("Mediciones", "Mediciones del gemelo",
+    "Distancias y áreas medidas con la regla del Gemelo vivo 2D y guardadas en la plataforma. Se crean desde el propio mapa (botón 📏 y luego 💾).",
+    mediciones.length ? '<button class="btn btn--pri" data-g="csv-med">⭳ Exportar CSV</button>' : "") +
+    '<div class="grid g4" style="margin-bottom:16px">' +
+    kpi("Mediciones", mediciones.length, "Guardadas en la plataforma", "ic-navy", "map") +
+    kpi("Líneas", lineas.length, "Distancias entre puntos", "ic-teal", "chart") +
+    kpi("Polígonos", poligonos.length, "Con perímetro y área", "ic-gold", "box") +
+    kpi("Distancia acumulada", fmtDistM(distanciaTotal), "Suma de todas las mediciones", "ic-ok", "chart") + "</div>" +
+    '<div class="card card--pad0"><div style="padding:16px 16px 4px" class="card__h"><div><div class="card__t">Mediciones guardadas</div>' +
+    '<div class="card__s">Las magnitudes las calcula el servidor a partir de los vértices (distancia geodésica y área esférica). Eliminar: su autor o un perfil editor.</div></div></div>' +
+    '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Nombre</th><th>Tipo</th><th>Distancia</th><th>Área</th><th>Vértices</th><th>Guardada por</th><th>Fecha</th><th></th></tr></thead><tbody>' +
+    (filas || '<tr><td colspan="8" class="mini" style="text-align:center;padding:20px">Aún no hay mediciones guardadas — se crean desde el Gemelo vivo 2D con la regla 📏</td></tr>') +
+    "</tbody></table></div></div>";
+
+  const csvBtn = el.querySelector('[data-g="csv-med"]');
+  if (csvBtn) csvBtn.onclick = () => {
+    descargarCsv("mediciones-gemelo-" + new Date().toISOString().slice(0, 10) + ".csv", csvMediciones(mediciones));
+    UI.toast("CSV exportado (" + mediciones.length + " mediciones)");
+  };
+
+  el.querySelectorAll("[data-g$='-med']").forEach((b) => {
+    const m = mediciones[Number(b.dataset.i)];
+    if (b.dataset.g === "ver-med") b.onclick = () => UI.goD("gd-mapa");
+    if (b.dataset.g === "del-med") b.onclick = async () => {
+      if (!confirm('¿Eliminar la medición «' + m.nombre + '»?')) return;
+      try { await api.eliminarMedicionGemelo(m.id); }
+      catch (e) {
+        UI.toast(e && e.status === 403 ? "Solo su autor o un perfil editor pueden eliminarla" : "No se pudo eliminar");
+        return;
+      }
+      UI.toast("Medición eliminada");
+      UI.rerenderD("g-mediciones");
+      UI.rerenderD("gd-mapa");
+    };
+  });
+}
+
 /* ================= MÓDULO ADMINISTRACIÓN (nivel superior, solo admin) ================= */
 /* "Usuarios y permisos" y "Matriz de permisos" viven aquí, como un módulo más
    del lanzador (junto a las verticales), no dentro de la consola DTI. La tarjeta
@@ -1335,6 +1437,7 @@ const SECCIONES = [
   { id: "g-faqs", n: "FAQs del chatbot", i: "chat", r: renderFaqs },
   { id: "g-cliente", n: "Ficha del cliente", i: "folder", r: renderCliente },
   { id: "g-capas", n: "Capas del gemelo", i: "map", r: renderCapasGemelo },
+  { id: "g-mediciones", n: "Mediciones del gemelo", i: "map", r: renderMediciones },
   { id: "g-prediccion", n: "Predicción de afluencia", i: "chart", r: renderPrediccion },
   { id: "g-ia", n: "Consumo de IA", i: "chat", r: renderConsumoIA },
   { id: "g-config", n: "Configuración", i: "gear", r: renderConfig },
