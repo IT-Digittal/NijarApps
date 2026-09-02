@@ -66,6 +66,12 @@ def test_parsear_aforo_parque_series_vacias():
     assert v2["aforo_parque"] is None
 
 
+def test_parsear_aforo_parque_acota_negativos_a_cero():
+    # El contador municipal puede desfasarse (más salidas que entradas registradas)
+    v = parsear_aforo_parque({"aforo_parque": [{"ts": 1, "value": "-25"}]})
+    assert v["aforo_parque"] == 0
+
+
 def test_thingsboard_configurado_segun_settings():
     assert not thingsboard_configurado(Settings())  # sin variables → apagado
     completo = Settings(
