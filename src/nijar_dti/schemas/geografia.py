@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-from typing import Any
+from datetime import datetime
+from typing import Any, Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class CapaGeograficaOut(BaseModel):
@@ -72,3 +73,38 @@ class ParcelaCatastralOut(BaseModel):
     capa: str
     propiedades: dict[str, Any] = Field(default_factory=dict)
     geometry: dict[str, Any] | None = None
+
+
+class MedicionGemeloIn(BaseModel):
+    """Alta de una medición de la regla del gemelo (los vértices, en WGS84).
+
+    La distancia y el área las calcula el backend a partir de los puntos;
+    los valores que muestre el cliente no se aceptan como entrada.
+    """
+
+    nombre: str = Field(min_length=2, max_length=150)
+    tipo: Literal["linea", "poligono"] = "linea"
+    puntos: list[tuple[float, float]] = Field(min_length=2, max_length=500)
+
+    @field_validator("puntos")
+    @classmethod
+    def _coordenadas_validas(cls, v: list[tuple[float, float]]) -> list[tuple[float, float]]:
+        for lat, lon in v:
+            if not (-90 <= lat <= 90) or not (-180 <= lon <= 180):
+                raise ValueError(f"Coordenada fuera de rango: [{lat}, {lon}]")
+        return v
+
+
+class MedicionGemeloOut(BaseModel):
+    """Medición guardada, con sus magnitudes calculadas por el backend."""
+
+    id: UUID
+    nombre: str
+    tipo: str
+    puntos: list[Any]
+    distancia_m: float
+    area_m2: float | None = None
+    creado_por: str | None = None
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)

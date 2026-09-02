@@ -7,6 +7,8 @@ al estilo de un geoportal municipal de urbanismo.
 
 from __future__ import annotations
 
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -18,6 +20,8 @@ from nijar_dti.schemas.geografia import (
     CapaGeograficaOut,
     CapaGeograficaUpdate,
     GeoJSONFeatureCollection,
+    MedicionGemeloIn,
+    MedicionGemeloOut,
     ParcelaCatastralOut,
 )
 from nijar_dti.services import geografia_service as svc
@@ -113,3 +117,54 @@ async def parcela_en_punto(
             detail="No hay parcela catastral cargada que contenga ese punto",
         )
     return parcela
+
+
+@router.get(
+    "/mediciones",
+    response_model=list[MedicionGemeloOut],
+    summary="Mediciones guardadas de la regla del gemelo",
+)
+async def listar_mediciones(
+    db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(get_current_user),
+) -> list[MedicionGemeloOut]:
+    return await svc.listar_mediciones(db)
+
+
+@router.post(
+    "/mediciones",
+    response_model=MedicionGemeloOut,
+    status_code=201,
+    summary="Guardar una medición de la regla del gemelo",
+)
+async def crear_medicion(
+    datos: MedicionGemeloIn,
+    db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(get_current_user),
+) -> MedicionGemeloOut:
+    return await svc.crear_medicion(db, datos, creado_por=user.email)
+
+
+@router.delete(
+    "/mediciones/{medicion_id}",
+    status_code=204,
+    summary="Eliminar una medición guardada (su autor, o un perfil editor)",
+)
+async def eliminar_medicion(
+    medicion_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(get_current_user),
+) -> None:
+    es_editor = user.rol in (
+        RolUsuario.ADMINISTRADOR_TIC.value,
+        RolUsuario.GESTOR_CONTENIDOS.value,
+    )
+    try:
+        await svc.eliminar_medicion(db, medicion_id, email=user.email, es_editor=es_editor)
+    except svc.MedicionNoEncontradaError as exc:
+        raise HTTPException(status_code=404, detail="Medición no encontrada") from exc
+    except svc.MedicionAjenaError as exc:
+        raise HTTPException(
+            status_code=403,
+            detail="Solo el autor de la medición o un perfil editor pueden eliminarla",
+        ) from exc

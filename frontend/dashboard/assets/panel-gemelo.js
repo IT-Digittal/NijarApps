@@ -27,7 +27,7 @@ let mapa2d = null;
 let mapa3d = null;
 let refrescoTimer = null;
 
-const REFRESCO_MS = 60_000;
+const REFRESCO_MS = 300_000; /* 5 min: el refresco recrea el mapa y cortaba la navegación */
 const CENTRO = [36.82, -2.1];
 const CENTRO_3D = [-2.06, 36.79]; /* MapLibre usa [lon, lat] */
 
@@ -361,18 +361,19 @@ async function pintarInfoGemelo() {
 
 async function renderGemelo2D(el) {
   el.innerHTML = sub("Gemelo digital", "Gemelo vivo del destino",
-    "Réplica digital operativa: los activos de la plataforma y de las verticales externas (IoT municipal con banderas de playa y aforo del parque; red Bettair de calidad del aire y meteorología) sobre un único mapa en tiempo real, con refresco automático cada minuto.",
+    "Réplica digital operativa: los activos de la plataforma y de las verticales externas (IoT municipal con banderas de playa y aforo del parque; red Bettair de calidad del aire y meteorología) sobre un único mapa en tiempo real, con refresco automático cada 5 minutos.",
     '<button class="btn btn--pri" onclick="UI.goD(\'gd-3d\')">Vista 3D →</button>') +
     '<div class="grid g4" style="margin-bottom:16px" id="gd-kpis"></div>' +
     '<div class="card card--pad0" style="overflow:hidden"><div id="gemelo-2d" style="height:600px;width:100%"></div></div>' +
     '<div class="mini" style="color:var(--muted);margin-top:8px" id="gd-refresco"></div>' +
     '<div class="grid g2" style="margin-top:16px" id="gd-info"></div>';
 
-  const [capas, aforo, docs, capasGeo] = await Promise.all([
+  const [capas, aforo, docs, capasGeo, mediciones] = await Promise.all([
     cargarActivos(),
     api.get("/gemelo/parque/aforo").catch(() => null), /* 503 si la vertical no está configurada */
     conteoDocumentos(),
     cargarCapasGeo(),
+    api.get("/geo/mediciones").catch(() => []),
   ]);
 
   const total = capas.reduce((a, c) => a + c.items.length, 0);
@@ -384,7 +385,7 @@ async function renderGemelo2D(el) {
     (aforo && aforo.aforo_actual != null
       ? kpi("Aforo P.N. Cabo de Gata", aforo.aforo_actual + " vehículos",
           "Ahora dentro · " + (aforo.entradas_hoy != null ? aforo.entradas_hoy + " entradas hoy · " : "") + "IoT municipal en vivo", "ic-teal", "map")
-      : kpi("Refresco", "60 s", "Telemetría de la plataforma en vivo", "ic-teal", "clock"));
+      : kpi("Refresco", "5 min", "Telemetría de la plataforma en vivo", "ic-teal", "clock"));
 
   pintarInfoGemelo();
 
@@ -454,6 +455,43 @@ async function renderGemelo2D(el) {
         capa.nombre + " (" + capa.items.length + ")"
       ] = g;
     });
+    /* Mediciones guardadas de la regla (persisten en la plataforma) */
+    if ((mediciones || []).length) {
+      const gMed = L.layerGroup();
+      mediciones.forEach((m) => {
+        const pts = (m.puntos || []).map((p) => [p[0], p[1]]);
+        if (pts.length < 2) return;
+        const forma = m.tipo === "poligono"
+          ? L.polygon(pts, { color: "#B25E09", weight: 2.5, fillColor: "#F9E795", fillOpacity: 0.22 })
+          : L.polyline(pts, { color: "#B25E09", weight: 2.5, dashArray: "8 5" });
+        const detalle = fmtDistancia(m.distancia_m) + (m.area_m2 != null ? " · " + fmtArea(m.area_m2) : "");
+        forma.bindTooltip(esc(m.nombre) + " · " + detalle, { sticky: true });
+        forma.bindPopup(
+          "<div style='min-width:190px'><b>" + esc(m.nombre) + "</b>" +
+          "<div style='font-size:12px'>" + (m.tipo === "poligono" ? "Perímetro: " : "Distancia: ") + fmtDistancia(m.distancia_m) + "</div>" +
+          (m.area_m2 != null ? "<div style='font-size:12px'>Área: " + fmtArea(m.area_m2) + "</div>" : "") +
+          (m.creado_por ? "<div style='font-size:11px;color:#67769A'>" + esc(m.creado_por) + "</div>" : "") +
+          "<button class='btn btn--sm' data-del-medicion='" + esc(m.id) + "' style='margin-top:6px'>Eliminar</button></div>");
+        forma.addTo(gMed);
+      });
+      gMed.addTo(mapa2d);
+      grupos["📏 Mediciones guardadas (" + mediciones.length + ")"] = gMed;
+      mapa2d.on("popupopen", (ev) => {
+        const btn = ev.popup.getElement() && ev.popup.getElement().querySelector("[data-del-medicion]");
+        if (!btn) return;
+        btn.onclick = async () => {
+          if (!confirm("¿Eliminar esta medición guardada?")) return;
+          try { await api.eliminarMedicionGemelo(btn.dataset.delMedicion); }
+          catch (e) {
+            UI.toast(e && e.status === 403 ? "Solo su autor o un perfil editor pueden eliminarla" : "No se pudo eliminar la medición");
+            return;
+          }
+          UI.toast("Medición eliminada");
+          mapa2d = null;
+          UI.rerenderD("gd-mapa");
+        };
+      });
+    }
     L.control.layers(capasBase, grupos, { collapsed: false }).addTo(mapa2d);
     instalarMedicion(mapa2d);
     if (puntos.length) mapa2d.fitBounds(L.latLngBounds(puntos).pad(0.12));
@@ -472,7 +510,7 @@ async function renderGemelo2D(el) {
     UI.rerenderD("gd-mapa");
   }, REFRESCO_MS);
   document.getElementById("gd-refresco").textContent =
-    "Última actualización: " + new Date().toLocaleTimeString("es-ES") + " · el gemelo se actualiza automáticamente cada minuto.";
+    "Última actualización: " + new Date().toLocaleTimeString("es-ES") + " · el gemelo se actualiza automáticamente cada 5 minutos.";
 }
 
 /* ================= HERRAMIENTA DE MEDICIÓN (regla geodésica) ================= */
@@ -515,7 +553,10 @@ function areaGeodesica(latlngs) {
 const ESTILO_REGLA = { color: "#C8102E", weight: 3, dashArray: "6 4" };
 
 function instalarMedicion(mapa) {
-  medicion = { mapa, activa: false, puntos: [], total: 0, grupo: L.layerGroup().addTo(mapa), guia: null, boton: null };
+  medicion = {
+    mapa, activa: false, cerrada: false, puntos: [], total: 0,
+    grupo: L.layerGroup().addTo(mapa), guia: null, boton: null, botonGuardar: null,
+  };
   const Regla = L.Control.extend({
     options: { position: "topleft" },
     onAdd() {
@@ -530,10 +571,40 @@ function instalarMedicion(mapa) {
       L.DomEvent.disableClickPropagation(div);
       L.DomEvent.on(a, "click", (e) => { L.DomEvent.stop(e); alternarMedicion(); });
       medicion.boton = a;
+      const g = L.DomUtil.create("a", "", div);
+      g.href = "#";
+      g.innerHTML = "💾";
+      g.style.fontSize = "14px";
+      g.style.display = "none";
+      g.title = "Guardar la medición en la plataforma (visible para todo el equipo)";
+      g.setAttribute("role", "button");
+      g.setAttribute("aria-label", "Guardar la medición dibujada");
+      L.DomEvent.on(g, "click", (e) => { L.DomEvent.stop(e); guardarMedicion(); });
+      medicion.botonGuardar = g;
       return div;
     },
   });
   mapa.addControl(new Regla());
+}
+
+async function guardarMedicion() {
+  if (!medicion.puntos.length) return;
+  const nombre = prompt("Nombre de la medición (p. ej. «Sendero Rodalquilar – El Playazo»):");
+  if (!nombre || nombre.trim().length < 2) return;
+  try {
+    await api.crearMedicionGemelo({
+      nombre: nombre.trim().slice(0, 150),
+      tipo: medicion.cerrada ? "poligono" : "linea",
+      puntos: medicion.puntos.map((p) => [p.lat, p.lng]),
+    });
+  } catch (e) {
+    UI.toast("No se pudo guardar la medición: " + esc((e && e.message) || e));
+    return;
+  }
+  UI.toast("Medición guardada — visible en la capa «Mediciones guardadas»");
+  limpiarMedicion();
+  mapa2d = null;
+  UI.rerenderD("gd-mapa");
 }
 
 function alternarMedicion() {
@@ -584,6 +655,7 @@ function moverMedicion(e) {
 function cerrarPoligonoMedicion() {
   const mapa = medicion.mapa;
   const pts = medicion.puntos;
+  medicion.cerrada = true;
   medicion.total += mapa.distance(pts[pts.length - 1], pts[0]);
   L.polygon(pts, { ...ESTILO_REGLA, dashArray: null, fillColor: "#C8102E", fillOpacity: 0.12 }).addTo(medicion.grupo);
   L.tooltip({ permanent: true, direction: "center", className: "" })
@@ -603,8 +675,12 @@ function finMedicion() {
   mapa.getContainer().style.cursor = "";
   setTimeout(() => mapa.doubleClickZoom.enable(), 50);
   /* La medición queda dibujada; el botón en ámbar indica que hay una regla
-     activa (el refresco automático espera hasta que se borre). */
-  if (medicion.puntos.length) medicion.boton.style.background = "#F9E795";
+     activa (el refresco automático espera hasta que se borre) y aparece la
+     opción de guardarla en la plataforma. */
+  if (medicion.puntos.length) {
+    medicion.boton.style.background = "#F9E795";
+    if (medicion.puntos.length >= 2) medicion.botonGuardar.style.display = "";
+  }
 }
 
 function limpiarMedicion() {
@@ -612,8 +688,10 @@ function limpiarMedicion() {
   medicion.grupo.clearLayers();
   medicion.puntos = [];
   medicion.total = 0;
+  medicion.cerrada = false;
   medicion.guia = null;
   medicion.boton.style.background = "";
+  medicion.botonGuardar.style.display = "none";
   document.removeEventListener("keydown", escMedicion);
 }
 

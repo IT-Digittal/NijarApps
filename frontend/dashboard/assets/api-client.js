@@ -318,6 +318,13 @@ export const api = {
   deleteCapaGemelo(codigo) {
     return _doFetch(`/geo/capas/${encodeURIComponent(codigo)}`, { method: "DELETE" });
   },
+  listMedicionesGemelo() { return _doFetch("/geo/mediciones"); },
+  crearMedicionGemelo(payload) {
+    return _doFetch("/geo/mediciones", { method: "POST", body: payload });
+  },
+  eliminarMedicionGemelo(id) {
+    return _doFetch(`/geo/mediciones/${id}`, { method: "DELETE" });
+  },
 
   // ------------------ Usuarios, roles y permisos (solo administrador_tic) ------------------
   listUsuarios() { return _doFetch("/usuarios"); },

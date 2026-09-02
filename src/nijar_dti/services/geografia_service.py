@@ -9,17 +9,28 @@ georreferenciados de la plataforma con su referencia catastral.
 from __future__ import annotations
 
 import json
+import math
+from collections.abc import Sequence
 from typing import Any
+from uuid import UUID
 
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from nijar_dti.models.geografia import CapaGeografica, ElementoGeografico, GrupoCapa
+from nijar_dti.models.geografia import (
+    CapaGeografica,
+    ElementoGeografico,
+    GrupoCapa,
+    MedicionGemelo,
+    TipoMedicion,
+)
 from nijar_dti.schemas.geografia import (
     CapaGeograficaOut,
     CapaGeograficaUpdate,
     GeoJSONFeature,
     GeoJSONFeatureCollection,
+    MedicionGemeloIn,
+    MedicionGemeloOut,
     ParcelaCatastralOut,
 )
 
@@ -191,3 +202,87 @@ async def eliminar_capa(db: AsyncSession, codigo: str) -> int:
     await db.delete(capa)
     await db.flush()
     return n
+
+
+# ---------- Mediciones guardadas de la regla del gemelo ----------
+
+_RADIO_TIERRA_M = 6371008.8  # radio medio (IUGG), el mismo que usa el frontend
+
+
+class MedicionNoEncontradaError(GeografiaError):
+    """La medición solicitada no existe."""
+
+
+class MedicionAjenaError(GeografiaError):
+    """El usuario no puede borrar una medición que no es suya."""
+
+
+def distancia_geodesica_m(puntos: Sequence[tuple[float, float]]) -> float:
+    """Distancia acumulada (haversine) de una polilínea [[lat, lon], ...]."""
+    total = 0.0
+    for (lat1, lon1), (lat2, lon2) in zip(puntos, puntos[1:], strict=False):
+        f1, f2 = math.radians(lat1), math.radians(lat2)
+        df = math.radians(lat2 - lat1)
+        dl = math.radians(lon2 - lon1)
+        a = math.sin(df / 2) ** 2 + math.cos(f1) * math.cos(f2) * math.sin(dl / 2) ** 2
+        total += 2 * _RADIO_TIERRA_M * math.asin(math.sqrt(a))
+    return total
+
+
+def area_esferica_m2(puntos: Sequence[tuple[float, float]]) -> float:
+    """Área del polígono [[lat, lon], ...] por exceso esférico (anillo cerrado)."""
+    s = 0.0
+    n = len(puntos)
+    for i in range(n):
+        lat1, lon1 = puntos[i]
+        lat2, lon2 = puntos[(i + 1) % n]
+        s += math.radians(lon2 - lon1) * (
+            2 + math.sin(math.radians(lat1)) + math.sin(math.radians(lat2))
+        )
+    return abs(s * _RADIO_TIERRA_M * _RADIO_TIERRA_M / 2)
+
+
+async def listar_mediciones(db: AsyncSession) -> list[MedicionGemeloOut]:
+    filas = (
+        (await db.execute(select(MedicionGemelo).order_by(MedicionGemelo.created_at.desc())))
+        .scalars()
+        .all()
+    )
+    return [MedicionGemeloOut.model_validate(m) for m in filas]
+
+
+async def crear_medicion(
+    db: AsyncSession, datos: MedicionGemeloIn, creado_por: str | None
+) -> MedicionGemeloOut:
+    """Guarda una medición; distancia y área se recalculan en el servidor."""
+    puntos = [(float(lat), float(lon)) for lat, lon in datos.puntos]
+    es_poligono = datos.tipo == TipoMedicion.POLIGONO.value and len(puntos) >= 3
+    distancia = distancia_geodesica_m(puntos)
+    if es_poligono:
+        distancia += distancia_geodesica_m([puntos[-1], puntos[0]])
+    medicion = MedicionGemelo(
+        nombre=datos.nombre.strip(),
+        tipo=TipoMedicion.POLIGONO if es_poligono else TipoMedicion.LINEA,
+        puntos=[[lat, lon] for lat, lon in puntos],
+        distancia_m=round(distancia, 2),
+        area_m2=round(area_esferica_m2(puntos), 2) if es_poligono else None,
+        creado_por=creado_por,
+    )
+    db.add(medicion)
+    await db.flush()
+    return MedicionGemeloOut.model_validate(medicion)
+
+
+async def eliminar_medicion(
+    db: AsyncSession, medicion_id: UUID, email: str, es_editor: bool
+) -> None:
+    """Borra una medición: su autor siempre; el resto, solo perfiles editores."""
+    medicion = (
+        await db.execute(select(MedicionGemelo).where(MedicionGemelo.id == medicion_id))
+    ).scalar_one_or_none()
+    if medicion is None:
+        raise MedicionNoEncontradaError(str(medicion_id))
+    if not es_editor and medicion.creado_por != email:
+        raise MedicionAjenaError(str(medicion_id))
+    await db.delete(medicion)
+    await db.flush()

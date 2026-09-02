@@ -123,3 +123,40 @@ class ElementoGeografico(Base, TimestampMixin):
     orden: Mapped[int] = mapped_column(Integer, default=0)
 
     __table_args__ = (Index("ix_elementos_geograficos_capa", "capa_id", "orden"),)
+
+
+class TipoMedicion(StrEnum):
+    """Forma de una medición guardada de la regla del gemelo."""
+
+    LINEA = "linea"
+    POLIGONO = "poligono"
+
+
+class MedicionGemelo(Base, TimestampMixin):
+    """Medición guardada desde la regla del Gemelo vivo 2D.
+
+    Los vértices se guardan como lista ``[[lat, lon], ...]`` en WGS84; la
+    distancia (y el área si es polígono) las calcula el backend a partir de
+    los puntos al guardar, para que el dato almacenado sea siempre coherente.
+    """
+
+    __tablename__ = "mediciones_gemelo"
+
+    id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        primary_key=True,
+        default_factory=uuid4,
+        init=False,
+    )
+
+    nombre: Mapped[str] = mapped_column(String(150))
+    tipo: Mapped[TipoMedicion] = mapped_column(String(10))
+
+    # Vértices [[lat, lon], ...] en WGS84
+    puntos: Mapped[list[Any]] = mapped_column(JSON)
+
+    distancia_m: Mapped[float] = mapped_column(Float)
+    area_m2: Mapped[float | None] = mapped_column(Float, default=None)
+
+    # Email del usuario que la guardó (para permitir que borre las suyas)
+    creado_por: Mapped[str | None] = mapped_column(String(255), default=None, index=True)
