@@ -455,20 +455,170 @@ async function renderGemelo2D(el) {
       ] = g;
     });
     L.control.layers(capasBase, grupos, { collapsed: false }).addTo(mapa2d);
+    instalarMedicion(mapa2d);
     if (puntos.length) mapa2d.fitBounds(L.latLngBounds(puntos).pad(0.12));
     setTimeout(() => mapa2d.invalidateSize(), 150);
   }, 60);
 
-  /* Refresco automático mientras la sección esté visible */
+  /* Refresco automático mientras la sección esté visible.
+     Se pausa mientras hay una medición en curso o dibujada: el refresco
+     recrea el mapa y borraría la regla del usuario. */
   if (refrescoTimer) clearInterval(refrescoTimer);
   refrescoTimer = setInterval(() => {
     const visible = document.getElementById("dv-gd-mapa");
     if (!visible || visible.style.display === "none") return;
+    if (medicion && (medicion.activa || medicion.puntos.length)) return;
     mapa2d = null;
     UI.rerenderD("gd-mapa");
   }, REFRESCO_MS);
   document.getElementById("gd-refresco").textContent =
     "Última actualización: " + new Date().toLocaleTimeString("es-ES") + " · el gemelo se actualiza automáticamente cada minuto.";
+}
+
+/* ================= HERRAMIENTA DE MEDICIÓN (regla geodésica) ================= */
+/* Medición tipo Google Earth sobre el Gemelo vivo 2D: cada clic añade un
+   vértice, la línea sigue al cursor y cada vértice muestra la distancia
+   acumulada. La distancia es geodésica real (`map.distance` = gran círculo
+   sobre las coordenadas, no píxeles de pantalla). Doble clic termina la
+   medición; cerrar sobre el primer vértice la convierte en polígono y añade
+   el área (exceso esférico); Esc o el propio botón la borran. Sin plugins:
+   solo primitivas de Leaflet, cálculo 100% local en el navegador. */
+
+let medicion = null; /* estado de la medición del mapa 2D en pantalla */
+
+function fmtDistancia(m) {
+  if (m >= 9950) return (m / 1000).toFixed(1) + " km";
+  if (m >= 995) return (m / 1000).toFixed(2) + " km";
+  return Math.round(m) + " m";
+}
+
+function fmtArea(m2) {
+  if (m2 >= 1e6) return (m2 / 1e6).toFixed(2) + " km²";
+  if (m2 >= 1e4) return (m2 / 1e4).toFixed(2) + " ha";
+  return Math.round(m2) + " m²";
+}
+
+/* Área geodésica de un anillo de LatLngs por exceso esférico (fórmula
+   estándar sobre el radio medio terrestre, la misma que usa Leaflet.draw). */
+function areaGeodesica(latlngs) {
+  const R = 6371008.8;
+  const rad = Math.PI / 180;
+  let s = 0;
+  for (let i = 0, n = latlngs.length; i < n; i++) {
+    const p1 = latlngs[i];
+    const p2 = latlngs[(i + 1) % n];
+    s += (p2.lng - p1.lng) * rad * (2 + Math.sin(p1.lat * rad) + Math.sin(p2.lat * rad));
+  }
+  return Math.abs((s * R * R) / 2);
+}
+
+const ESTILO_REGLA = { color: "#C8102E", weight: 3, dashArray: "6 4" };
+
+function instalarMedicion(mapa) {
+  medicion = { mapa, activa: false, puntos: [], total: 0, grupo: L.layerGroup().addTo(mapa), guia: null, boton: null };
+  const Regla = L.Control.extend({
+    options: { position: "topleft" },
+    onAdd() {
+      const div = L.DomUtil.create("div", "leaflet-bar");
+      const a = L.DomUtil.create("a", "", div);
+      a.href = "#";
+      a.innerHTML = "📏";
+      a.style.fontSize = "15px";
+      a.title = "Medir distancias · clic: añadir punto · doble clic: terminar · clic en el primer punto: cerrar polígono y ver área · Esc: borrar";
+      a.setAttribute("role", "button");
+      a.setAttribute("aria-label", "Medir distancias en el mapa");
+      L.DomEvent.disableClickPropagation(div);
+      L.DomEvent.on(a, "click", (e) => { L.DomEvent.stop(e); alternarMedicion(); });
+      medicion.boton = a;
+      return div;
+    },
+  });
+  mapa.addControl(new Regla());
+}
+
+function alternarMedicion() {
+  if (medicion.activa || medicion.puntos.length) { limpiarMedicion(); return; }
+  medicion.activa = true;
+  medicion.boton.style.background = "#02C39A";
+  const mapa = medicion.mapa;
+  mapa.getContainer().style.cursor = "crosshair";
+  mapa.doubleClickZoom.disable();
+  mapa.on("click", clickMedicion);
+  mapa.on("mousemove", moverMedicion);
+  mapa.on("dblclick", finMedicion);
+  document.addEventListener("keydown", escMedicion);
+}
+
+function clickMedicion(e) {
+  const mapa = medicion.mapa;
+  const pts = medicion.puntos;
+  if (pts.length) {
+    const prev = mapa.latLngToContainerPoint(pts[pts.length - 1]);
+    const aqui = mapa.latLngToContainerPoint(e.latlng);
+    if (prev.distanceTo(aqui) < 3) return; /* clic duplicado del doble clic */
+    if (pts.length >= 3) {
+      const primero = mapa.latLngToContainerPoint(pts[0]);
+      if (primero.distanceTo(aqui) < 12) { cerrarPoligonoMedicion(); return; }
+    }
+  }
+  pts.push(e.latlng);
+  const marca = L.circleMarker(e.latlng, { radius: 4.5, color: "#fff", weight: 2, fillColor: "#C8102E", fillOpacity: 1 })
+    .addTo(medicion.grupo);
+  if (pts.length > 1) {
+    medicion.total += mapa.distance(pts[pts.length - 2], pts[pts.length - 1]);
+    L.polyline([pts[pts.length - 2], pts[pts.length - 1]], ESTILO_REGLA).addTo(medicion.grupo);
+    marca.bindTooltip(fmtDistancia(medicion.total), { permanent: true, direction: "top", offset: [0, -6] }).openTooltip();
+  } else {
+    marca.bindTooltip("Inicio", { permanent: true, direction: "top", offset: [0, -6] }).openTooltip();
+  }
+}
+
+function moverMedicion(e) {
+  const pts = medicion.puntos;
+  if (!pts.length) return;
+  const tramo = [pts[pts.length - 1], e.latlng];
+  if (medicion.guia) medicion.guia.setLatLngs(tramo);
+  else medicion.guia = L.polyline(tramo, { ...ESTILO_REGLA, weight: 2, opacity: 0.6, interactive: false }).addTo(medicion.grupo);
+}
+
+function cerrarPoligonoMedicion() {
+  const mapa = medicion.mapa;
+  const pts = medicion.puntos;
+  medicion.total += mapa.distance(pts[pts.length - 1], pts[0]);
+  L.polygon(pts, { ...ESTILO_REGLA, dashArray: null, fillColor: "#C8102E", fillOpacity: 0.12 }).addTo(medicion.grupo);
+  L.tooltip({ permanent: true, direction: "center", className: "" })
+    .setLatLng(L.latLngBounds(pts).getCenter())
+    .setContent("Perímetro: " + fmtDistancia(medicion.total) + "<br>Área: " + fmtArea(areaGeodesica(pts)))
+    .addTo(medicion.grupo);
+  finMedicion();
+}
+
+function finMedicion() {
+  const mapa = medicion.mapa;
+  medicion.activa = false;
+  if (medicion.guia) { medicion.grupo.removeLayer(medicion.guia); medicion.guia = null; }
+  mapa.off("click", clickMedicion);
+  mapa.off("mousemove", moverMedicion);
+  mapa.off("dblclick", finMedicion);
+  mapa.getContainer().style.cursor = "";
+  setTimeout(() => mapa.doubleClickZoom.enable(), 50);
+  /* La medición queda dibujada; el botón en ámbar indica que hay una regla
+     activa (el refresco automático espera hasta que se borre). */
+  if (medicion.puntos.length) medicion.boton.style.background = "#F9E795";
+}
+
+function limpiarMedicion() {
+  if (medicion.activa) finMedicion();
+  medicion.grupo.clearLayers();
+  medicion.puntos = [];
+  medicion.total = 0;
+  medicion.guia = null;
+  medicion.boton.style.background = "";
+  document.removeEventListener("keydown", escMedicion);
+}
+
+function escMedicion(e) {
+  if (e.key === "Escape") limpiarMedicion();
 }
 
 /* ================= VISTA 3D DEL TERRITORIO ================= */
