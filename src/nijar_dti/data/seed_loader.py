@@ -28,6 +28,7 @@ from nijar_dti.data.seeds.admin_user import (
     direccion_password_hash,
 )
 from nijar_dti.data.seeds.campanas import generar_campanas_seed
+from nijar_dti.data.seeds.capas_geograficas import generar_capas_seed
 from nijar_dti.data.seeds.cliente import CLIENTE_SEED
 from nijar_dti.data.seeds.demo_data import (
     generar_contenidos_seed,
@@ -68,6 +69,7 @@ from nijar_dti.models.empresa_anunciante import EmpresaAnunciante
 from nijar_dti.models.evento_turistico import EventoTuristico
 from nijar_dti.models.faq import FAQ, InteraccionChatbot, NivelConfianza
 from nijar_dti.models.fuente_dato import FuenteDato
+from nijar_dti.models.geografia import CapaGeografica, ElementoGeografico
 from nijar_dti.models.incidencia import Incidencia
 from nijar_dti.models.metrica_historica import MetricaHistorica
 from nijar_dti.models.observacion import Observacion
@@ -437,14 +439,34 @@ async def seed_demo_opiniones(db: AsyncSession) -> None:
 
 
 async def seed_demo_visitas_totem(db: AsyncSession) -> None:
-    """Carga visitas de tótem de demo si no existen."""
+    """Carga visitas de tótem de demo si no existen o si envejecieron.
+
+    La predicción de afluencia (y con ella el simulador de escenarios) se
+    calcula sobre esta serie: si la última visita tiene más de una semana,
+    se completa el histórico con datos demo recientes en vez de saltar.
+    """
+    from datetime import datetime, timedelta
+
     from sqlalchemy import func as sqlfunc
 
-    count = int((await db.execute(select(sqlfunc.count()).select_from(Visita))).scalar_one() or 0)
-    if count > 0:
-        log.info("Ya hay %d visitas — saltando demo tótems", count)
+    from nijar_dti.models.visita import TipoVisita
+
+    ultima = (
+        await db.execute(
+            select(sqlfunc.max(Visita.ocurrido_en)).where(
+                Visita.tipo == TipoVisita.INTERACCION_TOTEM
+            )
+        )
+    ).scalar_one_or_none()
+    ahora = datetime.now(UTC)
+    if ultima is not None and ultima >= ahora - timedelta(days=7):
+        log.info("Visitas de tótem al día (última: %s) — saltando demo tótems", ultima)
         return
-    datos = generar_visitas_totem_seed()
+    if ultima is None:
+        datos = generar_visitas_totem_seed()
+    else:
+        # Refresco: cubrir las últimas 3 semanas con la densidad habitual (~11/día)
+        datos = generar_visitas_totem_seed(dias=21, num=240)
     for d in datos:
         db.add(Visita(**d))
     log.info("Visitas tótem demo creadas: %d", len(datos))
@@ -549,19 +571,25 @@ async def seed_campanas(db: AsyncSession) -> None:
 
 
 async def seed_demo_visitas_web_app(db: AsyncSession) -> None:
-    """Carga visitas web/app, WiFi y BLE de demo si no existen."""
+    """Carga visitas web/app, WiFi y BLE de demo si no existen o si envejecieron.
+
+    Igual que las visitas de tótem: si la última visita web tiene más de una
+    semana, se genera otra tanda (cubre los últimos 30 días) para que los
+    KPIs y predicciones de eficacia digital no se queden sin serie reciente.
+    """
+    from datetime import datetime, timedelta
+
     from sqlalchemy import func as sqlfunc
 
-    count = int(
-        (
-            await db.execute(
-                select(sqlfunc.count()).select_from(Visita).where(Visita.tipo == "web_vista")
-            )
-        ).scalar_one()
-        or 0
-    )
-    if count > 0:
-        log.info("Ya hay %d visitas web — saltando demo web/app", count)
+    from nijar_dti.models.visita import TipoVisita
+
+    ultima = (
+        await db.execute(
+            select(sqlfunc.max(Visita.ocurrido_en)).where(Visita.tipo == TipoVisita.WEB_VISTA)
+        )
+    ).scalar_one_or_none()
+    if ultima is not None and ultima >= datetime.now(UTC) - timedelta(days=7):
+        log.info("Visitas web al día (última: %s) — saltando demo web/app", ultima)
         return
     por_urn = await _recursos_por_urn(db)
     recursos_ids = list(por_urn.values())
@@ -770,6 +798,50 @@ async def seed_historico_verticales(db: AsyncSession) -> None:
     log.info("Histórico mensual de verticales creado: %d puntos", len(filas))
 
 
+async def seed_capas_geograficas(db: AsyncSession) -> None:
+    """Carga el catálogo de capas geográficas del gemelo 2D (idempotente por tabla).
+
+    Capas de demostración (concepto «geoportal de urbanismo» sobre Níjar). La
+    cartografía real del PGOU y el parcelario del Catastro se cargarán como
+    filas de estas mismas tablas cuando el Ayuntamiento la aporte.
+    """
+    if not await _tabla_vacia(db, CapaGeografica):
+        return
+    capas = 0
+    elementos = 0
+    for c in generar_capas_seed():
+        capa = CapaGeografica(
+            codigo=c["codigo"],
+            nombre=c["nombre"],
+            grupo=c["grupo"],
+            tipo_geometria=c["tipo_geometria"],
+            descripcion=c.get("descripcion"),
+            color=c.get("color", "#7C6BF0"),
+            color_borde=c.get("color_borde", "#3A2FA0"),
+            opacidad=c.get("opacidad", 0.35),
+            campo_etiqueta=c.get("campo_etiqueta"),
+            orden=c.get("orden", 0),
+            fuente=c.get("fuente"),
+        )
+        db.add(capa)
+        await db.flush()  # necesitamos capa.id para los elementos
+        for i, e in enumerate(c.get("elementos", [])):
+            db.add(
+                ElementoGeografico(
+                    capa_id=capa.id,
+                    nombre=e["nombre"],
+                    geometria=WKTElement(e["wkt"], srid=4326),
+                    codigo=e.get("codigo"),
+                    referencia_catastral=e.get("referencia_catastral"),
+                    propiedades=e.get("propiedades"),
+                    orden=i,
+                )
+            )
+            elementos += 1
+        capas += 1
+    log.info("Capas geográficas creadas: %d (%d elementos)", capas, elementos)
+
+
 async def run() -> None:
     async with AsyncSessionLocal() as db:
         try:
@@ -797,6 +869,7 @@ async def run() -> None:
             await seed_fuentes_datos(db)
             await seed_empresas_publicidad(db)
             await seed_historico_verticales(db)
+            await seed_capas_geograficas(db)
             await db.commit()
             log.info("Seeds aplicados correctamente")
         except Exception:  # noqa: BLE001

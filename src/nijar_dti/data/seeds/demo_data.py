@@ -328,10 +328,15 @@ _SECCIONES_TOTEM = ["mapa", "rutas", "playas", "eventos", "chatbot", "idioma", "
 _NUM_VISITAS_TOTEM = 80
 
 
-def generar_visitas_totem_seed() -> list[dict]:
+def generar_visitas_totem_seed(dias: int = 7, num: int | None = None) -> list[dict]:
+    """Visitas de tótem repartidas en los últimos ``dias`` días.
+
+    ``num`` permite generar más volumen al refrescar un histórico envejecido
+    manteniendo la misma densidad diaria (~11 visitas/día por defecto).
+    """
     visitas = []
-    for i in range(_NUM_VISITAS_TOTEM):
-        dias_atras = random.randint(0, 7)
+    for i in range(num if num is not None else _NUM_VISITAS_TOTEM):
+        dias_atras = random.randint(0, dias)
         horas_atras = random.randint(8, 21)  # horario diurno
         ts = _NOW - timedelta(days=dias_atras, hours=horas_atras - 12)
         visitas.append(

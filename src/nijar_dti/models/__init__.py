@@ -21,6 +21,7 @@ from nijar_dti.models.empresa_anunciante import EmpresaAnunciante, MetricaPublic
 from nijar_dti.models.evento_turistico import EventoTuristico
 from nijar_dti.models.faq import FAQ, InteraccionChatbot
 from nijar_dti.models.fuente_dato import FuenteDato
+from nijar_dti.models.geografia import CapaGeografica, ElementoGeografico
 from nijar_dti.models.incidencia import Incidencia
 from nijar_dti.models.metrica_historica import MetricaHistorica
 from nijar_dti.models.observacion import Observacion
@@ -44,12 +45,14 @@ __all__ = [
     "FAQ",
     "CamaraCCTV",
     "Campana",
+    "CapaGeografica",
     "Cliente",
     "ConsumoIA",
     "Contenedor",
     "Contenido",
     "ContextoTuristico",
     "CuadroMando",
+    "ElementoGeografico",
     "EventoTuristico",
     "FuenteDato",
     "Incidencia",
