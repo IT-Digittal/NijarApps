@@ -10,17 +10,25 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from nijar_dti.api.v1.dependencies import get_current_user
+from nijar_dti.api.v1.dependencies import get_current_user, require_roles
 from nijar_dti.core.database import get_db
+from nijar_dti.models.usuario import RolUsuario
 from nijar_dti.schemas.auth import CurrentUser
 from nijar_dti.schemas.geografia import (
     CapaGeograficaOut,
+    CapaGeograficaUpdate,
     GeoJSONFeatureCollection,
     ParcelaCatastralOut,
 )
 from nijar_dti.services import geografia_service as svc
 
 router = APIRouter()
+
+# Gestión de capas: mismo perfil editor que el resto de contenidos del panel
+_editores_capas = require_roles(
+    RolUsuario.ADMINISTRADOR_TIC.value,
+    RolUsuario.GESTOR_CONTENIDOS.value,
+)
 
 
 @router.get(
@@ -29,10 +37,46 @@ router = APIRouter()
     summary="Catálogo de capas geográficas del gemelo 2D",
 )
 async def listar_capas(
+    incluir_inactivas: bool = Query(
+        False, description="Incluir capas desactivadas (vista de gestión)"
+    ),
     db: AsyncSession = Depends(get_db),
     user: CurrentUser = Depends(get_current_user),
 ) -> list[CapaGeograficaOut]:
-    return await svc.listar_capas(db)
+    return await svc.listar_capas(db, solo_activas=not incluir_inactivas)
+
+
+@router.put(
+    "/capas/{codigo}",
+    response_model=CapaGeograficaOut,
+    summary="Editar estilo, orden y visibilidad de una capa",
+)
+async def actualizar_capa(
+    codigo: str,
+    cambios: CapaGeograficaUpdate,
+    db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(_editores_capas),
+) -> CapaGeograficaOut:
+    try:
+        return await svc.actualizar_capa(db, codigo, cambios)
+    except svc.CapaNoEncontradaError as exc:
+        raise HTTPException(status_code=404, detail=f"Capa '{codigo}' no encontrada") from exc
+
+
+@router.delete(
+    "/capas/{codigo}",
+    summary="Eliminar una capa y todos sus elementos",
+)
+async def eliminar_capa(
+    codigo: str,
+    db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(_editores_capas),
+) -> dict[str, int | str]:
+    try:
+        n = await svc.eliminar_capa(db, codigo)
+    except svc.CapaNoEncontradaError as exc:
+        raise HTTPException(status_code=404, detail=f"Capa '{codigo}' no encontrada") from exc
+    return {"codigo": codigo, "elementos_eliminados": n}
 
 
 @router.get(

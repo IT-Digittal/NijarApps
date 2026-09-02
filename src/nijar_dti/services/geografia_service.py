@@ -11,12 +11,13 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from nijar_dti.models.geografia import CapaGeografica, ElementoGeografico, GrupoCapa
 from nijar_dti.schemas.geografia import (
     CapaGeograficaOut,
+    CapaGeograficaUpdate,
     GeoJSONFeature,
     GeoJSONFeatureCollection,
     ParcelaCatastralOut,
@@ -147,3 +148,46 @@ async def parcela_en_punto(
         propiedades=dict(props or {}),
         geometry=_geojson(geojson),
     )
+
+
+async def _capa_por_codigo(db: AsyncSession, codigo: str) -> CapaGeografica:
+    capa = (
+        await db.execute(select(CapaGeografica).where(CapaGeografica.codigo == codigo))
+    ).scalar_one_or_none()
+    if capa is None:
+        raise CapaNoEncontradaError(codigo)
+    return capa
+
+
+async def _n_elementos(db: AsyncSession, capa: CapaGeografica) -> int:
+    return int(
+        (
+            await db.execute(
+                select(func.count())
+                .select_from(ElementoGeografico)
+                .where(ElementoGeografico.capa_id == capa.id)
+            )
+        ).scalar_one()
+        or 0
+    )
+
+
+async def actualizar_capa(
+    db: AsyncSession, codigo: str, cambios: CapaGeograficaUpdate
+) -> CapaGeograficaOut:
+    """Actualiza estilo, orden y visibilidad de una capa (no su geometría)."""
+    capa = await _capa_por_codigo(db, codigo)
+    for campo, valor in cambios.model_dump(exclude_unset=True).items():
+        setattr(capa, campo, valor)
+    await db.flush()
+    return _capa_out(capa, await _n_elementos(db, capa))
+
+
+async def eliminar_capa(db: AsyncSession, codigo: str) -> int:
+    """Elimina una capa y todos sus elementos. Devuelve cuántos elementos borró."""
+    capa = await _capa_por_codigo(db, codigo)
+    n = await _n_elementos(db, capa)
+    await db.execute(delete(ElementoGeografico).where(ElementoGeografico.capa_id == capa.id))
+    await db.delete(capa)
+    await db.flush()
+    return n

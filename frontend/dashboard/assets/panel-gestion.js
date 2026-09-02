@@ -839,6 +839,94 @@ function kv(k, v) {
   return '<div class="kv"><span class="k">' + esc(k) + '</span><span class="v">' + (v == null || v === "" ? "—" : v) + "</span></div>";
 }
 
+/* ================= CAPAS GEOGRÁFICAS DEL GEMELO (geoportal) ================= */
+/* Autogestión de las capas vectoriales del Gemelo vivo 2D: estilo, orden y
+   visibilidad. La geometría se carga/reemplaza desde fichero con el comando
+   `python -m nijar_dti.data.cargar_capa` (ver tarjeta informativa). */
+
+const GRUPOS_CAPA = { planeamiento: "Planeamiento", catastro: "Catastro", clasificacion: "Clasificación", otras: "Otras" };
+
+async function renderCapasGemelo(el) {
+  cargando(el, "Capas del gemelo");
+  let capas;
+  try { capas = await api.listCapasGemelo(); }
+  catch (e) { return errorCarga(el, "Capas del gemelo", e); }
+  const rw = puedeEscribir();
+
+  const filas = capas.map((c, i) => {
+    const swatch = '<span style="display:inline-block;width:14px;height:14px;border-radius:3px;vertical-align:-2px;margin-right:8px;background:' +
+      esc(c.color) + ";border:2px solid " + esc(c.color_borde) + ';opacity:.85"></span>';
+    const acciones = rw
+      ? '<div class="chip-row">' +
+        '<button class="btn btn--sm" data-g="edit-capa" data-i="' + i + '">Editar</button>' +
+        '<button class="btn btn--sm" data-g="tog-capa" data-i="' + i + '">' + (c.activa ? "Desactivar" : "Activar") + "</button>" +
+        '<button class="btn btn--sm btn--ghost" data-g="del-capa" data-i="' + i + '">Eliminar</button></div>'
+      : "";
+    return '<tr><td style="white-space:normal;min-width:220px;font-weight:600">' + swatch + esc(c.nombre) +
+      '<div class="mini" style="font-weight:400;color:var(--muted)">' + esc(c.codigo) + "</div></td>" +
+      '<td class="mini">' + esc(GRUPOS_CAPA[c.grupo] || c.grupo) + '</td><td class="mini">' + esc(c.tipo_geometria) + "</td>" +
+      '<td class="mini tnum">' + c.n_elementos + '</td><td class="mini" style="white-space:normal">' + esc(c.fuente || "—") + "</td>" +
+      "<td>" + (c.activa ? '<span class="bdg bdg-ok">visible</span>' : '<span class="bdg bdg-mut">oculta</span>') + "</td>" +
+      "<td>" + acciones + "</td></tr>";
+  }).join("");
+
+  el.innerHTML = gsub("Capas del gemelo", "Capas del gemelo 2D (geoportal)",
+    "Cartografía por áreas del Gemelo vivo 2D: planeamiento, catastro y clasificación del suelo. Desde aquí se gestiona el estilo, el orden y la visibilidad de cada capa; la geometría se carga desde fichero.",
+    "") +
+    '<div class="grid g4" style="margin-bottom:16px">' +
+    kpi("Capas", capas.length, "En el catálogo del geoportal", "ic-navy", "map") +
+    kpi("Visibles", capas.filter((c) => c.activa).length, "Aparecen en el control del mapa", "ic-ok", "chart") +
+    kpi("Elementos", capas.reduce((s, c) => s + (c.n_elementos || 0), 0), "Áreas y rasgos vectoriales", "ic-teal", "box") +
+    kpi("Grupos", new Set(capas.map((c) => c.grupo)).size, "Temáticas en uso", "ic-gold", "folder") + "</div>" +
+    '<div class="card card--pad0"><div style="padding:16px 16px 4px" class="card__h"><div><div class="card__t">Capas</div><div class="card__s">' +
+    (rw ? "Los cambios se reflejan en el Gemelo vivo 2D al recargarlo" : "Tu rol solo permite consulta") + "</div></div></div>" +
+    '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Capa</th><th>Grupo</th><th>Geometría</th><th>Elementos</th><th>Fuente</th><th>Estado</th><th></th></tr></thead><tbody>' +
+    (filas || '<tr><td colspan="7" class="mini" style="text-align:center;padding:20px">Sin capas cargadas</td></tr>') +
+    "</tbody></table></div></div>" +
+    '<div class="card" style="margin-top:16px"><div class="card__h"><div><div class="card__t">Cargar cartografía (geometría)</div>' +
+    '<div class="card__s">La geometría de cada capa se carga o reemplaza desde un fichero GeoJSON con el comando de importación, en el servidor:</div></div></div>' +
+    '<pre class="mini" style="background:var(--bg);padding:10px 12px;border-radius:8px;overflow-x:auto;margin:8px 0 4px">python -m nijar_dti.data.cargar_capa fichero.geojson --codigo pgou_clasificacion \\\n' +
+    '    --nombre "Clasificación del suelo" --grupo clasificacion --fuente "PGOU vigente" [--reemplazar]</pre>' +
+    '<div class="mini" style="color:var(--muted)">Acepta GeoJSON (FeatureCollection). Otros formatos (Shapefile, DXF) se convierten antes con ogr2ogr. «--reemplazar» sustituye los elementos existentes de la capa — p. ej. para cambiar las áreas de demostración por el planeamiento real.</div></div>';
+
+  if (!rw) return;
+  el.querySelectorAll("[data-g$='-capa']").forEach((b) => {
+    const c = capas[Number(b.dataset.i)];
+    if (b.dataset.g === "edit-capa") b.onclick = () => abrirForm('Editar capa «' + c.nombre + '»',
+      campo("Nombre", '<input name="nombre" required minlength="2" maxlength="150" value="' + esc(c.nombre) + '" ' + INPUT_CSS + ">") +
+      campo("Descripción", '<textarea name="descripcion" rows="2" maxlength="2000" ' + INPUT_CSS + ">" + esc(c.descripcion || "") + "</textarea>") +
+      campo("Color de relleno", '<input name="color" type="color" value="' + esc((c.color || "#7C6BF0").slice(0, 7)) + '" ' + INPUT_CSS + ">") +
+      campo("Color de borde", '<input name="color_borde" type="color" value="' + esc((c.color_borde || "#3A2FA0").slice(0, 7)) + '" ' + INPUT_CSS + ">") +
+      campo("Opacidad del relleno (0–1)", '<input name="opacidad" type="number" min="0" max="1" step="0.05" value="' + c.opacidad + '" ' + INPUT_CSS + ">") +
+      campo("Propiedad usada como etiqueta", '<input name="campo_etiqueta" maxlength="80" value="' + esc(c.campo_etiqueta || "") + '" ' + INPUT_CSS + ">") +
+      campo("Orden en el control de capas", '<input name="orden" type="number" min="0" max="999" value="' + c.orden + '" ' + INPUT_CSS + ">"),
+      async (fd) => {
+        await api.updateCapaGemelo(c.codigo, {
+          nombre: fd.get("nombre").trim(),
+          descripcion: fd.get("descripcion").trim() || null,
+          color: fd.get("color"),
+          color_borde: fd.get("color_borde"),
+          opacidad: Number(fd.get("opacidad")),
+          campo_etiqueta: fd.get("campo_etiqueta").trim() || null,
+          orden: Number(fd.get("orden")),
+        });
+        UI.toast("Capa actualizada");
+        UI.rerenderD("g-capas");
+      });
+    if (b.dataset.g === "tog-capa") b.onclick = async () => {
+      await api.updateCapaGemelo(c.codigo, { activa: !c.activa });
+      UI.toast(c.activa ? "Capa oculta del gemelo" : "Capa visible en el gemelo");
+      UI.rerenderD("g-capas");
+    };
+    if (b.dataset.g === "del-capa") b.onclick = async () => {
+      if (!confirm('¿Eliminar la capa «' + c.nombre + '» y sus ' + c.n_elementos + " elementos? Esta acción no se puede deshacer.")) return;
+      await api.deleteCapaGemelo(c.codigo);
+      UI.toast("Capa eliminada");
+      UI.rerenderD("g-capas");
+    };
+  });
+}
+
 /* ================= MÓDULO ADMINISTRACIÓN (nivel superior, solo admin) ================= */
 /* "Usuarios y permisos" y "Matriz de permisos" viven aquí, como un módulo más
    del lanzador (junto a las verticales), no dentro de la consola DTI. La tarjeta
@@ -1246,6 +1334,7 @@ const SECCIONES = [
   { id: "g-publicidad", n: "Publicidad · Empresas", i: "box", r: renderPublicidad },
   { id: "g-faqs", n: "FAQs del chatbot", i: "chat", r: renderFaqs },
   { id: "g-cliente", n: "Ficha del cliente", i: "folder", r: renderCliente },
+  { id: "g-capas", n: "Capas del gemelo", i: "map", r: renderCapasGemelo },
   { id: "g-prediccion", n: "Predicción de afluencia", i: "chart", r: renderPrediccion },
   { id: "g-ia", n: "Consumo de IA", i: "chat", r: renderConsumoIA },
   { id: "g-config", n: "Configuración", i: "gear", r: renderConfig },

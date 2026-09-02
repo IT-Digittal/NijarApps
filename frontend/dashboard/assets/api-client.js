@@ -310,6 +310,15 @@ export const api = {
     return _doFetch(`/publicidad/${id}`, { method: "DELETE" });
   },
 
+  // ------------------ Capas geográficas del gemelo 2D (geoportal) ------------------
+  listCapasGemelo() { return _doFetch("/geo/capas?incluir_inactivas=true"); },
+  updateCapaGemelo(codigo, payload) {
+    return _doFetch(`/geo/capas/${encodeURIComponent(codigo)}`, { method: "PUT", body: payload });
+  },
+  deleteCapaGemelo(codigo) {
+    return _doFetch(`/geo/capas/${encodeURIComponent(codigo)}`, { method: "DELETE" });
+  },
+
   // ------------------ Usuarios, roles y permisos (solo administrador_tic) ------------------
   listUsuarios() { return _doFetch("/usuarios"); },
   invitarUsuario(payload) {

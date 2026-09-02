@@ -29,6 +29,24 @@ class CapaGeograficaOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class CapaGeograficaUpdate(BaseModel):
+    """Cambios editables de una capa desde el panel (estilo y visibilidad).
+
+    La geometría no se edita por aquí: se carga o reemplaza desde fichero con
+    el comando ``python -m nijar_dti.data.cargar_capa``.
+    """
+
+    nombre: str | None = Field(default=None, min_length=2, max_length=150)
+    descripcion: str | None = Field(default=None, max_length=2000)
+    color: str | None = Field(default=None, pattern=r"^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$")
+    color_borde: str | None = Field(default=None, pattern=r"^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$")
+    opacidad: float | None = Field(default=None, ge=0.0, le=1.0)
+    campo_etiqueta: str | None = Field(default=None, max_length=80)
+    orden: int | None = Field(default=None, ge=0, le=999)
+    activa: bool | None = None
+    fuente: str | None = Field(default=None, max_length=255)
+
+
 class GeoJSONFeature(BaseModel):
     """Rasgo GeoJSON estándar (RFC 7946)."""
 
