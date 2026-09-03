@@ -331,3 +331,8 @@ RECURSOS_SEED: list[dict] = [
         "publicado": True,
     },
 ]
+
+# Red oficial de senderos de turismonijar.es (S01–S16 + Camino Argar Sureste)
+from nijar_dti.data.seeds.senderos import SENDEROS_SEED  # noqa: E402
+
+RECURSOS_SEED.extend(SENDEROS_SEED)

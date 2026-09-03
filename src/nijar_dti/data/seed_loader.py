@@ -46,6 +46,7 @@ from nijar_dti.data.seeds.fuentes_datos import FUENTES_DATOS_SEED
 from nijar_dti.data.seeds.historico_verticales import generar_historico_seed
 from nijar_dti.data.seeds.publicidad import EMPRESAS_SEED
 from nijar_dti.data.seeds.recursos_turisticos import RECURSOS_SEED
+from nijar_dti.data.seeds.senderos import RECURSOS_SUSTITUIDOS
 from nijar_dti.data.seeds.sensores import SENSORES_SEED
 from nijar_dti.data.seeds.verticales import (
     COORDS_CAMARAS,
@@ -202,19 +203,34 @@ async def seed_recursos(db: AsyncSession) -> None:
             ubicacion=_wkt(r["lon"], r["lat"]),  # type: ignore[arg-type]
             municipio="Níjar",
             telefono=r.get("telefono"),
+            web=r.get("web"),
             horario=r.get("horario"),
             servicios_disponibles=r.get("servicios_disponibles"),
             etiquetas=r.get("etiquetas"),
+            enlaces_externos=r.get("enlaces_externos"),
+            metadata_adicional=r.get("metadata_adicional"),
             activo=True,
             publicado=r.get("publicado", False),
         )
         db.add(obj)
         creados += 1
+    # Recursos antiguos cuyo contenido sustituye una ficha oficial nueva: se
+    # despublican (nunca se borran) para no duplicar el mismo sendero.
+    despublicados = 0
+    for urn in RECURSOS_SUSTITUIDOS:
+        antiguo = (
+            await db.execute(select(RecursoTuristico).where(RecursoTuristico.urn == urn))
+        ).scalar_one_or_none()
+        if antiguo is not None and antiguo.publicado:
+            antiguo.publicado = False
+            despublicados += 1
     log.info(
-        "Recursos turísticos creados: %d · traducciones: %d · coordenadas corregidas: %d",
+        "Recursos turísticos creados: %d · traducciones: %d · coordenadas corregidas: %d"
+        " · sustituidos despublicados: %d",
         creados,
         traducciones_actualizadas,
         coordenadas_actualizadas,
+        despublicados,
     )
 
 
