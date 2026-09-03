@@ -118,6 +118,10 @@ class Settings(BaseSettings):
     openai_timeout_seconds: int = 15
     openai_max_tokens: int = 400
 
+    # --- Voz del chatbot en el tótem (OpenAI TTS; usa la misma API key) ---
+    openai_tts_model: str = "gpt-4o-mini-tts"
+    openai_tts_voice: str = "nova"
+
     # --- Contexto histórico (backfill fuentes públicas INE/Junta/AENA) ---
     contexto_backfill_dry_run: bool = True  # True = series sintéticas sin llamar a APIs
     contexto_backfill_anios: int = 3

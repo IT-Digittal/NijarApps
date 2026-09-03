@@ -1193,20 +1193,73 @@ async function askChatbot(message) {
     pensando.appendChild(sug);
   }
   $("#chatbot-output").textContent = lastAnswer;   /* lector de pantalla */
-  if ("speechSynthesis" in window) {
-    speakBtn.classList.remove("is-hidden");
-    hablar(lastAnswer);
-  }
+  /* La voz del servidor no depende de speechSynthesis: se ofrece siempre */
+  speakBtn.classList.remove("is-hidden");
+  hablar(lastAnswer);
   pensando.parentElement.scrollIntoView({ behavior: "smooth", block: "end" });
   resetIdle();
 }
 
 // --- Texto a voz (TTS) ---
-function hablar(texto) {
+// Primero la voz neuronal del backend (/chatbot/tts, acento natural); si el
+// servidor no la tiene configurada o falla, se degrada a la mejor voz del
+// navegador disponible (evitando la voz robótica de eSpeak si hay otra).
+let ttsAudio = null;
+
+async function hablar(texto) {
+  pararVoz();
+  if (await hablarServidor(texto)) return;
+  hablarNavegador(texto);
+}
+
+function pararVoz() {
+  try { window.speechSynthesis?.cancel(); } catch { /* sin TTS de navegador */ }
+  if (ttsAudio) { ttsAudio.pause(); ttsAudio = null; }
+}
+
+async function hablarServidor(texto) {
   try {
-    window.speechSynthesis.cancel();
+    const res = await fetch(`${API_BASE}/chatbot/tts`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ texto: texto.slice(0, 800), idioma: currentLang, canal: "totem" }),
+    });
+    if (!res.ok) return false;
+    const blob = await res.blob();
+    ttsAudio = new Audio(URL.createObjectURL(blob));
+    ttsAudio.addEventListener("ended", () => { if (ttsAudio) URL.revokeObjectURL(ttsAudio.src); });
+    await ttsAudio.play();
+    return true;
+  } catch { return false; }
+}
+
+function mejorVoz(locale) {
+  const voces = window.speechSynthesis.getVoices() || [];
+  const idioma = locale.slice(0, 2);
+  const candidatas = voces.filter((v) => (v.lang || "").toLowerCase().startsWith(idioma));
+  if (!candidatas.length) return null;
+  // Preferencia: voces neuronales del sistema/navegador antes que eSpeak
+  const rango = (v) => {
+    const n = (v.name || "").toLowerCase();
+    if (n.includes("google")) return 0;
+    if (n.includes("microsoft") || n.includes("natural")) return 1;
+    if (n.includes("espeak") || n.includes("robot")) return 9;
+    return 5;
+  };
+  candidatas.sort((a, b) => rango(a) - rango(b) ||
+    ((b.lang || "").toLowerCase() === locale.toLowerCase() ? 1 : 0) -
+    ((a.lang || "").toLowerCase() === locale.toLowerCase() ? 1 : 0));
+  return candidatas[0];
+}
+
+function hablarNavegador(texto) {
+  try {
+    const locale = VOICE_LOCALE[currentLang] || "es-ES";
     const u = new SpeechSynthesisUtterance(texto);
-    u.lang = VOICE_LOCALE[currentLang] || "es-ES";
+    u.lang = locale;
+    const voz = mejorVoz(locale);
+    if (voz) u.voice = voz;
+    u.rate = 0.95;
     window.speechSynthesis.speak(u);
   } catch { /* TTS no disponible */ }
 }

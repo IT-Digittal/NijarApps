@@ -22,6 +22,9 @@ PRECIOS_USD_POR_MILLON: dict[str, tuple[float, float]] = {
     "gpt-4o": (2.50, 10.00),
     "gpt-4.1-mini": (0.40, 1.60),
     "gpt-4.1": (2.00, 8.00),
+    # TTS: se registra solo la entrada de texto (la salida de audio se factura
+    # aparte por tokens de audio, que la API no devuelve en la respuesta)
+    "gpt-4o-mini-tts": (0.60, 12.00),
 }
 PRECIO_DEFECTO = (0.50, 1.50)
 

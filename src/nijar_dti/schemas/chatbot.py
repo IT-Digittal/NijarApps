@@ -16,6 +16,14 @@ class ChatQueryIn(BaseModel):
     contexto: dict | None = None
 
 
+class TTSIn(BaseModel):
+    """Petición de síntesis de voz de una respuesta del asistente."""
+
+    texto: str = Field(..., min_length=1, max_length=800)
+    idioma: str = Field("es", pattern=r"^(es|en|de|fr)$")
+    canal: str = Field("totem", pattern=r"^(web|app|totem)$")
+
+
 class FuenteRespuesta(BaseModel):
     tipo: str
     referencia: str

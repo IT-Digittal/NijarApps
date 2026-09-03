@@ -1044,9 +1044,12 @@ dialog.tt-poidialog { overflow-y: auto; overscroll-behavior: contain; }
 .tt-chat-mic svg, .tt-chat-send svg { width: 26px; height: 26px; }
 
 /* ================= MAPA ================= */
-.tt-mapbox { height: calc(100vh - var(--thead-h) - 120px); min-height: 480px; background: #BFE3EE; }
+/* z-index:0 crea un contexto de apilamiento propio: los panes internos de
+   Leaflet (z-index 400-700) quedan confinados y no pueden tapar la ficha
+   inferior (.tt-mapsheet), que antes se abría invisible bajo el mapa. */
+.tt-mapbox { height: calc(100vh - var(--thead-h) - 120px); min-height: 480px; background: #BFE3EE; position: relative; z-index: 0; }
 .tt-mapsheet {
-  position: fixed; left: 16px; right: 16px; bottom: 16px; z-index: 120;
+  position: fixed; left: 16px; right: 16px; bottom: 16px; z-index: 500;
   background: var(--card); border-radius: var(--r); box-shadow: var(--sh-lg);
   padding: 22px 24px;
 }
