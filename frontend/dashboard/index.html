@@ -1148,7 +1148,7 @@ RENDER.mapa=function(el){
   var h=subhead("Mapa operativo","Mapa de la red de alumbrado",
    "Vista geoespacial simulada del término municipal. Activa capas, pulsa cualquier punto para abrir su ficha y actúa directamente desde el mapa.",
    '<button class="btn" onclick="UI.addToReport(\'Captura de mapa operativo\')">'+icon("doc")+' Añadir a informe</button>'+
-   '<button class="btn btn--pri" onclick="UI.toast(\'En producción: cartografía GIS (Leaflet) con ortofoto PNOA\')">'+icon("map")+' Vista GIS</button>');
+   '<button class="btn btn--pri" onclick="UI.goD(\'gd-mapa\')" title="Abre el Gemelo vivo 2D: activa la capa «Alumbrado · puntos de luz» en el control de capas">'+icon("map")+' Vista GIS (Gemelo 2D)</button>');
   h+='<div class="grid c8-4">';
   h+='<div class="card card--pad0"><div class="mapbox" id="mapbox"></div></div>';
   h+='<div><div class="card" style="margin-bottom:14px"><div class="card__t" style="margin-bottom:12px">Capas</div><div class="layerlist">'+
@@ -3835,7 +3835,7 @@ X.renderHome();
 <!-- Alertas, visitantes, integraciones e informes con datos reales -->
 <script type="module" src="./assets/panel-extra.js?v=1"></script>
 <!-- Gemelo digital del destino (Fase 1): mapa vivo 2D + vista 3D del territorio -->
-<script type="module" src="./assets/panel-gemelo.js?v=5"></script>
+<script type="module" src="./assets/panel-gemelo.js?v=6"></script>
 <!-- Correcciones de accesibilidad (axe-core · WCAG 2.1 AA): contraste de
      contadores y nombre accesible de los filtros generados por JS. -->
 <style>

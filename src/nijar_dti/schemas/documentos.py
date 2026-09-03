@@ -12,6 +12,7 @@ TIPOS_ENTIDAD_VALIDOS = {
     "recurso",
     "sensor",
     "cuadro",
+    "luminaria",
     "contenedor",
     "movilidad",
     "camara",

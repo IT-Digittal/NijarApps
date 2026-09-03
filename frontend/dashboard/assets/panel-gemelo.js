@@ -121,6 +121,15 @@ async function cargarActivos() {
       (d) => (d.items || []).map((s) => ({ nombre: s.nombre, estado: s.estado, extra: s.tipo, obj: s }))],
     alumbrado: ["/verticales/alumbrado/cuadros", "#F0B429", "Alumbrado · cuadros",
       (d) => (d.items || d || []).map((c) => ({ nombre: c.nombre || c.codigo, estado: c.estado, extra: (c.circuitos != null ? c.circuitos + " circuitos" : ""), obj: c }))],
+    /* Inventario completo de puntos de luz. Apagada por defecto (≈1.240
+       marcadores); se enciende desde el control de capas. */
+    luminarias: [() => cargarPaginado("/verticales/alumbrado/luminarias"), "#F7C948", "Alumbrado · puntos de luz",
+      (d) => (d.items || []).map((l) => ({
+        nombre: l.codigo,
+        estado: l.estado,
+        extra: String(l.tecnologia || "").toUpperCase() + " · " + l.potencia_w + " W" + (l.direccion ? " · " + l.direccion : ""),
+        obj: l,
+      })), { apagada: true, radio: 5 }],
     residuos: [() => cargarPaginado("/verticales/residuos/contenedores"), "#7B5A3A", "Residuos · contenedores",
       (d) => (d.items || d || []).map((c) => ({ nombre: c.codigo || c.nombre, estado: c.estado, extra: (c.llenado_pct != null ? "llenado " + c.llenado_pct + "%" : c.fraccion), obj: c }))],
     movilidad: ["/verticales/movilidad/puntos", "#7C6BF0", "Movilidad",
@@ -154,14 +163,14 @@ async function cargarActivos() {
   }));
   const capas = [];
   claves.forEach((k, i) => {
-    const [, color, nombre, mapear] = fuentes[k];
+    const [, color, nombre, mapear, opts] = fuentes[k];
     let items = [];
     if (res[i].status === "fulfilled" && res[i].value) {
       items = mapear(res[i].value)
         .map((a) => ({ ...a, ll: coordsGeoJSON(a.obj), sem: estadoDe(a.estado) }))
         .filter((a) => a.ll);
     }
-    capas.push({ id: k, nombre, color, items, disponible: res[i].status === "fulfilled" });
+    capas.push({ id: k, nombre, color, items, disponible: res[i].status === "fulfilled", ...(opts || {}) });
   });
   return capas;
 }
@@ -195,8 +204,9 @@ function popupFeature(capa, props) {
 
 /* Tipo de entidad (API de documentos) por capa del gemelo */
 const TIPO_DOC_POR_CAPA = {
-  turismo: "recurso", sensores: "sensor", alumbrado: "cuadro", residuos: "contenedor",
-  movilidad: "movilidad", seguridad: "camara", banderas: "bandera", aire: "estacion_aire",
+  turismo: "recurso", sensores: "sensor", alumbrado: "cuadro", luminarias: "luminaria",
+  residuos: "contenedor", movilidad: "movilidad", seguridad: "camara", banderas: "bandera",
+  aire: "estacion_aire",
 };
 
 function idEntidad(a) {
@@ -443,13 +453,13 @@ async function renderGemelo2D(el) {
       if (!capa.disponible) return; /* fuente no configurada o caída: no listar la capa */
       const g = L.layerGroup();
       capa.items.forEach((a) => {
-        puntos.push(a.ll);
+        if (!capa.apagada) puntos.push(a.ll);
         L.circleMarker(a.ll, {
-          radius: 8, weight: 2.5, color: "#fff",
+          radius: capa.radio || 8, weight: capa.radio ? 1.5 : 2.5, color: "#fff",
           fillColor: a.sem === "ok" ? capa.color : COLOR_ESTADO[a.sem], fillOpacity: 1,
         }).bindPopup(popupActivo(capa, a, docs)).addTo(g);
       });
-      g.addTo(mapa2d);
+      if (!capa.apagada) g.addTo(mapa2d); /* las capas voluminosas arrancan apagadas */
       grupos[
         '<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:' + capa.color + ';margin-right:4px"></span>' +
         capa.nombre + " (" + capa.items.length + ")"
