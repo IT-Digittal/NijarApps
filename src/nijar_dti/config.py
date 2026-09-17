@@ -122,6 +122,9 @@ class Settings(BaseSettings):
     openai_tts_model: str = "gpt-4o-mini-tts"
     openai_tts_voice: str = "nova"
 
+    # --- Mediciones de cobertura (G-NetTrack): token opcional para los endpoints ---
+    cobertura_token: str = ""
+
     # --- Contexto histórico (backfill fuentes públicas INE/Junta/AENA) ---
     contexto_backfill_dry_run: bool = True  # True = series sintéticas sin llamar a APIs
     contexto_backfill_anios: int = 3
