@@ -22,7 +22,9 @@ dependencies = [
     "pydantic-settings>=2.2.0",
     "email-validator>=2.1.0",
     # Database (async)
-    "sqlalchemy[asyncio]>=2.0.25",
+    # <2.1: la 2.1 exige que los mixins de dataclasses sean MappedAsDataclass
+    # (rompe TimestampMixin/AuditMixin al importar los modelos) y cambia el tipado.
+    "sqlalchemy[asyncio]>=2.0.25,<2.1",
     "asyncpg>=0.29.0",
     "alembic>=1.13.0",
     "geoalchemy2>=0.14.0",  # PostGIS support
