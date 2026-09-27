@@ -137,6 +137,19 @@ class Settings(BaseSettings):
     thingsboard_password: str = ""
     thingsboard_timeout_seconds: int = 12
 
+    # --- Residuos y limpieza viaria: siGEUS (Plataforma Distromel, contrata RSU) ---
+    # Acceso de lectura al backend de https://web.sigeus.net. Sin usuario y
+    # contraseña, la fuente FD-116 sigue «pendiente de acceso» y no se llama.
+    # application_code «0005» y customer/site «-1» (los del usuario) son los
+    # valores que usa el propio panel; solo cambian si Distromel lo indica.
+    sigeus_base_url: str = "https://api.sigeus.net"
+    sigeus_usuario: str = ""
+    sigeus_password: str = ""
+    sigeus_application_code: str = "0005"
+    sigeus_customer_code: int = -1
+    sigeus_site_code: int = -1
+    sigeus_timeout_seconds: int = 12
+
     # --- Gemelo digital: red Bettair de calidad del aire y meteo (OAuth2) ---
     # client_id/client_secret = «app password» generado en cloud.bettair.city.
     bettair_base_url: str = "https://api.v3.bettair.city"

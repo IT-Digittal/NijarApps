@@ -796,12 +796,18 @@ async def seed_empresas_publicidad(db: AsyncSession) -> None:
 
 
 async def seed_fuentes_datos(db: AsyncSession) -> None:
-    """Carga el catálogo de fuentes de datos e integraciones (idempotente)."""
-    if not await _tabla_vacia(db, FuenteDato):
-        return
-    for f in FUENTES_DATOS_SEED:
+    """Carga el catálogo de fuentes de datos e integraciones (idempotente por código).
+
+    Añade las fuentes del seed cuyo ``codigo`` no exista todavía, de modo que un
+    despliegue ya sembrado incorpora las nuevas (p. ej. FD-116 siGEUS) sin tocar
+    las existentes ni sus estados editados.
+    """
+    existentes = set((await db.execute(select(FuenteDato.codigo))).scalars().all())
+    nuevas = [f for f in FUENTES_DATOS_SEED if f["codigo"] not in existentes]
+    for f in nuevas:
         db.add(FuenteDato(**f))
-    log.info("Fuentes de datos / integraciones creadas: %d", len(FUENTES_DATOS_SEED))
+    if nuevas:
+        log.info("Fuentes de datos / integraciones creadas: %d", len(nuevas))
 
 
 async def seed_historico_verticales(db: AsyncSession) -> None:

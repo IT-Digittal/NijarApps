@@ -13,6 +13,7 @@ class EstadoGemelo(BaseModel):
     thingsboard_configurado: bool
     bettair_configurado: bool = False
     openmeteo_disponible: bool = True  # fuente pública, siempre disponible
+    sigeus_configurado: bool = False  # RSU y limpieza viaria (Distromel)
 
 
 class MeteoDiaOut(BaseModel):

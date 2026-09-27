@@ -59,6 +59,7 @@ Para completar la integración real y la puesta en producción:
 | FD-113 | RGPD y seguridad | Contacto del DPD, política de privacidad, conformidad DPIA de movilidad y ventana de pentest |
 | FD-114 | Tótems (camino crítico) | Ubicaciones aprobadas, autorizaciones (Parque Natural y vía pública) y acometidas eléctricas/datos |
 | FD-115 | Formularios y encuestas ciudadanas | Criterios del Ayuntamiento para las encuestas de la web |
+| FD-116 | **Residuos y limpieza viaria — siGEUS (Distromel)** | **Usuario técnico de solo lectura sin 2FA** del panel `web.sigeus.net` (+ códigos de explotación si hay varias) — conector hecho, ver [runbook](runbook-sigeus-distromel.md) |
 
 ---
 

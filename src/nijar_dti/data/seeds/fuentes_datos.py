@@ -416,6 +416,39 @@ FUENTES_DATOS_SEED: list[dict] = [
         "kpis_asociados": ["despliegue de tótems"],
     },
     {
+        "codigo": "FD-116",
+        "nombre": "Residuos y limpieza viaria — siGEUS (Plataforma Distromel, contrata RSU)",
+        "categoria": "residuos",
+        "origen": "externa",
+        "estado": "pendiente_acceso",
+        "tipo_conexion": "api_rest",
+        "sistema": "siGEUS · Plataforma Distromel (web.sigeus.net / api.sigeus.net)",
+        "responsable": "Ayuntamiento / Distromel",
+        "requiere_credenciales": True,
+        "credenciales_desc": (
+            "Usuario técnico de solo lectura sin 2FA (SIGEUS_USUARIO / SIGEUS_PASSWORD) "
+            "y confirmación de códigos de explotación (customerCode/siteCode) si hay varias"
+        ),
+        "endpoint_url": "https://api.sigeus.net/api/",
+        "periodicidad": "diaria",
+        "formato": "API/JSON",
+        "kpis_asociados": [
+            "contenedores activos/inactivos por tipo y fracción",
+            "puntos de recogida",
+            "recogidas y kg por fracción",
+            "descargas en vertedero/planta",
+            "lavados de contenedores",
+            "papeleras activas/inactivas",
+            "órdenes de trabajo por estado",
+            "flota: km, combustible y CO₂",
+        ],
+        "notas": (
+            "Conector hecho (connectors/sigeus.py: login, sesión y llamadas genéricas). "
+            "Con las claves se capturan los endpoints de RSU/limpieza del panel y se "
+            "vuelcan a la vertical Residuos. Verificar: python -m scripts.verificar_sigeus"
+        ),
+    },
+    {
         "codigo": "FD-115",
         "nombre": "Formularios y encuestas ciudadanas (criterios)",
         "categoria": "web_app",

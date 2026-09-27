@@ -24,6 +24,7 @@ VERIFICADORES = [
     ("Noticias (Strapi)", "scripts.verificar_noticias_strapi"),
     ("Meteo pública (Open-Meteo)", "scripts.verificar_openmeteo"),
     ("Banderas/Aforo (ThingsBoard)", "scripts.verificar_thingsboard"),
+    ("RSU/Limpieza viaria (siGEUS)", "scripts.verificar_sigeus"),
     ("Social Listening (Meta)", "scripts.verificar_social_meta"),
     ("Google Analytics 4", "scripts.verificar_ga4"),
 ]

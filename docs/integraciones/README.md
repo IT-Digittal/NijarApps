@@ -28,6 +28,7 @@ cómo **verificarla**. El catálogo completo de fuentes está en
 | **Social Listening** (X / Twitter) | 🟡 | `/api/v1/data/social` (worker) | [runbook](runbook-social-listening-meta.md) | (parte de social) |
 | **Analítica web** (Google Analytics 4) | 🟡 | Dashboard «Eficacia digital»; informe mensual | [runbook](runbook-ga4.md) | `python -m scripts.verificar_ga4` |
 | **Calidad del aire y meteo** (Bettair) | 🟡 | `/api/v1/gemelo/aire/resumen`, `/gemelo/aire/estaciones` | — | Requiere `BETTAIR_CLIENT_ID/SECRET` (los gestiona Bettair) |
+| **RSU y limpieza viaria** (siGEUS · Distromel) | 🟡 | `/api/v1/gemelo/estado` (`sigeus_configurado`); KPIs en `/verticales/residuos/*` al conectar | [runbook](runbook-sigeus-distromel.md) | `python -m scripts.verificar_sigeus` (requiere `SIGEUS_USUARIO/PASSWORD`) |
 
 ---
 
@@ -66,6 +67,15 @@ propiedad GA4 y el **Property ID**.
 Conector OAuth2 hecho. Requiere `BETTAIR_CLIENT_ID/SECRET`, que gestiona Bettair
 (hay que coordinarlo con ellos). Sin credenciales, los endpoints `/gemelo/aire/*`
 responden 503 y la meteo pública la cubre Open-Meteo.
+
+### siGEUS · Distromel (RSU y limpieza viaria) · 🟡
+Plataforma de gestión de la contrata de residuos (contenedores, puntos de
+recogida, recogidas por fracción, lavados, papeleras, órdenes de trabajo y
+flota). Conector hecho: login contra `api.sigeus.net`, sesión con renovación
+y llamadas genéricas, siguiendo exactamente el flujo del panel. Falta el
+**usuario técnico de solo lectura (sin 2FA)** que nos facilita el cliente. Con
+él se capturan los endpoints de negocio y se vuelcan a la vertical Residuos.
+→ [runbook-sigeus-distromel.md](runbook-sigeus-distromel.md)
 
 ---
 
