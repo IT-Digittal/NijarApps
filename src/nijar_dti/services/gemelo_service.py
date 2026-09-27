@@ -30,6 +30,7 @@ from nijar_dti.schemas.gemelo import (
     MeteoActualOut,
     ResumenAireOut,
 )
+from nijar_dti.services.sigeus_service import sigeus_configurado
 
 _TTL_SEGUNDOS = 60
 _cache: dict[str, tuple[float, Any]] = {}
@@ -56,6 +57,7 @@ def estado_gemelo() -> EstadoGemelo:
         thingsboard_configurado=thingsboard_configurado(),
         bettair_configurado=bettair_configurado(),
         openmeteo_disponible=True,
+        sigeus_configurado=sigeus_configurado(),
     )
 
 
