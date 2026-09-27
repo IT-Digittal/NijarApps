@@ -23,7 +23,7 @@ repos:
       - id: mypy
         additional_dependencies:
           - pydantic>=2.6.0
-          - sqlalchemy>=2.0.25
+          - sqlalchemy>=2.0.25,<2.1
           - types-python-dateutil
         args: [--config-file=pyproject.toml]
         files: ^src/
