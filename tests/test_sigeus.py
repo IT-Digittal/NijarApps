@@ -25,7 +25,10 @@ from nijar_dti.connectors.sigeus import (
     cabeceras_autenticadas,
     caducidad_token,
     construir_cuerpo_login,
+    construir_cuerpo_login_otp,
     decodificar_claims,
+    generar_totp,
+    modo_segundo_factor,
     parsear_error_backend,
     parsear_respuesta_login,
 )
@@ -252,3 +255,131 @@ class TestCatalogoFuentes:
         assert "sigeus" in fd["sistema"].lower()
         assert "SIGEUS_USUARIO" in fd["credenciales_desc"]
         assert "verificar_sigeus" in fd["notas"]
+
+
+# Secreto de los vectores de prueba del RFC 6238 («12345678901234567890» en base32).
+SECRETO_RFC6238 = "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ"
+
+
+class TestSegundoFactor:
+    @pytest.mark.parametrize(
+        ("instante", "esperado"),
+        [(59, "287082"), (1111111109, "081804"), (1111111111, "050471"), (1234567890, "005924")],
+    )
+    def test_generar_totp_vectores_rfc6238(self, instante, esperado):
+        assert generar_totp(SECRETO_RFC6238, instante) == esperado
+
+    def test_generar_totp_admite_secreto_con_espacios_y_minusculas(self):
+        assert generar_totp("gezd gnbv gy3t qojq gezd gnbv gy3t qojq", 59) == "287082"
+
+    def test_generar_totp_secreto_invalido(self):
+        with pytest.raises(SigeusError, match="base32"):
+            generar_totp("no-es-base32!!", 59)
+        with pytest.raises(SigeusError):
+            generar_totp("", 59)
+
+    def test_modo_segundo_factor(self):
+        assert modo_segundo_factor({"twoFactorAuthenticationMode": "TOTP"}) == "TOTP"
+        assert modo_segundo_factor({"twoFactorAuthenticationMode": "otp"}) == "OTP"
+        assert modo_segundo_factor({"twoFactorAuthenticationMode": 2}) == "TOTP"
+        assert modo_segundo_factor({"twoFactorAuthentication": True}) is None
+        assert modo_segundo_factor("x") is None
+
+    def test_respuesta_2fa_real_lleva_el_modo(self):
+        # Respuesta real observada: HTTP 200 con token nulo y la marca de segundo factor
+        with pytest.raises(SigeusRequiere2FAError) as exc:
+            parsear_respuesta_login(
+                {
+                    "token": None,
+                    "twoFactorAuthentication": True,
+                    "twoFactorAuthenticationMode": "TOTP",
+                }
+            )
+        assert exc.value.modo == "TOTP" and "SIGEUS_TOTP_SECRET" in str(exc.value)
+        with pytest.raises(SigeusRequiere2FAError) as exc2:
+            parsear_respuesta_login(
+                {
+                    "token": None,
+                    "twoFactorAuthentication": True,
+                    "twoFactorAuthenticationMode": "OTP",
+                }
+            )
+        assert exc2.value.modo == "OTP" and "correo" in str(exc2.value)
+
+    def test_cuerpo_login_otp_como_el_panel(self):
+        cuerpo = construir_cuerpo_login_otp("tecnico", "123456", "0005", 10201, 103)
+        assert cuerpo["otp"] == "123456" and cuerpo["username"] == "tecnico"
+        assert cuerpo["customerCode"] == 10201 and cuerpo["siteCode"] == 103
+        assert cuerpo["applicationCode"] == "0005" and cuerpo["isTrustedDevice"] is False
+        assert cuerpo["userAgent"]
+
+    async def test_login_completa_el_segundo_paso_con_totp(self, monkeypatch):
+        c = ClienteSigeus(
+            "tecnico", "p", customer_code=10201, site_code=103, totp_secret=SECRETO_RFC6238
+        )
+        llamadas: list[tuple[str, dict]] = []
+
+        async def post_sesion(client, ruta, cuerpo):
+            llamadas.append((ruta, cuerpo))
+            if ruta == RUTA_LOGIN:
+                return {
+                    "token": None,
+                    "twoFactorAuthentication": True,
+                    "twoFactorAuthenticationMode": "TOTP",
+                }
+            assert ruta == RUTA_LOGIN_OTP
+            assert (
+                cuerpo["otp"] == generar_totp(SECRETO_RFC6238) and cuerpo["username"] == "tecnico"
+            )
+            return {"token": TOKEN, "isAuthenticated": True}
+
+        monkeypatch.setattr(c, "_post_sesion", post_sesion)
+        assert await c._login(client=None) == TOKEN  # type: ignore[arg-type]
+        assert [r for r, _ in llamadas] == [RUTA_LOGIN, RUTA_LOGIN_OTP]
+
+    async def test_login_sin_secreto_eleva_2fa(self, monkeypatch):
+        c = ClienteSigeus("tecnico", "p")
+
+        async def post_sesion(client, ruta, cuerpo):
+            return {
+                "token": None,
+                "twoFactorAuthentication": True,
+                "twoFactorAuthenticationMode": "TOTP",
+            }
+
+        monkeypatch.setattr(c, "_post_sesion", post_sesion)
+        with pytest.raises(SigeusRequiere2FAError) as exc:
+            await c._login(client=None)  # type: ignore[arg-type]
+        assert exc.value.modo == "TOTP"
+
+    async def test_login_por_correo_no_usa_totp(self, monkeypatch):
+        c = ClienteSigeus("tecnico", "p", totp_secret=SECRETO_RFC6238)
+        rutas: list[str] = []
+
+        async def post_sesion(client, ruta, cuerpo):
+            rutas.append(ruta)
+            return {
+                "token": None,
+                "twoFactorAuthentication": True,
+                "twoFactorAuthenticationMode": "OTP",
+            }
+
+        monkeypatch.setattr(c, "_post_sesion", post_sesion)
+        with pytest.raises(SigeusRequiere2FAError):
+            await c._login(client=None)  # type: ignore[arg-type]
+        assert rutas == [RUTA_LOGIN]  # no se intenta loginOtp con un código que no tenemos
+
+    async def test_totp_rechazado_da_error_claro(self, monkeypatch):
+        c = ClienteSigeus("tecnico", "p", totp_secret=SECRETO_RFC6238)
+
+        async def post_sesion(client, ruta, cuerpo):
+            if ruta == RUTA_LOGIN:
+                return {"token": None, "twoFactorAuthentication": True}
+            return {"token": None, "twoFactorAuthentication": True}
+
+        monkeypatch.setattr(c, "_post_sesion", post_sesion)
+        with pytest.raises(SigeusError, match="rechazó el código TOTP"):
+            await c._login(client=None)  # type: ignore[arg-type]
+
+    def test_settings_totp_por_defecto_vacio(self):
+        assert Settings().sigeus_totp_secret == ""

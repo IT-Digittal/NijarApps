@@ -15,7 +15,11 @@ credenciales:
   ``siteCode`` valen ``-1`` para que el servidor asigne los del usuario; si la
   cuenta tiene varias explotaciones se fijan por configuración.
 - ``POST api/session/loginOtp`` con ``{username, otp, ...}`` para cuentas con
-  segundo factor (no automatizable: pedir al cliente un usuario técnico sin 2FA).
+  segundo factor. El login responde ``{"token": null,
+  "twoFactorAuthentication": true, "twoFactorAuthenticationMode": "OTP"|"TOTP"}``:
+  ``OTP`` es un código enviado por correo (no automatizable) y ``TOTP`` un
+  código de aplicación autenticadora (RFC 6238), que este cliente genera si se
+  configura ``SIGEUS_TOTP_SECRET`` con el secreto en base32 de la cuenta.
 - ``GET Api/Session/RenewToken`` → ``{isAuthenticated, token}``.
 - ``GET Api/Session/checkAuthAsync`` y ``GET api/session/user/current``.
 - Toda petición autenticada lleva ``Authorization: Bearer <token>`` y las
@@ -27,13 +31,17 @@ tras el login y se añaden aquí cuando se disponga de acceso; hasta entonces el
 cliente ofrece login con caché de sesión, renovación y ``get``/``post``
 genéricos, y las funciones de parseo puras (testeables sin red).
 
-Credenciales en ``SIGEUS_USUARIO`` / ``SIGEUS_PASSWORD``; nunca se versionan.
+Credenciales en ``SIGEUS_USUARIO`` / ``SIGEUS_PASSWORD`` (y ``SIGEUS_TOTP_SECRET``
+si la cuenta usa autenticador); nunca se versionan.
 """
 
 from __future__ import annotations
 
 import base64
+import hashlib
+import hmac
 import json
+import struct
 import time
 from typing import Any
 
@@ -50,6 +58,11 @@ RUTA_USUARIO_ACTUAL = "api/session/user/current"
 MARGEN_CADUCIDAD_SEGUNDOS = 60
 # Vida asumida cuando el token no trae ``exp``: renovamos cada 20 min.
 VIDA_POR_DEFECTO_SEGUNDOS = 20 * 60
+# Modos de segundo factor que devuelve el backend en ``twoFactorAuthenticationMode``.
+MODO_2FA_CORREO = "OTP"  # código enviado por correo electrónico
+MODO_2FA_AUTENTICADOR = "TOTP"  # código de aplicación autenticadora (RFC 6238)
+# Identificador de dispositivo que se envía en ``loginOtp`` (el panel manda el user-agent).
+USER_AGENT_OTP = "nijar-dti-sigeus/1.0"
 
 
 class SigeusError(RuntimeError):
@@ -57,7 +70,15 @@ class SigeusError(RuntimeError):
 
 
 class SigeusRequiere2FAError(SigeusError):
-    """La cuenta exige un código OTP: no se puede automatizar el login."""
+    """La cuenta exige segundo factor y no se ha podido resolver automáticamente.
+
+    ``modo`` es ``"OTP"`` (código por correo), ``"TOTP"`` (autenticador) o
+    ``None`` si el backend no lo indica.
+    """
+
+    def __init__(self, mensaje: str, modo: str | None = None) -> None:
+        super().__init__(mensaje)
+        self.modo = modo
 
 
 # --------------------------- Parseo puro (sin red) ---------------------------
@@ -129,13 +150,83 @@ def parsear_respuesta_login(datos: Any) -> str:
     )
     codigo, mensaje = parsear_error_backend(datos)
     if any(bool(datos.get(m)) for m in marcas_2fa) or _es_error_2fa(codigo):
+        modo = modo_segundo_factor(datos)
+        if modo == MODO_2FA_AUTENTICADOR:
+            detalle = (
+                "autenticador (TOTP): configurar SIGEUS_TOTP_SECRET con el secreto de la cuenta"
+            )
+        elif modo == MODO_2FA_CORREO:
+            detalle = (
+                "código por correo (OTP), no automatizable: cambiar la cuenta a autenticador "
+                "(TOTP) o solicitar usuario técnico sin 2FA"
+            )
+        else:
+            detalle = "solicitar usuario técnico sin 2FA o configurar SIGEUS_TOTP_SECRET"
         raise SigeusRequiere2FAError(
-            "La cuenta de siGEUS exige segundo factor (OTP); solicitar usuario técnico sin 2FA"
+            f"La cuenta de siGEUS exige segundo factor · {detalle}", modo=modo
         )
     detalle = mensaje or "credenciales rechazadas"
     if codigo:
         detalle = f"{detalle} [{codigo}]"
     raise SigeusError(f"Login en siGEUS sin token: {detalle}")
+
+
+def modo_segundo_factor(datos: Any) -> str | None:
+    """``"OTP"`` / ``"TOTP"`` según ``twoFactorAuthenticationMode``, o ``None``."""
+    if not isinstance(datos, dict):
+        return None
+    modo = datos.get("twoFactorAuthenticationMode")
+    if isinstance(modo, str) and modo.strip():
+        return modo.strip().upper()
+    if isinstance(modo, int):  # algunas versiones usan el enum numérico (1=OTP, 2=TOTP)
+        return {1: MODO_2FA_CORREO, 2: MODO_2FA_AUTENTICADOR}.get(modo)
+    return None
+
+
+def generar_totp(
+    secreto_base32: str,
+    instante: float | None = None,
+    periodo: int = 30,
+    digitos: int = 6,
+) -> str:
+    """Código TOTP (RFC 6238, HMAC-SHA1) para el secreto en base32 de la cuenta.
+
+    Es lo mismo que calcula la aplicación autenticadora; el secreto es el que
+    muestra siGEUS al activar el TOTP en el perfil del usuario (junto al QR).
+    """
+    limpio = "".join(secreto_base32.split()).replace("-", "").upper()
+    limpio += "=" * (-len(limpio) % 8)
+    try:
+        clave = base64.b32decode(limpio, casefold=True)
+    except (ValueError, TypeError) as exc:
+        raise SigeusError("SIGEUS_TOTP_SECRET no es un secreto base32 válido") from exc
+    if not clave:
+        raise SigeusError("SIGEUS_TOTP_SECRET está vacío")
+    ahora = time.time() if instante is None else instante
+    contador = int(ahora // periodo)
+    resumen = hmac.new(clave, struct.pack(">Q", contador), hashlib.sha1).digest()
+    desplazamiento = resumen[-1] & 0x0F
+    numero = struct.unpack(">I", resumen[desplazamiento : desplazamiento + 4])[0] & 0x7FFFFFFF
+    return str(numero % (10**digitos)).zfill(digitos)
+
+
+def construir_cuerpo_login_otp(
+    usuario: str,
+    otp: str,
+    application_code: str,
+    customer_code: int = -1,
+    site_code: int = -1,
+) -> dict[str, Any]:
+    """Cuerpo exacto que envía el panel a ``api/session/loginOtp``."""
+    return {
+        "customerCode": customer_code,
+        "siteCode": site_code,
+        "username": usuario,
+        "otp": otp,
+        "applicationCode": application_code,
+        "isTrustedDevice": False,
+        "userAgent": USER_AGENT_OTP,
+    }
 
 
 def parsear_error_backend(datos: Any) -> tuple[str | None, str | None]:
@@ -207,10 +298,12 @@ class ClienteSigeus:
         customer_code: int = -1,
         site_code: int = -1,
         timeout_seconds: int = 12,
+        totp_secret: str = "",
     ) -> None:
         self._base = base_url.rstrip("/")
         self._usuario = usuario
         self._password = password
+        self._totp_secret = totp_secret.strip()
         self._application_code = application_code
         # -1 = «los del usuario»; si se fijan (>= 0) se envían también en cabecera.
         self._customer_code = customer_code
@@ -235,16 +328,10 @@ class ClienteSigeus:
         self._token_caduca = caducidad_token(token)
         return token
 
-    async def _login(self, client: httpx.AsyncClient) -> str:
-        cuerpo = construir_cuerpo_login(
-            self._usuario,
-            self._password,
-            self._application_code,
-            self._customer_code,
-            self._site_code,
-        )
+    async def _post_sesion(self, client: httpx.AsyncClient, ruta: str, cuerpo: Any) -> Any:
+        """POST de login/loginOtp: devuelve el JSON aunque el backend responda 400/401/403."""
         try:
-            resp = await client.post(self._url(RUTA_LOGIN), json=cuerpo)
+            resp = await client.post(self._url(ruta), json=cuerpo)
         except httpx.HTTPError as exc:
             raise SigeusError(f"Login en siGEUS fallido: {exc}") from exc
         datos: Any = None
@@ -254,14 +341,47 @@ class ClienteSigeus:
             datos = None
         if resp.status_code in (400, 401, 403) and datos is not None:
             # Credenciales rechazadas / OTP: el backend lo explica en el cuerpo.
-            return self._guardar_token(parsear_respuesta_login(datos))
+            return datos
         try:
             resp.raise_for_status()
         except httpx.HTTPStatusError as exc:
             raise SigeusError(f"Login en siGEUS fallido: {exc}") from exc
         if datos is None:
             raise SigeusError("Login en siGEUS: respuesta no es JSON")
-        return self._guardar_token(parsear_respuesta_login(datos))
+        return datos
+
+    async def _login_otp(self, client: httpx.AsyncClient) -> str:
+        """Segundo paso del login con el código del autenticador (TOTP)."""
+        cuerpo = construir_cuerpo_login_otp(
+            self._usuario,
+            generar_totp(self._totp_secret),
+            self._application_code,
+            self._customer_code,
+            self._site_code,
+        )
+        datos = await self._post_sesion(client, RUTA_LOGIN_OTP, cuerpo)
+        try:
+            return self._guardar_token(parsear_respuesta_login(datos))
+        except SigeusRequiere2FAError as exc:
+            raise SigeusError(
+                "siGEUS rechazó el código TOTP: revisar SIGEUS_TOTP_SECRET y la hora del sistema"
+            ) from exc
+
+    async def _login(self, client: httpx.AsyncClient) -> str:
+        cuerpo = construir_cuerpo_login(
+            self._usuario,
+            self._password,
+            self._application_code,
+            self._customer_code,
+            self._site_code,
+        )
+        datos = await self._post_sesion(client, RUTA_LOGIN, cuerpo)
+        try:
+            return self._guardar_token(parsear_respuesta_login(datos))
+        except SigeusRequiere2FAError as exc:
+            if self._totp_secret and exc.modo != MODO_2FA_CORREO:
+                return await self._login_otp(client)
+            raise
 
     async def _renovar(self, client: httpx.AsyncClient, token: str) -> str | None:
         """Intenta ``RenewToken``; devuelve el nuevo token o ``None`` si no procede."""

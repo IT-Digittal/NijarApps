@@ -145,6 +145,8 @@ class Settings(BaseSettings):
     sigeus_base_url: str = "https://api.sigeus.net"
     sigeus_usuario: str = ""
     sigeus_password: str = ""
+    # Secreto base32 del autenticador (TOTP) si la cuenta tiene segundo factor.
+    sigeus_totp_secret: str = ""
     sigeus_application_code: str = "0005"
     sigeus_customer_code: int = -1
     sigeus_site_code: int = -1

@@ -34,6 +34,7 @@ def _obtener_cliente() -> ClienteSigeus:
             customer_code=s.sigeus_customer_code,
             site_code=s.sigeus_site_code,
             timeout_seconds=s.sigeus_timeout_seconds,
+            totp_secret=s.sigeus_totp_secret,
         )
     return _cliente
 

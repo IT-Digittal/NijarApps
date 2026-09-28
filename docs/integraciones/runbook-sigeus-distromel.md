@@ -16,10 +16,18 @@ del catálogo (`GET /api/v1/integraciones/fuentes?categoria=residuos`).
 
 ## 1. Qué necesitamos del cliente
 
-1. **Usuario técnico de solo lectura, sin segundo factor (OTP).** El login con
-   OTP (`api/session/loginOtp`) no es automatizable; si la cuenta facilitada
-   pide código, el verificador lo indica y hay que pedir a Distromel un usuario
-   de integración.
+1. **Usuario técnico de solo lectura.** Si la cuenta tiene segundo factor, el
+   login responde `{"token": null, "twoFactorAuthentication": true,
+   "twoFactorAuthenticationMode": "OTP"|"TOTP"}` y hay dos casos:
+   - **TOTP (aplicación autenticadora)**: automatizable. Al activar el TOTP en
+     el perfil del usuario (Administración → Mi perfil → seguridad), siGEUS
+     muestra el secreto junto al código QR; se guarda en `SIGEUS_TOTP_SECRET`
+     y el conector genera el código (RFC 6238) y completa
+     `api/session/loginOtp` él solo. La misma clave puede darse de alta en la
+     app del móvil para el uso manual del panel.
+   - **OTP (código por correo)**: no automatizable. Cambiar la cuenta a TOTP
+     o pedir a Distromel un usuario de integración sin segundo factor.
+   El verificador indica el modo detectado y qué hacer.
 2. **Códigos de explotación** (`customerCode` / `siteCode`): son los campos
    «Cliente» y «Sede» del formulario de login. Para Níjar son `10201` y `103`.
    Con `-1` el backend usa los del usuario y los devuelve dentro del JWT.
@@ -35,6 +43,7 @@ el `.env` de producción (OVH). Nunca en el repositorio ni en tickets.
 SIGEUS_BASE_URL=https://api.sigeus.net
 SIGEUS_USUARIO=<usuario técnico>
 SIGEUS_PASSWORD=<contraseña>
+SIGEUS_TOTP_SECRET=            # solo si la cuenta usa autenticador (secreto base32)
 SIGEUS_APPLICATION_CODE=0005   # el del panel web.sigeus.net; no cambiar salvo indicación
 SIGEUS_CUSTOMER_CODE=10201     # «Cliente» del formulario de login (Níjar); -1 = la del usuario
 SIGEUS_SITE_CODE=103           # «Sede» del formulario de login (Níjar)

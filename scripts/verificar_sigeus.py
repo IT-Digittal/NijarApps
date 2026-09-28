@@ -38,8 +38,17 @@ async def _run() -> int:
     try:
         acceso = await svc.comprobar_acceso()
     except SigeusRequiere2FAError as e:
-        _linea(FAIL, "La cuenta exige segundo factor (OTP)", str(e))
-        print("\nResultado: FALLA · pedir a Distromel un usuario técnico sin 2FA.\n")
+        _linea(FAIL, f"La cuenta exige segundo factor ({e.modo or 'modo desconocido'})", str(e))
+        if e.modo == "TOTP":
+            print(
+                "\nResultado: FALLA · configurar SIGEUS_TOTP_SECRET con el secreto "
+                "del autenticador.\n"
+            )
+        else:
+            print(
+                "\nResultado: FALLA · cambiar la cuenta a autenticador (TOTP) y configurar "
+                "SIGEUS_TOTP_SECRET, o pedir a Distromel un usuario técnico sin 2FA.\n"
+            )
         return 1
     except SigeusError as e:
         _linea(FAIL, "No se puede iniciar sesión en siGEUS", str(e))
