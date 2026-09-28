@@ -20,9 +20,9 @@ del catálogo (`GET /api/v1/integraciones/fuentes?categoria=residuos`).
    OTP (`api/session/loginOtp`) no es automatizable; si la cuenta facilitada
    pide código, el verificador lo indica y hay que pedir a Distromel un usuario
    de integración.
-2. **Códigos de explotación** (`customerCode` / `siteCode`) solo si el usuario
-   tiene acceso a varias explotaciones. Por defecto se envía `-1` (los del
-   usuario) y el backend los devuelve dentro del JWT.
+2. **Códigos de explotación** (`customerCode` / `siteCode`): son los campos
+   «Cliente» y «Sede» del formulario de login. Para Níjar son `10201` y `103`.
+   Con `-1` el backend usa los del usuario y los devuelve dentro del JWT.
 3. Confirmación del **alcance de datos** a integrar (ver §4).
 
 Las credenciales viajan por el canal seguro acordado y se guardan únicamente en
@@ -36,8 +36,8 @@ SIGEUS_BASE_URL=https://api.sigeus.net
 SIGEUS_USUARIO=<usuario técnico>
 SIGEUS_PASSWORD=<contraseña>
 SIGEUS_APPLICATION_CODE=0005   # el del panel web.sigeus.net; no cambiar salvo indicación
-SIGEUS_CUSTOMER_CODE=-1        # -1 = explotación del usuario
-SIGEUS_SITE_CODE=-1
+SIGEUS_CUSTOMER_CODE=10201     # «Cliente» del formulario de login (Níjar); -1 = la del usuario
+SIGEUS_SITE_CODE=103           # «Sede» del formulario de login (Níjar)
 SIGEUS_TIMEOUT_SECONDS=12
 ```
 
