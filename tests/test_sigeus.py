@@ -227,6 +227,23 @@ class TestClienteSinRed:
         assert await c._obtener_token(client=None) == TOKEN  # type: ignore[arg-type]
 
 
+@pytest.fixture()
+def sin_entorno_sigeus(monkeypatch):
+    """Aísla los tests de la configuración real (variables SIGEUS_* del entorno)."""
+    for clave in (
+        "SIGEUS_BASE_URL",
+        "SIGEUS_USUARIO",
+        "SIGEUS_PASSWORD",
+        "SIGEUS_TOTP_SECRET",
+        "SIGEUS_APPLICATION_CODE",
+        "SIGEUS_CUSTOMER_CODE",
+        "SIGEUS_SITE_CODE",
+        "SIGEUS_TIMEOUT_SECONDS",
+    ):
+        monkeypatch.delenv(clave, raising=False)
+
+
+@pytest.mark.usefixtures("sin_entorno_sigeus")
 class TestConfiguracion:
     def test_valores_por_defecto_del_panel(self):
         s = Settings()
@@ -282,8 +299,25 @@ class TestSegundoFactor:
         assert modo_segundo_factor({"twoFactorAuthenticationMode": "TOTP"}) == "TOTP"
         assert modo_segundo_factor({"twoFactorAuthenticationMode": "otp"}) == "OTP"
         assert modo_segundo_factor({"twoFactorAuthenticationMode": 2}) == "TOTP"
+        assert modo_segundo_factor({"twoFactorAuthenticationMode": 1}) == "OTP"
         assert modo_segundo_factor({"twoFactorAuthentication": True}) is None
         assert modo_segundo_factor("x") is None
+
+    def test_respuesta_real_modo_cero_es_correo(self):
+        # Respuesta real de api.sigeus.net con la cuenta facilitada (HTTP 200)
+        real = {
+            "token": None,
+            "twoFactorAuthentication": True,
+            "twoFactorAuthenticationMode": 0,
+            "passwordExpired": False,
+            "trustedDeviceCookie": None,
+        }
+        assert modo_segundo_factor(real) == "OTP"
+        with pytest.raises(SigeusRequiere2FAError) as exc:
+            parsear_respuesta_login(real)
+        assert exc.value.modo == "OTP" and "correo" in str(exc.value)
+        # Sin segundo factor activo, el 0 no significa nada
+        assert modo_segundo_factor({"twoFactorAuthenticationMode": 0}) is None
 
     def test_respuesta_2fa_real_lleva_el_modo(self):
         # Respuesta real observada: HTTP 200 con token nulo y la marca de segundo factor
@@ -381,5 +415,5 @@ class TestSegundoFactor:
         with pytest.raises(SigeusError, match="rechazó el código TOTP"):
             await c._login(client=None)  # type: ignore[arg-type]
 
-    def test_settings_totp_por_defecto_vacio(self):
+    def test_settings_totp_por_defecto_vacio(self, sin_entorno_sigeus):
         assert Settings().sigeus_totp_secret == ""

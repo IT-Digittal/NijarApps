@@ -172,13 +172,25 @@ def parsear_respuesta_login(datos: Any) -> str:
 
 
 def modo_segundo_factor(datos: Any) -> str | None:
-    """``"OTP"`` / ``"TOTP"`` según ``twoFactorAuthenticationMode``, o ``None``."""
+    """``"OTP"`` / ``"TOTP"`` según ``twoFactorAuthenticationMode``, o ``None``.
+
+    El backend devuelve el enum numérico ``ETwoFactorMode`` (``None=0``,
+    ``OTP=1``, ``TOTP=2``). Respuesta real observada con una cuenta con segundo
+    factor por correo: ``{"token": null, "twoFactorAuthentication": true,
+    "twoFactorAuthenticationMode": 0, "passwordExpired": false,
+    "trustedDeviceCookie": null}``; el panel trata ese ``0`` con el segundo factor
+    activo como código por correo (``modo || OTP``), y aquí se hace lo mismo.
+    """
     if not isinstance(datos, dict):
         return None
     modo = datos.get("twoFactorAuthenticationMode")
     if isinstance(modo, str) and modo.strip():
         return modo.strip().upper()
-    if isinstance(modo, int):  # algunas versiones usan el enum numérico (1=OTP, 2=TOTP)
+    if isinstance(modo, bool):
+        return None
+    if isinstance(modo, int):
+        if modo == 0 and datos.get("twoFactorAuthentication"):
+            return MODO_2FA_CORREO
         return {1: MODO_2FA_CORREO, 2: MODO_2FA_AUTENTICADOR}.get(modo)
     return None
 
