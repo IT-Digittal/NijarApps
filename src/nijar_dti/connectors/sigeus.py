@@ -117,7 +117,16 @@ def parsear_respuesta_login(datos: Any) -> str:
     token = datos.get("token")
     if isinstance(token, str) and token:
         return token
-    marcas_2fa = ("requiresOtp", "requires2FA", "twoFactorRequired", "otpRequired")
+    # ``twoFactorAuthentication`` es la marca real del backend (HTTP 200 con
+    # ``token: null`` cuando la cuenta tiene segundo factor); el resto se dejan
+    # por compatibilidad con otras versiones del panel.
+    marcas_2fa = (
+        "twoFactorAuthentication",
+        "requiresOtp",
+        "requires2FA",
+        "twoFactorRequired",
+        "otpRequired",
+    )
     codigo, mensaje = parsear_error_backend(datos)
     if any(bool(datos.get(m)) for m in marcas_2fa) or _es_error_2fa(codigo):
         raise SigeusRequiere2FAError(

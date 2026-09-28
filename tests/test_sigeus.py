@@ -83,6 +83,22 @@ class TestParseoPuro:
         with pytest.raises(SigeusRequiere2FAError):
             parsear_respuesta_login({"token": None, "requiresOtp": True})
 
+    def test_parsear_respuesta_login_2fa_formato_real(self):
+        # Cuerpo real (HTTP 200) de api.sigeus.net con una cuenta con segundo
+        # factor: token nulo y ``twoFactorAuthentication: true``.
+        cuerpo = {
+            "token": None,
+            "twoFactorAuthentication": True,
+            "twoFactorAuthenticationMode": 0,
+            "passwordExpired": False,
+            "trustedDeviceCookie": None,
+        }
+        with pytest.raises(SigeusRequiere2FAError):
+            parsear_respuesta_login(cuerpo)
+        # Sin segundo factor activo el mismo formato es un login sin token.
+        with pytest.raises(SigeusError, match="credenciales rechazadas"):
+            parsear_respuesta_login({"token": None, "twoFactorAuthentication": False})
+
     def test_parsear_respuesta_login_sin_token(self):
         with pytest.raises(SigeusError, match="credenciales rechazadas"):
             parsear_respuesta_login({"token": ""})
