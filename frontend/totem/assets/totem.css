@@ -1238,3 +1238,55 @@ body.idle::after {
   margin: 0 0 12px; font-size: 12.5px; font-weight: 700; letter-spacing: .08em;
   text-transform: uppercase; color: var(--muted, #67769A);
 }
+
+/* ================= MODO KIOSKO (?kiosko=1): teclado en pantalla y QR ================= */
+body.modo-kiosko { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+body.modo-kiosko input { -webkit-user-select: text; user-select: text; }
+body.tt-kb-abierto { padding-bottom: var(--kb-h, 0px); }
+
+.tt-kb {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 900;
+  background: var(--navy); color: #fff;
+  padding: 8px 12px 16px;
+  box-shadow: 0 -10px 30px rgba(11, 43, 87, 0.25);
+  touch-action: manipulation;
+}
+.tt-kb[hidden] { display: none; }
+.tt-kb-barra { display: flex; justify-content: center; margin-bottom: 6px; }
+.tt-kb-ocultar {
+  border: 0; background: rgba(255, 255, 255, 0.12); color: #fff;
+  width: 96px; height: 34px; border-radius: 17px; cursor: pointer;
+  display: grid; place-items: center;
+}
+.tt-kb-ocultar svg { width: 24px; height: 24px; }
+.tt-kb-teclas { display: grid; gap: 8px; max-width: 1000px; margin: 0 auto; }
+.tt-kb-fila { display: flex; gap: 8px; justify-content: center; }
+.tt-kb-tecla {
+  flex: 1 1 0; min-width: 0; height: 64px;
+  border: 0; border-radius: var(--r-sm);
+  background: #fff; color: var(--navy);
+  font-family: var(--fd); font-weight: 700; font-size: 24px;
+  cursor: pointer; box-shadow: 0 3px 0 rgba(0, 0, 0, 0.25);
+}
+.tt-kb-tecla:active { transform: translateY(2px); box-shadow: none; background: var(--orange-bg); }
+.tt-kb-tecla--mayus, .tt-kb-tecla--borrar, .tt-kb-tecla--simbolos, .tt-kb-tecla--letras {
+  flex-grow: 1.5; background: #C9D3E3; font-size: 20px;
+}
+.tt-kb-tecla--mayus.is-on { background: var(--orange); color: #fff; }
+.tt-kb-tecla--espacio { flex-grow: 5; font-size: 18px; font-weight: 600; }
+.tt-kb-tecla--enviar { flex-grow: 1.5; background: var(--orange); color: #fff; }
+
+.tt-qrdialog {
+  border: 0; margin: auto; padding: 34px 30px 30px;
+  width: min(92vw, 520px);
+  border-radius: 30px; text-align: center;
+  background: var(--cream); color: var(--ink);
+  box-shadow: var(--sh-lg);
+}
+.tt-qrdialog::backdrop { background: rgba(11, 43, 87, 0.55); backdrop-filter: blur(3px); }
+.tt-qrdialog h2 { margin: 0 40px 6px; font-family: var(--fd); font-weight: 800; font-size: 26px; }
+.tt-qr-sub { margin: 0 0 20px; color: var(--muted); font-size: 16px; }
+.tt-qr-codigo { width: min(70vw, 320px); margin: 0 auto 16px; background: #fff; border-radius: var(--r-md); padding: 12px; }
+.tt-qr-codigo svg { display: block; width: 100%; height: auto; }
+.tt-qr-url { margin: 0; font-weight: 700; font-size: 17px; word-break: break-all; }
+.tt-qrdialog .tt-qr-cerrar { position: absolute; top: 16px; right: 16px; }

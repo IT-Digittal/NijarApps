@@ -9,7 +9,8 @@
  * - Inactividad >60 s: vuelve al inicio en español (modo público).
  */
 
-import { I18N, translateAll } from "./i18n.js?v=24";
+import { I18N, translateAll } from "./i18n.js?v=25";
+import { iniciarKiosko, ocultarTeclado, reiniciarKiosko } from "./kiosko.js?v=25";
 import { DEMO_RESOURCES, DEMO_EVENTS, answerChatbotDemo } from "./demo-data.js";
 
 // ============================================================
@@ -111,6 +112,7 @@ function showView(id) {
     el.hidden = v !== id;
   });
   window.scrollTo({ top: 0 });
+  ocultarTeclado();
   resetIdle();
 }
 document.querySelectorAll("[data-back]").forEach((b) => b.addEventListener("click", () => showView("view-home")));
@@ -1353,6 +1355,8 @@ $("#recommend-btn").addEventListener("click", async () => {
 // ============================================================
 function goToIdleState() {
   if (dialog.open) dialog.close();
+  if ($("#social-dialog")?.open) $("#social-dialog").close();
+  reiniciarKiosko();
   $("#map-sheet").classList.add("is-hidden");
   currentCat = null;
   currentChip = "todas";
@@ -1396,6 +1400,7 @@ function tagLabel(categoria) {
 // Inicialización
 // ============================================================
 translateAll(currentLang);
+iniciarKiosko();
 document.querySelectorAll(".lang-btn").forEach((btn) =>
   btn.setAttribute("aria-pressed", String(btn.dataset.lang === currentLang)));
 renderHomeCats();

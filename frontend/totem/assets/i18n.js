@@ -727,6 +727,10 @@ export const I18N = {
 /* --- Claves del rediseño v4 (comunes a las 4 lenguas base anteriores) --- */
 const V4 = {
   es: {
+    "kiosko.cerrar": "Cerrar", "kiosko.qr_titulo": "Ábrelo en tu móvil", "kiosko.qr_tel_titulo": "Llama desde tu móvil",
+    "kiosko.qr_sub": "Escanea el código con la cámara de tu móvil",
+    "teclado.espacio": "espacio", "teclado.borrar": "Borrar", "teclado.enviar": "Enviar", "teclado.mayus": "Mayúsculas",
+    "teclado.simbolos": "Números y acentos", "teclado.letras": "Letras", "teclado.ocultar": "Ocultar teclado",
     "header.subtitle": "AYUNTAMIENTO · CABO DE GATA",
     "hero.badge": "BIENVENIDO", "hero.title": "Descubre", "hero.sub": "Cabo de Gata · Salinas · Pueblos blancos",
     "home.explora": "EXPLORA EL DESTINO",
@@ -746,6 +750,10 @@ const V4 = {
     "a11y.contraste": "Alternar alto contraste", "a11y.texto": "Aumentar tamaño del texto",
   },
   en: {
+    "kiosko.cerrar": "Close", "kiosko.qr_titulo": "Open it on your phone", "kiosko.qr_tel_titulo": "Call from your phone",
+    "kiosko.qr_sub": "Scan the code with your phone camera",
+    "teclado.espacio": "space", "teclado.borrar": "Delete", "teclado.enviar": "Send", "teclado.mayus": "Shift",
+    "teclado.simbolos": "Numbers and accents", "teclado.letras": "Letters", "teclado.ocultar": "Hide keyboard",
     "header.subtitle": "TOWN COUNCIL · CABO DE GATA",
     "hero.badge": "WELCOME", "hero.title": "Discover", "hero.sub": "Cabo de Gata · Salt flats · White villages",
     "home.explora": "EXPLORE THE DESTINATION",
@@ -765,6 +773,10 @@ const V4 = {
     "a11y.contraste": "Toggle high contrast", "a11y.texto": "Increase text size",
   },
   de: {
+    "kiosko.cerrar": "Schließen", "kiosko.qr_titulo": "Auf dem Handy öffnen", "kiosko.qr_tel_titulo": "Vom Handy anrufen",
+    "kiosko.qr_sub": "Scannen Sie den Code mit Ihrer Handykamera",
+    "teclado.espacio": "Leertaste", "teclado.borrar": "Löschen", "teclado.enviar": "Senden", "teclado.mayus": "Umschalt",
+    "teclado.simbolos": "Zahlen und Akzente", "teclado.letras": "Buchstaben", "teclado.ocultar": "Tastatur ausblenden",
     "header.subtitle": "RATHAUS · CABO DE GATA",
     "hero.badge": "WILLKOMMEN", "hero.title": "Entdecke", "hero.sub": "Cabo de Gata · Salinen · Weiße Dörfer",
     "home.explora": "ZIEL ERKUNDEN",
@@ -784,6 +796,10 @@ const V4 = {
     "a11y.contraste": "Hoher Kontrast umschalten", "a11y.texto": "Textgröße erhöhen",
   },
   fr: {
+    "kiosko.cerrar": "Fermer", "kiosko.qr_titulo": "Ouvrez-le sur votre mobile", "kiosko.qr_tel_titulo": "Appelez depuis votre mobile",
+    "kiosko.qr_sub": "Scannez le code avec l'appareil photo de votre mobile",
+    "teclado.espacio": "espace", "teclado.borrar": "Effacer", "teclado.enviar": "Envoyer", "teclado.mayus": "Majuscules",
+    "teclado.simbolos": "Chiffres et accents", "teclado.letras": "Lettres", "teclado.ocultar": "Masquer le clavier",
     "header.subtitle": "MAIRIE · CABO DE GATA",
     "hero.badge": "BIENVENUE", "hero.title": "Découvrez", "hero.sub": "Cabo de Gata · Salines · Villages blancs",
     "home.explora": "EXPLOREZ LA DESTINATION",
