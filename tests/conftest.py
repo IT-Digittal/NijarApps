@@ -18,6 +18,7 @@ os.environ.setdefault("SECRET_KEY", "test-secret-key-with-enough-entropy-for-tes
 os.environ.setdefault("DATABASE_URL", "postgresql+asyncpg://nijar:nijar@localhost:5432/nijar_dti")
 os.environ.setdefault("APP_ENV", "development")
 os.environ.setdefault("CORS_ORIGINS", "")
+os.environ.setdefault("NOTICIAS_REFRESCO_MINUTOS", "0")  # sin llamadas a Strapi en tests
 
 import pytest
 from fastapi.testclient import TestClient

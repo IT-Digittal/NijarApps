@@ -4,7 +4,9 @@
  * Convierte el panel (index.html) de demo a producción:
  *  1. Exige login JWT (sesión compartida con gestion.html vía api-client.js).
  *  2. Carga los KPIs reales de la API y los inyecta en window.__DTI.T.
- *  3. Fuerza el re-render de las secciones y refresca cada 60 s.
+ *  3. Fuerza el re-render de las secciones. No hay refresco automático:
+ *     re-renderizar todo el panel cada minuto cortaba la navegación del
+ *     usuario. Los datos se recargan con el botón "Actualizar" de la barra.
  *  4. Marca las secciones que aún muestran datos de demostración.
  *
  * Regla de honestidad: si un dato tiene endpoint pero la llamada falla,
@@ -14,7 +16,6 @@
 
 import { api, tokens } from "./api-client.js?v=18";
 
-const REFRESH_MS = 60_000;
 const NO_DATA = "—";
 
 /* Secciones informativas: documentan el expediente/contrato, no telemetría */
@@ -404,7 +405,16 @@ async function arrancar() {
     }
   };
   await aplicarYRender();
-  setInterval(aplicarYRender, REFRESH_MS);
+
+  /* Recarga manual de datos (sin refresco automático). */
+  if (ancla && ancla.parentElement) {
+    const actualizar = el("button", { className: "btn", type: "button", title: "Recargar los datos de la plataforma" }, "Actualizar");
+    actualizar.addEventListener("click", async () => {
+      actualizar.disabled = true;
+      try { await aplicarYRender(); } finally { actualizar.disabled = false; }
+    });
+    ancla.parentElement.insertBefore(actualizar, ancla);
+  }
 }
 
 (async function init() {
