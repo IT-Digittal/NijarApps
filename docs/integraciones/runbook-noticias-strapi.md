@@ -51,7 +51,7 @@ está configurada responden 503):
 | Método | Ruta | Descripción |
 |---|---|---|
 | GET | `/noticias/estado` | Estado de configuración de la fuente |
-| GET | `/noticias` | Listado paginado (`page`, `page_size`, `categoria`, `buscar`) |
+| GET | `/noticias` | Listado paginado (`page`, `page_size`, `categoria`, `buscar`). Sin filtros = **todas las noticias** (lo que muestran el tótem y el panel), con respaldo del último listado bueno |
 | GET | `/noticias/turismo` | Atajo: noticias de la categoría Turismo |
 | GET | `/noticias/agenda` | Agenda cultural: noticias de la categoría **Cultura** (slug `cultura`) |
 | GET | `/noticias/categorias` | Listado de categorías (documentId, nombre, slug) |
@@ -85,7 +85,7 @@ NOTICIAS_CATEGORIA_AGENDA_ID=        # opcional: documentId, tiene prioridad
 NOTICIAS_REFRESCO_MINUTOS=60         # recarga en segundo plano (0 = desactivada)
 ```
 
-La API recarga Turismo y Cultura cada `NOTICIAS_REFRESCO_MINUTOS` y deja en los
+La API recarga el listado general de noticias y la agenda (Cultura) cada `NOTICIAS_REFRESCO_MINUTOS` y deja en los
 logs `Contenidos del tótem actualizados` (fuente, total y fecha más reciente).
 Si Strapi falla, se sirve el último listado correcto. En el tótem, la Agenda
 muestra los eventos vigentes del CMS seguidos de la «Agenda cultural del
@@ -98,7 +98,8 @@ real en `GET /api/v1/noticias/categorias` y ajústalo (o usa el documentId).
 
 ## 5. Consumidores en la plataforma
 
-- **Tótem** y **panel**: sección de noticias del destino / municipales.
+- **Tótem** y **panel**: sección de noticias con **todas** las noticias del
+  Ayuntamiento (la categoría Turismo apenas se actualizaba: última de julio de 2026).
 - **Chatbot**: puede fundamentar respuestas sobre actualidad municipal.
 
 ## 6. Webhooks (opcional, a futuro)

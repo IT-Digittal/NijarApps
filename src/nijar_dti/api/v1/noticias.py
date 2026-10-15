@@ -44,6 +44,9 @@ async def listar(
 ) -> NoticiasPageOut:
     _requiere_fuente()
     try:
+        if not categoria and not buscar:
+            # Listado general (tótem y panel): con respaldo del último listado bueno
+            return await svc.listar_todas(page=page, page_size=page_size)
         return await svc.listar_noticias(
             page=page, page_size=page_size, categoria_document_id=categoria, buscar=buscar
         )

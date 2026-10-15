@@ -2,7 +2,7 @@
 
 Responde en lenguaje natural fundamentado en los datos internos de la
 plataforma (grounding): FAQs municipales, recursos turísticos publicados,
-próximos eventos de la agenda y las últimas noticias de Turismo del Ayuntamiento
+próximos eventos de la agenda y las últimas noticias del Ayuntamiento
 (fuente Strapi). El modelo recibe ese contexto en cada consulta y tiene
 instrucciones de no inventar horarios, precios ni servicios.
 
@@ -56,7 +56,7 @@ _agenda_cache: tuple[float, list[str]] | None = None
 
 
 async def _titulares_noticias() -> list[str]:
-    """Últimos titulares de Turismo (fuente Strapi), cacheados y sin romper nunca.
+    """Últimos titulares del Ayuntamiento (fuente Strapi), cacheados y sin romper nunca.
 
     Es contexto opcional: ante cualquier fallo de la fuente externa devuelve lo
     último cacheado (o vacío) y jamás propaga la excepción al chatbot.
@@ -68,7 +68,7 @@ async def _titulares_noticias() -> list[str]:
     try:
         from nijar_dti.services import noticias_service
 
-        page = await noticias_service.listar_turismo(page=1, page_size=5)
+        page = await noticias_service.listar_todas(page=1, page_size=5)
         lineas = [
             f"- {n.titulo}" + (f" · {n.fecha:%d/%m/%Y}" if n.fecha else "") for n in page.items
         ]
@@ -169,10 +169,10 @@ async def _contexto(db: AsyncSession, payload: ChatQueryIn) -> tuple[str, list[s
             for e in eventos
         )
 
-    # Últimas noticias de Turismo del Ayuntamiento (fuente externa opcional)
+    # Últimas noticias del Ayuntamiento (fuente externa opcional)
     titulares = await _titulares_noticias()
     if titulares:
-        partes.append("Últimas noticias de Turismo del Ayuntamiento (titular · fecha):")
+        partes.append("Últimas noticias del Ayuntamiento (titular · fecha):")
         partes.extend(titulares)
 
     agenda = await _titulares_agenda()
