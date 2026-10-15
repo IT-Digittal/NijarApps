@@ -135,6 +135,10 @@ class Settings(BaseSettings):
     # Selector de periodo del Gemelo vivo 2D (vuelos de 1956 a la actualidad).
     ortofoto_historica_wms_url: str = "https://www.ign.es/wms/pnoa-historico"
 
+    # --- Contenidos abiertos del tótem (workers/contenidos_abiertos.py) ---
+    # Gastronomía y artesanía desde OpenStreetMap (Overpass API, sin clave).
+    overpass_url: str = "https://overpass-api.de/api/interpreter"
+
     # --- Gemelo digital: plataforma ThingsBoard municipal (vertical externa) ---
     # Banderas de playa y aforo del P.N. Cabo de Gata. Sin configurar,
     # los endpoints /gemelo responden 503 y el panel marca la fuente pendiente.

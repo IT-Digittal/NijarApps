@@ -29,10 +29,32 @@ cómo **verificarla**. El catálogo completo de fuentes está en
 | **Analítica web** (Google Analytics 4) | 🟡 | Dashboard «Eficacia digital»; informe mensual | [runbook](runbook-ga4.md) | `python -m scripts.verificar_ga4` |
 | **Calidad del aire y meteo** (Bettair) | 🟡 | `/api/v1/gemelo/aire/resumen`, `/gemelo/aire/estaciones` | — | Requiere `BETTAIR_CLIENT_ID/SECRET` (los gestiona Bettair) |
 | **RSU y limpieza viaria** (siGEUS · Distromel) | 🟡 | `/api/v1/gemelo/estado` (`sigeus_configurado`); KPIs en `/verticales/residuos/*` al conectar | [runbook](runbook-sigeus-distromel.md) | `python -m scripts.verificar_sigeus` (requiere `SIGEUS_USUARIO/PASSWORD`) |
+| **Contenidos abiertos del tótem** (OpenStreetMap + Wikipedia/Commons) | 🟢 | `/api/v1/tourism/services` (gastronomía), `/tourism/resources` (artesanía, fotos) | ver detalle abajo | `python -m nijar_dti.workers.contenidos_abiertos --dry-run` |
 
 ---
 
 ## Detalle por integración
+
+### Contenidos abiertos del tótem (OpenStreetMap + Wikipedia/Commons) · 🟢
+Worker `workers/contenidos_abiertos.py` (conector `connectors/contenidos_abiertos.py`),
+sin claves. Se lanza a mano en producción y es idempotente:
+
+```bash
+docker exec nijar-dti-api python -m nijar_dti.workers.contenidos_abiertos --dry-run  # solo consulta
+docker exec nijar-dti-api python -m nijar_dti.workers.contenidos_abiertos            # guarda
+```
+
+- **OpenStreetMap** (Overpass, `OVERPASS_URL`): restaurantes, bares y cafeterías
+  del término municipal → servicios publicados (sección Gastronomía); alfarerías
+  y talleres/tiendas de jarapas → recursos con etiquetas `ceramica`/`jarapas`.
+  URN `…:osm-<tipo>-<id>`. Al repetirlo refresca los datos de OSM, respeta
+  `publicado` e imágenes del CMS y despublica lo que ya no está en OSM.
+  Licencia ODbL (© colaboradores de OpenStreetMap).
+- **Imágenes**: a cada recurso publicado sin foto le asigna la del artículo de
+  Wikipedia del lugar o la foto de Wikimedia Commons más cercana (≥ 800 px), y
+  guarda el crédito (autor · licencia) en `enlaces_externos.imagen_credito`; el
+  tótem lo muestra sobre la foto. No pisa imágenes puestas desde el CMS. Si una
+  foto no convence, basta con sustituirla en el CMS.
 
 ### Noticias del Ayuntamiento (Strapi) · 🟢
 La web municipal publica sus noticias en Strapi (JSON público, sin auth). La

@@ -281,13 +281,28 @@ async function apiGet(path) {
   return res.json();
 }
 
+let serviciosCacheTs = 0;
+/* Todos los servicios publicados (paginado: la gastronomía importada de
+ * OpenStreetMap supera los 200). Caché de 1 h: el tótem no se recarga nunca. */
 async function getServicios() {
-  if (serviciosCache) return serviciosCache;
+  if (serviciosCache && Date.now() - serviciosCacheTs < 60 * 60 * 1000) return serviciosCache;
+  const todos = [];
   try {
-    const data = await apiGet("/tourism/services?page=1&page_size=100");
-    serviciosCache = data.items || [];
-  } catch { serviciosCache = []; }
+    for (let page = 1; page <= 5; page++) {
+      const data = await apiGet(`/tourism/services?publicado=true&page=${page}&page_size=200`);
+      todos.push(...(data.items || []));
+      if (todos.length >= (data.total ?? 0) || !(data.items || []).length) break;
+    }
+    serviciosCache = todos;
+    serviciosCacheTs = Date.now();
+  } catch { if (!serviciosCache) serviciosCache = todos; }
   return serviciosCache;
+}
+
+/* Ordena por cercanía al tótem (los que no tienen coordenadas, al final). */
+function porCercania(items) {
+  const d = (r) => { const ll = extractLatLon(r); return ll ? haversineKm(ll[0], ll[1]) : Infinity; };
+  return items.map((r) => [d(r), r]).sort((a, b) => a[0] - b[0]).map((x) => x[1]);
 }
 
 function haversineKm(lat, lon) {
@@ -539,19 +554,19 @@ async function abrirCategoria(catId, chip = "todas") {
   const chipEsSubchip = c.subchips && c.subchips.includes(chip);
   if (c.srv) {
     const servicios = await getServicios();
-    items = servicios.filter((s) => (chip === "todas" ? c.srv.includes(s.tipo) : s.tipo === chip));
+    items = porCercania(servicios.filter((s) => (chip === "todas" ? c.srv.includes(s.tipo) : s.tipo === chip)));
   } else if (c.res || c.etiquetas) {
     const cats = c.res ? (chipEsSubchip ? c.res : (chip === "todas" ? c.res : [chip])) : [];
     for (const cat of cats) {
       try {
-        const d = await apiGet(`/tourism/resources?categoria=${encodeURIComponent(cat)}&publicado=true&page_size=20`);
+        const d = await apiGet(`/tourism/resources?categoria=${encodeURIComponent(cat)}&publicado=true&page_size=100`);
         items.push(...(d.items || []));
       } catch { /* siguiente categoría */ }
     }
     /* Filtro por etiquetas: sin endpoint dedicado, se filtra en cliente sobre todos los recursos */
     if (c.etiquetas && c.etiquetas.length) {
       try {
-        const d = await apiGet(`/tourism/resources?publicado=true&page_size=100`);
+        const d = await apiGet(`/tourism/resources?publicado=true&page_size=200`);
         const tagSet = c.etiquetas.map((t) => t.toLowerCase());
         const matches = (d.items || []).filter((r) => (r.etiquetas || []).some((e) => tagSet.includes(String(e).toLowerCase())));
         /* deduplica por id */
@@ -820,6 +835,8 @@ async function openNoticia(n) {
   if (sub) sub.textContent = [fmtFechaNoticia(n.fecha || n.publicado_en), (n.categorias || []).join(" · ")].filter(Boolean).join(" · ");
   const hero = $("#poi-image");
   if (hero) hero.style.backgroundImage = n.imagen_url ? `url('${n.imagen_url}')` : "";
+  const cred = hero && hero.querySelector(".tt-poihero-credito");
+  if (cred) cred.hidden = true;   /* el crédito es de las fotos de Wikimedia, no de la noticia */
   const tag = $("#poi-tag");
   if (tag) {
     tag.style.background = ""; tag.style.color = "";
@@ -1015,6 +1032,16 @@ function openDetail(r, c) {
   const hero = $("#poi-image");
   const img = r.imagenes?.[0];
   hero.style.backgroundImage = img ? `url('${img}')` : "";
+  /* Crédito de la foto (Wikimedia Commons: autor · licencia), obligatorio por la licencia CC */
+  let credito = hero.querySelector(".tt-poihero-credito");
+  if (!credito) {
+    credito = document.createElement("span");
+    credito.className = "tt-poihero-credito";
+    hero.appendChild(credito);
+  }
+  const textoCredito = img && r.enlaces_externos && r.enlaces_externos.imagen_credito;
+  credito.textContent = textoCredito ? "📷 " + textoCredito : "";
+  credito.hidden = !textoCredito;
 
   // Badge superior naranja (kicker sobre el hero, ej. "ÍCONO DEL PARQUE NATURAL")
   const cat = r.categoria || r.tipo || "";
