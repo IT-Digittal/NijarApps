@@ -8,6 +8,7 @@ muestra como fuente pendiente (sin datos ficticios).
 
 from __future__ import annotations
 
+import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from nijar_dti.api.v1.dependencies import get_current_user
@@ -21,9 +22,12 @@ from nijar_dti.schemas.gemelo import (
     EstacionesAireOut,
     EstadoGemelo,
     MeteoActualOut,
+    OrtofotoHistoricaOut,
+    OrtofotosHistoricasOut,
     ResumenAireOut,
 )
 from nijar_dti.services import gemelo_service as svc
+from nijar_dti.services import ortofotos_service
 
 router = APIRouter()
 
@@ -119,3 +123,28 @@ async def aire(user: CurrentUser = Depends(get_current_user)) -> EstacionesAireO
         return await svc.estaciones_aire()
     except BettairError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+
+@router.get(
+    "/ortofotos-historicas",
+    response_model=OrtofotosHistoricasOut,
+    summary="Ortofotos históricas de Níjar (PNOA histórico del IGN) para el selector de periodo",
+)
+async def ortofotos_historicas(
+    user: CurrentUser = Depends(get_current_user),
+) -> OrtofotosHistoricasOut:
+    """Vuelos disponibles (1956 → actualidad) con imagen sobre el municipio."""
+    try:
+        url, capas, verificada = await ortofotos_service.listar_ortofotos()
+    except httpx.HTTPError as exc:
+        raise HTTPException(
+            status_code=502, detail=f"Servicio de ortofotos del IGN no disponible: {exc}"
+        ) from exc
+    return OrtofotosHistoricasOut(
+        url_wms=url,
+        cobertura_verificada=verificada,
+        capas=[
+            OrtofotoHistoricaOut(nombre=o.nombre, titulo=o.titulo, anio=o.anio, etiqueta=o.etiqueta)
+            for o in capas
+        ],
+    )

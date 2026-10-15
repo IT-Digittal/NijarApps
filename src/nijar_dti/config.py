@@ -131,6 +131,10 @@ class Settings(BaseSettings):
     contexto_backfill_dry_run: bool = True  # True = series sintéticas sin llamar a APIs
     contexto_backfill_anios: int = 3
 
+    # --- Gemelo digital: ortofotos históricas (WMS público del IGN, sin clave) ---
+    # Selector de periodo del Gemelo vivo 2D (vuelos de 1956 a la actualidad).
+    ortofoto_historica_wms_url: str = "https://www.ign.es/wms/pnoa-historico"
+
     # --- Gemelo digital: plataforma ThingsBoard municipal (vertical externa) ---
     # Banderas de playa y aforo del P.N. Cabo de Gata. Sin configurar,
     # los endpoints /gemelo responden 503 y el panel marca la fuente pendiente.

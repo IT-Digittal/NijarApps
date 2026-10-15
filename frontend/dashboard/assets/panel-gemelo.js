@@ -13,7 +13,9 @@
  * El Gemelo vivo 2D admite además cartografía oficial por capas WMS (OGC):
  * ortofoto PNOA del IGN como capa base y parcelario del Catastro como
  * superposición conmutable — patrón equivalente al de un geoportal municipal
- * de urbanismo. Ver la constante WMS más abajo.
+ * de urbanismo. Ver la constante WMS más abajo. Además, selector de periodo con
+ * las ortofotos históricas del IGN (PNOA histórico) y cortina para comparar dos
+ * periodos (instalarOrtofotos).
  */
 
 import { api, tokens } from "./api-client.js?v=18";
@@ -368,7 +370,7 @@ async function pintarInfoGemelo() {
 
 async function renderGemelo2D(el) {
   el.innerHTML = sub("Gemelo digital", "Gemelo vivo del destino",
-    "Réplica digital operativa: los activos de la plataforma y de las verticales externas (IoT municipal con banderas de playa y aforo del parque; red Bettair de calidad del aire y meteorología) sobre un único mapa. Los datos se recargan bajo demanda con el botón «Actualizar».",
+    "Réplica digital operativa: los activos de la plataforma y de las verticales externas (IoT municipal con banderas de playa y aforo del parque; red Bettair de calidad del aire y meteorología) sobre un único mapa. Incluye ortofotos históricas del IGN (de 1956 a hoy) con selector de periodo y cortina para comparar. Los datos se recargan con «Actualizar».",
     '<button class="btn" id="gd-actualizar">Actualizar</button> <button class="btn btn--pri" onclick="UI.goD(\'gd-3d\')">Vista 3D →</button>') +
     '<div class="grid g4" style="margin-bottom:16px" id="gd-kpis"></div>' +
     '<div class="card card--pad0" style="overflow:hidden"><div id="gemelo-2d" style="height:600px;width:100%"></div></div>' +
@@ -500,7 +502,9 @@ async function renderGemelo2D(el) {
       });
     }
     L.control.layers(capasBase, grupos, { collapsed: false }).addTo(mapa2d);
+    catastro.setZIndex(10); /* el parcelario queda siempre sobre las ortofotos históricas */
     instalarMedicion(mapa2d);
+    instalarOrtofotos(mapa2d);
     if (puntos.length) mapa2d.fitBounds(L.latLngBounds(puntos).pad(0.12));
     setTimeout(() => mapa2d.invalidateSize(), 150);
   }, 60);
@@ -518,6 +522,164 @@ async function renderGemelo2D(el) {
   }
   document.getElementById("gd-refresco").textContent =
     "Última actualización: " + new Date().toLocaleTimeString("es-ES") + " · pulse «Actualizar» para recargar los datos.";
+}
+
+/* ================= ORTOFOTOS HISTÓRICAS (selector de periodo + cortina) ================= */
+/* Petición del cliente: elegir un año/periodo y ver cómo era el territorio
+   (vuelo americano de 1956, vuelos de los 70-80, PNOA anuales…), y comparar
+   dos periodos con una cortina deslizante. El catálogo lo da el backend
+   (/gemelo/ortofotos-historicas, leído del WMS «PNOA histórico» del IGN y
+   filtrado a los vuelos con imagen sobre Níjar). Los activos, el Catastro y
+   la regla de medición siguen encima de la ortofoto elegida. */
+let ortoCatalogo = null;
+const ortoEstado = { a: "", b: "__actual", comparar: false, ratio: 0.5 };
+
+async function cargarOrtofotos() {
+  if (ortoCatalogo) return ortoCatalogo;
+  const cat = await api.get("/gemelo/ortofotos-historicas"); /* sin caché del error: se reintenta */
+  ortoCatalogo = cat;
+  return cat;
+}
+
+function instalarOrtofotos(mapa) {
+  let capaA = null;
+  let capaB = null;
+
+  const wmsHistorico = (nombre, z) => L.tileLayer.wms(ortoCatalogo.url_wms, {
+    layers: nombre, format: "image/jpeg", transparent: false, version: "1.3.0",
+    maxZoom: 20, zIndex: z, attribution: "PNOA histórico &copy; Instituto Geográfico Nacional",
+  });
+  const etiqueta = (v) => v === "__actual" ? "Actual (PNOA)"
+    : ((ortoCatalogo.capas.find((c) => c.nombre === v) || {}).etiqueta || v);
+
+  /* Cortina: línea vertical con asa arrastrable; solo el asa captura eventos */
+  const cortina = L.DomUtil.create("div", "", mapa.getContainer());
+  cortina.style.cssText = "position:absolute;top:0;bottom:0;width:0;z-index:450;display:none;pointer-events:none;border-left:3px solid #fff;box-shadow:0 0 6px rgba(0,0,0,.45)";
+  cortina.innerHTML =
+    '<span data-l style="position:absolute;top:10px;right:10px;background:rgba(11,43,87,.85);color:#fff;font:700 12px/1 system-ui;padding:5px 8px;border-radius:6px;white-space:nowrap"></span>' +
+    '<span data-r style="position:absolute;top:10px;left:10px;background:rgba(11,43,87,.85);color:#fff;font:700 12px/1 system-ui;padding:5px 8px;border-radius:6px;white-space:nowrap"></span>' +
+    '<span data-asa title="Arrastre para comparar" style="position:absolute;top:50%;left:-19px;width:36px;height:36px;margin-top:-18px;border-radius:50%;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.4);cursor:ew-resize;pointer-events:auto;display:flex;align-items:center;justify-content:center;font:700 14px system-ui;color:#0B2B57;touch-action:none">⇔</span>';
+  const asa = cortina.querySelector("[data-asa]");
+  L.DomEvent.disableClickPropagation(cortina);
+  L.DomEvent.disableScrollPropagation(cortina);
+
+  function recortar() {
+    if (!capaA || !capaA.getContainer()) return;
+    const c = capaA.getContainer();
+    if (!ortoEstado.comparar) { c.style.clip = ""; return; }
+    const nw = mapa.containerPointToLayerPoint([0, 0]);
+    const se = mapa.containerPointToLayerPoint(mapa.getSize());
+    const x = nw.x + (se.x - nw.x) * ortoEstado.ratio;
+    c.style.clip = "rect(" + nw.y + "px," + x + "px," + se.y + "px," + nw.x + "px)";
+    cortina.style.left = ortoEstado.ratio * 100 + "%";
+  }
+
+  asa.addEventListener("pointerdown", (e) => {
+    e.preventDefault(); e.stopPropagation();
+    asa.setPointerCapture(e.pointerId);
+    mapa.dragging.disable();
+    const mover = (ev) => {
+      const r = mapa.getContainer().getBoundingClientRect();
+      ortoEstado.ratio = Math.min(0.98, Math.max(0.02, (ev.clientX - r.left) / r.width));
+      recortar();
+    };
+    const soltar = () => {
+      asa.removeEventListener("pointermove", mover);
+      asa.removeEventListener("pointerup", soltar);
+      asa.removeEventListener("pointercancel", soltar);
+      mapa.dragging.enable();
+    };
+    asa.addEventListener("pointermove", mover);
+    asa.addEventListener("pointerup", soltar);
+    asa.addEventListener("pointercancel", soltar);
+  });
+  mapa.on("move zoomend resize", recortar);
+
+  function aplicar() {
+    if (capaA) { mapa.removeLayer(capaA); capaA = null; }
+    if (capaB) { mapa.removeLayer(capaB); capaB = null; }
+    const comparar = ortoEstado.comparar && ortoEstado.a;
+    if (ortoEstado.a) {
+      capaA = wmsHistorico(ortoEstado.a, 6).addTo(mapa);
+      capaA.on("load", recortar);
+    }
+    if (comparar) {
+      capaB = ortoEstado.b === "__actual"
+        ? L.tileLayer.wms(WMS.pnoa.url, { ...WMS.pnoa.opciones, zIndex: 5 }).addTo(mapa)
+        : wmsHistorico(ortoEstado.b, 5).addTo(mapa);
+      cortina.querySelector("[data-l]").textContent = "◀ " + etiqueta(ortoEstado.a);
+      cortina.querySelector("[data-r]").textContent = etiqueta(ortoEstado.b) + " ▶";
+    }
+    cortina.style.display = comparar ? "block" : "none";
+    recortar();
+    pintarControl();
+  }
+
+  let caja = null;
+  const Control = L.Control.extend({
+    options: { position: "bottomleft" },
+    onAdd() {
+      caja = L.DomUtil.create("div", "leaflet-bar");
+      caja.style.cssText = "background:#fff;padding:9px 11px;min-width:230px;font:13px system-ui;color:#0B2B57";
+      caja.innerHTML = '<b>🕰 Ortofoto histórica</b><div class="mini" style="margin-top:4px">Cargando vuelos del IGN…</div>';
+      L.DomEvent.disableClickPropagation(caja);
+      L.DomEvent.disableScrollPropagation(caja);
+      return caja;
+    },
+  });
+  new Control().addTo(mapa);
+
+  function pintarControl() {
+    if (!caja || !ortoCatalogo) return;
+    const capas = ortoCatalogo.capas || [];
+    if (!capas.length) {
+      caja.innerHTML = '<b>🕰 Ortofoto histórica</b><div class="mini" style="margin-top:4px;color:#67769A">El IGN no ofrece vuelos históricos para esta zona ahora mismo.</div>';
+      return;
+    }
+    const opts = (sel) => capas.map((c) =>
+      '<option value="' + esc(c.nombre) + '"' + (c.nombre === sel ? " selected" : "") + ">" +
+      esc(c.etiqueta) + " · " + esc(c.titulo) + "</option>").join("");
+    const sel = "width:100%;margin-top:4px;padding:4px;border:1px solid #CBD3E1;border-radius:6px;font:13px system-ui";
+    const btn = "border:1px solid #CBD3E1;background:#fff;border-radius:6px;padding:3px 9px;cursor:pointer;font:700 13px system-ui;color:#0B2B57";
+    caja.innerHTML =
+      '<b>🕰 Ortofoto histórica</b>' +
+      '<div style="display:flex;gap:4px;align-items:center;margin-top:6px">' +
+        '<button type="button" data-paso="-1" title="Periodo anterior" style="' + btn + '">◀</button>' +
+        '<select data-orto="a" style="' + sel + ';margin-top:0;flex:1"><option value="">Actual (capa base)</option>' + opts(ortoEstado.a) + "</select>" +
+        '<button type="button" data-paso="1" title="Periodo siguiente" style="' + btn + '">▶</button>' +
+      "</div>" +
+      '<label style="display:flex;gap:6px;align-items:center;margin-top:8px;cursor:pointer"><input type="checkbox" data-orto="cmp"' + (ortoEstado.comparar ? " checked" : "") + "> Comparar con cortina</label>" +
+      (ortoEstado.comparar
+        ? '<select data-orto="b" style="' + sel + '"><option value="__actual"' + (ortoEstado.b === "__actual" ? " selected" : "") + ">Actual (PNOA)</option>" + opts(ortoEstado.b) + "</select>" +
+          '<div class="mini" style="margin-top:4px;color:#67769A">Izquierda: periodo elegido · derecha: comparación. Arrastre el asa ⇔.</div>'
+        : "") +
+      (ortoCatalogo.cobertura_verificada ? "" : '<div class="mini" style="margin-top:4px;color:#B25E09">Algún periodo puede no cubrir toda la zona.</div>') +
+      '<div class="mini" style="margin-top:4px;color:#67769A">' + capas.length + " periodos · " + esc(capas[0].etiqueta) + " → " + esc(capas[capas.length - 1].etiqueta) + " · IGN</div>";
+
+    caja.querySelector('[data-orto="a"]').onchange = (e) => { ortoEstado.a = e.target.value; aplicar(); };
+    caja.querySelector('[data-orto="cmp"]').onchange = (e) => {
+      ortoEstado.comparar = e.target.checked;
+      if (ortoEstado.comparar && !ortoEstado.a) ortoEstado.a = capas[0].nombre; /* el más antiguo */
+      aplicar();
+    };
+    const b = caja.querySelector('[data-orto="b"]');
+    if (b) b.onchange = (e) => { ortoEstado.b = e.target.value; aplicar(); };
+    caja.querySelectorAll("[data-paso]").forEach((x) => {
+      x.onclick = () => {
+        const i = capas.findIndex((c) => c.nombre === ortoEstado.a);
+        const j = i + Number(x.dataset.paso);
+        if (j < -1 || j >= capas.length) return;
+        ortoEstado.a = j === -1 ? "" : capas[j].nombre;
+        aplicar();
+      };
+    });
+  }
+
+  cargarOrtofotos()
+    .then(() => { if (mapa === mapa2d) aplicar(); })
+    .catch(() => {
+      if (caja) caja.innerHTML = '<b>🕰 Ortofoto histórica</b><div class="mini" style="margin-top:4px;color:#B25E09">Servicio de ortofotos del IGN no disponible ahora mismo.</div>';
+    });
 }
 
 /* ================= HERRAMIENTA DE MEDICIÓN (regla geodésica) ================= */
