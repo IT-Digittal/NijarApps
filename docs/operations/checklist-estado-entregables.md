@@ -101,6 +101,7 @@ como valor añadido no incluido en el alcance original de la licitación.
 
 - [x] Gemelo vivo 2D con capas de activos conmutables y refresco en vivo (base preexistente)
 - [x] Capa base **Ortofotografía PNOA** (WMS oficial del IGN)
+- [x] **Ortofotos históricas** (PNOA histórico del IGN, 1956 → hoy): selector de periodo y cortina de comparación en el Gemelo vivo 2D
 - [x] Capa **Catastro** oficial (WMS de la Dirección General del Catastro) superpuesta al gemelo
 - [x] Infraestructura de **capas geográficas por backend** (modelo, migración, API GeoJSON) al estilo de un geoportal municipal de urbanismo
 - [x] Catálogo de capas adaptado a Níjar: clasificación del suelo, calificación/usos, ordenación estructural, partidos rurales y parcelario catastral

@@ -117,3 +117,20 @@ class AforoParqueOut(BaseModel):
     total_motorizados: int | None
     total_no_motorizados: int | None
     total_personas: int | None
+
+
+class OrtofotoHistoricaOut(BaseModel):
+    """Un vuelo/ortofoto histórica disponible para Níjar (capa del WMS del IGN)."""
+
+    nombre: str  # nombre de la capa WMS (LAYERS)
+    titulo: str
+    anio: int
+    etiqueta: str  # texto corto para el selector («1956-57», «2010»…)
+
+
+class OrtofotosHistoricasOut(BaseModel):
+    """Catálogo de ortofotos históricas para el selector de periodo del gemelo."""
+
+    url_wms: str
+    cobertura_verificada: bool  # False: no se pudo comprobar qué vuelos cubren Níjar
+    capas: list[OrtofotoHistoricaOut]
