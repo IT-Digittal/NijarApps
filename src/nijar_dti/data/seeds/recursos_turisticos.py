@@ -336,3 +336,8 @@ RECURSOS_SEED: list[dict] = [
 from nijar_dti.data.seeds.senderos import SENDEROS_SEED  # noqa: E402
 
 RECURSOS_SEED.extend(SENDEROS_SEED)
+
+# Cabo de Gata y Cerámica y jarapas (secciones de la portada del tótem)
+from nijar_dti.data.seeds.contenidos_totem import CONTENIDOS_TOTEM_SEED  # noqa: E402
+
+RECURSOS_SEED.extend(CONTENIDOS_TOTEM_SEED)
