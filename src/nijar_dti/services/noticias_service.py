@@ -147,7 +147,8 @@ async def refrescar_noticias_loop(interval_seconds: int) -> None:
             for fuente, listar in (("turismo", listar_turismo), ("agenda", listar_agenda)):
                 try:
                     res = await listar(page=1, page_size=12)
-                    reciente = res.items[0].publicado_en if res.items else None
+                    pub = res.items[0].publicado_en if res.items else None
+                    reciente = pub.isoformat() if pub else None
                     logger.info(
                         "Contenidos del tótem actualizados",
                         fuente=fuente,
