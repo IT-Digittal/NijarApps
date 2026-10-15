@@ -181,6 +181,11 @@ class Settings(BaseSettings):
     noticias_strapi_project_id: str = "bs261ckcuumnj68xcjncw7rf"
     # documentId de la categoría "Turismo" (para el atajo de noticias turísticas).
     noticias_categoria_turismo_id: str = "lj6bv606bqnpvf1u1bovf2m8"
+    # Agenda cultural del tótem: la web municipal la publica como noticias de la
+    # categoría «Cultura» (https://nijar.es/noticias/categoria/cultura/). Se
+    # filtra por slug; NOTICIAS_CATEGORIA_AGENDA_ID (documentId) tiene prioridad.
+    noticias_categoria_agenda_slug: str = "cultura"
+    noticias_categoria_agenda_id: str = ""
     noticias_timeout_seconds: int = 12
     # Recarga automática de las noticias del tótem (minutos; 0 = desactivada)
     noticias_refresco_minutos: int = 60

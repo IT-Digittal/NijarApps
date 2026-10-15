@@ -117,7 +117,7 @@ async def test_turismo_sirve_ultimo_listado_si_strapi_falla(monkeypatch):
     async def falla(**_kw):
         raise NoticiasError("timeout")
 
-    svc._ultimo_turismo.clear()
+    svc._ultimo_listado.clear()
     monkeypatch.setattr(svc, "listar_noticias", falla)
     with pytest.raises(NoticiasError):
         await svc.listar_turismo(page=1, page_size=3)
@@ -126,4 +126,34 @@ async def test_turismo_sirve_ultimo_listado_si_strapi_falla(monkeypatch):
     assert await svc.listar_turismo(page=1, page_size=3) is bueno
     monkeypatch.setattr(svc, "listar_noticias", falla)
     assert await svc.listar_turismo(page=1, page_size=3) is bueno
-    svc._ultimo_turismo.clear()
+    svc._ultimo_listado.clear()
+
+
+async def test_listar_por_slug_de_categoria(monkeypatch):
+    cli = ClienteNoticiasStrapi(base_url="https://x", project_id="p")
+    capturado: dict = {}
+
+    async def fake_get(ruta, params):
+        capturado["params"] = params
+        return {"data": [], "meta": {"pagination": {"page": 1, "pageSize": 5, "total": 0}}}
+
+    monkeypatch.setattr(cli, "_get", fake_get)
+    await cli.listar(page_size=5, categoria_slug="cultura")
+    assert ("filters[categories][slug][$eqi]", "cultura") in capturado["params"]
+
+
+async def test_agenda_usa_categoria_cultura(monkeypatch):
+    from nijar_dti.schemas.noticias import NoticiasPageOut
+    from nijar_dti.services import noticias_service as svc
+
+    llamadas: list[dict] = []
+
+    async def fake(**kw):
+        llamadas.append(kw)
+        return NoticiasPageOut(page=1, page_size=6, page_count=0, total=0, items=[])
+
+    svc._ultimo_listado.clear()
+    monkeypatch.setattr(svc, "listar_noticias", fake)
+    await svc.listar_agenda(page_size=6)
+    assert llamadas[0]["categoria_slug"] == "cultura"
+    svc._ultimo_listado.clear()

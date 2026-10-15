@@ -53,6 +53,7 @@ está configurada responden 503):
 | GET | `/noticias/estado` | Estado de configuración de la fuente |
 | GET | `/noticias` | Listado paginado (`page`, `page_size`, `categoria`, `buscar`) |
 | GET | `/noticias/turismo` | Atajo: noticias de la categoría Turismo |
+| GET | `/noticias/agenda` | Agenda cultural: noticias de la categoría **Cultura** (slug `cultura`) |
 | GET | `/noticias/categorias` | Listado de categorías (documentId, nombre, slug) |
 | GET | `/noticias/{slug}` | Detalle de una noticia (con el contenido completo) |
 
@@ -70,6 +71,30 @@ python scripts/verificar_noticias_strapi.py
 
 Comprueba el listado general, el filtro por Turismo y el detalle por slug contra
 el API real. Salida `✔ / ▲ / ✘` y código 0/1.
+
+## 4 bis. Agenda cultural y recarga automática
+
+El Ayuntamiento publica su agenda en la web como noticias de la categoría
+**Cultura** (<https://nijar.es/noticias/categoria/cultura/>). La plataforma la
+lee del mismo Strapi filtrando por el slug de la categoría
+(`filters[categories][slug][$eqi]=cultura`):
+
+```dotenv
+NOTICIAS_CATEGORIA_AGENDA_SLUG=cultura
+NOTICIAS_CATEGORIA_AGENDA_ID=        # opcional: documentId, tiene prioridad
+NOTICIAS_REFRESCO_MINUTOS=60         # recarga en segundo plano (0 = desactivada)
+```
+
+La API recarga Turismo y Cultura cada `NOTICIAS_REFRESCO_MINUTOS` y deja en los
+logs `Contenidos del tótem actualizados` (fuente, total y fecha más reciente).
+Si Strapi falla, se sirve el último listado correcto. En el tótem, la Agenda
+muestra los eventos vigentes del CMS seguidos de la «Agenda cultural del
+Ayuntamiento»; si no hay eventos en el CMS, el destacado de la portada es la
+última publicación cultural. El chatbot (motor `openai`) también la usa como
+contexto.
+
+Si el verificador avisa de «Agenda cultural sin publicaciones», consulta el slug
+real en `GET /api/v1/noticias/categorias` y ajústalo (o usa el documentId).
 
 ## 5. Consumidores en la plataforma
 
