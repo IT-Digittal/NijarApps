@@ -449,6 +449,35 @@ FUENTES_DATOS_SEED: list[dict] = [
         ),
     },
     {
+        "codigo": "FD-117",
+        "nombre": "Consumo eléctrico — Datadis (plataforma de las distribuidoras eléctricas)",
+        "categoria": "energia",
+        "origen": "externa",
+        "estado": "pendiente_acceso",
+        "tipo_conexion": "api_rest",
+        "sistema": "Datadis · datadis.es (API pública agregada + API privada)",
+        "responsable": "Ayuntamiento / distribuidora eléctrica",
+        "requiere_credenciales": True,
+        "credenciales_desc": (
+            "Datos públicos agregados: sin credenciales si Datadis lo permite. API privada "
+            "(CUPS municipales): usuario de datadis.es del Ayuntamiento (CIF) o usuario "
+            "técnico autorizado (DATADIS_USUARIO / DATADIS_PASSWORD / DATADIS_NIF_AUTORIZADO)"
+        ),
+        "endpoint_url": "https://datadis.es/api-public/api-search",
+        "periodicidad": "diaria",
+        "formato": "API/JSON",
+        "kpis_asociados": [
+            "consumo eléctrico del municipio por día y sector (kWh)",
+            "nº de contratos eléctricos del municipio",
+            "consumo horario por suministro municipal (CUPS)",
+            "potencia contratada y autoconsumo por suministro",
+        ],
+        "notas": (
+            "Conector hecho (connectors/datadis.py) y carga diaria automática a las 07:00 "
+            "(services/datadis_service.py). Verificar: python -m scripts.verificar_datadis"
+        ),
+    },
+    {
         "codigo": "FD-115",
         "nombre": "Formularios y encuestas ciudadanas (criterios)",
         "categoria": "web_app",

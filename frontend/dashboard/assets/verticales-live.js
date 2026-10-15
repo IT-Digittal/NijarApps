@@ -331,10 +331,81 @@ function refrescar() {
   }
 }
 
+/* ---------------- ENERGÍA · consumo del municipio (Datadis) ---------------- */
+
+const COLOR_SECTOR = ["#1F6FE5", "#17BEBB", "#F0B429", "#E2572B", "#7C6BF0", "#67769A"];
+
+function esc(t) {
+  return String(t == null ? "" : t).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+function fechaCorta(iso) {
+  const d = new Date(iso + "T00:00:00");
+  return d.toLocaleDateString("es-ES", { day: "numeric", month: "short" });
+}
+
+function pintarEnergiaMunicipio(el, serie, estado) {
+  const V4 = window.__V4;
+  const X = V4.ui;
+  const MWh = (kwh) => X.fmt(kwh / 1000, 1) + " <small>MWh</small>";
+  let h = X.vsub(V4.ENE, "Consumo del municipio", "Consumo eléctrico de Níjar",
+    "Datos públicos agregados de Datadis (plataforma de las distribuidoras eléctricas): energía consumida y número de contratos de todo el término municipal por día, sector y tensión. Se actualiza a diario.", "");
+  const privado = estado && estado.privado_configurado
+    ? (estado.suministros_reales + " suministros municipales con curva horaria (API privada)")
+    : "API privada pendiente de credenciales del Ayuntamiento";
+  if (!serie || !serie.serie || !serie.serie.length) {
+    h += '<div class="card"><div class="card__t">Aún no hay datos de Datadis</div>' +
+      '<div class="mini" style="margin-top:6px;color:var(--muted)">La carga automática se ejecuta cada día. Para cargar el histórico: ' +
+      '<code>python -m nijar_dti.workers.datadis_carga --solo publico --desde 2025-01-01</code>.<br>' + esc(privado) + '</div></div>';
+    el.innerHTML = h;
+    return;
+  }
+  const dias = serie.serie;
+  const ultimos30 = dias.slice(-30);
+  const total30 = ultimos30.reduce((a, d) => a + d.energia_kwh, 0);
+  const previos30 = dias.slice(-60, -30).reduce((a, d) => a + d.energia_kwh, 0);
+  const variacion = previos30 ? Math.round((total30 / previos30 - 1) * 1000) / 10 : null;
+  const sectores = Object.entries(serie.por_sector_kwh).sort((a, b) => b[1] - a[1]);
+  const totalSect = sectores.reduce((a, s) => a + s[1], 0) || 1;
+  const principal = sectores[0];
+  h += '<div class="grid g4" style="margin-bottom:16px">' +
+    X.kpiCard("Consumo últimos 30 días", MWh(total30), variacion == null ? "Todo el municipio" : (variacion > 0 ? "+" : "") + X.fmt(variacion, 1) + "% frente a los 30 anteriores", "ic-blue", "bolt") +
+    X.kpiCard("Media diaria", MWh(total30 / (ultimos30.length || 1)), "Último dato: " + fechaCorta(serie.ultima_fecha_disponible), "ic-navy", "chart") +
+    X.kpiCard("Contratos", X.fmt(serie.contratos_ultimo_dia || 0), "Suministros activos en el municipio", "ic-teal", "doc") +
+    X.kpiCard("Sector principal", esc(principal ? principal[0].toLowerCase() : "—"), principal ? Math.round(principal[1] / totalSect * 100) + "% de la energía del periodo" : "", "ic-gold", "panel") + "</div>";
+  const etiquetas = dias.map((d, i) => (i % Math.ceil(dias.length / 8) === 0 ? fechaCorta(d.fecha) : ""));
+  h += '<div class="grid c7-5">';
+  h += '<div class="card"><div class="card__h"><div><div class="card__t">Consumo diario del municipio (MWh)</div><div class="card__s">Últimos ' + dias.length + " días con datos · fuente Datadis</div></div></div>" +
+    X.areaChart(dias.map((d) => Math.round(d.energia_kwh / 100) / 10), { color: "blue", hpx: 170, h: 190, labels: etiquetas }) + "</div>";
+  h += '<div class="card"><div class="card__h"><div><div class="card__t">Reparto por sector</div><div class="card__s">Energía del periodo</div></div></div>' +
+    '<div style="display:flex;gap:16px;align-items:center">' +
+    X.donut(sectores.map((s, i) => ({ v: s[1], c: COLOR_SECTOR[i % COLOR_SECTOR.length] })), 140, 16, X.fmt(Math.round(serie.energia_total_kwh / 1000)), "MWh") +
+    '<div style="flex:1">' + sectores.map((s, i) =>
+      '<div class="kv"><span class="k"><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:' + COLOR_SECTOR[i % COLOR_SECTOR.length] + ';margin-right:6px"></span>' + esc(s[0].toLowerCase()) +
+      '</span><span class="v">' + Math.round(s[1] / totalSect * 100) + "%</span></div>").join("") + "</div></div></div>";
+  h += "</div>";
+  h += '<div class="mini" style="margin-top:10px;color:var(--muted)">Datadis oculta los registros con pocos contratos por protección de datos, por lo que el total puede ser algo inferior al real. ' + esc(privado) + ".</div>";
+  el.innerHTML = h;
+}
+
+function instalarEnergiaMunicipio() {
+  const V4 = window.__V4;
+  if (!V4 || !V4.ENE || !V4.ui) return;
+  V4.ENE.R.municipio = function (el) {
+    const placeholder = V4.ui.vsub(V4.ENE, "Consumo del municipio", "Consumo eléctrico de Níjar", "Cargando datos de Datadis…", "");
+    el.innerHTML = placeholder;
+    Promise.all([
+      api.get("/verticales/energia/municipio?dias=90").catch(() => null),
+      api.get("/verticales/energia/datadis/estado").catch(() => null),
+    ]).then(([serie, estado]) => pintarEnergiaMunicipio(el, serie, estado));
+  };
+}
+
 /* ---------------- arranque ---------------- */
 
 (async function init() {
   try {
+    instalarEnergiaMunicipio();
     await esperarSesion();
     const d = await cargar();
     aplicarAlumbrado(d.alumbrado, d.cuadros);

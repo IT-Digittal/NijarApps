@@ -162,6 +162,27 @@ class Settings(BaseSettings):
     sigeus_site_code: int = -1
     sigeus_timeout_seconds: int = 12
 
+    # --- Datadis (distribuidoras eléctricas) · vertical de Energía ---
+    # Datos públicos agregados del municipio: se piden sin credenciales; si
+    # Datadis exige identificarse, se usan las de abajo. API privada (CUPS del
+    # Ayuntamiento): requiere usuario (NIF) y contraseña de datadis.es; si el
+    # Ayuntamiento autoriza a otro usuario, su CIF va en DATADIS_NIF_AUTORIZADO.
+    datadis_base_url: str = "https://datadis.es"
+    datadis_usuario: str = ""
+    datadis_password: str = ""
+    datadis_nif_autorizado: str = ""
+    datadis_publico_activo: bool = True
+    # Filtros de la consulta pública: comunidad (01 = Andalucía) y municipio
+    # (código INE provincia+municipio; Níjar = 04066). El verificador
+    # comprueba qué formato acepta Datadis. Las filas se validan además por
+    # nombre de municipio.
+    datadis_comunidad: str = "01"
+    datadis_municipio_codigo: str = "04066"
+    datadis_municipio_nombre: str = "Níjar"
+    # Carga diaria automática (hora local de Madrid; -1 = desactivada)
+    datadis_hora_carga: int = 7
+    datadis_timeout_seconds: int = 90
+
     # --- Gemelo digital: red Bettair de calidad del aire y meteo (OAuth2) ---
     # client_id/client_secret = «app password» generado en cloud.bettair.city.
     bettair_base_url: str = "https://api.v3.bettair.city"
