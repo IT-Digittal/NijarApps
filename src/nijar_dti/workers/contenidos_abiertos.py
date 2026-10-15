@@ -17,6 +17,7 @@ Uso (en producción, dentro del contenedor de la API):
     python -m nijar_dti.workers.contenidos_abiertos --solo osm
     python -m nijar_dti.workers.contenidos_abiertos --solo imagenes
     python -m nijar_dti.workers.contenidos_abiertos --dry-run   # sin escribir
+    python -m nijar_dti.workers.contenidos_abiertos --solo imagenes --rehacer
 """
 
 from __future__ import annotations
@@ -34,10 +35,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from nijar_dti.config import get_settings
 from nijar_dti.connectors.contenidos_abiertos import (
-    USER_AGENT,
     ElementoOsm,
     buscar_imagen,
+    credito_no_representativo,
     descargar_osm,
+    user_agent,
 )
 from nijar_dti.core.database import AsyncSessionLocal
 from nijar_dti.core.logging import configure_logging, get_logger
@@ -142,6 +144,39 @@ async def importar_osm(db: AsyncSession, elementos: list[ElementoOsm]) -> dict[s
     return cuenta
 
 
+_PAUSA_SEGUNDOS = 1.5  # entre recursos: las APIs de Wikimedia limitan con 429
+
+
+async def retirar_imagenes_automaticas(db: AsyncSession, todas: bool = False) -> int:
+    """Quita fotos puestas por este importador para volver a buscarlas.
+
+    Siempre retira las que delatan no ser del lugar (fotos desde el espacio,
+    mapas…); con ``todas=True`` retira todas las automáticas. Las fotos subidas
+    desde el CMS (sin ``imagen_credito``) nunca se tocan.
+    """
+    recursos = (
+        await db.execute(
+            select(RecursoTuristico).where(
+                func.cardinality(RecursoTuristico.imagenes) > 0,
+                RecursoTuristico.enlaces_externos.is_not(None),
+            )
+        )
+    ).scalars()
+    retiradas = 0
+    for r in recursos:
+        enlaces = dict(r.enlaces_externos or {})
+        credito = enlaces.get("imagen_credito")
+        if not credito or not (todas or credito_no_representativo(credito)):
+            continue
+        enlaces.pop("imagen_credito", None)
+        enlaces.pop("imagen_fuente", None)
+        r.enlaces_externos = enlaces or None
+        r.imagenes = None
+        retiradas += 1
+        logger.info("Imagen automática retirada", recurso=r.nombre, credito=credito)
+    return retiradas
+
+
 async def completar_imagenes(
     db: AsyncSession, cli: httpx.AsyncClient, limite: int | None = None
 ) -> dict[str, int]:
@@ -186,16 +221,21 @@ async def completar_imagenes(
             }
             cuenta["wikipedia" if img.origen == "wikipedia" else "commons_cercana"] += 1
             logger.info("Imagen asignada", recurso=r.nombre, origen=img.origen, credito=img.credito)
-        await asyncio.sleep(0.3)  # cortesía con las APIs de Wikimedia
+        await asyncio.sleep(_PAUSA_SEGUNDOS)
     return cuenta
 
 
 async def ejecutar(
-    solo: str | None = None, dry_run: bool = False, limite: int | None = None
+    solo: str | None = None,
+    dry_run: bool = False,
+    limite: int | None = None,
+    rehacer: bool = False,
 ) -> int:
     s = get_settings()
     async with (
-        httpx.AsyncClient(timeout=60, headers={"User-Agent": USER_AGENT}) as cli,
+        httpx.AsyncClient(
+            timeout=90, headers={"User-Agent": user_agent(s.contenidos_contacto)}
+        ) as cli,
         AsyncSessionLocal() as db,
     ):
         if solo in (None, "osm"):
@@ -207,6 +247,9 @@ async def ejecutar(
             )
             print("   ", await importar_osm(db, elementos))
         if solo in (None, "imagenes"):
+            retiradas = await retirar_imagenes_automaticas(db, todas=rehacer)
+            if retiradas:
+                print(f"Imágenes automáticas retiradas para rebuscar: {retiradas}")
             await db.flush()
             print("Imágenes:", await completar_imagenes(db, cli, limite))
         if dry_run:
@@ -224,8 +267,13 @@ def main() -> None:
     p.add_argument("--solo", choices=["osm", "imagenes"], default=None)
     p.add_argument("--dry-run", action="store_true", help="consulta las fuentes sin guardar")
     p.add_argument("--limite", type=int, default=None, help="máximo de recursos para imágenes")
+    p.add_argument(
+        "--rehacer",
+        action="store_true",
+        help="vuelve a buscar todas las fotos puestas por el importador (no las del CMS)",
+    )
     a = p.parse_args()
-    sys.exit(asyncio.run(ejecutar(a.solo, a.dry_run, a.limite)))
+    sys.exit(asyncio.run(ejecutar(a.solo, a.dry_run, a.limite, a.rehacer)))
 
 
 if __name__ == "__main__":

@@ -118,3 +118,61 @@ async def test_articulo_lejano_se_descarta():
     async with _wikimedia(con_articulo=True) as cli:
         img = await ca.imagen_wikipedia(cli, "Torre de Vela Blanca", 36.0, -3.0)
     assert img is None
+
+
+async def test_reintenta_ante_429_respetando_retry_after(monkeypatch):
+    esperas: list[float] = []
+
+    async def esperar(s: float) -> None:
+        esperas.append(s)
+
+    monkeypatch.setattr(ca, "_esperar", esperar)
+    respuestas = iter([
+        httpx.Response(429, headers={"retry-after": "3"}),
+        httpx.Response(503),
+        httpx.Response(200, json={"ok": True}),
+    ])  # fmt: skip
+    async with httpx.AsyncClient(
+        transport=httpx.MockTransport(lambda req: next(respuestas))
+    ) as cli:
+        r = await ca._pedir(cli, "GET", "https://es.wikipedia.org/w/api.php")
+    assert r.json() == {"ok": True}
+    assert esperas == [3.0, 4.0]
+
+
+async def test_overpass_caido_prueba_el_espejo(monkeypatch):
+    async def esperar(s: float) -> None:
+        return None
+
+    monkeypatch.setattr(ca, "_esperar", esperar)
+    hosts: list[str] = []
+
+    def manejador(req: httpx.Request) -> httpx.Response:
+        hosts.append(req.url.host)
+        if req.url.host == "overpass-api.de":
+            return httpx.Response(504)
+        return httpx.Response(200, json=OVERPASS)
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(manejador)) as cli:
+        els = await ca.descargar_osm(cli, "https://overpass-api.de/api/interpreter")
+    assert len(els) == 3
+    assert hosts.count("overpass-api.de") == 3 and hosts[-1] == "overpass.kumi.systems"
+
+
+def test_descarta_fotos_que_no_son_del_lugar():
+    base = {"mime": "image/jpeg", "width": 4000, "thumburl": "https://u/x.jpg"}
+    nasa = {**base, "titulo": "File:ISS042-E-12345.jpg", "extmetadata": {
+        "Artist": {"value": "Earth Science and Remote Sensing Unit, Lyndon B. Johnson Space Center"}
+    }}  # fmt: skip
+    mapa = {**base, "titulo": "File:Mapa de Níjar.jpg"}
+    buena = {**base, "titulo": "File:Castillo de San Felipe.jpg"}
+    assert ca._a_imagen(nasa, "commons-geo") is None
+    assert ca._a_imagen(mapa, "commons-geo") is None
+    assert ca._a_imagen({**buena, "mime": "image/png"}, "commons-geo") is None
+    assert ca._a_imagen(buena, "commons-geo") is not None
+    assert ca.credito_no_representativo("Johnson Space Center · Public domain")
+    assert not ca.credito_no_representativo("Solamente Itan · CC BY 2.0 · Wikimedia Commons")
+
+
+def test_user_agent_lleva_contacto():
+    assert "https://nijar.digittal.es" in ca.user_agent("https://nijar.digittal.es")
