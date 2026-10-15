@@ -16,6 +16,11 @@ set -euo pipefail
 if [[ $# -lt 1 ]]; then
   sed -n '2,13p' "$0"; exit 2
 fi
+if [[ ! -e "$1" ]]; then
+  echo "✘ No existe «$1» en este servidor."
+  echo "  Súbelo antes desde tu PC, p. ej.:  scp inventario.zip ubuntu@<servidor>:~/"
+  exit 1
+fi
 ENTRADA="$(realpath "$1")"; shift
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 CONTENEDOR="${CONTENEDOR_API:-nijar-dti-api}"
