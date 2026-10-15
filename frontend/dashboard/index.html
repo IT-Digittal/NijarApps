@@ -473,8 +473,8 @@
 </div></div>
 <div class="view" id="view-energia"><div class="app">
   <aside class="sidebar" id="esidebar"></aside>
-  <main class="main"><section class="eview" id="ev-resumen"></section><section class="eview" id="ev-edificios"></section><section class="eview" id="ev-fotovoltaica"></section><section class="eview" id="ev-costes"></section><section class="eview" id="ev-informes"></section>
-  <div class="note" style="margin-top:22px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg> Maqueta funcional de la vertical <b>Energía municipal</b> (propuesta): edificios, CUPS y fotovoltaica sobre el motor de costes de la plataforma. Datos simulados.</div></main>
+  <main class="main"><section class="eview" id="ev-resumen"></section><section class="eview" id="ev-municipio"></section><section class="eview" id="ev-edificios"></section><section class="eview" id="ev-fotovoltaica"></section><section class="eview" id="ev-costes"></section><section class="eview" id="ev-informes"></section>
+  <div class="note" style="margin-top:22px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg> Maqueta funcional de la vertical <b>Energía municipal</b> (propuesta): edificios, CUPS y fotovoltaica sobre el motor de costes de la plataforma. Datos simulados, salvo «Consumo del municipio» (datos reales de Datadis) y los CUPS que lleguen de Datadis.</div></main>
 </div></div>
 
 <!-- ================= COMMAND CENTER ALUMBRADO ================= -->
@@ -3688,7 +3688,7 @@ var EN_ED=[
  {id:"ED-06",n:"Depuradora / bombeos (agua)",kwh:15100,base:14400,fv:true,st:"vigilancia"}
 ];
 var ENE=makeVertical({key:"e",name:"Energía municipal",icon:"bolt",view:"view-energia",sidebar:"esidebar",cls:"eview",prefix:"ev-",go:"goE",enter:"enterEnergia",pill:"61 CUPS telemedidos",
- sections:[{id:"resumen",n:"Resumen ejecutivo",i:"chart"},{id:"edificios",n:"Edificios y CUPS",i:"panel",cnt:function(){return 2}},{id:"fotovoltaica",n:"Fotovoltaica",i:"sun"},{id:"costes",n:"Costes y contratos",i:"euro"},{id:"informes",n:"Informes",i:"doc"}]});
+ sections:[{id:"resumen",n:"Resumen ejecutivo",i:"chart"},{id:"municipio",n:"Consumo del municipio",i:"bolt"},{id:"edificios",n:"Edificios y CUPS",i:"panel",cnt:function(){return 2}},{id:"fotovoltaica",n:"Fotovoltaica",i:"sun"},{id:"costes",n:"Costes y contratos",i:"euro"},{id:"informes",n:"Informes",i:"doc"}]});
 var ER2=ENE.R;
 ER2.resumen=function(el){
   var h=vsub(ENE,"Resumen ejecutivo","Energía municipal",
@@ -3714,6 +3714,11 @@ ER2.resumen=function(el){
    }).join("")+'</div>';
   h+='</div>';
   el.innerHTML=h;
+};
+/* Consumo eléctrico de todo el municipio (Datadis): lo pinta verticales-live.js con datos reales */
+ER2.municipio=function(el){
+  el.innerHTML=vsub(ENE,"Consumo del municipio","Consumo eléctrico de Níjar","Datos públicos agregados de Datadis (distribuidoras eléctricas) por día, sector y tensión.","")+
+   '<div class="card"><div class="mini" style="color:var(--muted)">Cargando datos de Datadis…</div></div>';
 };
 ER2.edificios=function(el){
   var h=vsub(ENE,"Edificios","Edificios y CUPS",
@@ -3817,7 +3822,8 @@ UI.presentation=function(on){
 };
 
 /* ================= INIT ================= */
-window.__V4={RES:RES,MOV:MOV,SEG:SEG,ENE:ENE,RS:RS,RS_CONT:RS_CONT,MV_PK:MV_PK,SG_CAMS:SG_CAMS,EN_ED:EN_ED};
+window.__V4={RES:RES,MOV:MOV,SEG:SEG,ENE:ENE,RS:RS,RS_CONT:RS_CONT,MV_PK:MV_PK,SG_CAMS:SG_CAMS,EN_ED:EN_ED,
+  ui:{vsub:vsub,kpiCard:kpiCard,areaChart:areaChart,donut:donut,fmt:fmt,icon:icon}};
 RES.renderSidebar();MOV.renderSidebar();SEG.renderSidebar();ENE.renderSidebar();
 X.renderHome();
 })();
@@ -3831,7 +3837,7 @@ X.renderHome();
 <!-- Mapa GIS real (Leaflet + coordenadas de la BBDD) -->
 <script type="module" src="./assets/panel-mapa.js?v=1"></script>
 <!-- Verticales Smart City alimentadas por /api/v1/verticales -->
-<script type="module" src="./assets/verticales-live.js?v=1"></script>
+<script type="module" src="./assets/verticales-live.js?v=3"></script>
 <!-- Alertas, visitantes, integraciones e informes con datos reales -->
 <script type="module" src="./assets/panel-extra.js?v=1"></script>
 <!-- Gemelo digital del destino (Fase 1): mapa vivo 2D + vista 3D del territorio -->

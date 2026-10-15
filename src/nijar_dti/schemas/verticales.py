@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from datetime import date, datetime
+
 from pydantic import BaseModel, ConfigDict
 
 
@@ -218,3 +220,43 @@ class EnergiaOverview(BaseModel):
     coste_mes_eur: float
     cups_con_fotovoltaica: int
     coste_medio_kwh: float
+
+
+# ---------------- Datadis (consumo eléctrico) ----------------
+
+
+class EnergiaDiaMunicipio(BaseModel):
+    fecha: date
+    energia_kwh: float
+    contratos: int
+    sectores: dict[str, float]  # kWh por sector económico
+
+
+class EnergiaMunicipioSerie(BaseModel):
+    """Consumo eléctrico de todo el municipio (Datadis, datos públicos)."""
+
+    fuente: str = "datadis"
+    desde: date
+    hasta: date
+    ultima_fecha_disponible: date | None
+    energia_total_kwh: float
+    contratos_ultimo_dia: int | None
+    por_sector_kwh: dict[str, float]
+    serie: list[EnergiaDiaMunicipio]
+
+
+class LecturaHorariaOut(BaseModel):
+    momento: datetime
+    consumo_kwh: float
+    autoconsumo_kwh: float | None
+    excedente_kwh: float | None
+    metodo: str | None
+
+
+class EstadoDatadis(BaseModel):
+    publico_activo: bool
+    privado_configurado: bool
+    ultima_fecha_publica: date | None
+    dias_publicos_cargados: int
+    suministros_reales: int
+    ultima_lectura_privada: datetime | None

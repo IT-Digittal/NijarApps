@@ -7,12 +7,18 @@ El acceso de lectura se controla por permiso de módulo (`ver_alumbrado`,
 
 from __future__ import annotations
 
+from datetime import UTC, date, datetime, timedelta
+
 from fastapi import APIRouter, Depends, Query
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from nijar_dti.api.v1.dependencies import require_permiso
+from nijar_dti.config import get_settings
 from nijar_dti.core.database import get_db
 from nijar_dti.core.export import csv_response
+from nijar_dti.models.energia_datadis import ConsumoHorarioEnergia, EnergiaMunicipioDiario
+from nijar_dti.models.verticales import SuministroEnergia
 from nijar_dti.schemas.auth import CurrentUser
 from nijar_dti.schemas.verticales import (
     AguaOverview,
@@ -20,7 +26,10 @@ from nijar_dti.schemas.verticales import (
     CamaraCCTVOut,
     ContenedoresPage,
     CuadroMandoOut,
+    EnergiaMunicipioSerie,
     EnergiaOverview,
+    EstadoDatadis,
+    LecturaHorariaOut,
     LuminariasPage,
     MovilidadOverview,
     PuntoMovilidadOut,
@@ -30,6 +39,7 @@ from nijar_dti.schemas.verticales import (
     SuministrosPage,
     ZonaAlumbradoOut,
 )
+from nijar_dti.services import datadis_service
 from nijar_dti.services import verticales_service as svc
 
 router = APIRouter()
@@ -216,6 +226,76 @@ async def energia_suministros(
     user: CurrentUser = Depends(_ver_energia),
 ) -> SuministrosPage:
     return await svc.energia_suministros(db, page, page_size)
+
+
+@router.get(
+    "/energia/municipio",
+    response_model=EnergiaMunicipioSerie,
+    summary="Consumo eléctrico de todo el municipio por día y sector (Datadis)",
+)
+async def energia_municipio(
+    dias: int = Query(30, ge=1, le=730, description="Últimos N días con datos"),
+    db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(_ver_energia),
+) -> EnergiaMunicipioSerie:
+    hasta = (
+        await db.execute(select(func.max(EnergiaMunicipioDiario.fecha)))
+    ).scalar_one_or_none() or date.today()
+    datos = await datadis_service.serie_municipio(db, hasta - timedelta(days=dias - 1), hasta)
+    return EnergiaMunicipioSerie(**datos)
+
+
+@router.get(
+    "/energia/suministros/{cups}/curva",
+    response_model=list[LecturaHorariaOut],
+    summary="Curva de consumo horaria de un suministro municipal (Datadis)",
+)
+async def energia_curva(
+    cups: str,
+    dias: int = Query(7, ge=1, le=62),
+    db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(_ver_energia),
+) -> list[LecturaHorariaOut]:
+    hasta = datetime.now(UTC)
+    datos = await datadis_service.curva_suministro(db, cups, hasta - timedelta(days=dias), hasta)
+    return [LecturaHorariaOut(**d) for d in datos]
+
+
+@router.get(
+    "/energia/datadis/estado",
+    response_model=EstadoDatadis,
+    summary="Estado de la integración con Datadis",
+)
+async def energia_datadis_estado(
+    db: AsyncSession = Depends(get_db), user: CurrentUser = Depends(_ver_energia)
+) -> EstadoDatadis:
+    s = get_settings()
+    ultima, dias = (
+        await db.execute(
+            select(
+                func.max(EnergiaMunicipioDiario.fecha),
+                func.count(func.distinct(EnergiaMunicipioDiario.fecha)),
+            )
+        )
+    ).one()
+    ultima_lectura = (
+        await db.execute(select(func.max(ConsumoHorarioEnergia.momento)))
+    ).scalar_one_or_none()
+    reales = (
+        await db.execute(
+            select(func.count()).where(
+                SuministroEnergia.metadatos["fuente"].as_string() == datadis_service.FUENTE
+            )
+        )
+    ).scalar_one()
+    return EstadoDatadis(
+        publico_activo=s.datadis_publico_activo,
+        privado_configurado=datadis_service.datadis_configurado(s),
+        ultima_fecha_publica=ultima,
+        dias_publicos_cargados=int(dias or 0),
+        suministros_reales=int(reales or 0),
+        ultima_lectura_privada=ultima_lectura,
+    )
 
 
 # --------------------------- Exportaciones CSV (bloque 11 del pliego) ---------------------------

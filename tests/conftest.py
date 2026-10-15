@@ -19,6 +19,7 @@ os.environ.setdefault("DATABASE_URL", "postgresql+asyncpg://nijar:nijar@localhos
 os.environ.setdefault("APP_ENV", "development")
 os.environ.setdefault("CORS_ORIGINS", "")
 os.environ.setdefault("NOTICIAS_REFRESCO_MINUTOS", "0")  # sin llamadas a Strapi en tests
+os.environ.setdefault("DATADIS_HORA_CARGA", "-1")  # sin carga diaria de Datadis en tests
 
 import pytest
 from fastapi.testclient import TestClient

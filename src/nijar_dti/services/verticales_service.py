@@ -250,8 +250,14 @@ async def seguridad_overview(db: AsyncSession) -> SeguridadOverview:
 
 
 # ------------------------------------------------------------------- ENERGÍA
+def _solo_reales_si_hay(sums: list[SuministroEnergia]) -> list[SuministroEnergia]:
+    """Con suministros reales de Datadis, se ocultan los de demostración."""
+    reales = [s for s in sums if (s.metadatos or {}).get("fuente") == "datadis"]
+    return reales or sums
+
+
 async def energia_overview(db: AsyncSession) -> EnergiaOverview:
-    sums = await _all(db, SuministroEnergia)
+    sums = _solo_reales_si_hay(list(await _all(db, SuministroEnergia)))
     consumo = float(sum(float(s.consumo_mes_kwh) for s in sums))
     auto = float(sum(float(s.autoconsumo_mes_kwh) for s in sums))
     coste = float(sum(float(s.coste_mes_eur) for s in sums))
@@ -272,6 +278,10 @@ async def energia_suministros(
     db: AsyncSession, page: int = 1, page_size: int = 25
 ) -> SuministrosPage:
     q = select(SuministroEnergia)
+    from nijar_dti.services.datadis_service import hay_suministros_reales
+
+    if await hay_suministros_reales(db):
+        q = q.where(SuministroEnergia.metadatos["fuente"].as_string() == "datadis")
     total = int((await db.execute(select(func.count()).select_from(q.subquery()))).scalar_one())
     rows = (
         (
