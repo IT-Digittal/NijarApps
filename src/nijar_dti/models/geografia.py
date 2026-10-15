@@ -35,6 +35,7 @@ class GrupoCapa(StrEnum):
     PLANEAMIENTO = "planeamiento"
     CATASTRO = "catastro"
     CLASIFICACION = "clasificacion"
+    INVENTARIO = "inventario"  # Inventario Municipal de Bienes (planos DWG del Ayuntamiento)
     OTRAS = "otras"
 
 
