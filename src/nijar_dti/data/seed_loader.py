@@ -16,7 +16,7 @@ import sys
 from datetime import UTC
 
 from geoalchemy2.elements import WKTElement
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from nijar_dti.core import permisos as permisos_catalogo
@@ -864,9 +864,18 @@ async def seed_capas_geograficas(db: AsyncSession) -> None:
     log.info("Capas geográficas creadas: %d (%d elementos)", capas, elementos)
 
 
+# Clave del cerrojo consultivo de PostgreSQL que serializa la carga de seeds
+_CERROJO_SEEDS = 178104
+
+
 async def run() -> None:
     async with AsyncSessionLocal() as db:
         try:
+            # La API arranca con varios workers uvicorn y cada uno lanza los seeds:
+            # sin cerrojo competían y chocaban en las claves únicas (p. ej. FD-116).
+            # El cerrojo de transacción hace que esperen y, al entrar, el seed
+            # idempotente ya encuentra las filas creadas por el primero.
+            await db.execute(text("SELECT pg_advisory_xact_lock(:k)"), {"k": _CERROJO_SEEDS})
             await seed_roles(db)
             await seed_admin_user(db)
             await seed_cliente(db)
