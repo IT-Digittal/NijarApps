@@ -1127,11 +1127,14 @@ function openDetail(r, c) {
   if (latlon) {
     actions.push(`<button class="action-btn" id="poi-goto-map">${icono("lugar", "tt-svg--btn")} ${escapeHtml(dict()["action.mapa"] || "Ver en el mapa")}</button>`);
   }
-  if (r.telefono) actions.push(`<a class="action-btn action-btn--secondary" href="tel:${escapeAttr(String(r.telefono).replace(/\s+/g, ""))}">${icono("telefono", "tt-svg--btn")} ${escapeHtml(dict()["action.llamar"] || "Llamar")}</a>`);
-  if (r.web) actions.push(`<a class="action-btn action-btn--secondary" href="${escapeAttr(r.web)}" target="_blank" rel="noopener noreferrer">${icono("web", "tt-svg--btn")} Web</a>`);
+  /* Modo quiosco: sin enlaces que salgan del tótem. El teléfono se muestra en la
+     ficha; la web se ofrece como QR para abrirla en el móvil del visitante. */
+  if (r.web) actions.push(`<button class="action-btn action-btn--secondary" id="poi-web-qr">${icono("web", "tt-svg--btn")} ${escapeHtml(dict()["action.web_movil"] || "Web en tu móvil")}</button>`);
   const actEl = $("#poi-actions");
   actEl.innerHTML = actions.join("");
   actEl.hidden = !actions.length;
+  const webQr = $("#poi-web-qr");
+  if (webQr) webQr.addEventListener("click", () => mostrarQR(r.web, r.nombre_i18n?.[currentLang] || r.nombre));
   const goMap = $("#poi-goto-map");
   if (goMap) goMap.addEventListener("click", () => { dialog.close(); abrirMapa(latlon); });
 
@@ -1175,6 +1178,7 @@ async function abrirMapa(centro) {
     const cont = $("#totem-map");
     if (!mapaLeaflet) {
       mapaLeaflet = L.map(cont, { zoomControl: true }).setView([36.82, -2.1], 11);
+      mapaLeaflet.attributionControl.setPrefix(false); /* el prefijo «Leaflet» es un enlace externo */
       L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 17, attribution: "&copy; OpenStreetMap" }).addTo(mapaLeaflet);
       const pts = [];
       recursos.forEach((r) => {
@@ -1525,3 +1529,59 @@ resetChat();
 cargarConteos();
 cargarDestacado();
 setInterval(cargarDestacado, 30 * 60 * 1000); /* el tótem no se recarga: refresco del destacado */
+
+
+// ============================================================
+// MODO QUIOSCO: el tótem nunca navega fuera de su propia URL
+// ============================================================
+// Los enlaces externos se ofrecen como código QR para abrirlos en el móvil
+// del visitante. Además, una guarda global bloquea cualquier enlace externo,
+// tel:/mailto: o window.open que pudiera colarse desde un contenido.
+function qrSvg(texto) {
+  if (typeof window.qrcode !== "function") return "";
+  window.qrcode.stringToBytes = window.qrcode.stringToBytesFuncs["UTF-8"];
+  const qr = window.qrcode(0, "M");
+  qr.addData(String(texto));
+  qr.make();
+  return qr.createSvgTag({ cellSize: 6, margin: 2, scalable: true });
+}
+
+function urlLegible(url) {
+  return String(url || "").replace(/^https?:\/\//, "").replace(/\/$/, "");
+}
+
+function mostrarQR(url, titulo) {
+  const d = $("#qr-dialog");
+  if (!d || !url) return;
+  const destino = /^https?:\/\//i.test(url) ? url : "https://" + url;
+  $("#qr-title").textContent = titulo || urlLegible(destino);
+  $("#qr-code").innerHTML = qrSvg(destino);
+  $("#qr-url").textContent = urlLegible(destino);
+  if (!d.open) d.showModal();
+  if (typeof resetIdle === "function") resetIdle();
+}
+
+(function instalarModoQuiosco() {
+  $("#qr-close")?.addEventListener("click", () => $("#qr-dialog").close());
+  $("#qr-dialog")?.addEventListener("click", (e) => { if (e.target.id === "qr-dialog") e.target.close(); });
+  document.querySelectorAll("[data-qr]").forEach((el) => {
+    const hueco = el.querySelector(".tt-social-qr");
+    if (hueco) hueco.innerHTML = qrSvg(el.dataset.qr);
+  });
+  const esExterno = (a) => {
+    const href = a.getAttribute("href") || "";
+    if (!href || href.startsWith("#")) return false;
+    try { return new URL(href, location.href).origin !== location.origin; } catch { return true; }
+  };
+  const bloquear = (e) => {
+    const a = e.target.closest && e.target.closest("a[href]");
+    if (!a || !esExterno(a)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const href = a.getAttribute("href");
+    if (/^https?:/i.test(href)) mostrarQR(href, a.textContent.trim());
+  };
+  document.addEventListener("click", bloquear, true);
+  document.addEventListener("auxclick", bloquear, true);
+  window.open = () => null;
+})();
