@@ -9,12 +9,13 @@ from __future__ import annotations
 
 from datetime import UTC, date, datetime, timedelta
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from nijar_dti.api.v1.dependencies import require_permiso
+from nijar_dti.api.v1.dependencies import require_permiso, require_roles
 from nijar_dti.config import get_settings
+from nijar_dti.connectors.datadis_fichero import FicheroDatadisError, leer_fichero
 from nijar_dti.core.database import get_db
 from nijar_dti.core.export import csv_response
 from nijar_dti.models.energia_datadis import ConsumoHorarioEnergia, EnergiaMunicipioDiario
@@ -29,6 +30,7 @@ from nijar_dti.schemas.verticales import (
     EnergiaMunicipioSerie,
     EnergiaOverview,
     EstadoDatadis,
+    ImportacionDatadisOut,
     LecturaHorariaOut,
     LuminariasPage,
     MovilidadOverview,
@@ -51,6 +53,7 @@ _ver_residuos = require_permiso("ver_residuos")
 _ver_movilidad = require_permiso("ver_movilidad")
 _ver_seguridad = require_permiso("ver_seguridad")
 _ver_energia = require_permiso("ver_energia")
+_importar_energia = require_roles("administrador_tic", "analista_datos")
 
 
 # --------------------------------------------------------------- ALUMBRADO
@@ -295,6 +298,42 @@ async def energia_datadis_estado(
         dias_publicos_cargados=int(dias or 0),
         suministros_reales=int(reales or 0),
         ultima_lectura_privada=ultima_lectura,
+    )
+
+
+_MAX_FICHERO_DATADIS = 20 * 1024 * 1024
+
+
+@router.post(
+    "/energia/datadis/importar",
+    response_model=ImportacionDatadisOut,
+    summary="Importar el fichero descargado de datadis.es (Consumos y contratos)",
+)
+async def energia_datadis_importar(
+    archivo: UploadFile = File(..., description="CSV o Excel descargado de datadis.es/queries"),
+    db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(_importar_energia),
+) -> ImportacionDatadisOut:
+    """Carga manual mientras no hay usuario de Datadis para su API.
+
+    Idempotente: volver a subir el mismo mes actualiza los valores.
+    """
+    contenido = await archivo.read(_MAX_FICHERO_DATADIS + 1)
+    if len(contenido) > _MAX_FICHERO_DATADIS:
+        raise HTTPException(413, "El fichero supera los 20 MB")
+    try:
+        registros = leer_fichero(contenido, archivo.filename or "")
+    except FicheroDatadisError as exc:
+        raise HTTPException(422, str(exc)) from exc
+    except Exception as exc:  # noqa: BLE001 — fichero corrupto o de otro tipo
+        raise HTTPException(422, f"No se puede leer el fichero: {exc}") from exc
+    cuenta = await datadis_service.guardar_registros(db, registros)
+    fechas = [r.fecha for r in registros if r is not None]
+    return ImportacionDatadisOut(
+        fichero=archivo.filename or "fichero",
+        desde=min(fechas) if fechas else None,
+        hasta=max(fechas) if fechas else None,
+        **cuenta,
     )
 
 

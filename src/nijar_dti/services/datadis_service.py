@@ -46,18 +46,24 @@ FUENTE = "datadis"
 _CERROJO_CARGA = 178105  # pg_advisory_lock: una sola carga aunque haya varios workers
 
 
+def _valor_real(v: str | None) -> str:
+    """Vacío si el valor es un marcador de plantilla («<NIF/CIF del usuario>»)."""
+    v = (v or "").strip()
+    return "" if v.startswith("<") and v.endswith(">") else v
+
+
 def datadis_configurado(settings: Settings | None = None) -> bool:
-    """True si hay credenciales para la API privada."""
+    """True si hay credenciales (reales, no de plantilla) para Datadis."""
     s = settings or get_settings()
-    return bool(s.datadis_usuario and s.datadis_password)
+    return bool(_valor_real(s.datadis_usuario) and _valor_real(s.datadis_password))
 
 
 def nuevo_cliente(settings: Settings | None = None) -> ClienteDatadis:
     s = settings or get_settings()
     return ClienteDatadis(
-        usuario=s.datadis_usuario,
-        password=s.datadis_password,
-        nif_autorizado=s.datadis_nif_autorizado,
+        usuario=_valor_real(s.datadis_usuario),
+        password=_valor_real(s.datadis_password),
+        nif_autorizado=_valor_real(s.datadis_nif_autorizado),
         base_url=s.datadis_base_url,
         timeout_seconds=s.datadis_timeout_seconds,
     )
@@ -91,55 +97,70 @@ def es_del_municipio(r: RegistroPublico, nombre: str) -> bool:
 # ------------------------------------------------------------- pública ----
 
 
-async def cargar_publico(
-    db: AsyncSession, cli: ClienteDatadis, desde: date, hasta: date
+async def guardar_registros(
+    db: AsyncSession, registros: list[RegistroPublico | None]
 ) -> dict[str, int]:
-    """Descarga y guarda el agregado diario del municipio entre dos fechas."""
+    """Guarda (upsert) filas públicas de Datadis, sean de la API o de un fichero.
+
+    Descarta las no interpretables (``None``) y las de otros municipios; agrega
+    las repetidas por (día, sector, tensión).
+    """
     s = get_settings()
     cuenta = {"filas": 0, "guardadas": 0, "otros_municipios": 0, "no_interpretables": 0}
-    for ini, fin in tramos_mensuales(desde, hasta):
-        crudas, _ = await cli.buscar_publico(ini, fin, filtros_publicos(s))
-        agregado: dict[tuple[date, str, str], list[float]] = defaultdict(lambda: [0, 0.0])
-        for fila in crudas:
-            cuenta["filas"] += 1
-            reg = parsear_registro_publico(fila)
-            if reg is None:
-                cuenta["no_interpretables"] += 1
-                continue
-            if not es_del_municipio(reg, s.datadis_municipio_nombre):
-                cuenta["otros_municipios"] += 1
-                continue
-            acc = agregado[(reg.fecha, reg.sector, reg.tension)]
-            acc[0] += reg.contratos
-            acc[1] += reg.energia_kwh
-        for (fecha, sector, tension), (contratos, energia) in agregado.items():
-            stmt = insert(EnergiaMunicipioDiario).values(
-                id=uuid4(),  # insert() de Core no aplica el default_factory del ORM
-                fecha=fecha,
-                sector=sector,
-                tension=tension,
-                contratos=int(contratos),
-                energia_kwh=round(energia, 3),
-                municipio=s.datadis_municipio_nombre,
-                fuente=FUENTE,
+    agregado: dict[tuple[date, str, str], list[float]] = defaultdict(lambda: [0, 0.0])
+    for reg in registros:
+        cuenta["filas"] += 1
+        if reg is None:
+            cuenta["no_interpretables"] += 1
+            continue
+        if not es_del_municipio(reg, s.datadis_municipio_nombre):
+            cuenta["otros_municipios"] += 1
+            continue
+        acc = agregado[(reg.fecha, reg.sector, reg.tension)]
+        acc[0] += reg.contratos
+        acc[1] += reg.energia_kwh
+    for (fecha, sector, tension), (contratos, energia) in agregado.items():
+        stmt = insert(EnergiaMunicipioDiario).values(
+            id=uuid4(),  # insert() de Core no aplica el default_factory del ORM
+            fecha=fecha,
+            sector=sector,
+            tension=tension,
+            contratos=int(contratos),
+            energia_kwh=round(energia, 3),
+            municipio=s.datadis_municipio_nombre,
+            fuente=FUENTE,
+        )
+        await db.execute(
+            stmt.on_conflict_do_update(
+                constraint="uq_energia_municipio_dia",
+                set_={
+                    "contratos": stmt.excluded.contratos,
+                    "energia_kwh": stmt.excluded.energia_kwh,
+                    "updated_at": func.now(),
+                },
             )
-            await db.execute(
-                stmt.on_conflict_do_update(
-                    constraint="uq_energia_municipio_dia",
-                    set_={
-                        "contratos": stmt.excluded.contratos,
-                        "energia_kwh": stmt.excluded.energia_kwh,
-                        "updated_at": func.now(),
-                    },
-                )
-            )
-            cuenta["guardadas"] += 1
+        )
+        cuenta["guardadas"] += 1
     if cuenta["otros_municipios"]:
         logger.warning(
-            "Datadis devolvió filas de otros municipios: revisar DATADIS_MUNICIPIO_CODIGO",
+            "Datadis: filas de otros municipios descartadas",
             descartadas=cuenta["otros_municipios"],
         )
     return cuenta
+
+
+async def cargar_publico(
+    db: AsyncSession, cli: ClienteDatadis, desde: date, hasta: date
+) -> dict[str, int]:
+    """Descarga de la API y guarda el agregado diario del municipio entre dos fechas."""
+    s = get_settings()
+    total = {"filas": 0, "guardadas": 0, "otros_municipios": 0, "no_interpretables": 0}
+    for ini, fin in tramos_mensuales(desde, hasta):
+        crudas, _ = await cli.buscar_publico(ini, fin, filtros_publicos(s))
+        cuenta = await guardar_registros(db, [parsear_registro_publico(f) for f in crudas])
+        for k, v in cuenta.items():
+            total[k] += v
+    return total
 
 
 # ------------------------------------------------------------- privada ----
