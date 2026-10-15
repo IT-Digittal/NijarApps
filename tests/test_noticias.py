@@ -157,3 +157,21 @@ async def test_agenda_usa_categoria_cultura(monkeypatch):
     await svc.listar_agenda(page_size=6)
     assert llamadas[0]["categoria_slug"] == "cultura"
     svc._ultimo_listado.clear()
+
+
+async def test_listado_general_sin_categoria(monkeypatch):
+    from nijar_dti.schemas.noticias import NoticiasPageOut
+    from nijar_dti.services import noticias_service as svc
+
+    llamadas: list[dict] = []
+
+    async def fake(**kw):
+        llamadas.append(kw)
+        return NoticiasPageOut(page=1, page_size=12, page_count=0, total=0, items=[])
+
+    svc._ultimo_listado.clear()
+    monkeypatch.setattr(svc, "listar_noticias", fake)
+    await svc.listar_todas(page_size=12)
+    assert llamadas[0]["categoria_document_id"] is None
+    assert llamadas[0]["categoria_slug"] is None
+    svc._ultimo_listado.clear()

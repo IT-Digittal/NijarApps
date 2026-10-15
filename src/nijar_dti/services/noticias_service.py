@@ -25,7 +25,7 @@ from nijar_dti.schemas.noticias import (
 
 logger = get_logger(__name__)
 
-# Último listado correcto por (fuente, page, page_size): "turismo" o "agenda"
+# Último listado correcto por (fuente, page, page_size): "todas", "turismo" o "agenda"
 _ultimo_listado: dict[tuple[str, int, int], NoticiasPageOut] = {}
 
 
@@ -107,10 +107,18 @@ async def _con_respaldo(
     return res
 
 
+async def listar_todas(
+    *, page: int = 1, page_size: int = 12, settings: Settings | None = None
+) -> NoticiasPageOut:
+    """Todas las noticias del Ayuntamiento (sección Noticias del tótem y del panel)."""
+    s = settings or get_settings()
+    return await _con_respaldo("todas", page, page_size, s)
+
+
 async def listar_turismo(
     *, page: int = 1, page_size: int = 12, settings: Settings | None = None
 ) -> NoticiasPageOut:
-    """Noticias de la categoría Turismo (sección Noticias del tótem)."""
+    """Noticias de la categoría Turismo (atajo /noticias/turismo)."""
     s = settings or get_settings()
     return await _con_respaldo(
         "turismo",
@@ -137,14 +145,14 @@ async def listar_agenda(
 
 
 async def refrescar_noticias_loop(interval_seconds: int) -> None:
-    """Recarga periódica de las noticias y la agenda cultural del tótem.
+    """Recarga periódica de las noticias (todas) y la agenda cultural del tótem.
 
     Mantiene caliente el último listado correcto y deja en los logs la fecha
     de la publicación más reciente, para detectar si el origen deja de publicar.
     """
     while True:
         if noticias_configurado():
-            for fuente, listar in (("turismo", listar_turismo), ("agenda", listar_agenda)):
+            for fuente, listar in (("todas", listar_todas), ("agenda", listar_agenda)):
                 try:
                     res = await listar(page=1, page_size=12)
                     pub = res.items[0].publicado_en if res.items else None

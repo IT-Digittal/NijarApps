@@ -183,7 +183,7 @@ class TestTitularesNoticias:
             )
             return NoticiasPageOut(page=1, page_size=5, page_count=1, total=1, items=[noticia])
 
-        monkeypatch.setattr("nijar_dti.services.noticias_service.listar_turismo", fake)
+        monkeypatch.setattr("nijar_dti.services.noticias_service.listar_todas", fake)
         out = await adapter._titulares_noticias()
         assert out == ["- Titular X · 05/07/2026"]
 
@@ -193,7 +193,7 @@ class TestTitularesNoticias:
         async def boom(**kw):
             raise RuntimeError("fuente caída")
 
-        monkeypatch.setattr("nijar_dti.services.noticias_service.listar_turismo", boom)
+        monkeypatch.setattr("nijar_dti.services.noticias_service.listar_todas", boom)
         assert await adapter._titulares_noticias() == []
 
     async def test_agenda_cultural_en_contexto(self, monkeypatch):

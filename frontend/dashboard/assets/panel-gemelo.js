@@ -308,7 +308,7 @@ async function pintarInfoGemelo() {
 
   const [meteo, noticias] = await Promise.all([
     api.get("/gemelo/meteo").catch(() => null),
-    api.get("/noticias/turismo?page_size=5").catch(() => null),
+    api.get("/noticias?page_size=5").catch(() => null),
   ]);
 
   let cardMeteo = "";
@@ -353,13 +353,13 @@ async function pintarInfoGemelo() {
       "</a>").join("");
     cardNoticias =
       '<div class="card" style="padding:16px">' +
-        '<h3 style="margin:0 0 4px">Últimas noticias de Turismo</h3>' +
+        '<h3 style="margin:0 0 4px">Últimas noticias del Ayuntamiento</h3>' +
         '<div class="mini" style="color:var(--muted);margin-bottom:4px">Fuente: web del Ayuntamiento (Strapi)</div>' +
         filas +
       "</div>";
   } else {
     cardNoticias = '<div class="card" style="padding:16px">' +
-      '<h3 style="margin:0 0 4px">Últimas noticias de Turismo</h3>' +
+      '<h3 style="margin:0 0 4px">Últimas noticias del Ayuntamiento</h3>' +
       '<div class="mini" style="color:var(--muted)">No hay noticias disponibles ahora mismo.</div></div>';
   }
 

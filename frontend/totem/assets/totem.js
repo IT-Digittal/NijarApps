@@ -735,7 +735,7 @@ function renderItems(grid, items, c) {
 }
 
 // ============================================================
-// NOTICIAS del Ayuntamiento (Strapi, categoría Turismo)
+// NOTICIAS del Ayuntamiento (Strapi, todas las categorías)
 // ============================================================
 function fmtFechaNoticia(s) {
   if (!s) return "";
@@ -778,7 +778,7 @@ async function renderNoticias(grid) {
   if (chipsEl) chipsEl.innerHTML = ""; /* las noticias no llevan filtros */
   let items = [];
   try {
-    const d = await apiGet("/noticias/turismo?page_size=12");
+    const d = await apiGet("/noticias?page_size=12");
     items = d.items || [];
   } catch { items = []; }
   const cnt = $("#list-count");
