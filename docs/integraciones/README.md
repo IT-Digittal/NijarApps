@@ -55,6 +55,12 @@ docker exec nijar-dti-api python -m nijar_dti.workers.contenidos_abiertos       
   guarda el crédito (autor · licencia) en `enlaces_externos.imagen_credito`; el
   tótem lo muestra sobre la foto. No pisa imágenes puestas desde el CMS. Si una
   foto no convence, basta con sustituirla en el CMS.
+- **Límites de las APIs**: Wikimedia exige un User-Agent con contacto
+  (`CONTENIDOS_CONTACTO`) y limita con 429; el worker reintenta respetando
+  `Retry-After` y espera 1,5 s entre recursos. Overpass se reintenta y, si sigue
+  caído, se usa un espejo. Se descartan fotos que no son del lugar (fotos desde
+  el espacio, mapas, escudos, PNG…); `--solo imagenes --rehacer` vuelve a buscar
+  todas las fotos automáticas.
 
 ### Noticias del Ayuntamiento (Strapi) · 🟢
 La web municipal publica sus noticias en Strapi (JSON público, sin auth). La

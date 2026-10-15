@@ -15,6 +15,7 @@ Este módulo solo habla con las APIs y normaliza; la escritura en BBDD la hace
 
 from __future__ import annotations
 
+import asyncio
 import html
 import math
 import re
@@ -23,7 +24,36 @@ from typing import Any
 
 import httpx
 
-USER_AGENT = "PlataformaDTI-Nijar/1.0 (Ayuntamiento de Nijar; contenidos del totem turistico)"
+
+def user_agent(contacto: str) -> str:
+    """User-Agent con contacto, obligatorio por la política de las APIs de Wikimedia
+    (sin él limitan el acceso con 429 casi de inmediato)."""
+    return f"PlataformaDTI-Nijar/1.1 ({contacto}; Ayuntamiento de Nijar, totem turistico)"
+
+
+# Espejos públicos de Overpass: si el principal da 429/504 se prueba el siguiente
+OVERPASS_ESPEJOS = ("https://overpass.kumi.systems/api/interpreter",)
+
+_REINTENTABLES = {429, 502, 503, 504}
+_esperar = asyncio.sleep  # inyectable en los tests
+
+
+async def _pedir(
+    cli: httpx.AsyncClient, metodo: str, url: str, intentos: int = 5, **kw: Any
+) -> httpx.Response:
+    """Petición con reintentos ante 429/5xx, respetando ``Retry-After``."""
+    for n in range(intentos):
+        r = await cli.request(metodo, url, **kw)
+        if r.status_code not in _REINTENTABLES or n == intentos - 1:
+            r.raise_for_status()
+            return r
+        try:
+            espera = min(float(r.headers.get("retry-after", "")), 60.0)
+        except ValueError:
+            espera = 2.0 * 2**n  # 2, 4, 8, 16 s
+        await _esperar(espera)
+    raise AssertionError("inalcanzable")
+
 
 # ---------------------------------------------------------------- OSM ----
 
@@ -177,9 +207,18 @@ def parsear_overpass(datos: dict[str, Any]) -> list[ElementoOsm]:
 async def descargar_osm(
     cli: httpx.AsyncClient, url_overpass: str, municipio: str = "Níjar"
 ) -> list[ElementoOsm]:
-    r = await cli.post(url_overpass, data={"data": consulta_overpass(municipio)})
-    r.raise_for_status()
-    return parsear_overpass(r.json())
+    """Descarga de Overpass con reintentos; si el servidor sigue caído, prueba un espejo."""
+    error: httpx.HTTPError | None = None
+    for url in (url_overpass, *[u for u in OVERPASS_ESPEJOS if u != url_overpass]):
+        try:
+            r = await _pedir(
+                cli, "POST", url, intentos=3, data={"data": consulta_overpass(municipio)}
+            )
+            return parsear_overpass(r.json())
+        except httpx.HTTPError as exc:
+            error = exc
+    assert error is not None
+    raise error
 
 
 # ---------------------------------------------------- Wikipedia/Commons ----
@@ -224,7 +263,9 @@ async def _info_fichero(cli: httpx.AsyncClient, titulos: list[str]) -> list[dict
     """imageinfo (url escalada, tamaño, MIME, autor y licencia) de ficheros de Commons."""
     if not titulos:
         return []
-    r = await cli.get(
+    r = await _pedir(
+        cli,
+        "GET",
         _COMMONS,
         params={
             "action": "query",
@@ -246,14 +287,32 @@ async def _info_fichero(cli: httpx.AsyncClient, titulos: list[str]) -> list[dict
     return out
 
 
+# Fotos que no representan el lugar: fotos desde el espacio (la ISS también se
+# geoetiqueta), mapas, planos, escudos, banderas, diagramas…
+_RE_NO_REPRESENTATIVA = re.compile(
+    r"\bISS\d|\bSTS-|NASA|Space Center|astronaut|Landsat|Sentinel|sat[eé]lit|"
+    r"\bmap\b|\bmapa|\bplano\b|locator|location map|escudo|coat of arms|\bflag\b|"
+    r"bandera|diagram|esquema|\blogo\b",
+    re.IGNORECASE,
+)
+
+
+def credito_no_representativo(texto: str) -> bool:
+    """True si el crédito/título delata una foto que no sirve como imagen del lugar."""
+    return bool(_RE_NO_REPRESENTATIVA.search(texto or ""))
+
+
 def _a_imagen(info: dict[str, Any], origen: str) -> ImagenEncontrada | None:
-    if info.get("mime") not in ("image/jpeg", "image/png"):
+    if info.get("mime") != "image/jpeg":  # las PNG suelen ser mapas o diagramas
         return None
     if int(info.get("width") or 0) < _ANCHO_MIN_ORIGINAL:
         return None
     meta = info.get("extmetadata") or {}
     autor = _limpiar_html((meta.get("Artist") or {}).get("value")) or "Autor desconocido"
     licencia = _limpiar_html((meta.get("LicenseShortName") or {}).get("value")) or "ver licencia"
+    descripcion = _limpiar_html((meta.get("ImageDescription") or {}).get("value"))
+    if credito_no_representativo(f"{info.get('titulo', '')} {autor} {descripcion[:300]}"):
+        return None
     url = info.get("thumburl") or info.get("url")
     if not url:
         return None
@@ -273,7 +332,9 @@ async def imagen_wikipedia(
     El artículo se acepta si está georreferenciado a menos de 5 km del recurso
     o, sin coordenadas, si comparte alguna palabra significativa con el nombre.
     """
-    r = await cli.get(
+    r = await _pedir(
+        cli,
+        "GET",
         _WIKI_ES,
         params={
             "action": "query",
@@ -311,7 +372,9 @@ async def imagen_commons_cercana(
     cli: httpx.AsyncClient, lat: float, lon: float, radio_m: int = 1000
 ) -> ImagenEncontrada | None:
     """La foto de Commons georreferenciada más cercana al punto (radio en metros)."""
-    r = await cli.get(
+    r = await _pedir(
+        cli,
+        "GET",
         _COMMONS,
         params={
             "action": "query",

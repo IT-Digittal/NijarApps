@@ -138,6 +138,8 @@ class Settings(BaseSettings):
     # --- Contenidos abiertos del tótem (workers/contenidos_abiertos.py) ---
     # Gastronomía y artesanía desde OpenStreetMap (Overpass API, sin clave).
     overpass_url: str = "https://overpass-api.de/api/interpreter"
+    # Contacto en el User-Agent: lo exige la política de las APIs de Wikimedia.
+    contenidos_contacto: str = "https://nijar.digittal.es"
 
     # --- Gemelo digital: plataforma ThingsBoard municipal (vertical externa) ---
     # Banderas de playa y aforo del P.N. Cabo de Gata. Sin configurar,
