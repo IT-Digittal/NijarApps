@@ -260,3 +260,15 @@ class EstadoDatadis(BaseModel):
     dias_publicos_cargados: int
     suministros_reales: int
     ultima_lectura_privada: datetime | None
+
+
+class ImportacionDatadisOut(BaseModel):
+    """Resultado de importar el fichero descargado de datadis.es."""
+
+    fichero: str
+    filas: int
+    guardadas: int
+    otros_municipios: int
+    no_interpretables: int
+    desde: date | None
+    hasta: date | None

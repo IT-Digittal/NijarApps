@@ -17,7 +17,7 @@
  *    referencias originales en closures.
  */
 
-import { api } from "./api-client.js?v=18";
+import { api, tokens, invalidateCache } from "./api-client.js?v=18";
 
 const CLAVE_ACCESO = "nijar.dti.access";
 const INTERVALO_SESION_MS = 500;
@@ -344,6 +344,52 @@ function fechaCorta(iso) {
   return d.toLocaleDateString("es-ES", { day: "numeric", month: "short" });
 }
 
+const API_BASE = window.NIJAR_API_BASE || window.location.origin + "/api/v1";
+
+/* Carga manual del fichero de datadis.es (mientras no hay usuario para su API) */
+function tarjetaImportar() {
+  return '<div class="card" style="margin-top:16px"><div class="card__h"><div><div class="card__t">Importar fichero de Datadis</div>' +
+    '<div class="card__s">En <b>datadis.es → Datos públicos → Consultas</b>: elige un mes, «1 Municipio» = Níjar, todos los sectores y tensiones → «Consultar» → «Descargar» (CSV o Excel). Súbelo aquí; volver a subir un mes lo actualiza.</div></div></div>' +
+    '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">' +
+    '<input type="file" id="dd-fichero" accept=".csv,.xlsx,.xls,.txt" multiple>' +
+    '<button class="btn btn--pri" id="dd-importar">Importar</button>' +
+    '<span class="mini" id="dd-resultado" style="color:var(--muted)"></span></div></div>';
+}
+
+function activarImportar(el) {
+  const btn = el.querySelector("#dd-importar");
+  if (!btn) return;
+  btn.onclick = async () => {
+    const input = el.querySelector("#dd-fichero");
+    const out = el.querySelector("#dd-resultado");
+    if (!input.files.length) { out.textContent = "Elige primero el fichero descargado de datadis.es."; return; }
+    btn.disabled = true;
+    const lineas = [];
+    for (const f of input.files) {
+      out.textContent = "Importando " + f.name + "…";
+      const fd = new FormData();
+      fd.append("archivo", f);
+      try {
+        const r = await fetch(API_BASE + "/verticales/energia/datadis/importar", {
+          method: "POST", body: fd, headers: { Authorization: "Bearer " + tokens.access },
+        });
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok) { lineas.push("✘ " + f.name + ": " + (j.detail || ("error " + r.status))); continue; }
+        lineas.push("✔ " + f.name + ": " + j.guardadas + " registros" + (j.desde ? " (" + j.desde + " → " + j.hasta + ")" : "") +
+          (j.otros_municipios ? " · " + j.otros_municipios + " de otros municipios descartados" : ""));
+      } catch (e) {
+        lineas.push("✘ " + f.name + ": " + (e.message || e));
+      }
+    }
+    btn.disabled = false;
+    out.innerHTML = lineas.map(esc).join("<br>");
+    if (lineas.some((l) => l.startsWith("✔"))) {
+      invalidateCache("/verticales/energia");
+      setTimeout(() => window.__V4.ENE.rerender("municipio"), 1500);
+    }
+  };
+}
+
 function pintarEnergiaMunicipio(el, serie, estado) {
   const V4 = window.__V4;
   const X = V4.ui;
@@ -355,9 +401,11 @@ function pintarEnergiaMunicipio(el, serie, estado) {
     : "API privada pendiente de credenciales del Ayuntamiento";
   if (!serie || !serie.serie || !serie.serie.length) {
     h += '<div class="card"><div class="card__t">Aún no hay datos de Datadis</div>' +
-      '<div class="mini" style="margin-top:6px;color:var(--muted)">La carga automática se ejecuta cada día. Para cargar el histórico: ' +
-      '<code>python -m nijar_dti.workers.datadis_carga --solo publico --desde 2025-01-01</code>.<br>' + esc(privado) + '</div></div>';
+      '<div class="mini" style="margin-top:6px;color:var(--muted)">La API de Datadis exige un usuario registrado incluso para los datos públicos. ' +
+      'Con usuario, la carga es automática cada día; mientras tanto, importa los meses con el fichero de la web.<br>' + esc(privado) + '</div></div>';
+    h += tarjetaImportar();
     el.innerHTML = h;
+    activarImportar(el);
     return;
   }
   const dias = serie.serie;
@@ -385,7 +433,9 @@ function pintarEnergiaMunicipio(el, serie, estado) {
       '</span><span class="v">' + Math.round(s[1] / totalSect * 100) + "%</span></div>").join("") + "</div></div></div>";
   h += "</div>";
   h += '<div class="mini" style="margin-top:10px;color:var(--muted)">Datadis oculta los registros con pocos contratos por protección de datos, por lo que el total puede ser algo inferior al real. ' + esc(privado) + ".</div>";
+  h += tarjetaImportar();
   el.innerHTML = h;
+  activarImportar(el);
 }
 
 function instalarEnergiaMunicipio() {

@@ -44,6 +44,14 @@ DATADIS_HORA_CARGA=7        # carga diaria, hora de Madrid (-1 = desactivada)
 3. Confirmar si hay suministros municipales a nombre de otros titulares
    (concesionarias de agua, alumbrado…).
 
+> **Importante:** deja estas variables **vacías** hasta tener el usuario real. Los
+> valores de plantilla tipo `<NIF/CIF del usuario>` se ignoran, pero no los dejes.
+
+### Resultado en producción (15/10/2026)
+El verificador confirmó que **Datadis exige usuario también para la API pública**
+(401 en `/api-public/api-search`). Hasta tenerlo, los datos públicos se cargan
+importando el fichero de la web (apartado 4 bis).
+
 ## 3. Verificación
 
 ```bash
@@ -67,6 +75,23 @@ docker exec nijar-dti-api python -m nijar_dti.workers.datadis_carga --solo priva
 docker exec nijar-dti-api python -m nijar_dti.workers.datadis_carga --dry-run
 ```
 
+## 4 bis. Importar el fichero de la web (sin usuario de Datadis)
+
+1. En <https://datadis.es/queries> → **Consumos y contratos**: rango de fechas dentro
+   de un mes, Localización = Níjar, todos los sectores y tensiones → **Consultar** →
+   **Descargar** (CSV o Excel).
+2. Panel → Energía municipal → **Consumo del municipio** → «Importar fichero de
+   Datadis» (roles `administrador_tic` y `analista_datos`). Admite varios ficheros
+   a la vez; volver a subir un mes lo actualiza.
+
+Por consola:
+```bash
+docker exec -i nijar-dti-api python -m nijar_dti.workers.datadis_importar - < julio.csv
+```
+Endpoint: `POST /api/v1/verticales/energia/datadis/importar` (multipart `archivo`).
+El lector acepta CSV («;», «,», tabulador; UTF-8/Latin-1) y Excel, con líneas de
+texto antes de la cabecera y números con formato español.
+
 La carga automática corre cada día a las `DATADIS_HORA_CARGA` (un solo worker,
 con cerrojo de PostgreSQL) y deja en los logs `Carga diaria de Datadis`.
 
@@ -77,6 +102,7 @@ con cerrojo de PostgreSQL) y deja en los logs `Carga diaria de Datadis`.
 | GET | `/api/v1/verticales/energia/municipio?dias=90` | Serie diaria del municipio (total y por sector) |
 | GET | `/api/v1/verticales/energia/suministros/{cups}/curva?dias=7` | Curva horaria de un suministro |
 | GET | `/api/v1/verticales/energia/datadis/estado` | Estado de la integración |
+| POST | `/api/v1/verticales/energia/datadis/importar` | Importar el fichero descargado de datadis.es |
 
 ## Notas
 - Datadis **oculta los registros con pocos contratos** por protección de datos:
