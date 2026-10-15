@@ -52,6 +52,7 @@ def _instrucciones(idioma: str) -> str:
 # Cache breve de titulares de noticias para no consultar Strapi en cada mensaje.
 _NOTICIAS_TTL_SEGUNDOS = 300
 _noticias_cache: tuple[float, list[str]] | None = None
+_agenda_cache: tuple[float, list[str]] | None = None
 
 
 async def _titulares_noticias() -> list[str]:
@@ -74,6 +75,28 @@ async def _titulares_noticias() -> list[str]:
     except Exception:  # noqa: BLE001 — fuente externa opcional; nunca romper el chatbot
         log.debug("Noticias no disponibles para el contexto del chatbot", exc_info=True)
     _noticias_cache = (time.monotonic(), lineas)
+    return lineas
+
+
+async def _titulares_agenda() -> list[str]:
+    """Agenda cultural municipal (noticias de Cultura en Strapi), con la misma caché."""
+    global _agenda_cache
+    if _agenda_cache and time.monotonic() - _agenda_cache[0] < _NOTICIAS_TTL_SEGUNDOS:
+        return _agenda_cache[1]
+    lineas: list[str] = _agenda_cache[1] if _agenda_cache else []
+    try:
+        from nijar_dti.services import noticias_service
+
+        page = await noticias_service.listar_agenda(page=1, page_size=6)
+        lineas = [
+            f"- {n.titulo}"
+            + (f" · {n.fecha:%d/%m/%Y}" if n.fecha else "")
+            + (f" · {n.descripcion}" if n.descripcion else "")
+            for n in page.items
+        ]
+    except Exception:  # noqa: BLE001 — fuente externa opcional; nunca romper el chatbot
+        log.debug("Agenda cultural no disponible para el contexto del chatbot", exc_info=True)
+    _agenda_cache = (time.monotonic(), lineas)
     return lineas
 
 
@@ -151,6 +174,13 @@ async def _contexto(db: AsyncSession, payload: ChatQueryIn) -> tuple[str, list[s
     if titulares:
         partes.append("Últimas noticias de Turismo del Ayuntamiento (titular · fecha):")
         partes.extend(titulares)
+
+    agenda = await _titulares_agenda()
+    if agenda:
+        partes.append(
+            "Agenda cultural del Ayuntamiento (titular · fecha de publicación · resumen):"
+        )
+        partes.extend(agenda)
 
     return "\n".join(partes), intents
 

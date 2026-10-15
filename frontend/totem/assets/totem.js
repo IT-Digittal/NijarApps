@@ -9,8 +9,8 @@
  * - Inactividad >60 s: vuelve al inicio en español (modo público).
  */
 
-import { I18N, translateAll } from "./i18n.js?v=24";
-import { DEMO_RESOURCES, DEMO_EVENTS, answerChatbotDemo } from "./demo-data.js";
+import { I18N, translateAll } from "./i18n.js?v=25";
+import { DEMO_RESOURCES, answerChatbotDemo } from "./demo-data.js";
 
 // ============================================================
 // Configuración
@@ -431,20 +431,41 @@ async function cargarDestacado() {
   try {
     const d = await apiGet(`/tourism/events?publicado=true&page_size=1&desde=${desdeAhora()}`);
     destacadoEvento = (d.items && d.items[0]) || null;
-  } catch { destacadoEvento = (DEMO_EVENTS && DEMO_EVENTS[0]) || null; }
+  } catch { destacadoEvento = null; }
+  /* Sin eventos en el CMS: se destaca lo último de la agenda cultural municipal */
+  if (!destacadoEvento) {
+    const cultura = await cargarAgendaCultural(1);
+    destacadoEvento = cultura[0] ? { ...cultura[0], _noticia: true } : null;
+  }
   renderDestacado();
+}
+
+/* Agenda cultural: la web municipal la publica como noticias de la categoría
+ * «Cultura» (Strapi). El backend la recarga sola cada hora. */
+async function cargarAgendaCultural(n) {
+  try {
+    const d = await apiGet(`/noticias/agenda?page_size=${n || 12}`);
+    return d.items || [];
+  } catch { return []; }
 }
 
 function renderDestacado() {
   const wrap = $("#home-feat");
   if (!wrap || !destacadoEvento) { if (wrap) wrap.hidden = true; return; }
   const ev = destacadoEvento;
-  const nombre = (ev.nombre_i18n && ev.nombre_i18n[currentLang]) || ev.nombre;
-  $("#feat-title").textContent = nombre;
-  $("#feat-sub").textContent = _fmtEvento(ev);
-  /* la API guarda las imágenes como lista de URLs (texto); se admite también {url} */
-  const primera = ev.imagenes && ev.imagenes[0];
-  const img = (typeof primera === "string" ? primera : primera && primera.url) || "";
+  let img = "";
+  if (ev._noticia) {
+    $("#feat-title").textContent = ev.titulo || "";
+    $("#feat-sub").textContent = fmtFechaNoticia(ev.fecha || ev.publicado_en);
+    img = ev.imagen_url || "";
+  } else {
+    const nombre = (ev.nombre_i18n && ev.nombre_i18n[currentLang]) || ev.nombre;
+    $("#feat-title").textContent = nombre;
+    $("#feat-sub").textContent = _fmtEvento(ev);
+    /* la API guarda las imágenes como lista de URLs (texto); se admite también {url} */
+    const primera = ev.imagenes && ev.imagenes[0];
+    img = (typeof primera === "string" ? primera : primera && primera.url) || "";
+  }
   const fill = $("#feat-image");
   if (fill) fill.style.backgroundImage = img ? `url('${img}')` : "";
   wrap.hidden = false;
@@ -807,10 +828,11 @@ async function openNoticia(n) {
 async function renderAgenda(grid, chip) {
   const t = dict();
   let items = [];
-  try {
-    const d = await apiGet(`/tourism/events?publicado=true&page_size=50&desde=${desdeAhora()}`);
-    items = d.items || [];
-  } catch { items = DEMO_EVENTS; }
+  const [eventosRes, cultura] = await Promise.all([
+    apiGet(`/tourism/events?publicado=true&page_size=50&desde=${desdeAhora()}`).catch(() => null),
+    chip === "todas" ? cargarAgendaCultural(12) : Promise.resolve([]),
+  ]);
+  items = (eventosRes && eventosRes.items) || [];
   if (chip !== "todas") items = items.filter((e) => e.tipo === chip);
   items.sort((a, b) => new Date(a.fecha_inicio) - new Date(b.fecha_inicio));
 
@@ -822,7 +844,7 @@ async function renderAgenda(grid, chip) {
     if (!grupos.has(k)) grupos.set(k, []);
     grupos.get(k).push(ev);
   }
-  if (!grupos.size) {
+  if (!grupos.size && !cultura.length) {
     grid.innerHTML = `<p class="content-loading">${t["empty.contenido"] || "Sin eventos programados"}</p>`;
     return;
   }
@@ -865,10 +887,16 @@ async function renderAgenda(grid, chip) {
         </button>`;
     }).join("");
   }
+  if (cultura.length) {
+    html += `<div class="tt-dayhead">${escapeHtml(t["agenda.cultural"] || "Agenda cultural del Ayuntamiento")}</div>`;
+    html += cultura.map((n, i) => noticiaCard(n, i)).join("");
+  }
   grid.innerHTML = html;
   const flat = [...grupos.values()].flat();
   grid.querySelectorAll(".tt-item").forEach((btn, i) =>
     btn.addEventListener("click", () => openDetail(flat[i], CATS.find((x) => x.id === "eventos"))));
+  grid.querySelectorAll(".tt-lb").forEach((btn, i) =>
+    btn.addEventListener("click", () => openNoticia(cultura[i])));
 }
 
 // ============================================================

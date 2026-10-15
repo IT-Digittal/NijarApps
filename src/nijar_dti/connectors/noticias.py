@@ -67,10 +67,15 @@ class ClienteNoticiasStrapi:
         page: int = 1,
         page_size: int = 12,
         categoria_document_id: str | None = None,
+        categoria_slug: str | None = None,
         buscar: str | None = None,
         con_contenido: bool = False,
     ) -> dict[str, Any]:
-        """Lista artículos paginados (más recientes primero)."""
+        """Lista artículos paginados (más recientes primero).
+
+        La categoría se puede filtrar por ``documentId`` o por ``slug`` (el
+        mismo que usa la web municipal en ``/noticias/categoria/<slug>/``).
+        """
         params = self._params_base()
         params += [
             ("pagination[page]", page),
@@ -81,6 +86,8 @@ class ClienteNoticiasStrapi:
         ]
         if categoria_document_id:
             params.append(("filters[categories][documentId][$eq]", categoria_document_id))
+        elif categoria_slug:
+            params.append(("filters[categories][slug][$eqi]", categoria_slug))
         if buscar:
             params.append(("filters[title][$contains]", buscar))
 

@@ -195,3 +195,25 @@ class TestTitularesNoticias:
 
         monkeypatch.setattr("nijar_dti.services.noticias_service.listar_turismo", boom)
         assert await adapter._titulares_noticias() == []
+
+    async def test_agenda_cultural_en_contexto(self, monkeypatch):
+        import datetime as dt
+
+        from nijar_dti.schemas.noticias import NoticiaOut, NoticiasPageOut
+
+        adapter._agenda_cache = None
+
+        async def fake(**kw):
+            n = NoticiaOut(
+                document_id="c",
+                titulo="Concierto en la plaza",
+                slug="c",
+                fecha=dt.date(2026, 10, 20),
+                descripcion="Música en directo",
+            )
+            return NoticiasPageOut(page=1, page_size=6, page_count=1, total=1, items=[n])
+
+        monkeypatch.setattr("nijar_dti.services.noticias_service.listar_agenda", fake)
+        out = await adapter._titulares_agenda()
+        assert out == ["- Concierto en la plaza · 20/10/2026 · Música en directo"]
+        adapter._agenda_cache = None

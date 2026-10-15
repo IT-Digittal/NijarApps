@@ -80,7 +80,28 @@ async def _run() -> int:
         _linea(WARN, "NOTICIAS_CATEGORIA_TURISMO_ID sin definir",
                "el atajo /noticias/turismo no filtrará")
 
-    # 3) Detalle por slug + imagen
+    # 3) Agenda cultural (categoría «Cultura», la de nijar.es/noticias/categoria/cultura/)
+    try:
+        page = await cli.listar(
+            page=1,
+            page_size=1,
+            categoria_document_id=s.noticias_categoria_agenda_id or None,
+            categoria_slug=s.noticias_categoria_agenda_slug or None,
+        )
+        if page["total"] > 0:
+            ult = page["items"][0]
+            _linea(OK, "Agenda cultural operativa",
+                   f"{page['total']} publicaciones · última: «{ult['titulo'][:50]}» "
+                   f"({ult.get('publicado_en') or ult.get('fecha')})")
+        else:
+            _linea(WARN, "Agenda cultural sin publicaciones",
+                   f"slug «{s.noticias_categoria_agenda_slug}»: revisa el slug en "
+                   "/api/v1/noticias/categorias o define NOTICIAS_CATEGORIA_AGENDA_ID")
+    except NoticiasError as e:
+        _linea(FAIL, "Fallo al leer la agenda cultural", str(e))
+        fallos += 1
+
+    # 4) Detalle por slug + imagen
     try:
         page = await cli.listar(page=1, page_size=1)
         if page["items"]:

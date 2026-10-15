@@ -63,6 +63,22 @@ async def turismo(
         raise HTTPException(status_code=502, detail=str(exc)) from exc
 
 
+@router.get(
+    "/agenda",
+    response_model=NoticiasPageOut,
+    summary="Agenda cultural (noticias de la categoría Cultura de la web municipal)",
+)
+async def agenda(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(12, ge=1, le=100),
+) -> NoticiasPageOut:
+    _requiere_fuente()
+    try:
+        return await svc.listar_agenda(page=page, page_size=page_size)
+    except NoticiasError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+
 @router.get("/categorias", response_model=CategoriasNoticiasOut, summary="Categorías de noticias")
 async def categorias() -> CategoriasNoticiasOut:
     _requiere_fuente()
