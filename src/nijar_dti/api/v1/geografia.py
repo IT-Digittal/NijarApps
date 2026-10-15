@@ -14,12 +14,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from nijar_dti.api.v1.dependencies import get_current_user, require_roles
 from nijar_dti.core.database import get_db
+from nijar_dti.data import importar_inventario as inventario
 from nijar_dti.models.usuario import RolUsuario
 from nijar_dti.schemas.auth import CurrentUser
 from nijar_dti.schemas.geografia import (
     CapaGeograficaOut,
     CapaGeograficaUpdate,
     GeoJSONFeatureCollection,
+    InventarioImportarIn,
+    InventarioImportarOut,
     MedicionGemeloIn,
     MedicionGemeloOut,
     ParcelaCatastralOut,
@@ -97,6 +100,35 @@ async def capa_geojson(
         return await svc.capa_geojson(db, codigo)
     except svc.CapaNoEncontradaError as exc:
         raise HTTPException(status_code=404, detail=f"Capa '{codigo}' no encontrada") from exc
+
+
+@router.post(
+    "/inventario/importar",
+    response_model=InventarioImportarOut,
+    summary="Importar el Inventario Municipal de Bienes (DWG convertidos en el panel)",
+)
+async def importar_inventario(
+    datos: InventarioImportarIn,
+    db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(_editores_capas),
+) -> InventarioImportarOut:
+    """Recibe un GeoJSON por núcleo (el panel convierte los DWG en el navegador con
+    el mismo convertidor que ``scripts/importar_inventario.sh``), comprueba que
+    cada núcleo cae en el término de Níjar y lo importa sustituyendo su versión
+    anterior. Con ``dry_run`` solo devuelve el informe, sin guardar."""
+    try:
+        colecciones = [
+            inventario.validar_coleccion(fc, f"Colección {i + 1}")
+            for i, fc in enumerate(datos.colecciones)
+        ]
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    resultado = await inventario.procesar(
+        db, colecciones, datos.srid, incluir_fuera=datos.incluir_fuera
+    )
+    if datos.dry_run:
+        await db.rollback()
+    return InventarioImportarOut(dry_run=datos.dry_run, srid=datos.srid, **resultado)
 
 
 @router.get(

@@ -15,7 +15,7 @@ RAIZ = Path(__file__).resolve().parents[1]
 
 
 def test_todas_las_categorias_del_convertidor_tienen_estilo():
-    js = (RAIZ / "tools/dwg2geojson/convertir.mjs").read_text(encoding="utf-8")
+    js = (RAIZ / "frontend/dashboard/assets/dwg2geojson.mjs").read_text(encoding="utf-8")
     bloque = js.split("export const CATEGORIAS = {")[1].split("};")[0]
     categorias = set(re.findall(r"^\s+(\w+):", bloque, re.MULTILINE))
     assert categorias and categorias <= set(inv.CATEGORIAS)
@@ -65,3 +65,39 @@ def test_dentro_de_nijar_y_centro_utm():
     assert inv._punto_utm({"centro_utm": [577300, 4085500]}) == (577300.0, 4085500.0)
     fc = {"features": [{"geometry": {"type": "Polygon", "coordinates": [[[1.0, 2.0], [3, 4]]]}}]}
     assert inv._punto_utm(fc) == (1.0, 2.0)
+
+
+def test_validar_coleccion_del_panel():
+    fc = {"type": "FeatureCollection", "nucleo": "Las Negras", "features": []}
+    assert inv.validar_coleccion(fc) is fc
+    for malo in (
+        [],
+        {"type": "FeatureCollection", "nucleo": " ", "features": []},
+        {"type": "FeatureCollection", "nucleo": "X"},
+        {"type": "Feature", "nucleo": "X", "features": []},
+    ):
+        with pytest.raises(ValueError, match="Colección 2"):
+            inv.validar_coleccion(malo, "Colección 2")
+
+
+def test_esquema_importar_inventario():
+    from pydantic import ValidationError
+
+    from nijar_dti.schemas.geografia import InventarioImportarIn
+
+    datos = InventarioImportarIn(colecciones=[{"nucleo": "X"}])
+    assert datos.dry_run is True and datos.srid == 25830 and datos.incluir_fuera is False
+    assert InventarioImportarIn(colecciones=[{}], srid=23030).srid == 23030
+    with pytest.raises(ValidationError):
+        InventarioImportarIn(colecciones=[{}], srid=4326)  # no es UTM
+    with pytest.raises(ValidationError):
+        InventarioImportarIn(colecciones=[])
+
+
+def test_endpoint_importar_inventario_exige_sesion():
+    from fastapi.testclient import TestClient
+
+    from nijar_dti.main import app
+
+    r = TestClient(app).post("/api/v1/geo/inventario/importar", json={"colecciones": [{}]})
+    assert r.status_code == 401

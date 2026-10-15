@@ -8,6 +8,7 @@ import {
   area,
   categoriaDeCapa,
   convertirDatabase,
+  dwgDeZip,
   limpiarMtext,
   nombreNucleo,
   poligonosDeAnillos,
@@ -134,4 +135,24 @@ test("descarta restos a más de 6 km del núcleo", () => {
   const fc = convertirDatabase(db, "x.dwg");
   assert.equal(fc.features.length, 2);
   assert.equal(fc.resumen.lejos_del_nucleo, 1);
+});
+
+test("extrae los DWG de un zip (deflate y sin comprimir)", async () => {
+  const { execFileSync } = await import("node:child_process");
+  const { readFileSync, mkdtempSync } = await import("node:fs");
+  const { join } = await import("node:path");
+  const { tmpdir } = await import("node:os");
+  const zip = join(mkdtempSync(join(tmpdir(), "dwgzip-")), "inv.zip");
+  execFileSync("python3", ["-c", `
+import zipfile, sys
+with zipfile.ZipFile(sys.argv[1], "w") as z:
+    z.writestr("inventario/VISO 2025.dwg", b"AC1032" + b"x" * 5000, compress_type=zipfile.ZIP_DEFLATED)
+    z.writestr("NIJAR 2025.DWG", b"AC1018", compress_type=zipfile.ZIP_STORED)
+    z.writestr("inventario/VISO 2025.pdf", b"%PDF")
+    z.writestr("__MACOSX/._VISO 2025.dwg", b"basura")
+`, zip]);
+  const dwg = await dwgDeZip(readFileSync(zip));
+  assert.deepEqual(dwg.map((d) => d.nombre), ["VISO 2025.dwg", "NIJAR 2025.DWG"]);
+  assert.equal(dwg[0].datos.length, 5006);
+  assert.equal(new TextDecoder().decode(dwg[1].datos), "AC1018");
 });

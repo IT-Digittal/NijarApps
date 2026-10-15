@@ -110,17 +110,29 @@ def propiedades_ficha(props: dict[str, Any]) -> dict[str, Any]:
     return {k: v for k, v in ficha.items() if v not in (None, "")}
 
 
+def validar_coleccion(datos: Any, origen: str = "") -> dict[str, Any]:
+    """Comprueba que es un GeoJSON del convertidor (FeatureCollection con «nucleo»)."""
+    if (
+        not isinstance(datos, dict)
+        or datos.get("type") != "FeatureCollection"
+        or not isinstance(datos.get("nucleo"), str)
+        or not datos["nucleo"].strip()
+        or not isinstance(datos.get("features"), list)
+    ):
+        raise ValueError(
+            f"{origen or 'GeoJSON'}: no es un GeoJSON del convertidor (falta «nucleo»)"
+        )
+    return datos
+
+
 def leer_colecciones(rutas: list[str]) -> list[dict[str, Any]]:
     ficheros: list[Path] = []
     for r in rutas:
         p = Path(r)
         ficheros += sorted(p.glob("*.geojson")) if p.is_dir() else [p]
-    colecciones = []
-    for f in ficheros:
-        datos = json.loads(f.read_text(encoding="utf-8"))
-        if datos.get("type") != "FeatureCollection" or not datos.get("nucleo"):
-            raise ValueError(f"{f.name}: no es un GeoJSON del convertidor (falta «nucleo»)")
-        colecciones.append(datos)
+    colecciones = [
+        validar_coleccion(json.loads(f.read_text(encoding="utf-8")), f.name) for f in ficheros
+    ]
     if not colecciones:
         raise ValueError("No se ha encontrado ningún .geojson")
     return colecciones
@@ -231,37 +243,80 @@ async def centro_wgs84(
     return float(lat), float(lon)
 
 
+async def procesar(
+    db: AsyncSession,
+    colecciones: list[dict[str, Any]],
+    srid: int,
+    *,
+    incluir_fuera: bool = False,
+) -> dict[str, Any]:
+    """Comprueba el centro de cada núcleo e importa los que caen en Níjar.
+
+    No confirma la transacción: el llamante hace ``commit`` o, en una prueba,
+    ``rollback``. Devuelve el informe por núcleo y el centro de todo el inventario.
+    """
+    informe: list[dict[str, Any]] = []
+    validas = []
+    # Comprobación por núcleo: su centro debe caer en el término de Níjar
+    # (detecta coordenadas locales, otro sistema de referencia o restos).
+    for fc in colecciones:
+        c = await centro_wgs84(db, fc, srid)
+        dentro = c is not None and dentro_de_nijar(*c)
+        importado = dentro or incluir_fuera
+        if importado:
+            validas.append(fc)
+        informe.append(
+            {
+                "nucleo": fc["nucleo"],
+                "fichero": fc.get("fichero"),
+                "centro": [round(c[0], 5), round(c[1], 5)] if c else None,
+                "dentro": dentro,
+                "importado": importado,
+                "descartes": (fc.get("resumen") or {}).get("lejos_del_nucleo", 0),
+            }
+        )
+    resumen = await importar(db, validas, srid)
+    for fila in informe:
+        por_cat = resumen.get(fila["nucleo"], {}) if fila["importado"] else {}
+        fila["por_categoria"] = por_cat
+        fila["elementos"] = sum(por_cat.values())
+    # Centro de todo el inventario (tras la importación, aún sin confirmar)
+    centro = func.ST_Centroid(func.ST_Collect(ElementoGeografico.geometria))
+    fila_centro = (
+        await db.execute(
+            select(func.ST_Y(centro), func.ST_X(centro))
+            .join(CapaGeografica, CapaGeografica.id == ElementoGeografico.capa_id)
+            .where(CapaGeografica.grupo == GrupoCapa.INVENTARIO)
+        )
+    ).one_or_none()
+    centro_total = (
+        [round(fila_centro[0], 5), round(fila_centro[1], 5)]
+        if fila_centro and fila_centro[0] is not None
+        else None
+    )
+    return {"nucleos": informe, "centro": centro_total}
+
+
 async def _main(a: argparse.Namespace) -> int:
     colecciones = leer_colecciones(a.rutas)
     async with AsyncSessionLocal() as db:
-        # Comprobación por núcleo: su centro debe caer en el término de Níjar
-        # (detecta coordenadas locales, otro sistema de referencia o restos).
-        validas = []
-        for fc in colecciones:
-            c = await centro_wgs84(db, fc, a.srid)
-            ok = c is not None and dentro_de_nijar(*c)
-            pos = f"{c[0]:.4f}, {c[1]:.4f}" if c else "sin coordenadas"
-            if ok or a.incluir_fuera:
-                validas.append(fc)
-                print(f"  {'·' if ok else '⚠'} {fc['nucleo']}: centro {pos}")
-            else:
-                print(f"  ⚠ {fc['nucleo']}: centro {pos} FUERA del término de Níjar → no se importa"
-                      f" (revisar el DWG; --incluir-fuera para forzar)")  # fmt: skip
-        resumen = await importar(db, validas, a.srid)
-        # Comprobación de que cae en Níjar (detecta un sistema de coordenadas erróneo)
-        centro = (
-            await db.execute(
-                select(
-                    func.ST_AsText(func.ST_Centroid(func.ST_Collect(ElementoGeografico.geometria)))
-                )
-                .join(CapaGeografica, CapaGeografica.id == ElementoGeografico.capa_id)
-                .where(CapaGeografica.grupo == GrupoCapa.INVENTARIO)
+        resultado = await procesar(db, colecciones, a.srid, incluir_fuera=a.incluir_fuera)
+        for n in resultado["nucleos"]:
+            pos = (
+                f"{n['centro'][0]:.4f}, {n['centro'][1]:.4f}" if n["centro"] else "sin coordenadas"
             )
-        ).scalar_one_or_none()
-        for nucleo, por_cat in resumen.items():
-            total = sum(por_cat.values())
-            print(f"✔ {nucleo}: {total} elementos · " + json.dumps(por_cat, ensure_ascii=False))
-        print(f"Centro del inventario cargado (WGS84): {centro}")
+            if n["importado"]:
+                print(f"  {'·' if n['dentro'] else '⚠'} {n['nucleo']}: centro {pos}")
+            else:
+                print(f"  ⚠ {n['nucleo']}: centro {pos} FUERA del término de Níjar → no se importa"
+                      f" (revisar el DWG; --incluir-fuera para forzar)")  # fmt: skip
+        for n in resultado["nucleos"]:
+            if n["importado"]:
+                print(
+                    f"✔ {n['nucleo']}: {n['elementos']} elementos · "
+                    + json.dumps(n["por_categoria"], ensure_ascii=False)
+                )
+        print(f"Centro del inventario cargado (lat, lon): {resultado['centro']}")
         if a.dry_run:
             await db.rollback()
             print("Dry-run: no se ha guardado nada.")
