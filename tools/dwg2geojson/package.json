@@ -1,0 +1,12 @@
+{
+  "name": "nijar-dwg2geojson",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Convierte los DWG del Inventario Municipal de Bienes (Níjar) a GeoJSON para el gemelo 2D",
+  "type": "module",
+  "main": "convertir.mjs",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@mlightcad/libredwg-web": "0.8.0"
+  }
+}

@@ -844,7 +844,7 @@ function kv(k, v) {
    visibilidad. La geometría se carga/reemplaza desde fichero con el comando
    `python -m nijar_dti.data.cargar_capa` (ver tarjeta informativa). */
 
-const GRUPOS_CAPA = { planeamiento: "Planeamiento", catastro: "Catastro", clasificacion: "Clasificación", otras: "Otras" };
+const GRUPOS_CAPA = { planeamiento: "Planeamiento", catastro: "Catastro", clasificacion: "Clasificación", inventario: "Inventario de bienes", otras: "Otras" };
 
 async function renderCapasGemelo(el) {
   cargando(el, "Capas del gemelo");
@@ -887,7 +887,8 @@ async function renderCapasGemelo(el) {
     '<div class="card__s">La geometría de cada capa se carga o reemplaza desde un fichero GeoJSON con el comando de importación, en el servidor:</div></div></div>' +
     '<pre class="mini" style="background:var(--bg);padding:10px 12px;border-radius:8px;overflow-x:auto;margin:8px 0 4px">python -m nijar_dti.data.cargar_capa fichero.geojson --codigo pgou_clasificacion \\\n' +
     '    --nombre "Clasificación del suelo" --grupo clasificacion --fuente "PGOU vigente" [--reemplazar]</pre>' +
-    '<div class="mini" style="color:var(--muted)">Acepta GeoJSON (FeatureCollection). Otros formatos (Shapefile, DXF) se convierten antes con ogr2ogr. «--reemplazar» sustituye los elementos existentes de la capa — p. ej. para cambiar las áreas de demostración por el planeamiento real.</div></div>';
+    '<div class="mini" style="color:var(--muted)">Acepta GeoJSON (FeatureCollection). Otros formatos (Shapefile, DXF) se convierten antes con ogr2ogr. «--reemplazar» sustituye los elementos existentes de la capa — p. ej. para cambiar las áreas de demostración por el planeamiento real.</div>' +
+    '<div class="mini" style="color:var(--muted);margin-top:6px">Inventario Municipal de Bienes (DWG por núcleo): <code>scripts/importar_inventario.sh inventario.zip</code> crea las capas del grupo «Inventario de bienes».</div></div>';
 
   if (!rw) return;
   el.querySelectorAll("[data-g$='-capa']").forEach((b) => {

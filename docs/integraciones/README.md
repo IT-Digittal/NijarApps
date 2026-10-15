@@ -29,6 +29,7 @@ cómo **verificarla**. El catálogo completo de fuentes está en
 | **Analítica web** (Google Analytics 4) | 🟡 | Dashboard «Eficacia digital»; informe mensual | [runbook](runbook-ga4.md) | `python -m scripts.verificar_ga4` |
 | **Calidad del aire y meteo** (Bettair) | 🟡 | `/api/v1/gemelo/aire/resumen`, `/gemelo/aire/estaciones` | — | Requiere `BETTAIR_CLIENT_ID/SECRET` (los gestiona Bettair) |
 | **RSU y limpieza viaria** (siGEUS · Distromel) | 🟡 | `/api/v1/gemelo/estado` (`sigeus_configurado`); KPIs en `/verticales/residuos/*` al conectar | [runbook](runbook-sigeus-distromel.md) | `python -m scripts.verificar_sigeus` (requiere `SIGEUS_USUARIO/PASSWORD`) |
+| **Inventario Municipal de Bienes** (DWG del Ayuntamiento) | ✅ | Capas `inventario_*` del gemelo (`/api/v1/geo/capas`) | [runbook](runbook-inventario-bienes.md) | `scripts/importar_inventario.sh inventario.zip --dry-run` |
 | **Consumo eléctrico** (Datadis) | 🟡 público · ⏳ privado | `/api/v1/verticales/energia/municipio`, `/energia/suministros/{cups}/curva`, `/energia/datadis/estado` | [runbook](runbook-datadis.md) | `python -m scripts.verificar_datadis` (datos públicos sin usuario; privada con `DATADIS_USUARIO/PASSWORD`) |
 | **Contenidos abiertos del tótem** (OpenStreetMap + Wikipedia/Commons) | 🟢 | `/api/v1/tourism/services` (gastronomía), `/tourism/resources` (artesanía, fotos) | ver detalle abajo | `python -m nijar_dti.workers.contenidos_abiertos --dry-run` |
 
