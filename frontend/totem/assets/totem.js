@@ -77,7 +77,8 @@ const CATS = [
   { id: "naturaleza",  label: "cat.naturaleza",        icon: "naturaleza",  th: "th-naturaleza",  bg: "../shared/tiles/naturaleza.jpg",  res: ["mirador"], etiquetas: ["naturaleza"], subchips: ["mirador"],       heroSub: "sub.naturaleza", unit: "unit.lugares" },
   { id: "ceramica",    label: "cat.ceramica_jarapas", icon: "artesania",   th: "th-gastro",      bg: "../shared/tiles/ceramica.jpg",    etiquetas: ["ceramica", "artesania", "jarapas"],                        heroSub: "sub.ceramica",   unit: "unit.talleres" },
   { id: "gastronomia", label: "cat.gastronomia",       icon: "gastronomia", th: "th-gastro",      bg: "../shared/tiles/gastronomia.jpg", srv: ["gastronomia_restaurante", "gastronomia_bar", "gastronomia_cafeteria"],           heroSub: "sub.gastro",     unit: "unit.locales" },
-  { id: "noticias", label: "cat.noticias", icon: "eventos", th: "th-evento", solid: true, alt: true, noticias: true, heroSub: "sub.noticias", unit: "unit.noticias" },
+  /* Noticias: de fondo, la portada de la noticia más reciente (cargarFondoNoticias); mientras, foto local */
+  { id: "noticias", label: "cat.noticias", icon: "eventos", th: "th-evento", bg: "../shared/cabo-de-gata-hero.jpg", noticias: true, heroSub: "sub.noticias", unit: "unit.noticias" },
   /* Agenda y Empresas — se abren desde el dock inferior; no van en el grid del home */
   { id: "eventos",     label: "categorias.eventos",    icon: "eventos",     th: "th-evento",      hiddenFromGrid: true, events: true, heroSub: "sub.eventos", unit: "unit.eventos" },
   { id: "empresas",    label: "cat.empresas",          icon: "edificio",    th: "th-servicio",    hiddenFromGrid: true, empresas: true,
@@ -309,6 +310,7 @@ function extractLatLon(item) {
 // HOME: grid de categorías con conteos reales
 // ============================================================
 const catCounts = {};
+let fondoNoticias = null;   /* portada de la última noticia con imagen (Strapi) */
 
 function renderHomeCats() {
   const t = dict();
@@ -316,7 +318,8 @@ function renderHomeCats() {
   if (!grid) return;
   grid.innerHTML = CATS.filter((c) => !c.hiddenFromGrid).map((c) => {
     const label = escapeHtml(t[c.label] || capitalize(c.id));
-    const bgStyle = c.solid ? "" : ` style="background-image: url('${c.bg}');"`;
+    const bg = c.noticias && fondoNoticias ? fondoNoticias : c.bg;
+    const bgStyle = c.solid ? "" : ` style="background-image: url('${escapeAttr(bg)}');"`;
     const solidCls = c.solid ? ` is-solid${c.alt ? " is-alt" : ""}` : "";
     return (
       `<button class="tt-ptile${solidCls}" role="listitem" data-cat="${c.id}" aria-label="${label}"${bgStyle}>` +
@@ -327,6 +330,24 @@ function renderHomeCats() {
   }).join("");
   grid.querySelectorAll(".tt-ptile").forEach((b) =>
     b.addEventListener("click", () => abrirCategoria(b.dataset.cat)));
+}
+
+/* Fondo del recuadro Noticias: la portada de la noticia más reciente que tenga
+ * imagen. Se precarga antes de aplicarla para no dejar el recuadro en blanco. */
+async function cargarFondoNoticias() {
+  let url = null;
+  try {
+    const d = await apiGet("/noticias?page_size=6");
+    url = ((d.items || []).find((n) => n.imagen_url) || {}).imagen_url || null;
+  } catch { return; }
+  if (!url || url === fondoNoticias) return;
+  const img = new Image();
+  img.onload = () => {
+    fondoNoticias = url;
+    const tile = document.querySelector('.tt-ptile[data-cat="noticias"]');
+    if (tile) tile.style.backgroundImage = `url('${url.replace(/'/g, "%27")}')`;
+  };
+  img.src = url;
 }
 
 async function cargarConteos() {
@@ -1469,6 +1490,8 @@ translateAll(currentLang);
 document.querySelectorAll(".lang-btn").forEach((btn) =>
   btn.setAttribute("aria-pressed", String(btn.dataset.lang === currentLang)));
 renderHomeCats();
+cargarFondoNoticias();
+setInterval(cargarFondoNoticias, 60 * 60 * 1000); /* sigue a la noticia más reciente */
 renderTicker();
 cargarHeroFoto();
 resetChat();
