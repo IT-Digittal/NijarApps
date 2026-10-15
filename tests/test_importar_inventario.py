@@ -56,3 +56,12 @@ def test_leer_colecciones(tmp_path: Path):
     (tmp_path / "vacia").mkdir()
     with pytest.raises(ValueError, match="ningún"):
         inv.leer_colecciones([str(tmp_path / "vacia")])
+
+
+def test_dentro_de_nijar_y_centro_utm():
+    assert inv.dentro_de_nijar(36.9123, -2.1322)  # Pueblo Blanco
+    assert inv.dentro_de_nijar(36.7600, -2.1100)  # San José
+    assert not inv.dentro_de_nijar(36.6796, -2.2159)  # mar, al sur del Cabo de Gata
+    assert inv._punto_utm({"centro_utm": [577300, 4085500]}) == (577300.0, 4085500.0)
+    fc = {"features": [{"geometry": {"type": "Polygon", "coordinates": [[[1.0, 2.0], [3, 4]]]}}]}
+    assert inv._punto_utm(fc) == (1.0, 2.0)

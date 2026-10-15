@@ -9,6 +9,7 @@ import {
   categoriaDeCapa,
   convertirDatabase,
   limpiarMtext,
+  nombreNucleo,
   poligonosDeAnillos,
 } from "./convertir.mjs";
 
@@ -111,5 +112,26 @@ test("convierte un DWG sintético con las reglas del inventario", () => {
 
 test("sin cajetín, el núcleo sale del nombre del fichero", () => {
   const fc = convertirDatabase({ entities: [lw("Invent-borde-EQ", rect(0, 0, 5, 5))] }, "0149f6c7-VISO_2025.dwg");
-  assert.equal(fc.nucleo, "VISO");
+  assert.equal(fc.nucleo, "Viso");
+});
+
+test("nombre del núcleo: cajetín solo si coincide con el fichero", () => {
+  assert.equal(nombreNucleo(["Núcleo: El Rodón"], "CAMPOHERMOSO-INDUSTRIAL STA OLALLA 2025.dwg"),
+    "Campohermoso-Industrial Sta Olalla");
+  assert.equal(nombreNucleo(["Núcleo: TORRE DEL CAMPO-INDUSTRIAL GRANATILLA "], "TORRE DEL CAMPO-INDUSTRIAL GRANATILLA 2025.dwg"),
+    "Torre del Campo-Industrial Granatilla");
+  assert.equal(nombreNucleo(["Núcleo: Los Grillos"], "GRILLOS LOS 2025.dwg"), "Los Grillos");
+  assert.equal(nombreNucleo(["Núcleo: Fernán Pérez"], "FERNAN PEREZ 2025.dwg"), "Fernán Pérez");
+  assert.equal(nombreNucleo([], "JABONERO EL  2025.dwg"), "El Jabonero");
+});
+
+test("descarta restos a más de 6 km del núcleo", () => {
+  const db = { entities: [
+    lw("Invent-borde-EQ", rect(0, 0, 10, 10)),
+    lw("Invent-borde-EQ", rect(20, 0, 30, 10)),
+    lw("Invent-borde-EQ", rect(9000, 9000, 9010, 9010)),
+  ] };
+  const fc = convertirDatabase(db, "x.dwg");
+  assert.equal(fc.features.length, 2);
+  assert.equal(fc.resumen.lejos_del_nucleo, 1);
 });

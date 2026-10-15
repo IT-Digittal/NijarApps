@@ -27,7 +27,9 @@ Las líneas «Open dwg file with error code: …» son avisos de lectura de Libr
 
 Los DWG no indican su sistema de referencia. Por la cartografía base que usan
 (Junta de Andalucía) se asume **ETRS89 / UTM 30N (EPSG:25830)**. El importador
-muestra el centro de lo cargado; además, en el gemelo los polígonos deben
+muestra el **centro de cada núcleo** (lat/lon) y **no carga los núcleos cuyo
+centro cae fuera del término municipal** de Níjar (aprox. lat 36,70–37,08,
+lon −2,36 a −1,85); para forzarlos, `--incluir-fuera`. Además, en el gemelo los polígonos deben
 encajar con la ortofoto PNOA. Si aparecieran desplazados ~200 m hacia el
 noreste, los planos estarían en ED50: reimportar con `--srid 23030`.
 
@@ -63,7 +65,11 @@ Reglas:
   equipamiento y su edificio comparten código); los demás textos de
   `invent-tex` («IGLESIA», «Puesta a disposición 44,67 m²») quedan como notas.
 - Se ignora el espacio papel (cajetín, leyenda) y la «Base Cartografica».
-- El núcleo se lee del cajetín («Núcleo: El Viso»).
+- Se descartan los elementos a **más de 6 km del centro (mediana) del
+  plano**: restos copiados fuera de sitio (`lejos_del_nucleo` en el resumen).
+- El núcleo se toma del **nombre del fichero** («GRILLOS LOS 2025.dwg» → «Los
+  Grillos»); el del cajetín solo se usa (por sus tildes) si coincide con el
+  fichero, porque algunos planos arrastran el cajetín de otro núcleo.
 
 ## 4. Ficha en el mapa
 

@@ -85,6 +85,34 @@ export function limpiarMtext(t) {
     .trim();
 }
 
+const MINUSCULAS = new Set(["de", "del", "la", "las", "los", "el", "y"]);
+
+/** «TORRE DEL CAMPO-INDUSTRIAL GRANATILLA » → «Torre del Campo-Industrial Granatilla». */
+export function nombreBonito(t) {
+  const limpio = String(t || "").replace(/\s+/g, " ").trim();
+  if (limpio !== limpio.toUpperCase()) return limpio;
+  let primera = true;
+  return limpio.toLowerCase().replace(/[^\s-]+/g, (w) => {
+    const r = !primera && MINUSCULAS.has(w) ? w : w.charAt(0).toUpperCase() + w.slice(1);
+    primera = false;
+    return r;
+  });
+}
+
+/** Núcleo a partir de los textos «Núcleo: …» del cajetín y del nombre del fichero. */
+export function nombreNucleo(textosCajetin, nombreFichero) {
+  const base = path.basename(nombreFichero)
+    .replace(/\.dwg$/i, "").replace(/^[0-9a-f]{8}-/, "").replace(/[_\s]*\d{4}\s*$/, "").trim();
+  const fichero = normalizar(base);
+  const palabras = (t) => normalizar(t).split(/[^a-z0-9]+/).filter((w) => w.length > 2 && !MINUSCULAS.has(w));
+  const candidatos = [...new Set(textosCajetin.map((t) => t.replace(/^n[uú]cleo\s*:\s*/i, "").trim()).filter(Boolean))];
+  const coincide = candidatos.find((c) => palabras(c).length && palabras(c).every((w) => fichero.includes(w)));
+  if (coincide) return nombreBonito(coincide);
+  // «JABONERO EL» → «El Jabonero» (los ficheros ponen el artículo al final)
+  const m = base.match(/^(.*\S)\s+(el|la|los|las)$/i);
+  return nombreBonito(m ? `${m[2]} ${m[1]}` : base);
+}
+
 /* ------------------------------------------------------------ geometría ---- */
 
 const plausible = (p) => p && p.x > 100000 && p.x < 900000 && p.y > 3000000 && p.y < 5000000;
@@ -212,11 +240,10 @@ export function convertirDatabase(db, nombreFichero) {
   const ents = db.entities || [];
   const textos = (e) => limpiarMtext(e.text ?? e.contents ?? "");
 
-  // Núcleo: del cajetín o, si no, del nombre del fichero
-  const cajetin = ents.map(textos).find((t) => /^n[uú]cleo\s*:/i.test(t));
-  const nucleo = cajetin
-    ? cajetin.replace(/^n[uú]cleo\s*:\s*/i, "").trim()
-    : path.basename(nombreFichero).replace(/\.dwg$/i, "").replace(/^[0-9a-f]{8}-/, "").replace(/_?\d{4}$/, "");
+  // Núcleo: el del cajetín si coincide con el nombre del fichero (trae tildes
+  // y artículo: «Los Grillos»); si no, el nombre del fichero (hay cajetines
+  // heredados de otro plano, p. ej. «El Rodón» en el DWG de Campohermoso).
+  const nucleo = nombreNucleo(ents.map(textos).filter((t) => /^n[uú]cleo\s*:/i.test(t)), nombreFichero);
 
   // 1) Contornos (bienes individuales) y sombreados por categoría
   const contornos = []; // {categoria, capa, anillo}
@@ -293,6 +320,23 @@ export function convertirDatabase(db, nombreFichero) {
     for (const pol of contienen) (esCodigo ? pol.codigos : pol.notas).add(t.texto);
   }
 
+  // 3 bis) Restos lejos del núcleo (copias, ventanas o planos de situación en el
+  //        espacio modelo): fuera si están a más de 6 km de la mediana del fichero
+  const centroDe = (x) => (x.poligono ? puntoInterior(x.poligono[0]) : x.linea[0]);
+  const mediana = (v) => { const o = [...v].sort((a, b) => a - b); return o[Math.floor(o.length / 2)]; };
+  const todos = [...poligonos, ...lineas];
+  descartes.lejos_del_nucleo = 0;
+  let centro = null;
+  if (todos.length) {
+    centro = [mediana(todos.map((x) => centroDe(x)[0])), mediana(todos.map((x) => centroDe(x)[1]))];
+    const lejos = (x) => Math.hypot(centroDe(x)[0] - centro[0], centroDe(x)[1] - centro[1]) > 6000;
+    for (const lista of [poligonos, lineas]) {
+      for (let i = lista.length - 1; i >= 0; i--) {
+        if (lejos(lista[i])) { lista.splice(i, 1); descartes.lejos_del_nucleo++; }
+      }
+    }
+  }
+
   // 4) GeoJSON (coordenadas UTM tal cual)
   const features = [];
   for (const pol of poligonos) {
@@ -326,6 +370,7 @@ export function convertirDatabase(db, nombreFichero) {
     nucleo,
     fichero: path.basename(nombreFichero),
     crs_origen: "UTM (m); por defecto EPSG:25830 (ETRS89 / UTM 30N)",
+    centro_utm: centro && centro.map((v) => Math.round(v)),
     resumen: { por_categoria: resumen, etiquetas: etiquetas.length, etiquetas_fuera_de_poligonos: sinPoligono, ...descartes },
     features,
   };
