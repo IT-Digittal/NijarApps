@@ -394,7 +394,7 @@ async function renderGemelo2D(el) {
     (aforo && aforo.aforo_actual != null
       ? kpi("Aforo P.N. Cabo de Gata", aforo.aforo_actual + " vehículos",
           "Ahora dentro · " + (aforo.entradas_hoy != null ? aforo.entradas_hoy + " entradas hoy · " : "") + "IoT municipal en vivo", "ic-teal", "map")
-      : kpi("Refresco", "5 min", "Telemetría de la plataforma en vivo", "ic-teal", "clock"));
+      : kpi("Actualización", "Manual", "Datos al abrir la sección · botón «Actualizar»", "ic-teal", "clock"));
 
   pintarInfoGemelo();
 
