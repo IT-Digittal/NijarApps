@@ -43,6 +43,10 @@ from nijar_dti.models.geografia import (
     TipoGeometria,
 )
 
+# Rectángulo que envuelve el término municipal de Níjar (WGS84), con margen
+LAT_NIJAR = (36.70, 37.08)
+LON_NIJAR = (-2.36, -1.85)
+
 FUENTE = "Inventario Municipal de Bienes · Urbana (Ayuntamiento de Níjar, actualización 2025)"
 SRID_POR_DEFECTO = 25830  # ETRS89 / UTM huso 30N
 
@@ -198,10 +202,52 @@ async def importar(
     return resumen
 
 
+def _punto_utm(fc: dict[str, Any]) -> tuple[float, float] | None:
+    """Centro UTM del núcleo (del convertidor) o, si falta, el primer vértice."""
+    if fc.get("centro_utm"):
+        x, y = fc["centro_utm"]
+        return float(x), float(y)
+    for feat in fc.get("features") or []:
+        c = (feat.get("geometry") or {}).get("coordinates")
+        while isinstance(c, list) and c and isinstance(c[0], list):
+            c = c[0]
+        if isinstance(c, list) and len(c) >= 2:
+            return float(c[0]), float(c[1])
+    return None
+
+
+def dentro_de_nijar(lat: float, lon: float) -> bool:
+    return LAT_NIJAR[0] <= lat <= LAT_NIJAR[1] and LON_NIJAR[0] <= lon <= LON_NIJAR[1]
+
+
+async def centro_wgs84(
+    db: AsyncSession, fc: dict[str, Any], srid: int
+) -> tuple[float, float] | None:
+    p = _punto_utm(fc)
+    if p is None:
+        return None
+    punto = func.ST_Transform(func.ST_SetSRID(func.ST_MakePoint(p[0], p[1]), srid), 4326)
+    lat, lon = (await db.execute(select(func.ST_Y(punto), func.ST_X(punto)))).one()
+    return float(lat), float(lon)
+
+
 async def _main(a: argparse.Namespace) -> int:
     colecciones = leer_colecciones(a.rutas)
     async with AsyncSessionLocal() as db:
-        resumen = await importar(db, colecciones, a.srid)
+        # Comprobación por núcleo: su centro debe caer en el término de Níjar
+        # (detecta coordenadas locales, otro sistema de referencia o restos).
+        validas = []
+        for fc in colecciones:
+            c = await centro_wgs84(db, fc, a.srid)
+            ok = c is not None and dentro_de_nijar(*c)
+            pos = f"{c[0]:.4f}, {c[1]:.4f}" if c else "sin coordenadas"
+            if ok or a.incluir_fuera:
+                validas.append(fc)
+                print(f"  {'·' if ok else '⚠'} {fc['nucleo']}: centro {pos}")
+            else:
+                print(f"  ⚠ {fc['nucleo']}: centro {pos} FUERA del término de Níjar → no se importa"
+                      f" (revisar el DWG; --incluir-fuera para forzar)")  # fmt: skip
+        resumen = await importar(db, validas, a.srid)
         # Comprobación de que cae en Níjar (detecta un sistema de coordenadas erróneo)
         centro = (
             await db.execute(
@@ -238,6 +284,11 @@ def main() -> None:
         help="EPSG de las coordenadas del DWG (25830 = ETRS89 UTM30N; 23030 = ED50)",
     )
     p.add_argument("--dry-run", action="store_true")
+    p.add_argument(
+        "--incluir-fuera",
+        action="store_true",
+        help="importar también los núcleos cuyo centro cae fuera del término de Níjar",
+    )
     try:
         sys.exit(asyncio.run(_main(p.parse_args())))
     except (ValueError, OSError) as exc:
