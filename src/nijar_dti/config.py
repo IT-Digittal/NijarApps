@@ -120,7 +120,9 @@ class Settings(BaseSettings):
 
     # --- Voz del chatbot en el tótem (OpenAI TTS; usa la misma API key) ---
     openai_tts_model: str = "gpt-4o-mini-tts"
-    openai_tts_voice: str = "nova"
+    # "marin" es la voz más natural y expresiva de gpt-4o-mini-tts ("cedar" es
+    # su equivalente grave); "nova" sonaba plana en las respuestas largas.
+    openai_tts_voice: str = "marin"
 
     # --- Mediciones de cobertura (G-NetTrack): token opcional para los endpoints ---
     cobertura_token: str = ""
@@ -180,6 +182,8 @@ class Settings(BaseSettings):
     # documentId de la categoría "Turismo" (para el atajo de noticias turísticas).
     noticias_categoria_turismo_id: str = "lj6bv606bqnpvf1u1bovf2m8"
     noticias_timeout_seconds: int = 12
+    # Recarga automática de las noticias del tótem (minutos; 0 = desactivada)
+    noticias_refresco_minutos: int = 60
 
     # --- Almacenamiento ---
     storage_backend: Literal["local", "s3", "gcs"] = "local"

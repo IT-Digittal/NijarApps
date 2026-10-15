@@ -51,12 +51,23 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             logger.error("Fallo en seed_loader durante el arranque", error=str(exc))
     # Refresco periódico de métricas Prometheus de dominio
     metrics_task = asyncio.create_task(metrics_loop(interval_seconds=60))
+    # Recarga automática de las noticias de Turismo del tótem (Strapi)
+    from nijar_dti.services.noticias_service import refrescar_noticias_loop
+
+    tareas = [metrics_task]
+    if settings.noticias_refresco_minutos > 0:
+        tareas.append(
+            asyncio.create_task(
+                refrescar_noticias_loop(interval_seconds=settings.noticias_refresco_minutos * 60)
+            )
+        )
     try:
         yield
     finally:
-        metrics_task.cancel()
-        with suppress(asyncio.CancelledError, Exception):
-            await metrics_task
+        for tarea in tareas:
+            tarea.cancel()
+            with suppress(asyncio.CancelledError, Exception):
+                await tarea
         logger.info("Cerrando plataforma DTI Níjar")
 
 

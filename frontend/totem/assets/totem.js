@@ -274,7 +274,8 @@ setInterval(cargarMeteo, 10 * 60 * 1000); /* Open-Meteo se refresca ~cada 15 min
 // API helpers
 // ============================================================
 async function apiGet(path) {
-  const res = await fetch(`${API_BASE}${path}`);
+  /* no-store: el tótem no se recarga nunca; evita servir listados viejos de caché */
+  const res = await fetch(`${API_BASE}${path}`, { cache: "no-store" });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
@@ -419,9 +420,16 @@ function _fmtEvento(ev) {
   return `${fecha}${dir} · ${hora}`;
 }
 
+/* Solo eventos vigentes: los que aún no han terminado (fecha_fin >= ahora).
+ * Sin este filtro la API devuelve los más antiguos primero y la agenda se
+ * quedaba anclada en eventos ya pasados. */
+function desdeAhora() {
+  return encodeURIComponent(new Date().toISOString());   /* UTC con "Z" */
+}
+
 async function cargarDestacado() {
   try {
-    const d = await apiGet("/tourism/events?publicado=true&page_size=1");
+    const d = await apiGet(`/tourism/events?publicado=true&page_size=1&desde=${desdeAhora()}`);
     destacadoEvento = (d.items && d.items[0]) || null;
   } catch { destacadoEvento = (DEMO_EVENTS && DEMO_EVENTS[0]) || null; }
   renderDestacado();
@@ -800,7 +808,7 @@ async function renderAgenda(grid, chip) {
   const t = dict();
   let items = [];
   try {
-    const d = await apiGet("/tourism/events?publicado=true&page_size=30");
+    const d = await apiGet(`/tourism/events?publicado=true&page_size=50&desde=${desdeAhora()}`);
     items = d.items || [];
   } catch { items = DEMO_EVENTS; }
   if (chip !== "todas") items = items.filter((e) => e.tipo === chip);
@@ -1201,14 +1209,18 @@ async function askChatbot(message) {
 }
 
 // --- Texto a voz (TTS) ---
-// Primero la voz neuronal del backend (/chatbot/tts, acento natural); si el
-// servidor no la tiene configurada o falla, se degrada a la mejor voz del
-// navegador disponible (evitando la voz robótica de eSpeak si hay otra).
+// Primero la voz neuronal del backend (/chatbot/tts, voz humana y natural).
+// Solo si el servidor no la ofrece se usa una voz del navegador, y nunca las
+// voces sintéticas tipo eSpeak (las de los tótems Linux suenan robóticas): en
+// ese caso el asistente responde solo por texto.
 let ttsAudio = null;
+let ttsTurno = 0;   /* descarta audios de respuestas anteriores que lleguen tarde */
 
 async function hablar(texto) {
   pararVoz();
-  if (await hablarServidor(texto)) return;
+  const turno = ++ttsTurno;
+  const r = await hablarServidor(texto, turno);
+  if (r !== "error" || turno !== ttsTurno) return;
   hablarNavegador(texto);
 }
 
@@ -1217,33 +1229,55 @@ function pararVoz() {
   if (ttsAudio) { ttsAudio.pause(); ttsAudio = null; }
 }
 
-async function hablarServidor(texto) {
+/** Devuelve "ok", "bloqueado" (audio listo pero autoplay denegado) o "error". */
+async function hablarServidor(texto, turno) {
+  let blob;
+  for (let intento = 0; intento < 2 && !blob; intento++) {
+    try {
+      const res = await fetch(`${API_BASE}/chatbot/tts`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ texto: texto.slice(0, 800), idioma: currentLang, canal: "totem" }),
+      });
+      if (res.ok) blob = await res.blob();
+      else {
+        console.warn("TTS servidor no disponible:", res.status);
+        if (res.status === 503) break;   /* sin configurar: no reintentar */
+      }
+    } catch (e) { console.warn("TTS servidor: fallo de red", e); }
+  }
+  if (!blob) return "error";
+  if (turno !== ttsTurno) return "ok";   /* ya hay otra respuesta en curso */
+  const audio = new Audio(URL.createObjectURL(blob));
+  audio.addEventListener("ended", () => URL.revokeObjectURL(audio.src));
+  ttsAudio = audio;
   try {
-    const res = await fetch(`${API_BASE}/chatbot/tts`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ texto: texto.slice(0, 800), idioma: currentLang, canal: "totem" }),
-    });
-    if (!res.ok) return false;
-    const blob = await res.blob();
-    ttsAudio = new Audio(URL.createObjectURL(blob));
-    ttsAudio.addEventListener("ended", () => { if (ttsAudio) URL.revokeObjectURL(ttsAudio.src); });
-    await ttsAudio.play();
-    return true;
-  } catch { return false; }
+    await audio.play();
+    return "ok";
+  } catch (e) {
+    /* Autoplay denegado: el audio natural queda listo para el botón "Escuchar";
+       no se cae a la voz robótica del navegador. */
+    console.warn("TTS: reproducción bloqueada", e);
+    return "bloqueado";
+  }
+}
+
+function esVozRobotica(v) {
+  const n = (v.name || "").toLowerCase();
+  return n.includes("espeak") || n.includes("robot") || n.includes("festival") || n.includes("pico");
 }
 
 function mejorVoz(locale) {
   const voces = window.speechSynthesis.getVoices() || [];
   const idioma = locale.slice(0, 2);
-  const candidatas = voces.filter((v) => (v.lang || "").toLowerCase().startsWith(idioma));
+  const candidatas = voces.filter((v) => (v.lang || "").toLowerCase().startsWith(idioma) && !esVozRobotica(v));
   if (!candidatas.length) return null;
-  // Preferencia: voces neuronales del sistema/navegador antes que eSpeak
+  // Preferencia: voces neuronales ("natural", "online", Google) primero
   const rango = (v) => {
     const n = (v.name || "").toLowerCase();
-    if (n.includes("google")) return 0;
-    if (n.includes("microsoft") || n.includes("natural")) return 1;
-    if (n.includes("espeak") || n.includes("robot")) return 9;
+    if (n.includes("natural") || n.includes("online") || n.includes("neural")) return 0;
+    if (n.includes("google")) return 1;
+    if (n.includes("microsoft")) return 2;
     return 5;
   };
   candidatas.sort((a, b) => rango(a) - rango(b) ||
@@ -1255,15 +1289,23 @@ function mejorVoz(locale) {
 function hablarNavegador(texto) {
   try {
     const locale = VOICE_LOCALE[currentLang] || "es-ES";
+    const voz = mejorVoz(locale);
+    if (!voz) return;   /* solo voces robóticas: mejor respuesta solo en texto */
     const u = new SpeechSynthesisUtterance(texto);
     u.lang = locale;
-    const voz = mejorVoz(locale);
-    if (voz) u.voice = voz;
-    u.rate = 0.95;
+    u.voice = voz;
+    u.rate = 1;
     window.speechSynthesis.speak(u);
   } catch { /* TTS no disponible */ }
 }
-speakBtn.addEventListener("click", () => { if (lastAnswer) hablar(lastAnswer); });
+speakBtn.addEventListener("click", () => {
+  /* Si el audio natural ya está cargado (p. ej. autoplay bloqueado), se reproduce tal cual */
+  if (ttsAudio && ttsAudio.paused && ttsAudio.currentTime === 0) {
+    ttsAudio.play().catch(() => {});
+    return;
+  }
+  if (lastAnswer) hablar(lastAnswer);
+});
 
 // --- Voz a texto (STT) ---
 const voiceBtn = $("#chatbot-voice");
@@ -1404,3 +1446,4 @@ cargarHeroFoto();
 resetChat();
 cargarConteos();
 cargarDestacado();
+setInterval(cargarDestacado, 30 * 60 * 1000); /* el tótem no se recarga: refresco del destacado */

@@ -25,9 +25,6 @@ const API_BASE = (typeof window !== "undefined" && window.NIJAR_API_BASE)
 let U, UI, DTI;
 let mapa2d = null;
 let mapa3d = null;
-let refrescoTimer = null;
-
-const REFRESCO_MS = 300_000; /* 5 min: el refresco recrea el mapa y cortaba la navegación */
 const CENTRO = [36.82, -2.1];
 const CENTRO_3D = [-2.06, 36.79]; /* MapLibre usa [lon, lat] */
 
@@ -371,8 +368,8 @@ async function pintarInfoGemelo() {
 
 async function renderGemelo2D(el) {
   el.innerHTML = sub("Gemelo digital", "Gemelo vivo del destino",
-    "Réplica digital operativa: los activos de la plataforma y de las verticales externas (IoT municipal con banderas de playa y aforo del parque; red Bettair de calidad del aire y meteorología) sobre un único mapa en tiempo real, con refresco automático cada 5 minutos.",
-    '<button class="btn btn--pri" onclick="UI.goD(\'gd-3d\')">Vista 3D →</button>') +
+    "Réplica digital operativa: los activos de la plataforma y de las verticales externas (IoT municipal con banderas de playa y aforo del parque; red Bettair de calidad del aire y meteorología) sobre un único mapa. Los datos se recargan bajo demanda con el botón «Actualizar».",
+    '<button class="btn" id="gd-actualizar">Actualizar</button> <button class="btn btn--pri" onclick="UI.goD(\'gd-3d\')">Vista 3D →</button>') +
     '<div class="grid g4" style="margin-bottom:16px" id="gd-kpis"></div>' +
     '<div class="card card--pad0" style="overflow:hidden"><div id="gemelo-2d" style="height:600px;width:100%"></div></div>' +
     '<div class="mini" style="color:var(--muted);margin-top:8px" id="gd-refresco"></div>' +
@@ -508,19 +505,19 @@ async function renderGemelo2D(el) {
     setTimeout(() => mapa2d.invalidateSize(), 150);
   }, 60);
 
-  /* Refresco automático mientras la sección esté visible.
-     Se pausa mientras hay una medición en curso o dibujada: el refresco
-     recrea el mapa y borraría la regla del usuario. */
-  if (refrescoTimer) clearInterval(refrescoTimer);
-  refrescoTimer = setInterval(() => {
-    const visible = document.getElementById("dv-gd-mapa");
-    if (!visible || visible.style.display === "none") return;
-    if (medicion && (medicion.activa || medicion.puntos.length)) return;
-    mapa2d = null;
-    UI.rerenderD("gd-mapa");
-  }, REFRESCO_MS);
+  /* Sin refresco automático: recrear el mapa cortaba la navegación y
+     borraba las mediciones. El usuario recarga con «Actualizar». */
+  const btnActualizar = document.getElementById("gd-actualizar");
+  if (btnActualizar) {
+    btnActualizar.onclick = () => {
+      if (medicion && (medicion.activa || medicion.puntos.length)
+        && !confirm("Actualizar borrará la medición en curso. ¿Continuar?")) return;
+      mapa2d = null;
+      UI.rerenderD("gd-mapa");
+    };
+  }
   document.getElementById("gd-refresco").textContent =
-    "Última actualización: " + new Date().toLocaleTimeString("es-ES") + " · el gemelo se actualiza automáticamente cada 5 minutos.";
+    "Última actualización: " + new Date().toLocaleTimeString("es-ES") + " · pulse «Actualizar» para recargar los datos.";
 }
 
 /* ================= HERRAMIENTA DE MEDICIÓN (regla geodésica) ================= */

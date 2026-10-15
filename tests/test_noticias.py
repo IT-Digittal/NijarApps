@@ -8,6 +8,8 @@ from __future__ import annotations
 
 from datetime import date, datetime
 
+import pytest
+
 from nijar_dti.config import Settings
 from nijar_dti.connectors.noticias import ClienteNoticiasStrapi
 from nijar_dti.schemas.noticias import NoticiaOut
@@ -100,3 +102,28 @@ def test_estado_y_configurado():
 def test_no_configurado_si_falta_base_url():
     c = ClienteNoticiasStrapi("", "pid")
     assert c.is_configured is False
+
+
+async def test_turismo_sirve_ultimo_listado_si_strapi_falla(monkeypatch):
+    from nijar_dti.connectors.noticias import NoticiasError
+    from nijar_dti.schemas.noticias import NoticiasPageOut
+    from nijar_dti.services import noticias_service as svc
+
+    bueno = NoticiasPageOut(page=1, page_size=3, page_count=1, total=0, items=[])
+
+    async def ok(**_kw):
+        return bueno
+
+    async def falla(**_kw):
+        raise NoticiasError("timeout")
+
+    svc._ultimo_turismo.clear()
+    monkeypatch.setattr(svc, "listar_noticias", falla)
+    with pytest.raises(NoticiasError):
+        await svc.listar_turismo(page=1, page_size=3)
+
+    monkeypatch.setattr(svc, "listar_noticias", ok)
+    assert await svc.listar_turismo(page=1, page_size=3) is bueno
+    monkeypatch.setattr(svc, "listar_noticias", falla)
+    assert await svc.listar_turismo(page=1, page_size=3) is bueno
+    svc._ultimo_turismo.clear()

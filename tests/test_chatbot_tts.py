@@ -44,3 +44,25 @@ class TestTTSIn:
     def test_texto_demasiado_largo(self):
         with pytest.raises(ValueError):
             TTSIn(texto="x" * 801)
+
+
+class TestPrepararTextoVoz:
+    def test_quita_emojis_markdown_y_vinetas(self):
+        from nijar_dti.services.chatbot_tts_service import preparar_texto_voz
+
+        t = preparar_texto_voz("🏖️ Las mejores playas:\n- **Mónsul**\n- Genoveses · Los Muertos")
+        assert t == "Las mejores playas: Mónsul. Genoveses, Los Muertos."
+
+    def test_url_se_reduce_a_dominio(self):
+        from nijar_dti.services.chatbot_tts_service import preparar_texto_voz
+
+        assert preparar_texto_voz("Más info en https://www.nijar.es/turismo?x=1") == (
+            "Más info en nijar.es."
+        )
+
+    def test_texto_normal_intacto(self):
+        from nijar_dti.services.chatbot_tts_service import preparar_texto_voz
+
+        assert preparar_texto_voz("Abre de 9:00 a 14:00. ¡Te esperamos!") == (
+            "Abre de 9:00 a 14:00. ¡Te esperamos!"
+        )
