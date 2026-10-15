@@ -45,8 +45,11 @@ fi
 echo "DWG a convertir: $(ls "$TMP/dwg" | wc -l)"
 
 docker run --rm --user "$(id -u):$(id -g)" -e HOME=/tmp \
-  -v "$REPO/tools/dwg2geojson:/src:ro" -v "$TMP:/datos" \
-  node:20-slim sh -c "cp -r /src /tmp/app && cd /tmp/app && npm ci --silent --no-audit --no-fund && node convertir.mjs /datos/dwg /datos/geojson" \
+  -v "$REPO/tools/dwg2geojson:/src:ro" -v "$REPO/frontend/dashboard/assets:/assets:ro" -v "$TMP:/datos" \
+  node:20-slim sh -c "mkdir -p /tmp/app/tools /tmp/app/frontend/dashboard \
+    && cp -r /src /tmp/app/tools/dwg2geojson && cp -r /assets /tmp/app/frontend/dashboard/assets \
+    && cd /tmp/app/tools/dwg2geojson && npm ci --silent --no-audit --no-fund \
+    && node convertir.mjs /datos/dwg /datos/geojson" \
   | grep -v "Open dwg file with error code" || true
 
 if ! ls "$TMP"/geojson/*.geojson >/dev/null 2>&1; then

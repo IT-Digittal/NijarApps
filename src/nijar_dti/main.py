@@ -144,10 +144,14 @@ app.add_route("/metrics", metrics_endpoint, methods=["GET"], include_in_schema=F
 
 # Servir el dashboard estático en /dashboard si la carpeta frontend está
 # disponible junto al despliegue. En docker-compose se monta como volumen.
+import mimetypes
 import os
 from pathlib import Path
 
 from fastapi.staticfiles import StaticFiles
+
+# Módulos ES del panel (p. ej. el convertidor DWG): el navegador exige un MIME de JS
+mimetypes.add_type("text/javascript", ".mjs")
 
 
 def _buscar_frontend() -> Path | None:

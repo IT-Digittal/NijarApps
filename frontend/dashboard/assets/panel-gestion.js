@@ -7,7 +7,7 @@
  * configuración. Todo contra la API real con control de roles.
  */
 
-import { api, getCachedUser, tokens } from "./api-client.js?v=18";
+import { api, getCachedUser, invalidateCache, tokens } from "./api-client.js?v=18";
 
 /* Base de la API para descargas binarias (informes PDF) */
 const API_BASE_G = (typeof window !== "undefined" && window.NIJAR_API_BASE)
@@ -888,9 +888,11 @@ async function renderCapasGemelo(el) {
     '<pre class="mini" style="background:var(--bg);padding:10px 12px;border-radius:8px;overflow-x:auto;margin:8px 0 4px">python -m nijar_dti.data.cargar_capa fichero.geojson --codigo pgou_clasificacion \\\n' +
     '    --nombre "Clasificación del suelo" --grupo clasificacion --fuente "PGOU vigente" [--reemplazar]</pre>' +
     '<div class="mini" style="color:var(--muted)">Acepta GeoJSON (FeatureCollection). Otros formatos (Shapefile, DXF) se convierten antes con ogr2ogr. «--reemplazar» sustituye los elementos existentes de la capa — p. ej. para cambiar las áreas de demostración por el planeamiento real.</div>' +
-    '<div class="mini" style="color:var(--muted);margin-top:6px">Inventario Municipal de Bienes (DWG por núcleo): <code>scripts/importar_inventario.sh inventario.zip</code> crea las capas del grupo «Inventario de bienes».</div></div>';
+    '<div class="mini" style="color:var(--muted);margin-top:6px">Inventario Municipal de Bienes (DWG por núcleo): se importa desde la tarjeta «Importar Inventario Municipal de Bienes» o, en el servidor, con <code>scripts/importar_inventario.sh inventario.zip</code>.</div></div>' +
+    (rw ? tarjetaImportarInventario() : "");
 
   if (!rw) return;
+  activarImportarInventario(el);
   el.querySelectorAll("[data-g$='-capa']").forEach((b) => {
     const c = capas[Number(b.dataset.i)];
     if (b.dataset.g === "edit-capa") b.onclick = () => abrirForm('Editar capa «' + c.nombre + '»',
@@ -926,6 +928,144 @@ async function renderCapasGemelo(el) {
       UI.rerenderD("g-capas");
     };
   });
+}
+
+/* ---------- Importador del Inventario Municipal de Bienes (DWG) ----------
+   Los DWG se leen en el navegador con el mismo convertidor que
+   scripts/importar_inventario.sh (assets/dwg2geojson.mjs + LibreDWG en WASM);
+   al servidor solo viaja el GeoJSON de cada núcleo. Primero se comprueba
+   (centro de cada núcleo dentro del término) y después se importa: cada núcleo
+   sustituye a su versión anterior. */
+
+const API_BASE_GESTION = window.NIJAR_API_BASE || window.location.origin + "/api/v1";
+const SRID_INVENTARIO = [
+  ["25830", "ETRS89 · UTM 30N (EPSG:25830)"],
+  ["23030", "ED50 · UTM 30N (EPSG:23030) · planos antiguos"],
+];
+
+function tarjetaImportarInventario() {
+  return '<div class="card" style="margin-top:16px" id="inv-card"><div class="card__h"><div><div class="card__t">Importar Inventario Municipal de Bienes (DWG)</div>' +
+    '<div class="card__s">Sube los planos <b>.dwg</b> de uno o varios núcleos, o directamente el <b>.zip</b> del Ayuntamiento (los PDF se ignoran). ' +
+    "El núcleo se toma del nombre del fichero («LAS NEGRAS 2025.dwg» → Las Negras) y cada núcleo sustituye a su versión anterior.</div></div></div>" +
+    '<div class="chip-row" style="align-items:center;flex-wrap:wrap;gap:10px;margin-top:8px">' +
+    '<input type="file" id="inv-ficheros" accept=".dwg,.zip" multiple ' + INPUT_CSS.replace("width:100%", "max-width:340px") + ">" +
+    '<select id="inv-srid" ' + INPUT_CSS.replace("width:100%", "width:auto;max-width:100%") + ' title="Sistema de coordenadas de los planos">' +
+    SRID_INVENTARIO.map(([v, t]) => '<option value="' + v + '">' + esc(t) + "</option>").join("") + "</select>" +
+    '<label class="mini" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="inv-fuera"> Importar también núcleos fuera del término</label></div>' +
+    '<div class="chip-row" style="margin-top:10px"><button class="btn" id="inv-comprobar">1 · Comprobar</button>' +
+    '<button class="btn btn--pri" id="inv-importar" disabled>2 · Importar</button></div>' +
+    '<div id="inv-estado" class="mini" style="margin-top:10px;color:var(--muted)">Comprueba primero: se leen los planos y se muestra dónde cae cada núcleo, sin guardar nada.</div>' +
+    '<div id="inv-resultado" style="margin-top:8px"></div></div>';
+}
+
+async function postInventario(colecciones, srid, dryRun, incluirFuera) {
+  const r = await fetch(API_BASE_GESTION + "/geo/inventario/importar", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: "Bearer " + tokens.access },
+    body: JSON.stringify({ colecciones, srid: Number(srid), dry_run: dryRun, incluir_fuera: incluirFuera }),
+  });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) {
+    const d = j.detail;
+    throw new Error(j.message || (typeof d === "string" ? d : d ? JSON.stringify(d) : "error " + r.status));
+  }
+  return j;
+}
+
+function tablaInventario(res, errores) {
+  const fmtC = (c) => (c ? c[0].toFixed(4) + ", " + c[1].toFixed(4) : "—");
+  const filas = res.nucleos.map((n) =>
+    '<tr><td style="font-weight:600;white-space:normal">' + esc(n.nucleo) + '<div class="mini" style="font-weight:400;color:var(--muted)">' + esc(n.fichero || "") + "</div></td>" +
+    '<td class="mini tnum">' + fmtC(n.centro) + "</td>" +
+    "<td>" + (n.dentro ? '<span class="bdg bdg-ok">en Níjar</span>'
+      : n.importado ? '<span class="bdg bdg-warn">fuera · forzado</span>'
+      : '<span class="bdg bdg-warn">fuera · no se importa</span>') + "</td>" +
+    '<td class="mini tnum">' + (n.importado ? n.elementos : "—") + "</td>" +
+    '<td class="mini" style="white-space:normal">' + esc(Object.entries(n.por_categoria || {}).map(([k, v]) => k.replace(/_/g, " ") + " " + v).join(" · ")) +
+    (n.descartes ? '<div style="color:var(--muted)">' + n.descartes + " resto(s) a más de 6 km descartado(s)</div>" : "") + "</td></tr>").join("");
+  const errs = errores.map((e) => '<tr><td style="font-weight:600">' + esc(e.nombre) + '</td><td colspan="4"><span class="bdg bdg-warn">no se ha podido leer</span> <span class="mini">' + esc(e.error) + "</span></td></tr>").join("");
+  return '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Núcleo</th><th>Centro (lat, lon)</th><th>Ubicación</th><th>Elementos</th><th>Por categoría</th></tr></thead><tbody>' +
+    filas + errs + "</tbody></table></div>";
+}
+
+function activarImportarInventario(el) {
+  const $ = (s) => el.querySelector(s);
+  const input = $("#inv-ficheros"), btnComp = $("#inv-comprobar"), btnImp = $("#inv-importar");
+  const estado = $("#inv-estado"), salida = $("#inv-resultado");
+  if (!input) return;
+  let colecciones = null; // GeoJSON de la última comprobación
+  const invalidar = () => { colecciones = null; btnImp.disabled = true; };
+  input.onchange = invalidar;
+  $("#inv-srid").onchange = invalidar;
+  $("#inv-fuera").onchange = invalidar;
+  const pausa = () => new Promise((r) => setTimeout(r, 0)); // deja pintar el progreso
+
+  btnComp.onclick = async () => {
+    if (!input.files.length) { estado.textContent = "Elige primero los planos .dwg o el .zip."; return; }
+    invalidar();
+    btnComp.disabled = true;
+    salida.innerHTML = "";
+    const errores = [];
+    try {
+      estado.textContent = "Cargando el lector de DWG (unos 11 MB la primera vez)…";
+      const conv = await import("./dwg2geojson.mjs?v=1");
+      await conv.cargarLibreDwg();
+      const planos = [];
+      for (const f of input.files) {
+        const buf = await f.arrayBuffer();
+        if (/\.zip$/i.test(f.name)) planos.push(...(await conv.dwgDeZip(buf)));
+        else if (/\.dwg$/i.test(f.name)) planos.push({ nombre: f.name, datos: new Uint8Array(buf) });
+      }
+      if (!planos.length) throw new Error("No hay ningún .dwg en lo seleccionado.");
+      const fcs = [];
+      for (const [i, p] of planos.entries()) {
+        estado.textContent = "Leyendo " + p.nombre + " (" + (i + 1) + " de " + planos.length + ")…";
+        await pausa();
+        try {
+          const fc = await conv.convertirDwg(p.datos, p.nombre);
+          if (!fc.features.length) throw new Error("sin elementos del inventario (¿capas con otro nombre?)");
+          fcs.push(fc);
+        } catch (e) {
+          errores.push({ nombre: p.nombre, error: e.message || String(e) });
+        }
+      }
+      if (!fcs.length) { salida.innerHTML = tablaInventario({ nucleos: [] }, errores); throw new Error("Ningún plano se ha podido convertir."); }
+      estado.textContent = "Comprobando la ubicación de " + fcs.length + " núcleo(s)…";
+      const res = await postInventario(fcs, $("#inv-srid").value, true, $("#inv-fuera").checked);
+      salida.innerHTML = tablaInventario(res, errores);
+      const aImportar = res.nucleos.filter((n) => n.importado);
+      const total = aImportar.reduce((s, n) => s + n.elementos, 0);
+      const fuera = res.nucleos.length - aImportar.length;
+      estado.innerHTML = "Comprobado, <b>sin guardar</b>: " + aImportar.length + " núcleo(s) y " + total + " elementos listos para importar" +
+        (fuera ? " · <b>" + fuera + " fuera del término</b> (revisa el plano o el sistema de coordenadas)" : "") +
+        (errores.length ? " · " + errores.length + " plano(s) sin leer" : "") + ".";
+      if (aImportar.length) { colecciones = fcs; btnImp.disabled = false; }
+    } catch (e) {
+      estado.textContent = "✘ " + (e.message || e);
+    } finally {
+      btnComp.disabled = false;
+    }
+  };
+
+  btnImp.onclick = async () => {
+    if (!colecciones) return;
+    const nombres = colecciones.map((c) => c.nucleo);
+    if (!confirm("Se importarán " + nombres.length + " núcleo(s) (" + nombres.join(", ") + "). Cada uno sustituye a su versión anterior en el gemelo. ¿Continuar?")) return;
+    btnImp.disabled = true;
+    btnComp.disabled = true;
+    estado.textContent = "Importando…";
+    try {
+      const res = await postInventario(colecciones, $("#inv-srid").value, false, $("#inv-fuera").checked);
+      const hechos = res.nucleos.filter((n) => n.importado);
+      UI.toast("Inventario importado: " + hechos.length + " núcleo(s), " + hechos.reduce((s, n) => s + n.elementos, 0) + " elementos");
+      invalidateCache("/geo");
+      UI.rerenderD("g-capas");
+    } catch (e) {
+      estado.textContent = "✘ " + (e.message || e);
+      btnImp.disabled = false;
+      btnComp.disabled = false;
+    }
+  };
 }
 
 /* ================= MEDICIONES GUARDADAS DEL GEMELO ================= */

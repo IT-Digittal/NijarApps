@@ -7,7 +7,26 @@
 | **Componentes** | `tools/dwg2geojson/convertir.mjs` (LibreDWG/WASM), `nijar_dti.data.importar_inventario`, `scripts/importar_inventario.sh` |
 | **Resultado** | Grupo «Inventario de bienes» en el control de capas del Gemelo vivo 2D: una capa por categoría |
 
-## 1. Carga (en el servidor)
+## 1. Carga desde el panel (recomendado)
+
+**Panel → Capas del gemelo → «Importar Inventario Municipal de Bienes (DWG)»**
+(perfiles administrador TIC y gestor de contenidos):
+
+1. Elegir los `.dwg` de uno o varios núcleos, o el `.zip` del Ayuntamiento
+   (los PDF se ignoran).
+2. **1 · Comprobar**: el navegador lee los DWG (LibreDWG en WebAssembly, ~11 MB
+   desde cdn.jsdelivr.net la primera vez) con el mismo convertidor que el
+   script (`frontend/dashboard/assets/dwg2geojson.mjs`) y la API devuelve, sin
+   guardar nada, el centro de cada núcleo, si cae en el término y los elementos
+   por categoría.
+3. **2 · Importar**: guarda los núcleos que caen en Níjar; cada uno sustituye a
+   su versión anterior. Los que caen fuera no se importan salvo que se marque
+   «Importar también núcleos fuera del término».
+
+Endpoint: `POST /api/v1/geo/inventario/importar` (`colecciones`, `srid`,
+`dry_run`, `incluir_fuera`).
+
+## 1 bis. Carga desde el servidor (alternativa)
 
 ```bash
 cd ~/NijarApps

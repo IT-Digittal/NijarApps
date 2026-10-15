@@ -108,3 +108,38 @@ class MedicionGemeloOut(BaseModel):
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+# --------------------- Importación del Inventario Municipal de Bienes ---------------------
+
+# Sistemas de referencia admitidos para los DWG (UTM en metros)
+SRID_INVENTARIO = Literal[25830, 23030, 25829, 23029, 25831, 23031]
+
+
+class InventarioImportarIn(BaseModel):
+    """GeoJSON por núcleo generados en el navegador a partir de los DWG."""
+
+    colecciones: list[dict[str, Any]] = Field(..., min_length=1, max_length=100)
+    srid: SRID_INVENTARIO = 25830
+    dry_run: bool = Field(True, description="Solo comprobar: no guarda nada")
+    incluir_fuera: bool = Field(
+        False, description="Importar también los núcleos cuyo centro cae fuera de Níjar"
+    )
+
+
+class InventarioNucleoOut(BaseModel):
+    nucleo: str
+    fichero: str | None = None
+    centro: list[float] | None = Field(None, description="[lat, lon] del núcleo")
+    dentro: bool
+    importado: bool
+    elementos: int = 0
+    por_categoria: dict[str, int] = Field(default_factory=dict)
+    descartes: int = 0
+
+
+class InventarioImportarOut(BaseModel):
+    dry_run: bool
+    srid: int
+    nucleos: list[InventarioNucleoOut]
+    centro: list[float] | None = Field(None, description="[lat, lon] de todo el inventario")
