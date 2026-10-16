@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 220" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+  <!-- Ilustración del pie del tótem: dunas, sol, sierra, mar, pitas y pueblo blanco -->
+  <defs>
+    <linearGradient id="pie-cielo" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F6F1EA" stop-opacity="0"/>
+      <stop offset="0.55" stop-color="#F7E6D2"/>
+      <stop offset="1" stop-color="#F3D7B6"/>
+    </linearGradient>
+    <linearGradient id="pie-sol" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FBB45C"/>
+      <stop offset="1" stop-color="#EE8A3A"/>
+    </linearGradient>
+    <linearGradient id="pie-duna" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#EBC79C"/>
+      <stop offset="1" stop-color="#D9A877"/>
+    </linearGradient>
+    <linearGradient id="pie-mar" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#3E9FC9"/>
+      <stop offset="1" stop-color="#7CC3DE"/>
+    </linearGradient>
+  </defs>
+  <rect width="1080" height="220" fill="url(#pie-cielo)"/>
+  <!-- sol -->
+  <circle cx="820" cy="112" r="44" fill="url(#pie-sol)"/>
+  <!-- sierra lejana -->
+  <path d="M520 160l60-40 40 22 52-46 58 40 46-26 70 50 60-30 60 24 114-6v76H520z" fill="#C9B6C4" opacity=".55"/>
+  <path d="M560 170l70-30 50 18 70-34 60 30 80-22 90 26 100-10v72H560z" fill="#A99CB5" opacity=".55"/>
+  <!-- mar -->
+  <path d="M600 178c80-6 160-8 240-6s160 6 240 2v46H600z" fill="url(#pie-mar)"/>
+  <path d="M640 186c40-3 70-3 110 0M790 190c40-3 80-3 120 0" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity=".7"/>
+  <!-- dunas -->
+  <path d="M0 176c120-40 250-46 380-20 110 22 200 18 300 2v62H0z" fill="url(#pie-duna)"/>
+  <path d="M0 196c140-20 300-26 470-10 90 8 170 8 250 0v34H0z" fill="#E2B888"/>
+  <!-- pueblo blanco con iglesia (derecha) -->
+  <g transform="translate(860 120)">
+    <rect x="70" y="-10" width="34" height="90" fill="#FFFFFF" stroke="#E2D6C5"/>
+    <rect x="76" y="-34" width="22" height="26" fill="#FFFFFF" stroke="#E2D6C5"/>
+    <path d="M74 -34h26l-13-18z" fill="#E5C9A0"/>
+    <rect x="82" y="-26" width="10" height="14" rx="5" fill="#7C6A55"/>
+    <rect x="80" y="10" width="14" height="22" rx="7" fill="#C9B79E"/>
+    <rect x="0" y="34" width="70" height="46" fill="#FFFFFF" stroke="#E2D6C5"/>
+    <rect x="12" y="46" width="12" height="14" fill="#5C8DB8"/>
+    <rect x="40" y="46" width="12" height="14" fill="#5C8DB8"/>
+    <rect x="104" y="26" width="66" height="54" fill="#FFFFFF" stroke="#E2D6C5"/>
+    <rect x="118" y="40" width="12" height="14" fill="#5C8DB8"/>
+    <rect x="144" y="40" width="12" height="16" fill="#C46B3B"/>
+    <rect x="170" y="44" width="60" height="36" fill="#FFFFFF" stroke="#E2D6C5"/>
+    <rect x="186" y="54" width="10" height="12" fill="#5C8DB8"/>
+    <path d="M-30 80h270v20H-30z" fill="#E2B888"/>
+  </g>
+  <!-- pitas (agaves) a la izquierda -->
+  <g fill="#1F5A64">
+    <path d="M70 220c-8-60-30-110-62-140 34 22 56 70 68 132z"/>
+    <path d="M86 220c4-70 20-120 54-160-20 44-34 98-38 160z" fill="#2A6F78"/>
+    <path d="M60 220c-30-40-52-60-80-70 34 2 60 26 92 66z" fill="#2A6F78"/>
+    <path d="M98 220c20-50 46-80 86-96-30 22-52 54-68 98z"/>
+    <path d="M78 220c-2-80 2-150 14-200 4 56 4 126-2 200z" fill="#174A53"/>
+    <path d="M190 220c-6-34-20-60-40-78 22 12 38 38 48 76z" fill="#2A6F78"/>
+    <path d="M200 220c6-38 18-64 40-84-14 26-24 52-30 84z"/>
+  </g>
+</svg>

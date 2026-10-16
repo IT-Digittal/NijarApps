@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 330 74" role="img" aria-label="Vive Níjar · Cabo de Gata">
+  <!-- Marca turística «Vive Níjar» (recreación vectorial del diseño del tótem) -->
+  <defs>
+    <linearGradient id="vn-sol" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F7A440"/>
+      <stop offset="1" stop-color="#E8742B"/>
+    </linearGradient>
+  </defs>
+  <!-- sol -->
+  <path d="M32 31a14 14 0 0 1 28 0z" fill="url(#vn-sol)"/>
+  <!-- sierra y ola -->
+  <path d="M4 44c9-9 17-14 26-14 8 0 13 5 19 9 6-5 12-8 19-8" fill="none" stroke="#0E3A78" stroke-width="5" stroke-linecap="round"/>
+  <path d="M10 54c10-6 19-8 29-6 9 2 17 4 27 0" fill="none" stroke="#1F8FD0" stroke-width="4.2" stroke-linecap="round"/>
+  <!-- texto -->
+  <text x="80" y="46" font-family="'Fira Sans','Montserrat',system-ui,sans-serif" font-size="44" font-weight="600" letter-spacing="-1">
+    <tspan fill="#E8742B">Vive</tspan><tspan fill="#0B2B57" font-weight="800" dx="8">Níjar</tspan>
+  </text>
+  <text x="122" y="68" font-family="'Fira Sans','Montserrat',system-ui,sans-serif" font-size="15" font-weight="500" fill="#0B2B57" letter-spacing="0.6">Cabo de Gata</text>
+</svg>
