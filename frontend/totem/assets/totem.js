@@ -9,7 +9,7 @@
  * - Inactividad >60 s: vuelve al inicio en español (modo público).
  */
 
-import { I18N, translateAll } from "./i18n.js?v=26";
+import { I18N, translateAll } from "./i18n.js?v=27";
 import { DEMO_RESOURCES, answerChatbotDemo } from "./demo-data.js";
 
 // ============================================================
@@ -188,7 +188,7 @@ const tele = (() => {
 // ============================================================
 // Router de vistas
 // ============================================================
-const VIEWS = ["view-home", "view-list", "view-chat", "view-map", "view-explore", "view-avisos"];
+const VIEWS = ["view-home", "view-list", "view-chat", "view-map", "view-explore", "view-avisos", "view-detail"];
 function showView(id) {
   VIEWS.forEach((v) => {
     const el = document.getElementById(v);
@@ -889,6 +889,20 @@ function renderHomeV5() {
 // ============================================================
 // LISTADOS por categoría
 // ============================================================
+const TRAZO_SVG = '<svg viewBox="0 0 220 24" class="v5-trazo" aria-hidden="true"><path d="M4 16c50-10 120-14 212-6" fill="none" stroke="#E8742B" stroke-width="4" stroke-linecap="round"/></svg>';
+
+/* Foto de cabecera de una categoría: la real de sus recursos o la del tile */
+function fotoDeCategoria(c) {
+  return (c.noticias && fondoNoticias) || fotoCategoria[c.id] || c.bg || "../shared/cabo-de-gata-hero.jpg";
+}
+function ponerFoto(el, url) {
+  if (el) el.style.setProperty("--foto", url ? `url('${String(url).replace(/'/g, "%27")}')` : "none");
+}
+function lemaHtml(clave) {
+  const lema = dict()[clave];
+  return lema ? escapeHtml(lema) + TRAZO_SVG : "";
+}
+
 async function abrirCategoria(catId, chip = "todas") {
   const c = CATS.find((x) => x.id === catId);
   if (!c) return;
@@ -897,32 +911,45 @@ async function abrirCategoria(catId, chip = "todas") {
   currentChip = chip;
   const t = dict();
 
-  $("#list-title").textContent = c.events && chip !== "emergencias" ? (t["agenda.title"] || "Agenda") : (t[c.label] || capitalize(catId));
+  const titulo = c.events && chip !== "emergencias" ? (t["agenda.title"] || "Agenda") : (t[c.label] || capitalize(catId));
+  $("#list-title").textContent = titulo;
+  $("#list-miga").textContent = titulo;
   const n = catCounts[catId];
   const unit = t[c.unit || "unit.lugares"] || "lugares";
   $("#list-count").textContent = n != null ? `${n} ${unit}` : "";
   const heroTxt = $("#list-hero-txt");
   if (heroTxt) heroTxt.textContent = t[c.heroSub || "hero.destino_generico"] || "Cabo de Gata · Níjar";
+  $("#list-lema").innerHTML = lemaHtml("lema." + c.id);
+  ponerFoto($("#list-hero"), fotoDeCategoria(c));
+  const buscador = $("#list-buscar");
+  buscador.value = "";
+  buscador.placeholder = (t["v5.buscar_en"] || "Buscar en {x}…").replace("{x}", titulo.toLowerCase());
+  $("#list-sin-resultados").hidden = true;
+  $("#list-mapa-card").hidden = true;
+  $("#list-consejos").hidden = true;
   renderChips(c);
   showView("view-list");
 
   const grid = $("#content-grid");
   grid.setAttribute("aria-busy", "true");
   grid.innerHTML = `<p class="content-loading">${t["loading.contenido"] || "Cargando contenidos…"}</p>`;
+  const fin = (items) => { grid.setAttribute("aria-busy", "false"); finalizarListado(c, items, titulo); };
 
-  if (chip === "emergencias") { renderEmergencies(grid); grid.setAttribute("aria-busy", "false"); return; }
-  if (c.events) { await renderAgenda(grid, chip); grid.setAttribute("aria-busy", "false"); return; }
-  if (c.empresas) { await renderEmpresas(grid, chip); grid.setAttribute("aria-busy", "false"); return; }
-  if (c.noticias) { await renderNoticias(grid); grid.setAttribute("aria-busy", "false"); return; }
+  if (chip === "emergencias") { renderEmergencies(grid); return fin(null); }
+  if (c.events) { await renderAgenda(grid, chip); return fin(null); }
+  if (c.empresas) { await renderEmpresas(grid, chip); return fin(null); }
+  if (c.noticias) { await renderNoticias(grid); return fin(null); }
 
   let items = [];
+  const cerca = chip === "cerca";
+  const filtro = cerca ? "todas" : chip;
   // Sub-chip por etiqueta (playas, cabo, naturaleza): siempre se cargan todos los items de la categoría y luego se filtra por tag en cliente.
-  const chipEsSubchip = c.subchips && c.subchips.includes(chip);
+  const chipEsSubchip = c.subchips && c.subchips.includes(filtro);
   if (c.srv) {
     const servicios = await getServicios();
-    items = porCercania(servicios.filter((s) => (chip === "todas" ? c.srv.includes(s.tipo) : s.tipo === chip)));
+    items = porCercania(servicios.filter((s) => (filtro === "todas" ? c.srv.includes(s.tipo) : s.tipo === filtro)));
   } else if (c.res || c.etiquetas) {
-    const cats = c.res ? (chipEsSubchip ? c.res : (chip === "todas" ? c.res : [chip])) : [];
+    const cats = c.res ? (chipEsSubchip ? c.res : (filtro === "todas" ? c.res : [filtro])) : [];
     for (const cat of cats) {
       try {
         const d = await apiGet(`/tourism/resources?categoria=${encodeURIComponent(cat)}&publicado=true&page_size=100`);
@@ -933,7 +960,7 @@ async function abrirCategoria(catId, chip = "todas") {
     if (c.etiquetas && c.etiquetas.length) {
       try {
         const d = await apiGet(`/tourism/resources?publicado=true&page_size=200`);
-        const tagSet = c.etiquetas.map((t) => t.toLowerCase());
+        const tagSet = c.etiquetas.map((x) => x.toLowerCase());
         const matches = (d.items || []).filter((r) => (r.etiquetas || []).some((e) => tagSet.includes(String(e).toLowerCase())));
         /* deduplica por id */
         const seen = new Set(items.map((x) => x.id));
@@ -944,13 +971,45 @@ async function abrirCategoria(catId, chip = "todas") {
   if (items.length === 0 && !c.srv) items = DEMO_RESOURCES[catId] || [];
   // Aplica el filtro de sub-chip por etiqueta en cliente
   if (chipEsSubchip) {
-    items = items.filter((r) => (r.etiquetas || []).some((e) => String(e).toLowerCase() === chip.toLowerCase()));
+    items = items.filter((r) => (r.etiquetas || []).some((e) => String(e).toLowerCase() === filtro.toLowerCase()));
   }
+  if (cerca) items = porCercania(items);
   // Banderas de playa en vivo (solo para la categoría playas)
   if (c.id === "playas") await cargarBanderas();
   renderItems(grid, items, c);
-  grid.setAttribute("aria-busy", "false");
+  fin(items);
 }
+
+/* Mapa y consejos al pie del listado */
+function finalizarListado(c, items, titulo) {
+  const t = dict();
+  pintarConsejos($("#list-consejos"), c.id);
+  const pts = (items || []).map((r) => ({ ll: extractLatLon(r), nombre: r.nombre_i18n?.[currentLang] || r.nombre })).filter((x) => x.ll);
+  const card = $("#list-mapa-card");
+  if (pts.length) {
+    $("#list-mapa-t").textContent = (t["v5.mapa_de"] || "Mapa: {x}").replace("{x}", titulo);
+    card.hidden = false;
+    miniMapaEn("lista", $("#list-mapa"), pts);
+  } else card.hidden = true;
+  filtrarListado();
+}
+
+/* Buscador del listado: filtra las tarjetas visibles por su texto */
+function normTexto(x) {
+  return String(x || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+}
+function filtrarListado() {
+  const q = normTexto($("#list-buscar").value.trim());
+  const tarjetas = [...$("#content-grid").querySelectorAll(".v5-rcard, .tt-item")];
+  let visibles = 0;
+  tarjetas.forEach((el) => {
+    const ok = !q || normTexto(el.textContent).includes(q);
+    el.hidden = !ok;
+    if (ok) visibles++;
+  });
+  $("#list-sin-resultados").hidden = !(q && tarjetas.length && !visibles);
+}
+$("#list-buscar").addEventListener("input", () => { filtrarListado(); resetIdle(); });
 
 // ============================================================
 // EMPRESAS: apartado de publicidad (anunciantes del panel)
@@ -982,15 +1041,17 @@ async function renderEmpresas(grid, chip = "todas") {
     return;
   }
   grid.innerHTML =
-    `<p class="tt-emp-aviso">${escapeHtml(t["empresas.aviso"] || "Espacio de empresas colaboradoras del destino")}</p>` +
+    `<p class="v5-nota">${escapeHtml(t["empresas.aviso"] || "Espacio de empresas colaboradoras del destino")}</p>` +
     items.map((e, i) => empresaCard(e, i)).join("");
 
   /* Impresión: la tarjeta se ha mostrado en pantalla */
   registrarMetricasEmpresas(items.map((e) => ({ empresa_id: e.id, tipo: "impresion", n: 1 })));
   /* Toque: el visitante pulsa la tarjeta */
-  grid.querySelectorAll(".tt-emp[data-emp-id]").forEach((card) =>
+  grid.querySelectorAll("[data-emp-id]").forEach((card) =>
     card.addEventListener("click", () =>
       registrarMetricasEmpresas([{ empresa_id: card.dataset.empId, tipo: "toque", n: 1 }])));
+  grid.querySelectorAll("[data-web]").forEach((b) => b.addEventListener("click", () =>
+    mostrarQR(b.dataset.web, b.closest(".v5-rcard").querySelector(".v5-rcard-t").textContent)));
 }
 
 function empresaCard(e, index) {
@@ -998,25 +1059,41 @@ function empresaCard(e, index) {
   const desc = e.descripcion_i18n?.[currentLang] || e.descripcion || "";
   const primera = e.imagenes && e.imagenes[0];
   const img = (typeof primera === "string" ? primera : primera && primera.url) || "";
-  const thumbBg = img
-    ? `background-image: url('${escapeAttr(img)}'); background-size: cover; background-position: center;`
-    : "";
-  const meta = [e.nucleo, e.direccion].filter(Boolean).join(" · ");
-  const contacto = [e.telefono, e.web ? String(e.web).replace(/^https?:\/\//, "") : null]
-    .filter(Boolean).join(" · ");
+  const lugar = [e.direccion, e.nucleo].filter(Boolean).join(", ");
+  const contacto = [e.telefono, e.web ? String(e.web).replace(/^https?:\/\//, "") : null].filter(Boolean).join(" · ");
+  const sector = t["sector." + e.sector] || String(e.sector || "").replace(/_/g, " ");
   return `
-    <div class="tt-lb tt-emp${e.destacado ? " is-dest" : ""}" data-emp-id="${escapeAttr(e.id)}">
-      <span class="tt-lb-num" aria-hidden="true">${String(index + 1).padStart(2, "0")}</span>
-      <span class="tt-lb-thumb th-servicio" style="${thumbBg}" aria-hidden="true"></span>
-      <span class="tt-lb-body">
-        <span class="tt-lb-title">${escapeHtml(e.nombre)}
-          ${e.destacado ? `<span class="tt-emp-badge">${escapeHtml(t["empresas.destacada"] || "Destacada")}</span>` : ""}
-          <span class="tt-tag tt-tag--info">${escapeHtml(t["sector." + e.sector] || String(e.sector).replace(/_/g, " "))}</span>
-        </span>
-        ${desc ? `<span class="tt-lb-sub">${escapeHtml(desc)}</span>` : ""}
-        ${meta || contacto ? `<span class="tt-lb-sub">${escapeHtml(meta)}${meta && contacto ? " · " : ""}${escapeHtml(contacto)}</span>` : ""}
+    <article class="v5-rcard${e.destacado ? " is-dest" : ""}" data-emp-id="${escapeAttr(e.id)}" data-n="${index}">
+      <span class="v5-rcard-img${img ? "" : " is-vacia"}" style="--foto:url('${escapeAttr(img)}')" aria-hidden="true">
+        ${e.destacado ? `<span class="v5-rcard-badge">${escapeHtml(t["empresas.destacada"] || "Destacada")}</span>` : ""}
       </span>
-    </div>`;
+      <span class="v5-rcard-b">
+        <strong class="v5-rcard-t">${escapeHtml(e.nombre)}</strong>
+        ${lugar ? `<span class="v5-ico-l v5-rcard-lugar">${ICO_PIN}${escapeHtml(lugar)}</span>` : ""}
+        ${desc ? `<span class="v5-rcard-d">${escapeHtml(desc)}</span>` : ""}
+        <span class="v5-rchips">${sector ? `<span class="v5-rchip">${escapeHtml(sector)}</span>` : ""}${contacto ? `<span class="v5-rchip">${escapeHtml(contacto)}</span>` : ""}</span>
+        ${e.web ? `<span class="v5-rcard-pie"><button class="v5-ficha" data-web="${escapeAttr(e.web)}">${escapeHtml(t["action.web_movil"] || "Web en tu móvil")}${CHEVRON}</button></span>` : ""}
+      </span>
+    </article>`;
+}
+
+const ICO_PIN = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s7-6.3 7-12a7 7 0 10-14 0c0 5.7 7 12 7 12z" fill="#0B2B57"/><circle cx="12" cy="10" r="2.6" fill="#fff"/></svg>';
+const ICONOS_CHIP = {
+  todas: '<path d="M2 15c3-3 6-3 9 0s6 3 9 0M2 19c3-3 6-3 9 0s6 3 9 0M7 10c2-4 7-5 10-2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
+  virgen: '<path d="M19 4C10 4 5 9 5 16c0 2 .5 3 1.5 4C15 20 20 13 19 4z" fill="#2E8B57"/>',
+  familiar: '<circle cx="8" cy="7" r="2.5" fill="#155E8C"/><circle cx="16" cy="7" r="2.5" fill="#155E8C"/><path d="M4 20v-6a4 4 0 018 0v6M12 20v-6a4 4 0 018 0v6" fill="#155E8C"/>',
+  "volcánico": '<path d="M3 20l6-10 3 4 2-3 7 9z" fill="#B5703F"/><path d="M11 6c1-2 3-2 4-1" stroke="#B5703F" stroke-width="2" fill="none" stroke-linecap="round"/>',
+  "geología": '<path d="M4 18l4-8 5 3 3-6 4 11z" fill="#8A6A4A"/>',
+  patrimonio: '<path d="M4 20h16M6 20V10h12v10M4 10l8-6 8 6M10 20v-5h4v5" fill="none" stroke="#7C4FC4" stroke-width="2" stroke-linejoin="round"/>',
+  mirador: '<circle cx="7" cy="15" r="4" fill="none" stroke="#0B2B57" stroke-width="2"/><circle cx="17" cy="15" r="4" fill="none" stroke="#0B2B57" stroke-width="2"/><path d="M5 11l2-6h3l1 6M19 11l-2-6h-3l-1 6" fill="none" stroke="#0B2B57" stroke-width="2"/>',
+  cerca: '<path d="M12 22s7-6.3 7-12a7 7 0 10-14 0c0 5.7 7 12 7 12z" fill="#E8742B"/><circle cx="12" cy="10" r="2.6" fill="#fff"/>',
+  gastro: '<path d="M7 3v8a3 3 0 006 0V3M10 3v18M18 3c-3 2-3 7-3 10h3v8" fill="none" stroke="#B5703F" stroke-width="2" stroke-linecap="round"/>',
+};
+ICONOS_CHIP.rejilla = '<rect x="4" y="4" width="7" height="7" rx="2" fill="currentColor"/><rect x="13" y="4" width="7" height="7" rx="2" fill="currentColor"/><rect x="4" y="13" width="7" height="7" rx="2" fill="currentColor"/><rect x="13" y="13" width="7" height="7" rx="2" fill="currentColor"/>';
+function iconoChip(id) {
+  if (id === "todas" && currentCat !== "playas") id = "rejilla";
+  const k = ICONOS_CHIP[id] ? id : /^gastronomia_/.test(id) ? "gastro" : null;
+  return k ? `<svg viewBox="0 0 24 24" aria-hidden="true">${ICONOS_CHIP[k]}</svg>` : "";
 }
 
 function renderChips(c) {
@@ -1024,21 +1101,23 @@ function renderChips(c) {
   const wrap = $("#list-chips");
   // Prioridad: subchips por etiqueta (playas, cabo, naturaleza) > srv > res > sectores.
   const subs = c.subchips || c.srv || c.res || c.sectores || [];
-  const chips = [`<button class="tt-chip" data-chip="todas" aria-pressed="${currentChip === "todas"}">${t["chips.todas"] || "Todas"}</button>`];
+  const chip = (id, label) =>
+    `<button class="v5-fchip" data-chip="${escapeAttr(id)}" aria-pressed="${currentChip === id}">${iconoChip(id)}<span>${escapeHtml(label)}</span></button>`;
+  const chips = [chip("todas", t["chips.todas"] || "Todas")];
   if (subs.length > 1 || (c.subchips && c.subchips.length >= 1)) {
     subs.forEach((s) => {
       let label;
       if (c.subchips) label = t[`chip.${s}`] || capitalize(s);
       else if (c.sectores) label = t["sector." + s] || s.replace(/_/g, " ");
       else label = tagLabel(s);
-      chips.push(`<button class="tt-chip" data-chip="${s}" aria-pressed="${currentChip === s}">${escapeHtml(label)}</button>`);
+      chips.push(chip(s, label));
     });
   }
-  if (c.emergencias) {
-    chips.push(`<button class="tt-chip tt-chip--ico" data-chip="emergencias" aria-pressed="${currentChip === "emergencias"}">${icono("emergencias", "tt-svg--tag")} ${t["categorias.emergencias"] || "Emergencias"}</button>`);
-  }
+  /* Ordenar por cercanía al tótem (lugares y servicios con coordenadas) */
+  if (c.res || c.srv) chips.push(chip("cerca", t["v5.cerca"] || "Cerca de mí"));
+  if (c.emergencias) chips.push(chip("emergencias", t["categorias.emergencias"] || "Emergencias"));
   wrap.innerHTML = chips.join("");
-  wrap.querySelectorAll(".tt-chip").forEach((b) =>
+  wrap.querySelectorAll(".v5-fchip").forEach((b) =>
     b.addEventListener("click", () => abrirCategoria(c.id, b.dataset.chip)));
 }
 
@@ -1095,33 +1174,30 @@ function badgeBandera(nombre) {
 }
 
 function itemCard(r, c, index) {
+  const t = dict();
   const nombre = r.nombre_i18n?.[currentLang] || r.nombre;
   const desc = r.descripcion_i18n?.[currentLang] || r.descripcion_corta || r.descripcion || "";
   const latlon = extractLatLon(r);
   const km = latlon ? haversineKm(latlon[0], latlon[1]) : null;
-  const sub = [r.municipio, r.direccion].filter(Boolean).join(" · ") || (desc ? String(desc).slice(0, 90) + (String(desc).length > 90 ? "…" : "") : "");
-  const meta = [];
-  if (km != null) meta.push(km < 1 ? Math.round(km * 1000) + " m" : km.toFixed(1) + " km");
-  if (r.horario && typeof r.horario === "string") meta.push(escapeHtml(r.horario));
-  const img = r.imagenes?.[0];
-  const num = String((index ?? 0) + 1).padStart(2, "0");
-  const thumbBg = img
-    ? `background-image: url('${escapeAttr(img)}'); background-size: cover; background-position: center;`
-    : "";
-  const flagBadge = c && c.id === "playas" ? badgeBandera(nombre) : "";
+  const lugar = [r.direccion, r.municipio].filter(Boolean).join(", ");
+  const dist = km != null ? (km < 1 ? Math.round(km * 1000) + " m" : km.toFixed(1) + " km") : "";
+  const img = primeraImagen(r) || "";
+  const flag = c && c.id === "playas" ? badgeBandera(nombre) : "";
+  const servs = serviciosDe(r).map((x) => `<span class="v5-rchip"><svg viewBox="0 0 24 24" aria-hidden="true">${x.svg}</svg>${escapeHtml(x.label)}</span>`).join("");
   return `
-    <button class="tt-lb" data-urn="${escapeAttr(r.urn || r.id || "")}">
-      <span class="tt-lb-num" aria-hidden="true">${num}</span>
-      <span class="tt-lb-thumb ${c.th}" style="${thumbBg}" aria-hidden="true"></span>
-      <span class="tt-lb-body">
-        <span class="tt-lb-title">${escapeHtml(nombre)}</span>
-        <span class="tt-lb-sub">${escapeHtml(sub)}${meta.length ? " · " + meta.join(" · ") : ""}</span>
-        ${flagBadge}
+    <article class="v5-rcard" data-n="${index}">
+      <button class="v5-rcard-img${img ? "" : " is-vacia " + (c.th || "")}" style="--foto:url('${escapeAttr(img)}')" data-abrir aria-label="${escapeAttr(nombre)}">
+        ${flag ? `<span class="v5-rcard-flag">${flag}</span>` : ""}
+        <span class="v5-rcard-go" aria-hidden="true">${CHEVRON}</span>
+      </button>
+      <span class="v5-rcard-b">
+        <strong class="v5-rcard-t">${escapeHtml(nombre)}</strong>
+        ${lugar || dist ? `<span class="v5-ico-l v5-rcard-lugar">${ICO_PIN}${escapeHtml([lugar, dist].filter(Boolean).join(" · "))}</span>` : ""}
+        ${desc ? `<span class="v5-rcard-d">${escapeHtml(desc)}</span>` : ""}
+        ${servs ? `<span class="v5-rchips">${servs}</span>` : ""}
+        <span class="v5-rcard-pie"><button class="v5-ficha" data-abrir>${escapeHtml(t["v5.ver_ficha"] || "Ver ficha")}${CHEVRON}</button></span>
       </span>
-      <span class="tt-lb-go" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
-      </span>
-    </button>`;
+    </article>`;
 }
 
 function renderItems(grid, items, c) {
@@ -1131,8 +1207,9 @@ function renderItems(grid, items, c) {
     return;
   }
   grid.innerHTML = items.map((r, i) => itemCard(r, c, i)).join("");
-  grid.querySelectorAll(".tt-lb").forEach((btn, i) => {
-    btn.addEventListener("click", () => openDetail(items[i], c));
+  grid.querySelectorAll(".v5-rcard").forEach((card) => {
+    const r = items[Number(card.dataset.n)];
+    card.querySelectorAll("[data-abrir]").forEach((b) => b.addEventListener("click", () => openDetail(r, c)));
   });
 }
 
@@ -1156,22 +1233,31 @@ function stripHtml(html) {
 }
 
 function noticiaCard(n, index) {
-  const num = String((index ?? 0) + 1).padStart(2, "0");
-  const img = n.imagen_url;
-  const thumbBg = img ? `background-image: url('${escapeAttr(img)}'); background-size: cover; background-position: center;` : "";
-  const sub = [fmtFechaNoticia(n.fecha || n.publicado_en), (n.categorias && n.categorias[0]) || ""].filter(Boolean).join(" · ");
+  const t = dict();
+  const img = n.imagen_url || "";
+  const fecha = fmtFechaNoticia(n.fecha || n.publicado_en);
+  const cat = (n.categorias && n.categorias[0]) || "";
+  const desc = stripHtml(n.descripcion || n.resumen || "");
   return `
-    <button class="tt-lb" data-slug="${escapeAttr(n.slug || "")}">
-      <span class="tt-lb-num" aria-hidden="true">${num}</span>
-      <span class="tt-lb-thumb th-evento" style="${thumbBg}" aria-hidden="true"></span>
-      <span class="tt-lb-body">
-        <span class="tt-lb-title">${escapeHtml(n.titulo || "")}</span>
-        <span class="tt-lb-sub">${escapeHtml(sub)}</span>
+    <article class="v5-rcard v5-rcard--noticia" data-slug="${escapeAttr(n.slug || "")}" data-n="${index}">
+      <button class="v5-rcard-img${img ? "" : " is-vacia th-evento"}" style="--foto:url('${escapeAttr(img)}')" data-abrir aria-label="${escapeAttr(n.titulo || "")}">
+        ${cat ? `<span class="v5-rcard-badge">${escapeHtml(cat)}</span>` : ""}
+        <span class="v5-rcard-go" aria-hidden="true">${CHEVRON}</span>
+      </button>
+      <span class="v5-rcard-b">
+        <strong class="v5-rcard-t">${escapeHtml(n.titulo || "")}</strong>
+        ${fecha ? `<span class="v5-ico-l v5-rcard-lugar"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3" fill="none" stroke="#E8742B" stroke-width="2"/><path d="M3 10h18M8 3v4M16 3v4" stroke="#E8742B" stroke-width="2" stroke-linecap="round"/></svg>${escapeHtml(fecha)}</span>` : ""}
+        ${desc ? `<span class="v5-rcard-d">${escapeHtml(desc)}</span>` : ""}
+        <span class="v5-rcard-pie"><button class="v5-ficha" data-abrir>${escapeHtml(t["v5.leer"] || "Leer noticia")}${CHEVRON}</button></span>
       </span>
-      <span class="tt-lb-go" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
-      </span>
-    </button>`;
+    </article>`;
+}
+
+function enlazarNoticias(grid, items) {
+  grid.querySelectorAll(".v5-rcard--noticia").forEach((card) => {
+    const n = items[Number(card.dataset.n)];
+    card.querySelectorAll("[data-abrir]").forEach((b) => b.addEventListener("click", () => openNoticia(n)));
+  });
 }
 
 async function renderNoticias(grid) {
@@ -1190,33 +1276,31 @@ async function renderNoticias(grid) {
     return;
   }
   grid.innerHTML = items.map((n, i) => noticiaCard(n, i)).join("");
-  grid.querySelectorAll(".tt-lb").forEach((btn, i) => btn.addEventListener("click", () => openNoticia(items[i])));
+  enlazarNoticias(grid, items);
 }
 
 async function openNoticia(n) {
   tele.registrar("noticia", { seccion: currentCat === "eventos" ? "eventos" : "noticias", contenido_id: n.id != null ? String(n.id) : null, contenido: n.titulo });
   const t = dict();
-  const bc = $("#poi-breadcrumb"); if (bc) bc.textContent = String(t["cat.noticias"] || "Noticias").toUpperCase();
-  $("#poi-title").textContent = n.titulo || "—";
-  const sub = $("#poi-sub");
-  if (sub) sub.textContent = [fmtFechaNoticia(n.fecha || n.publicado_en), (n.categorias || []).join(" · ")].filter(Boolean).join(" · ");
-  const hero = $("#poi-image");
-  if (hero) hero.style.backgroundImage = n.imagen_url ? `url('${n.imagen_url}')` : "";
-  const cred = hero && hero.querySelector(".tt-poihero-credito");
-  if (cred) cred.hidden = true;   /* el crédito es de las fotos de Wikimedia, no de la noticia */
-  const tag = $("#poi-tag");
-  if (tag) {
-    tag.style.background = ""; tag.style.color = "";
-    const cat0 = n.categorias && n.categorias[0];
-    if (cat0) { tag.textContent = String(cat0).toUpperCase(); tag.hidden = false; } else tag.hidden = true;
-  }
+  currentPoi = null; /* las noticias no se repintan al cambiar de idioma */
+  currentPoiCat = null;
+  $("#det-miga").textContent = [t["v5.inicio"] || "Inicio", t["cat.noticias"] || "Noticias"].join(" · ");
+  $("#det-titulo").textContent = n.titulo || "—";
+  $("#det-sub").textContent = [fmtFechaNoticia(n.fecha || n.publicado_en), (n.categorias || []).join(" · ")].filter(Boolean).join(" · ");
+  $("#det-lema").innerHTML = "";
+  ponerFoto($("#det-hero"), n.imagen_url || "../shared/cabo-de-gata-hero.jpg");
+  $("#det-credito").hidden = true;
+  const badge = $("#det-badge");
+  badge.style.background = ""; badge.style.color = "";
+  const cat0 = n.categorias && n.categorias[0];
+  badge.textContent = cat0 ? String(cat0).toUpperCase() : "";
+  badge.hidden = !cat0;
+  $("#det-lugar").hidden = true;
   /* Cuerpo: descripción de inmediato; se completa con el contenido por slug. */
-  $("#poi-body").textContent = n.descripcion || "";
-  ["#poi-stats", "#poi-cta", "#poi-meta-card", "#poi-tags", "#poi-actions"].forEach((id) => {
-    const e = $(id); if (!e) return;
-    if (id === "#poi-stats") e.innerHTML = ""; else e.hidden = true;
-  });
-  dialog.querySelector(".poi-dialog-content")?.scrollTo({ top: 0 });
+  $("#poi-body").textContent = stripHtml(n.descripcion || "");
+  $("#det-stats").innerHTML = "";
+  $("#det-acc").innerHTML = "";
+  ["#det-serv", "#det-galeria", "#det-mapa-card", "#det-consejos", "#det-llegar", "#det-para"].forEach((id) => { $(id).hidden = true; });
   dialog.showModal();
   if (typeof resetIdle === "function") resetIdle();
   try {
@@ -1256,12 +1340,12 @@ async function renderAgenda(grid, chip) {
 
   const tiposChips = [...new Set(items.map((e) => e.tipo).filter(Boolean))];
   $("#list-chips").innerHTML =
-    `<button class="tt-chip" data-chip="todas" aria-pressed="${chip === "todas"}">${t["chips.todas"] || "Todas"}</button>` +
+    `<button class="v5-fchip" data-chip="todas" aria-pressed="${chip === "todas"}"><span>${t["chips.todas"] || "Todas"}</span></button>` +
     tiposChips.map((x) => {
       const label = t[`tipo_evento.${x}`] || capitalize(x);
-      return `<button class="tt-chip" data-chip="${x}" aria-pressed="${chip === x}">${escapeHtml(label)}</button>`;
+      return `<button class="v5-fchip" data-chip="${x}" aria-pressed="${chip === x}"><span>${escapeHtml(label)}</span></button>`;
     }).join("");
-  $("#list-chips").querySelectorAll(".tt-chip").forEach((b) =>
+  $("#list-chips").querySelectorAll(".v5-fchip").forEach((b) =>
     b.addEventListener("click", () => abrirCategoria("eventos", b.dataset.chip)));
 
   let html = "";
@@ -1294,14 +1378,13 @@ async function renderAgenda(grid, chip) {
   }
   if (cultura.length) {
     html += `<div class="tt-dayhead">${escapeHtml(t["agenda.cultural"] || "Agenda cultural del Ayuntamiento")}</div>`;
-    html += cultura.map((n, i) => noticiaCard(n, i)).join("");
+    html += `<div class="v5-cards v5-cards--anidadas">${cultura.map((n, i) => noticiaCard(n, i)).join("")}</div>`;
   }
   grid.innerHTML = html;
   const flat = [...grupos.values()].flat();
   grid.querySelectorAll(".tt-item").forEach((btn, i) =>
     btn.addEventListener("click", () => openDetail(flat[i], CATS.find((x) => x.id === "eventos"))));
-  grid.querySelectorAll(".tt-lb").forEach((btn, i) =>
-    btn.addEventListener("click", () => openNoticia(cultura[i])));
+  enlazarNoticias(grid, cultura);
 }
 
 // ============================================================
@@ -1333,7 +1416,24 @@ function renderEmergencies(grid) {
 // ============================================================
 // FICHA DE DETALLE (modal, diseño v4)
 // ============================================================
-const dialog = $("#poi-dialog");
+/* La ficha es una vista más (con la cabecera y la barra del tótem). Este objeto
+   mantiene la interfaz del antiguo <dialog> (open, showModal, close) que usa el
+   resto del código: idioma, inactividad, QR, mapa… */
+let vistaAntesDeFicha = "view-home";
+const dialog = {
+  get open() { return !document.getElementById("view-detail").hidden; },
+  showModal() {
+    const actual = VIEWS.find((v) => !document.getElementById(v).hidden);
+    if (actual && actual !== "view-detail") vistaAntesDeFicha = actual;
+    showView("view-detail");
+  },
+  close() {
+    if (this.open) showView(vistaAntesDeFicha || "view-home");
+    currentPoi = null;
+    currentPoiCat = null;
+  },
+  querySelector: (sel) => document.getElementById("view-detail").querySelector(sel),
+};
 
 const META_FIELDS = [
   { key: "fecha_inicio", icon: "fecha", label: "info.fecha", format: "datetime" },
@@ -1375,6 +1475,43 @@ function formatMeta(field, value) {
 let currentPoi = null;
 let currentPoiCat = null;
 
+/* Iconos de la ficha */
+const ICO_DET = {
+  distancia: '<path d="M3 12h18M7 8l-4 4 4 4M17 8l4 4-4 4" fill="none" stroke="#155E8C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
+  fecha: '<rect x="3" y="5" width="18" height="16" rx="3" fill="none" stroke="#E8742B" stroke-width="2"/><path d="M3 10h18M8 3v4M16 3v4" stroke="#E8742B" stroke-width="2" stroke-linecap="round"/>',
+  horario: '<circle cx="12" cy="12" r="9" fill="none" stroke="#155E8C" stroke-width="2"/><path d="M12 7v5l3 2" stroke="#155E8C" stroke-width="2" stroke-linecap="round"/>',
+  precio: '<path d="M15.6 8.6A4.6 4.6 0 108 15.4M6.8 10.6h5.4M6.8 13.4h4.6" fill="none" stroke="#2E8B57" stroke-width="2" stroke-linecap="round"/>',
+  aforo: '<circle cx="9" cy="8" r="3" fill="#155E8C"/><path d="M3 20v-2a6 6 0 0112 0v2M16 5a3 3 0 010 6M18 20v-2a5 5 0 00-3-4.6" fill="none" stroke="#155E8C" stroke-width="2"/>',
+  categoria: '<path d="M4 4h7l9 9-7 7-9-9z" fill="none" stroke="#7C4FC4" stroke-width="2" stroke-linejoin="round"/><circle cx="8" cy="8" r="1.6" fill="#7C4FC4"/>',
+  telefono: '<path d="M5 3h4l2 5-3 2a12 12 0 006 6l2-3 5 2v4a2 2 0 01-2 2A17 17 0 013 5a2 2 0 012-2z" fill="none" stroke="#155E8C" stroke-width="2" stroke-linejoin="round"/>',
+  email: '<rect x="3" y="5" width="18" height="14" rx="2.5" fill="none" stroke="#155E8C" stroke-width="2"/><path d="M3.5 6l8.5 7 8.5-7" fill="none" stroke="#155E8C" stroke-width="2"/>',
+  web: '<circle cx="12" cy="12" r="9" fill="none" stroke="#155E8C" stroke-width="2"/><path d="M3 12h18M12 3a14 14 0 010 18M12 3a14 14 0 000 18" fill="none" stroke="#155E8C" stroke-width="1.6"/>',
+  organizador: '<path d="M4 21V9l8-5 8 5v12M9 21v-6h6v6" fill="none" stroke="#155E8C" stroke-width="2" stroke-linejoin="round"/>',
+  aviso: '<circle cx="12" cy="12" r="10" fill="#F5A623"/><path d="M12 7v6" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/><circle cx="12" cy="16.8" r="1.5" fill="#fff"/>',
+  movil: '<rect x="6" y="2" width="12" height="20" rx="2.5" fill="none" stroke="#155E8C" stroke-width="2"/><path d="M10.5 18.5h3" stroke="#155E8C" stroke-width="2" stroke-linecap="round"/>',
+  mapa: '<path d="M9 20l-6-2V4l6 2 6-2 6 2v14l-6-2-6 2zM9 6v14M15 4v14" fill="none" stroke="#155E8C" stroke-width="2" stroke-linejoin="round"/>',
+  coche: '<path d="M4 16v-4l2-5h12l2 5v4M3 16h18v3H3zM7 19v2M17 19v2" fill="none" stroke="#155E8C" stroke-width="2" stroke-linejoin="round"/><circle cx="7.5" cy="14" r="1" fill="#155E8C"/><circle cx="16.5" cy="14" r="1" fill="#155E8C"/>',
+};
+const svgDe = (cuerpo) => `<svg viewBox="0 0 24 24" aria-hidden="true">${cuerpo}</svg>`;
+/* Etiquetas que describen para quién es el lugar (bloque «Recomendado para») */
+const IDS_RECOMENDADO = new Set(["familias", "fotografia", "senderismo", "snorkel"]);
+
+function serviciosTodos(r) {
+  const fuentes = [].concat(r.servicios_disponibles || [], r.etiquetas || [], Object.keys(r.accesibilidad || {}));
+  const t = dict();
+  const vistos = new Set();
+  const out = [];
+  fuentes.forEach((f) => {
+    const m = SERVICIOS_ICONOS.find(([re]) => re.test(String(f)));
+    if (m && !vistos.has(m[1])) { vistos.add(m[1]); out.push({ id: m[1], svg: m[2], label: t["serv." + m[1]] || m[1] }); }
+  });
+  return out;
+}
+
+function fmtDistancia(km) {
+  return km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(1).replace(".", currentLang === "en" ? "." : ",")} km`;
+}
+
 function openDetail(r, c) {
   if (r !== currentPoi || !dialog.open) {
     tele.registrar("ficha", { seccion: c?.id || currentCat, contenido_id: r.id != null ? String(r.id) : null, contenido: r.nombre || r.titulo });
@@ -1383,140 +1520,191 @@ function openDetail(r, c) {
   currentPoiCat = c;
   const t = dict();
   const nombre = r.nombre_i18n?.[currentLang] || r.nombre || "—";
-  $("#poi-title").textContent = nombre;
-  $("#poi-body").textContent = r.descripcion_i18n?.[currentLang] || r.descripcion || r.descripcion_corta || "";
+  const catTitulo = c ? (c.events ? (t["agenda.title"] || "Agenda") : (t[c.label] || capitalize(c.id))) : "";
+  $("#det-miga").textContent = [t["v5.inicio"] || "Inicio", catTitulo, nombre].filter(Boolean).join(" · ");
+  $("#det-titulo").textContent = nombre;
+  const descLarga = r.descripcion_i18n?.[currentLang] || r.descripcion || r.descripcion_corta || "";
+  /* Bajo el título: la descripción corta si es distinta del texto principal; si no, tipo y municipio */
+  const tipoLugar = r.categoria ? String(tagLabel(r.categoria)) : "";
+  $("#det-sub").textContent = r.descripcion_corta && r.descripcion_corta !== descLarga
+    ? r.descripcion_corta
+    : [tipoLugar, r.municipio].filter(Boolean).join(" · ");
+  $("#det-lema").innerHTML = c ? lemaHtml("lema." + c.id) : "";
 
-  // Breadcrumb superior con la categoría (ej. "PLAYAS Y CALAS")
-  const bc = $("#poi-breadcrumb");
-  if (bc) bc.textContent = c ? String(t[c.label] || capitalize(c.id)).toUpperCase() : "";
-
-  // Subtítulo del hero: municipio · dirección · longitud si aplica
-  const sub = $("#poi-sub");
-  if (sub) {
-    const parts = [r.municipio, r.direccion].filter(Boolean);
-    if (r.longitud_m) parts.push(`${r.longitud_m} m`);
-    sub.textContent = parts.join(" · ");
-  }
-
-  // Hero: imagen real o color azul institucional
-  const hero = $("#poi-image");
-  const img = r.imagenes?.[0];
-  hero.style.backgroundImage = img ? `url('${img}')` : "";
+  // Hero: foto real del recurso (o la de su categoría)
+  const fotos = (r.imagenes || []).map((x) => (typeof x === "string" ? x : x && x.url)).filter(Boolean);
+  ponerFoto($("#det-hero"), fotos[0] || (c ? fotoDeCategoria(c) : "../shared/cabo-de-gata-hero.jpg"));
   /* Crédito de la foto (Wikimedia Commons: autor · licencia), obligatorio por la licencia CC */
-  let credito = hero.querySelector(".tt-poihero-credito");
-  if (!credito) {
-    credito = document.createElement("span");
-    credito.className = "tt-poihero-credito";
-    hero.appendChild(credito);
-  }
-  const textoCredito = img && r.enlaces_externos && r.enlaces_externos.imagen_credito;
-  credito.textContent = textoCredito ? "📷 " + textoCredito : "";
-  credito.hidden = !textoCredito;
+  const textoCredito = fotos[0] && r.enlaces_externos && r.enlaces_externos.imagen_credito;
+  $("#det-credito").textContent = textoCredito ? "📷 " + textoCredito : "";
+  $("#det-credito").hidden = !textoCredito;
 
-  // Badge superior naranja (kicker sobre el hero, ej. "ÍCONO DEL PARQUE NATURAL")
+  // Distintivo: bandera de playa en vivo o «Parque Natural»
   const cat = r.categoria || r.tipo || "";
-  const badgeText = (r.etiquetas || []).some((e) => /parque/i.test(e)) || cat === "parque_natural"
-    ? (t["badge.parque_natural"] || "ÍCONO DEL PARQUE NATURAL")
-    : cat ? String(tagLabel(cat)).toUpperCase() : "";
-  const tag = $("#poi-tag");
-  /* En playas, si hay bandera en vivo, el kicker muestra el estado con su color. */
+  const badge = $("#det-badge");
   const estFlag = (c && c.id === "playas") || cat === "playa" ? estadoBandera(nombre) : null;
+  badge.style.background = ""; badge.style.color = "";
   if (estFlag && FLAG_COLOR[estFlag]) {
     const tr = FLAG_LABEL[estFlag];
-    const lab = (tr && (tr[currentLang] || tr.es)) || estFlag;
-    tag.textContent = (t["info.bandera"] || "BANDERA") + " " + String(estFlag).toUpperCase() + " · " + lab.toUpperCase();
-    tag.style.background = FLAG_COLOR[estFlag];
-    tag.style.color = estFlag === "amarilla" ? "#3a2f00" : "#fff";
-    tag.hidden = false;
-  } else {
-    tag.style.background = "";
-    tag.style.color = "";
-    if (badgeText) { tag.textContent = badgeText; tag.hidden = false; } else tag.hidden = true;
-  }
+    badge.textContent = (t["info.bandera"] || "BANDERA") + " " + String(estFlag).toUpperCase() + " · " + String((tr && (tr[currentLang] || tr.es)) || estFlag).toUpperCase();
+    badge.style.background = FLAG_COLOR[estFlag];
+    badge.style.color = estFlag === "amarilla" ? "#3a2f00" : "#fff";
+    badge.hidden = false;
+  } else if ((r.etiquetas || []).some((e) => /parque/i.test(e)) || cat === "parque_natural") {
+    badge.textContent = t["badge.parque_natural"] || "ÍCONO DEL PARQUE NATURAL";
+    badge.hidden = false;
+  } else badge.hidden = true;
 
-  // 3 tarjetas de stats en fila (formato simple: label + valor)
-  const stats = [];
-  if (r.longitud_m || r.longitud) stats.push([t["info.longitud"] || "Longitud", `${r.longitud_m || r.longitud} m`]);
+  // Información general
+  const lugar = [r.direccion, r.municipio].filter(Boolean).join(", ");
+  const lugarEl = $("#det-lugar");
+  lugarEl.innerHTML = lugar ? ICO_PIN + `<b>${escapeHtml(lugar)}</b>` : "";
+  lugarEl.hidden = !lugar;
+  $("#poi-body").textContent = descLarga;
   const latlon = extractLatLon(r);
-  if (latlon) {
-    const km = haversineKm(latlon[0], latlon[1]);
-    stats.push([t["info.distancia"] || "Distancia", km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(1)} km`]);
+  const km = latlon ? haversineKm(latlon[0], latlon[1]) : null;
+  const stats = [];
+  if (km != null) stats.push(["distancia", fmtDistancia(km), t["info.desde_totem"] || "desde el tótem"]);
+  if (r.fecha_inicio) {
+    const f = new Date(r.fecha_inicio);
+    stats.push(["fecha", f.toLocaleDateString(currentLang, { weekday: "short", day: "numeric", month: "long" }), f.toLocaleTimeString(currentLang, { hour: "2-digit", minute: "2-digit", hour12: false })]);
   }
-  if (r.acceso) stats.push([t["info.acceso"] || "Acceso", r.acceso]);
-  else if (r.horario && typeof r.horario === "string") stats.push([t["info.horario"] || "Horario", r.horario]);
-  if (r.temporada) stats.push([t["info.temporada"] || "Temporada", r.temporada]);
-  else if (r.servicios_disponibles && Array.isArray(r.servicios_disponibles) && r.servicios_disponibles.length) stats.push([t["info.servicios"] || "Servicios", `${r.servicios_disponibles.length}`]);
-  else if (r.fecha_inicio) stats.push([t["info.fecha"] || "Fecha", new Date(r.fecha_inicio).toLocaleDateString(currentLang, { day: "2-digit", month: "short" })]);
-  $("#poi-stats").innerHTML = stats.slice(0, 3).map(([l, v]) =>
-    `<div class="tt-poistat"><small>${escapeHtml(String(l).toUpperCase())}</small><b>${escapeHtml(String(v))}</b></div>`).join("");
+  if (r.horario) { const h = formatMeta({ format: "horario" }, r.horario); if (h) stats.push(["horario", h, t["info.horario"] || "Horario"]); }
+  if (r.precio) stats.push(["precio", formatMeta({ format: "i18n" }, r.precio), t["info.precio"] || "Precio"]);
+  if (r.capacidad_aforo) stats.push(["aforo", String(r.capacidad_aforo), t["info.aforo"] || "Aforo"]);
+  if (cat && stats.length < 4) stats.push(["categoria", String(tagLabel(cat)), t["v5.tipo"] || "Tipo"]);
+  $("#det-stats").innerHTML = stats.slice(0, 4).map(([ico, v, l]) =>
+    `<div class="v5-stat">${svgDe(ICO_DET[ico])}<span><b>${escapeHtml(v)}</b><small>${escapeHtml(l)}</small></span></div>`).join("");
+  const destinoQr = latlon ? `https://www.google.com/maps/dir/?api=1&destination=${latlon[0]},${latlon[1]}` : null;
+  const acc = [];
+  if (destinoQr) acc.push(`<button class="v5-boton v5-boton--solid" data-det="llegar">${svgDe('<path d="M3 11l18-8-8 18-2-8z" fill="#fff"/>')}${escapeHtml(t["cta.como_llegar"] || "Cómo llegar")}${CHEVRON}</button>`);
+  if (latlon) acc.push(`<button class="v5-boton" data-det="mapa">${svgDe(ICO_DET.mapa)}${escapeHtml(t["action.mapa"] || "Ver en el mapa")}${CHEVRON}</button>`);
+  if (r.web) acc.push(`<button class="v5-boton" data-det="web">${svgDe(ICO_DET.web)}${escapeHtml(t["action.web_movil"] || "Web en tu móvil")}${CHEVRON}</button>`);
+  $("#det-acc").innerHTML = acc.join("");
 
-  // CTA azul "CÓMO LLEGAR" (si tenemos dirección o municipio + coordenadas)
-  const cta = $("#poi-cta");
-  if (cta) {
-    const dest = r.direccion || r.municipio || "";
-    let extra = "";
-    if (latlon) {
-      const km = haversineKm(latlon[0], latlon[1]);
-      extra = km < 1 ? ` · ${Math.round(km * 1000)} m ${t["info.desde_totem"] || "desde el tótem"}` : ` · ${km.toFixed(1)} km ${t["info.desde_totem"] || "desde el tótem"}`;
-    }
-    if (dest || latlon) {
-      cta.innerHTML =
-        `<span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.5a7 7 0 017 7c0 5-7 12-7 12s-7-7-7-12a7 7 0 017-7z"/><circle cx="12" cy="9.5" r="2.6"/></svg></span>` +
-        `<span class="txt"><small>${escapeHtml(t["cta.como_llegar"] || "Cómo llegar")}</small><strong>${escapeHtml(dest)}${extra}</strong></span>`;
-      cta.hidden = false;
-      cta.onclick = latlon ? (() => { dialog.close(); abrirMapa(latlon); }) : null;
-      cta.style.cursor = latlon ? "pointer" : "default";
-    } else { cta.hidden = true; }
+  // Características y servicios (datos reales del recurso)
+  const servs = serviciosTodos(r);
+  const feats = servs.filter((x) => !IDS_RECOMENDADO.has(x.id)).map((x) => [x.svg, x.label]);
+  if (r.telefono) feats.push([ICO_DET.telefono, String(r.telefono)]);
+  if (r.email) feats.push([ICO_DET.email, String(r.email)]);
+  if (r.organizador) feats.push([ICO_DET.organizador, formatMeta({ format: "i18n" }, r.organizador)]);
+  if (Array.isArray(r.servicios_disponibles)) {
+    r.servicios_disponibles.forEach((sv) => {
+      if (SERVICIOS_ICONOS.some(([re]) => re.test(String(sv)))) return;
+      const label = t[`servicio.${sv}`] || I18N.es?.[`servicio.${sv}`];
+      if (label) feats.push([ICO_DET.categoria, label]);
+    });
   }
+  $("#det-feats").innerHTML = feats.map(([svg, l]) => `<div class="v5-feat">${svgDe(svg)}<span>${escapeHtml(l)}</span></div>`).join("");
+  const aviso = (estFlag === "roja" || estFlag === "amarilla")
+    ? (FLAG_LABEL[estFlag][currentLang] || FLAG_LABEL[estFlag].es)
+    : (r.metadata_adicional && (r.metadata_adicional.aviso_i18n?.[currentLang] || r.metadata_adicional.aviso)) || "";
+  $("#det-aviso").innerHTML = aviso ? svgDe(ICO_DET.aviso) + `<span>${escapeHtml(aviso)}</span>` : "";
+  $("#det-aviso").hidden = !aviso;
+  $("#det-serv").hidden = !feats.length && !aviso;
 
-  // Metadatos (tarjeta secundaria)
-  const meta = $("#poi-meta");
-  meta.innerHTML = "";
-  for (const field of META_FIELDS) {
-    const value = r[field.key];
-    if (value === undefined || value === null || value === "") continue;
-    if (Array.isArray(value) && value.length === 0) continue;
-    const formatted = formatMeta(field, value);
-    if (!formatted) continue;
-    const row = document.createElement("div");
-    row.className = "poi-dialog-meta-row" + (field.wide ? " is-wide" : "");
-    row.innerHTML = `<dt aria-hidden="true">${icono(field.icon, "tt-svg--meta")}</dt><dd><strong>${escapeHtml(dict()[field.label] || field.label)}:</strong> ${escapeHtml(formatted)}</dd>`;
-    meta.appendChild(row);
-  }
-  const metaCard = $("#poi-meta-card");
-  if (metaCard) metaCard.hidden = meta.children.length === 0;
+  // Galería (si hay varias fotos): al tocar una, pasa a la cabecera
+  const galeria = fotos.filter((u) => /\.(jpe?g|png|webp)(\?|$)|\/thumb\//i.test(u));
+  $("#det-fotos").innerHTML = galeria.map((u, i) =>
+    `<button class="v5-foto" style="--foto:url('${escapeAttr(u)}')" data-foto="${i}" aria-label="${escapeAttr(nombre)} · ${i + 1}"></button>`).join("");
+  $("#det-galeria").hidden = galeria.length < 2;
+  $("#det-fotos").querySelectorAll("[data-foto]").forEach((b) =>
+    b.addEventListener("click", () => ponerFoto($("#det-hero"), galeria[Number(b.dataset.foto)])));
 
-  // Etiquetas (traducidas por tagLabel(); en formato hashtag y minúsculas)
-  const tagsEl = $("#poi-tags");
-  const raw = (r.etiquetas || []).filter((x) => String(x).toLowerCase() !== String(cat).toLowerCase());
-  tagsEl.innerHTML = raw.map((x) => `<span class="tag-chip">#${escapeHtml(String(tagLabel(x)).toLowerCase())}</span>`).join("");
-  tagsEl.hidden = !raw.length;
+  // Mapa y ubicación
+  $("#det-mapa-card").hidden = !latlon;
+  if (latlon) miniMapaEn("ficha", $("#det-mapa"), [{ ll: latlon, nombre }], 13);
+
+  // Consejos de la categoría
+  pintarConsejos($("#det-consejos"), c ? c.id : null);
+
+  // Cómo llegar: distancia real desde este tótem + indicaciones en el móvil
+  const llegar = [];
+  if (km != null) llegar.push(["coche", t["v5.desde_aqui"] || "Desde este tótem", (t["v5.a_km"] || "A {d} en línea recta").replace("{d}", fmtDistancia(km)), null]);
+  if (destinoQr) llegar.push(["movil", t["v5.indicaciones"] || "Indicaciones en tu móvil", t["v5.indicaciones_s"] || "Escanea el QR y sigue la ruta", "llegar"]);
+  if (latlon) llegar.push(["mapa", t["action.mapa"] || "Ver en el mapa", t["v5.mapa_s"] || "Situado en el mapa del destino", "mapa"]);
+  $("#det-llegar-items").innerHTML = llegar.map(([ico, tit, sub, accion]) =>
+    `<${accion ? `button data-det="${accion}"` : "div"} class="v5-llegar-i">${svgDe(ICO_DET[ico])}<span><b>${escapeHtml(tit)}</b><small>${escapeHtml(sub)}</small></span></${accion ? "button" : "div"}>`).join("");
+  $("#det-llegar").hidden = !llegar.length;
+
+  // Recomendado para… (según sus etiquetas)
+  const para = servs.filter((x) => IDS_RECOMENDADO.has(x.id));
+  $("#det-para-items").innerHTML = para.map((x) => `<div class="v5-para-i">${svgDe(x.svg)}<span>${escapeHtml(x.label)}</span></div>`).join("");
+  $("#det-para").hidden = !para.length;
 
   // Acciones
-  const actions = [];
-  if (latlon) {
-    actions.push(`<button class="action-btn" id="poi-goto-map">${icono("lugar", "tt-svg--btn")} ${escapeHtml(dict()["action.mapa"] || "Ver en el mapa")}</button>`);
-  }
-  /* Modo quiosco: sin enlaces que salgan del tótem. El teléfono se muestra en la
-     ficha; la web se ofrece como QR para abrirla en el móvil del visitante. */
-  if (r.web) actions.push(`<button class="action-btn action-btn--secondary" id="poi-web-qr">${icono("web", "tt-svg--btn")} ${escapeHtml(dict()["action.web_movil"] || "Web en tu móvil")}</button>`);
-  const actEl = $("#poi-actions");
-  actEl.innerHTML = actions.join("");
-  actEl.hidden = !actions.length;
-  const webQr = $("#poi-web-qr");
-  if (webQr) webQr.addEventListener("click", () => mostrarQR(r.web, r.nombre_i18n?.[currentLang] || r.nombre));
-  const goMap = $("#poi-goto-map");
-  if (goMap) goMap.addEventListener("click", () => { dialog.close(); abrirMapa(latlon); });
+  $("#view-detail").querySelectorAll("[data-det]").forEach((b) => {
+    b.onclick = () => {
+      if (b.dataset.det === "llegar") mostrarQR(destinoQr, (t["cta.como_llegar"] || "Cómo llegar") + " · " + nombre);
+      else if (b.dataset.det === "mapa") { dialog.close(); abrirMapa(latlon); }
+      else if (b.dataset.det === "web") mostrarQR(r.web, nombre);
+    };
+  });
+  $("#det-mapa-abrir").onclick = () => { dialog.close(); abrirMapa(latlon); };
+  $("#det-mapa").onclick = () => { dialog.close(); abrirMapa(latlon); };
 
-  if (!dialog.open) {
-    dialog.querySelector(".poi-dialog-content")?.scrollTo({ top: 0 });
-    dialog.showModal();
-  }
+  if (!dialog.open) dialog.showModal();
   resetIdle();
 }
 
-$("#poi-close").addEventListener("click", () => { dialog.close(); currentPoi = null; currentPoiCat = null; });
-dialog.addEventListener("click", (e) => { if (e.target === dialog) { dialog.close(); currentPoi = null; currentPoiCat = null; } });
+$("#poi-close").addEventListener("click", () => dialog.close());
+
+/* Mini mapas no interactivos (listado y ficha): al pulsarlos se abre el mapa completo */
+const minimapas = {};
+async function miniMapaEn(clave, cont, puntos, zoom) {
+  if (!cont) return;
+  let L;
+  try { L = await cargarLeaflet(); } catch { return; }
+  if (minimapas[clave]) { minimapas[clave].remove(); delete minimapas[clave]; }
+  cont.innerHTML = "";
+  const div = document.createElement("div");
+  cont.appendChild(div);
+  const m = L.map(div, {
+    zoomControl: false, dragging: false, scrollWheelZoom: false, doubleClickZoom: false,
+    boxZoom: false, keyboard: false, touchZoom: false, tap: false,
+  });
+  minimapas[clave] = m;
+  m.attributionControl.setPrefix(false);
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 17, attribution: "&copy; OpenStreetMap" }).addTo(m);
+  puntos.forEach((p, i) => {
+    L.marker(p.ll, {
+      interactive: false,
+      icon: L.divIcon({
+        className: "", iconSize: [28, 38], iconAnchor: [14, 36],
+        html: `<svg viewBox="0 0 24 32" width="28" height="38"><path d="M12 31s10-10 10-18a10 10 0 10-20 0c0 8 10 18 10 18z" fill="${i % 3 === 0 ? "#E8742B" : "#155E8C"}" stroke="#fff" stroke-width="2"/><circle cx="12" cy="13" r="4" fill="#fff"/></svg>`,
+      }),
+    }).addTo(m);
+  });
+  if (puntos.length === 1) {
+    m.setView(puntos[0].ll, zoom || 13);
+    L.tooltip({ permanent: true, direction: "right", offset: [10, -20], className: "v5-pin-lab" })
+      .setLatLng(puntos[0].ll).setContent(escapeHtml(puntos[0].nombre || "")).addTo(m);
+  } else {
+    m.fitBounds(L.latLngBounds(puntos.map((p) => p.ll)).pad(0.2));
+  }
+  setTimeout(() => m.invalidateSize(), 200);
+}
+
+/* «Consejos para tu visita»: textos generales según el tipo de lugar */
+const CONSEJOS_POR_CAT = { playas: "mar", cabo: "monte", rutas: "monte", naturaleza: "monte" };
+const ICO_CONSEJO = [
+  '<path d="M19 4C10 4 5 9 5 16c0 2 .5 3 1.5 4C15 20 20 13 19 4z" fill="#2E8B57"/>',
+  '<circle cx="12" cy="12" r="4.4" fill="#F5B731"/><g stroke="#F5B731" stroke-width="2" stroke-linecap="round"><path d="M12 2v2.4M12 19.6V22M4 12H1.6M22.4 12H20M5.1 5.1l1.7 1.7M17.2 17.2l1.7 1.7M18.9 5.1l-1.7 1.7M6.8 17.2l-1.7 1.7"/></g>',
+  '<path d="M3 8h11a3 3 0 10-3-3M3 12h15a3 3 0 11-3 3M3 16h8" fill="none" stroke="#155E8C" stroke-width="2" stroke-linecap="round"/>',
+  '<circle cx="8" cy="7" r="2.5" fill="#E8742B"/><circle cx="16" cy="7" r="2.5" fill="#E8742B"/><path d="M4 20v-6a4 4 0 018 0v6M12 20v-6a4 4 0 018 0v6" fill="#E8742B"/>',
+];
+function pintarConsejos(el, catId) {
+  if (!el) return;
+  const t = dict();
+  const set = CONSEJOS_POR_CAT[catId] || "visita";
+  const items = [1, 2, 3, 4].map((i) => String(t[`tip.${set}.${i}`] || "").split("|")).filter((x) => x[0]);
+  if (!items.length) { el.hidden = true; return; }
+  el.innerHTML =
+    `<div class="v5-card-h"><span class="v5-badge v5-badge--orange" aria-hidden="true">${svgDe('<path d="M9 18h6M10 21h4M12 3a6 6 0 00-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0012 3z" fill="#fff"/>')}</span>` +
+    `<h3>${escapeHtml(t["v5.consejos"] || "Consejos para tu visita")}</h3></div>` +
+    items.map(([tit, txt], i) => `<div class="v5-tip">${svgDe(ICO_CONSEJO[i % ICO_CONSEJO.length])}<span><b>${escapeHtml(tit)}</b>${txt ? `<small>${escapeHtml(txt)}</small>` : ""}</span></div>`).join("");
+  el.hidden = false;
+}
 
 // ============================================================
 // MAPA DEL DESTINO (Leaflet + datos reales)

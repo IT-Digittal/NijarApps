@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Fira+Sans:wght@400;500;600;700;800&family=Dancing+Script:wght@500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./assets/totem.css?v=25" />
-  <link rel="stylesheet" href="./assets/totem-v5.css?v=1" />
+  <link rel="stylesheet" href="./assets/totem-v5.css?v=2" />
 </head>
 <!--
   Interfaz de los tótems digitales interactivos (actuación A.1 · Exp. 18962/2025).
@@ -183,39 +183,39 @@
 
   <!-- ================= VISTA: LISTADO (categorías y agenda) ================= -->
   <section class="tt-view" id="view-list" hidden aria-label="Listado">
-    <div class="tt-listhead tt-wrap">
-      <button class="tt-back" data-back data-i18n-aria="a11y.volver" aria-label="Volver al inicio">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
-      </button>
-      <div class="tt-listhead-txt">
-        <div class="k" data-i18n="list.kicker">EXPLORA EL DESTINO</div>
-        <h2 id="list-title">—</h2>
-      </div>
-      <div class="tt-listhead-right">
-        <span class="tt-listhead-count" id="list-count">—</span>
-        <button class="tt-round-btn" id="btn-open-map" data-i18n-aria="map.title" aria-label="Mapa del destino">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 20l-6-2V4l6 2 6-2 6 2v14l-6-2-6 2z"/><path d="M9 6v14M15 4v14"/></svg>
-        </button>
+    <div class="v5-subhero v5-subhero--lista" id="list-hero">
+      <button class="v5-volver" data-back data-i18n-aria="a11y.volver" aria-label="Volver al inicio"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <p class="v5-miga"><span data-i18n="v5.inicio">Inicio</span> · <span id="list-miga">—</span></p>
+      <h2 id="list-title">—</h2>
+      <p class="v5-subhero-s" id="list-hero-txt">—</p>
+      <p class="v5-script v5-subhero-lema" id="list-lema" aria-hidden="true"></p>
+      <div class="v5-subhero-acc">
+        <span class="v5-cuenta" id="list-count"></span>
+        <button class="v5-pill v5-pill--blanco" id="btn-open-map" data-i18n-aria="map.title" aria-label="Mapa del destino"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 20l-6-2V4l6 2 6-2 6 2v14l-6-2-6 2zM9 6v14M15 4v14" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg><span data-i18n="v5.mapa">Mapa</span></button>
       </div>
     </div>
-    <div class="tt-listhero tt-wrap" id="list-hero"><span id="list-hero-txt">—</span></div>
-    <div class="tt-chips tt-wrap" id="list-chips" role="group" aria-label="Filtros"></div>
-    <div class="tt-list tt-wrap" id="content-grid" aria-live="polite" aria-busy="false">
-      <p class="content-loading" data-i18n="loading.contenido">Cargando contenidos…</p>
-    </div>
-    <div class="tt-wrap">
-      <button class="tt-ia-strip" data-open-chat aria-label="Abrir asistente IA">
-        <span class="tt-ia-strip-ico" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.5 8.5 0 0 1-3.8-.9L3 21l1.9-5.7A8.38 8.38 0 0 1 4 11.5 8.5 8.5 0 0 1 12.5 3 8.38 8.38 0 0 1 21 11.5z"/></svg>
-        </span>
-        <span class="tt-ia-strip-txt">
-          <small data-i18n="ia.badge">ASISTENTE IA</small>
-          <strong data-i18n="ia.necesitas">¿Necesitas una recomendación?</strong>
-        </span>
-        <span class="tt-ia-strip-go" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-        </span>
-      </button>
+    <div class="v5-body v5-lista">
+      <label class="v5-buscar">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M15.5 15.5L21 21" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+        <span class="sr-only" data-i18n="v5.buscar_aria">Buscar en este listado</span>
+        <input id="list-buscar" type="search" autocomplete="off" placeholder="Buscar…" />
+      </label>
+      <div class="v5-chips" id="list-chips" role="group" aria-label="Filtros"></div>
+      <div class="v5-cards" id="content-grid" aria-live="polite" aria-busy="false">
+        <p class="content-loading" data-i18n="loading.contenido">Cargando contenidos…</p>
+      </div>
+      <p class="v5-vacio" id="list-sin-resultados" hidden data-i18n="v5.sin_resultados">No hay resultados para tu búsqueda.</p>
+      <div class="v5-row" id="list-extra">
+        <article class="v5-card v5-mapa" id="list-mapa-card" hidden>
+          <div class="v5-card-h">
+            <span class="v5-badge v5-badge--navy" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 20l-6-2V4l6 2 6-2 6 2v14l-6-2-6 2zM9 6v14M15 4v14" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"/></svg></span>
+            <h3 id="list-mapa-t">—</h3>
+            <button class="v5-pill" data-ir="mapa"><span data-i18n="v5.ver_mapa">Ver mapa completo</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          </div>
+          <button class="v5-mapa-box" id="list-mapa" data-ir="mapa" aria-label="Abrir el mapa del destino"></button>
+        </article>
+        <article class="v5-card v5-consejos" id="list-consejos" hidden></article>
+      </div>
     </div>
   </section>
 
@@ -304,41 +304,65 @@
     </div>
   </section>
 
+  <!-- ================= VISTA: FICHA (lugar, evento o noticia) ================= -->
+  <section class="tt-view" id="view-detail" hidden aria-labelledby="det-titulo">
+    <div class="v5-dhero" id="det-hero">
+      <button class="v5-volver" id="poi-close" data-i18n-aria="a11y.cerrar" aria-label="Volver"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <span class="v5-dhero-badge" id="det-badge" hidden></span>
+      <div class="v5-dhero-txt">
+        <p class="v5-miga" id="det-miga">—</p>
+        <h2 id="det-titulo">—</h2>
+        <p class="v5-dhero-s" id="det-sub"></p>
+      </div>
+      <p class="v5-script v5-dhero-lema" id="det-lema" aria-hidden="true"></p>
+      <span class="v5-credito" id="det-credito" hidden></span>
+    </div>
+    <div class="v5-body v5-det">
+      <div class="v5-row v5-row--det">
+        <article class="v5-card" id="det-info">
+          <div class="v5-card-h"><span class="v5-badge v5-badge--orange" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="7" r="1.6" fill="#fff"/><path d="M12 11v7" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/></svg></span><h3 data-i18n="v5.info_general">Información general</h3></div>
+          <p class="v5-ico-l v5-det-lugar" id="det-lugar" hidden></p>
+          <p class="v5-det-desc" id="poi-body">—</p>
+          <div class="v5-stats" id="det-stats"></div>
+          <div class="v5-det-acc" id="det-acc"></div>
+        </article>
+        <article class="v5-card" id="det-serv" hidden>
+          <div class="v5-card-h"><span class="v5-badge v5-badge--navy" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2" fill="none" stroke="#fff" stroke-width="2.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M18.7 5.3l-2.1 2.1M7.4 16.6l-2.1 2.1" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/></svg></span><h3 data-i18n="v5.caracteristicas">Características y servicios</h3></div>
+          <div class="v5-feats" id="det-feats"></div>
+          <div class="v5-aviso-det" id="det-aviso" hidden></div>
+        </article>
+      </div>
+      <article class="v5-card v5-galeria" id="det-galeria" hidden>
+        <div class="v5-card-h"><span class="v5-badge v5-badge--orange" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3" fill="none" stroke="#fff" stroke-width="2.2"/><circle cx="9" cy="10" r="1.8" fill="#fff"/><path d="M4 18l5-5 4 4 3-3 4 4" fill="none" stroke="#fff" stroke-width="2.2" stroke-linejoin="round"/></svg></span><h3 data-i18n="v5.galeria">Galería</h3></div>
+        <div class="v5-galeria-fotos" id="det-fotos"></div>
+      </article>
+      <div class="v5-row">
+        <article class="v5-card v5-mapa" id="det-mapa-card" hidden>
+          <div class="v5-card-h">
+            <span class="v5-badge v5-badge--navy" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 20l-6-2V4l6 2 6-2 6 2v14l-6-2-6 2zM9 6v14M15 4v14" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"/></svg></span>
+            <h3 data-i18n="v5.mapa_ubicacion">Mapa y ubicación</h3>
+            <button class="v5-pill" id="det-mapa-abrir"><span data-i18n="v5.abrir_mapa">Abrir mapa completo</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          </div>
+          <button class="v5-mapa-box" id="det-mapa" aria-label="Abrir el mapa del destino"></button>
+        </article>
+        <article class="v5-card v5-consejos" id="det-consejos" hidden></article>
+      </div>
+      <div class="v5-row">
+        <article class="v5-card" id="det-llegar" hidden>
+          <div class="v5-card-h"><span class="v5-badge v5-badge--navy" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3l9 18-9-5-9 5z" fill="#fff"/></svg></span><h3 data-i18n="cta.como_llegar">Cómo llegar</h3></div>
+          <div class="v5-llegar" id="det-llegar-items"></div>
+        </article>
+        <article class="v5-card" id="det-para" hidden>
+          <div class="v5-card-h"><span class="v5-badge v5-badge--orange" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z" fill="#fff"/></svg></span><h3 data-i18n="v5.recomendado_para">Recomendado para…</h3></div>
+          <div class="v5-para" id="det-para-items"></div>
+        </article>
+      </div>
+    </div>
+  </section>
+
 </main>
 
-<!-- ================= FICHA DE DETALLE (modal a pantalla completa) ================= -->
-<dialog class="tt-dialog tt-poidialog" id="poi-dialog" aria-labelledby="poi-title">
-  <div class="tt-poihead">
-    <button class="tt-back" id="poi-close" data-i18n-aria="a11y.cerrar" aria-label="Cerrar ficha">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
-    </button>
-    <div class="tt-poihead-txt">
-      <div class="k" id="poi-breadcrumb">—</div>
-      <h2 data-i18n="detail.ficha">Ficha del lugar</h2>
-    </div>
-  </div>
 
-  <div class="poi-dialog-content">
-    <div class="tt-poihero" id="poi-image">
-      <div class="tt-poihero-ov" aria-hidden="true"></div>
-      <span class="tt-poihero-badge" id="poi-tag" hidden></span>
-      <h3 class="tt-poihero-title" id="poi-title">—</h3>
-      <p class="tt-poihero-sub" id="poi-sub"></p>
-    </div>
-
-    <div class="tt-poibody tt-wrap">
-      <p class="tt-poidesc" id="poi-body">—</p>
-      <div class="tt-poistats" id="poi-stats"></div>
-      <div class="tt-poicta" id="poi-cta" hidden></div>
-      <div class="tt-poimeta-card" id="poi-meta-card" hidden>
-        <h3 data-i18n="detail.servicios">Servicios y características</h3>
-        <dl class="tt-dialog-meta" id="poi-meta"></dl>
-      </div>
-      <div class="tt-dialog-tags" id="poi-tags" hidden></div>
-      <div class="tt-dialog-actions" id="poi-actions" hidden></div>
-    </div>
-  </div>
-</dialog>
 
 <!-- ================= BARRA INFERIOR (vistas internas) + PIE ILUSTRADO ================= -->
 <nav class="v5-nav" aria-label="Navegación principal">
@@ -432,6 +456,6 @@
 </dialog>
 
 <script src="./assets/vendor/qrcode-generator-1.4.4.js"></script>
-<script type="module" src="./assets/totem.js?v=32"></script>
+<script type="module" src="./assets/totem.js?v=33"></script>
 </body>
 </html>
