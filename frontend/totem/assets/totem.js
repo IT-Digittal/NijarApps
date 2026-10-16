@@ -9,7 +9,7 @@
  * - Inactividad >60 s: vuelve al inicio en español (modo público).
  */
 
-import { I18N, translateAll } from "./i18n.js?v=25";
+import { I18N, translateAll } from "./i18n.js?v=26";
 import { DEMO_RESOURCES, answerChatbotDemo } from "./demo-data.js";
 
 // ============================================================
@@ -188,13 +188,17 @@ const tele = (() => {
 // ============================================================
 // Router de vistas
 // ============================================================
-const VIEWS = ["view-home", "view-list", "view-chat", "view-map"];
+const VIEWS = ["view-home", "view-list", "view-chat", "view-map", "view-explore", "view-avisos"];
 function showView(id) {
   VIEWS.forEach((v) => {
     const el = document.getElementById(v);
     if (!el) return;
     el.classList.toggle("is-on", v === id);
     el.hidden = v !== id;
+  });
+  const destino = { "view-home": "inicio", "view-explore": "explorar", "view-map": "mapa", "view-avisos": "avisos" }[id];
+  document.querySelectorAll(".v5-nav [data-ir]").forEach((b) => {
+    if (b.dataset.ir === destino) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
   });
   window.scrollTo({ top: 0 });
   resetIdle();
@@ -235,6 +239,7 @@ function applyLanguage(lang) {
   renderHomeCats();
   renderTicker();
   renderDestacado();
+  renderHomeV5();
   pintarFechas();
   pintarMeteo();
   const listaVisible = !document.getElementById("view-list").hidden;
@@ -289,7 +294,8 @@ function pintarFechas() {
   const larga = now.toLocaleDateString(currentLang, { weekday: "long", day: "numeric", month: "long", year: "numeric" });
   const media = now.toLocaleDateString(currentLang, { weekday: "long", day: "numeric", month: "long" });
   const fd = $("#footer-date"); if (fd) fd.textContent = larga;
-  const hp = $("#header-date-pill"); if (hp) hp.textContent = media;
+  const corta = now.toLocaleDateString(currentLang, { weekday: "short", day: "numeric", month: "short", year: "numeric" });
+  const hp = $("#header-date-pill"); if (hp) hp.textContent = capitalize(corta.replace(/,/g, ""));
   const hd = $("#hero-date"); if (hd) hd.textContent = media;
 }
 setInterval(updateClock, 1000);
@@ -346,10 +352,10 @@ function pintarMeteo() {
   const m = meteoCache || { temp: 29, wmo: null };
   const temp = m.temp != null ? Math.round(m.temp) : 29;
   const cond = condicionMeteo(m.wmo);
-  const etiqueta = escapeHtml((cond || t["meteo.soleado"] || "Soleado").toUpperCase());
+  const etiqueta = escapeHtml(cond || t["meteo.soleado"] || "Soleado");
   el.innerHTML =
-    `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.4" fill="#E0912F"/><g stroke="#E0912F" stroke-width="2.2" stroke-linecap="round" fill="none"><path d="M12 2v2.4M12 19.6V22M4 12H1.6M22.4 12H20M5.1 5.1l1.7 1.7M17.2 17.2l1.7 1.7M18.9 5.1l-1.7 1.7M6.8 17.2l-1.7 1.7"/></g></svg>` +
-    `<div><span class="tmp">${temp}°</span><span class="wl">${etiqueta}</span></div>`;
+    `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.4" fill="#E8742B"/><g stroke="#E8742B" stroke-width="2.2" stroke-linecap="round" fill="none"><path d="M12 2v2.4M12 19.6V22M4 12H1.6M22.4 12H20M5.1 5.1l1.7 1.7M17.2 17.2l1.7 1.7M18.9 5.1l-1.7 1.7M6.8 17.2l-1.7 1.7"/></g></svg>` +
+    `<span class="tmp">${temp}°</span> <span class="wl">${etiqueta}</span>`;
   el.hidden = false;
 }
 
@@ -422,24 +428,50 @@ function extractLatLon(item) {
 const catCounts = {};
 let fondoNoticias = null;   /* portada de la última noticia con imagen (Strapi) */
 
+/* Accesos de la home (rediseño v5): icono sobre degradado + título. Son las
+ * categorías reales del tótem; Noticias se abre desde su bloque y el resto de
+ * categorías desde «Explorar». */
+const TILES_HOME = [
+  { cat: "cabo", grad: ["#F7A55E", "#E0702A"], ico: "paisaje" },
+  { cat: "rutas", grad: ["#6FA55B", "#3F7A34"], ico: "senderista" },
+  { cat: "naturaleza", grad: ["#3D8FDB", "#1F63B5"], ico: "hoja" },
+  { cat: "playas", grad: ["#36BFD0", "#138FA6"], ico: "ola" },
+  { cat: "eventos", grad: ["#F0645A", "#D13C36"], ico: "calendario", label: "dock.agenda" },
+  { cat: "ceramica", grad: ["#F8C04A", "#E8962A"], ico: "vasija" },
+  { cat: "gastronomia", grad: ["#B5703F", "#8A4A22"], ico: "cubiertos" },
+  { cat: "empresas", grad: ["#8C6BD8", "#6143B5"], ico: "tienda" },
+];
+const ICONOS_TILE = {
+  paisaje: '<rect x="4" y="7" width="40" height="34" rx="7" fill="none" stroke="#fff" stroke-width="3.4"/><circle cx="31" cy="17" r="4.5" fill="#fff"/><path d="M7 37l11-13 8 9 6-6 10 10" fill="none" stroke="#fff" stroke-width="3.4" stroke-linejoin="round"/>',
+  senderista: '<circle cx="27" cy="8" r="4.5" fill="#fff"/><path d="M19 44l5-14 6 6v8M17 26l4-9 9 4 4 7M22 17l-4 11" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M36 22v22" stroke="#fff" stroke-width="3" stroke-linecap="round"/>',
+  hoja: '<path d="M38 8C20 8 8 18 8 32c0 4 1 7 3 9 18 1 29-13 27-33z" fill="#fff"/><path d="M11 41c6-10 13-17 22-23" stroke="#1F63B5" stroke-width="3" stroke-linecap="round" fill="none"/>',
+  ola: '<path d="M4 30c5-5 9-5 14 0s9 5 14 0 9-5 12-2M4 39c5-5 9-5 14 0s9 5 14 0 9-5 12-2" fill="none" stroke="#fff" stroke-width="3.6" stroke-linecap="round"/><path d="M10 22c4-9 15-13 24-8-7 0-11 3-12 9" fill="none" stroke="#fff" stroke-width="3.6" stroke-linecap="round"/>',
+  calendario: '<rect x="6" y="10" width="36" height="32" rx="6" fill="#fff"/><path d="M6 19h36" stroke="#D13C36" stroke-width="3"/><path d="M15 5v9M33 5v9" stroke="#fff" stroke-width="4" stroke-linecap="round"/><g fill="#D13C36"><rect x="12" y="25" width="6" height="5" rx="1"/><rect x="21" y="25" width="6" height="5" rx="1"/><rect x="30" y="25" width="6" height="5" rx="1"/><rect x="12" y="33" width="6" height="5" rx="1"/><rect x="21" y="33" width="6" height="5" rx="1"/></g>',
+  vasija: '<path d="M17 6h14M19 6v6c-7 4-10 10-10 17 0 8 6 13 15 13s15-5 15-13c0-7-3-13-10-17V6" fill="#fff"/><path d="M12 26h24M11 32h26" stroke="#E8962A" stroke-width="2.6"/>',
+  cubiertos: '<path d="M14 5v14a5 5 0 0010 0V5M19 5v38" fill="none" stroke="#fff" stroke-width="3.6" stroke-linecap="round"/><path d="M34 5c-5 4-6 12-6 18h6v20" fill="none" stroke="#fff" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/>',
+  tienda: '<circle cx="24" cy="24" r="19" fill="#fff"/><circle cx="24" cy="15" r="3" fill="#6143B5"/><path d="M24 21v15" stroke="#6143B5" stroke-width="5" stroke-linecap="round"/>',
+};
+const CHEVRON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
 function renderHomeCats() {
   const t = dict();
   const grid = $("#home-cats");
   if (!grid) return;
-  grid.innerHTML = CATS.filter((c) => !c.hiddenFromGrid).map((c) => {
-    const label = escapeHtml(t[c.label] || capitalize(c.id));
-    const bg = c.noticias && fondoNoticias ? fondoNoticias : c.bg;
-    const bgStyle = c.solid ? "" : ` style="background-image: url('${escapeAttr(bg)}');"`;
-    const solidCls = c.solid ? ` is-solid${c.alt ? " is-alt" : ""}` : "";
+  grid.innerHTML = TILES_HOME.map((x) => {
+    const c = CATS.find((k) => k.id === x.cat);
+    if (!c) return "";
+    const label = escapeHtml(t[x.label || c.label] || capitalize(c.id));
     return (
-      `<button class="tt-ptile${solidCls}" role="listitem" data-cat="${c.id}" aria-label="${label}"${bgStyle}>` +
-        `<span class="psh" aria-hidden="true"></span>` +
-        `<span class="plabel">${label}</span>` +
+      `<button class="v5-tile" role="listitem" data-cat="${c.id}" aria-label="${label}">` +
+        `<span class="v5-tile-ico" style="background:linear-gradient(160deg,${x.grad[0]},${x.grad[1]})" aria-hidden="true">` +
+          `<svg viewBox="0 0 48 48">${ICONOS_TILE[x.ico]}</svg></span>` +
+        `<span class="v5-tile-lab">${label}${CHEVRON}</span>` +
       `</button>`
     );
   }).join("");
-  grid.querySelectorAll(".tt-ptile").forEach((b) =>
+  grid.querySelectorAll(".v5-tile").forEach((b) =>
     b.addEventListener("click", () => abrirCategoria(b.dataset.cat)));
+  renderExplora();
 }
 
 /* Fondo del recuadro Noticias: la portada de la noticia más reciente que tenga
@@ -584,23 +616,31 @@ function renderDestacado() {
   const wrap = $("#home-feat");
   if (!wrap || !destacadoEvento) { if (wrap) wrap.hidden = true; return; }
   const ev = destacadoEvento;
-  let img = "";
+  let img = "", lugar = "", desc = "";
   if (ev._noticia) {
     $("#feat-title").textContent = ev.titulo || "";
     $("#feat-sub").textContent = fmtFechaNoticia(ev.fecha || ev.publicado_en);
     img = ev.imagen_url || "";
+    desc = stripHtml(ev.resumen || ev.extracto || ev.contenido || "");
   } else {
     const nombre = (ev.nombre_i18n && ev.nombre_i18n[currentLang]) || ev.nombre;
     $("#feat-title").textContent = nombre;
-    $("#feat-sub").textContent = _fmtEvento(ev);
+    const d = new Date(ev.fecha_inicio);
+    $("#feat-sub").textContent = d.toLocaleDateString(currentLang, { weekday: "short", day: "numeric", month: "long" }) +
+      " · " + d.toLocaleTimeString(currentLang, { hour: "2-digit", minute: "2-digit", hour12: false });
+    lugar = ev.direccion || ev.lugar || "";
+    desc = (ev.descripcion_i18n && ev.descripcion_i18n[currentLang]) || ev.descripcion || "";
     /* la API guarda las imágenes como lista de URLs (texto); se admite también {url} */
     const primera = ev.imagenes && ev.imagenes[0];
     img = (typeof primera === "string" ? primera : primera && primera.url) || "";
   }
+  $("#feat-lugar").textContent = lugar;
+  $("#feat-lugar-row").hidden = !lugar;
+  $("#feat-desc").textContent = desc;
   const fill = $("#feat-image");
-  if (fill) fill.style.backgroundImage = img ? `url('${img}')` : "";
+  if (fill) fill.style.backgroundImage = img ? `url('${img.replace(/'/g, "%27")}')` : "";
   wrap.hidden = false;
-  wrap.onclick = () => abrirCategoria("eventos");
+  $("#feat-open").onclick = () => (ev._noticia ? openNoticia(ev) : abrirCategoria("eventos"));
 }
 
 // ============================================================
@@ -614,6 +654,236 @@ async function cargarHeroFoto() {
   img.src = "../shared/cabo-de-gata-hero.jpg";
   img.alt = "Cabo de Gata";
   img.hidden = false;
+}
+
+// ============================================================
+// HOME v5: Explora, asistente, mapa, lugar recomendado, noticias y QR
+// ============================================================
+/* Foto real por categoría (primera imagen de sus recursos); mientras, la del tile */
+const fotoCategoria = {};
+async function cargarFotosCategorias() {
+  await Promise.all(CATS.filter((c) => c.res).map(async (c) => {
+    try {
+      const d = await apiGet(`/tourism/resources?categoria=${encodeURIComponent(c.res[0])}&publicado=true&page_size=40`);
+      const r = (d.items || []).find((x) => primeraImagen(x));
+      if (r) fotoCategoria[c.id] = primeraImagen(r);
+    } catch { /* se queda la foto del tile */ }
+  }));
+  renderExplora();
+  if (!document.getElementById("view-explore").hidden) renderExplorar();
+}
+
+function primeraImagen(r) {
+  const x = r && r.imagenes && r.imagenes[0];
+  const url = typeof x === "string" ? x : x && x.url;
+  return url && /\.(jpe?g|png|webp)(\?|$)|\/thumb\/|^\.\.\//i.test(url) ? url : null;
+}
+
+function tarjetaExplora(c) {
+  const t = dict();
+  const foto = (c.noticias && fondoNoticias) || fotoCategoria[c.id] || c.bg || "";
+  const titulo = c.events ? (t["agenda.title"] || "Agenda") : (t[c.label] || capitalize(c.id));
+  return `<button class="v5-xcard" data-cat="${c.id}" style="background-image:url('${escapeAttr(foto)}')">` +
+    `<span class="v5-xcard-t"><strong>${escapeHtml(titulo)}</strong><small>${escapeHtml(t[c.heroSub] || "")}</small></span>` +
+    `<span class="v5-xcard-go" aria-hidden="true">${CHEVRON}</span></button>`;
+}
+
+function renderExplora() {
+  const cont = $("#home-explora");
+  if (!cont) return;
+  cont.innerHTML = ["playas", "cabo", "naturaleza"].map((id) => tarjetaExplora(CATS.find((c) => c.id === id))).join("");
+  cont.querySelectorAll("[data-cat]").forEach((b) => b.addEventListener("click", () => abrirCategoria(b.dataset.cat)));
+}
+
+function renderExplorar() {
+  const cont = $("#explore-grid");
+  if (!cont) return;
+  cont.innerHTML = CATS.map(tarjetaExplora).join("");
+  cont.querySelectorAll("[data-cat]").forEach((b) => b.addEventListener("click", () => abrirCategoria(b.dataset.cat)));
+}
+
+function abrirExplorar() {
+  tele.registrar("seccion", { seccion: "explorar" });
+  renderExplorar();
+  showView("view-explore");
+}
+
+/* Avisos: los del CMS (canal tótem) + teléfonos de emergencia */
+function abrirAvisos() {
+  tele.registrar("seccion", { seccion: "avisos" });
+  const t = dict();
+  const lista = $("#avisos-lista");
+  const avisos = (avisosCms || []).map((a) => ({
+    titulo: (a.titulo_i18n && a.titulo_i18n[currentLang]) || a.titulo,
+    texto: stripHtml((a.contenido_i18n && a.contenido_i18n[currentLang]) || a.contenido || a.resumen || ""),
+  })).filter((a) => a.titulo);
+  const campana = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 17V11a6 6 0 0112 0v6l2 2H4z" fill="#F5A623"/><path d="M10 21h4" stroke="#F5A623" stroke-width="2" stroke-linecap="round"/></svg>';
+  lista.innerHTML = avisos.length
+    ? avisos.map((a) => `<div class="v5-aviso">${campana}<div><strong>${escapeHtml(a.titulo)}</strong>${a.texto ? `<p>${escapeHtml(a.texto)}</p>` : ""}</div></div>`).join("")
+    : `<div class="v5-vacio">${escapeHtml(t["v5.sin_avisos"] || "No hay avisos activos en este momento.")}</div>`;
+  renderEmergencies($("#avisos-emergencias"));
+  showView("view-avisos");
+}
+
+/* Asistente desde la home: abre el chat y lanza la pregunta */
+function preguntarDesdeHome(texto) {
+  if (!texto) return;
+  showView("view-chat");
+  askChatbot(texto);
+}
+$("#home-ia-form")?.addEventListener("submit", (e) => {
+  e.preventDefault();
+  const inp = $("#home-ia-input");
+  const q = inp.value.trim();
+  inp.value = "";
+  if (q) preguntarDesdeHome(q);
+  else { showView("view-chat"); $("#chatbot-input")?.focus(); }
+});
+document.querySelectorAll(".v5-ia-chips [data-ia]").forEach((b) => b.addEventListener("click", () => {
+  const t = dict();
+  if (b.dataset.ia === "recomendar") { showView("view-chat"); $("#recommend-btn").click(); }
+  else if (b.dataset.ia === "ruta") { showView("view-chat"); $("#plan-route-btn").click(); }
+  else preguntarDesdeHome(t["v5.q_playas"] || "¿Cuáles son las mejores playas?");
+}));
+
+/* Botón «Voz» de la cabecera: pregunta al asistente hablando (o abre el chat) */
+$("#voice-toggle")?.addEventListener("click", () => {
+  tele.registrar("accesibilidad", { detalle: "voz" });
+  showView("view-chat");
+  const mic = $("#chatbot-voice");
+  if (mic && !mic.classList.contains("is-hidden")) mic.click();
+  else $("#chatbot-input")?.focus();
+});
+
+/* Navegación (barra inferior y botones «Ver…») */
+document.addEventListener("click", (e) => {
+  const b = e.target.closest && e.target.closest("[data-ir]");
+  if (!b) return;
+  const ir = b.dataset.ir;
+  if (ir === "inicio") showView("view-home");
+  else if (ir === "explorar") abrirExplorar();
+  else if (ir === "mapa") abrirMapa();
+  else if (ir === "avisos") abrirAvisos();
+  else if (ir === "agenda") abrirCategoria("eventos");
+  else if (ir === "noticias") abrirCategoria("noticias");
+});
+document.querySelector(".v5-nav [data-qr-movil]")?.addEventListener("click", () => mostrarQR("https://www.nijar.es", "Ayuntamiento de Níjar"));
+
+/* QR estáticos de la home y de la barra */
+function pintarQrHome() {
+  document.querySelectorAll("[data-qr-home]").forEach((el) => { if (!el.innerHTML) el.innerHTML = qrSvg(el.dataset.qrHome); });
+}
+
+/* Mini mapa del destino: no interactivo; al pulsarlo se abre el mapa completo */
+const NUCLEOS_MAPA = [ /* nombre, lat, lon, color, lado de la etiqueta */
+  ["Níjar", 36.966, -2.207, "#E8742B", "right"], ["Rodalquilar", 36.847, -2.041, "#155E8C", "left"],
+  ["Las Negras", 36.876, -2.004, "#155E8C", "right"], ["San José", 36.763, -2.107, "#155E8C", "right"],
+  ["Cabo de Gata", 36.722, -2.193, "#E8742B", "left"],
+];
+let miniMapa = null;
+async function pintarMiniMapa() {
+  const cont = $("#home-mapa");
+  if (!cont || miniMapa) return;
+  let L;
+  try { L = await cargarLeaflet(); } catch { return; }
+  const div = document.createElement("div");
+  cont.appendChild(div);
+  miniMapa = L.map(div, {
+    zoomControl: false, attributionControl: true, dragging: false, scrollWheelZoom: false,
+    doubleClickZoom: false, boxZoom: false, keyboard: false, touchZoom: false, tap: false,
+  }).setView([36.85, -2.11], 10);
+  miniMapa.attributionControl.setPrefix(false);
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 17, attribution: "&copy; OpenStreetMap" }).addTo(miniMapa);
+  NUCLEOS_MAPA.forEach(([nombre, lat, lon, color, lado]) => {
+    L.marker([lat, lon], {
+      interactive: false,
+      icon: L.divIcon({
+        className: "", iconSize: [30, 40], iconAnchor: [15, 38],
+        html: `<svg viewBox="0 0 24 32" width="30" height="40"><path d="M12 31s10-10 10-18a10 10 0 10-20 0c0 8 10 18 10 18z" fill="${color}" stroke="#fff" stroke-width="2"/><circle cx="12" cy="13" r="4" fill="#fff"/></svg>`,
+      }),
+    }).bindTooltip(nombre, { permanent: true, direction: lado, offset: [lado === "left" ? -8 : 8, -20], className: "v5-pin-lab" }).addTo(miniMapa);
+  });
+  miniMapa.fitBounds(L.latLngBounds(NUCLEOS_MAPA.map((n) => [n[1], n[2]])).pad(0.18));
+  setTimeout(() => miniMapa.invalidateSize(), 200);
+}
+
+/* Lugar recomendado: un recurso real con foto, cercano al tótem, que cambia cada día */
+let recoActual = null;
+const SERVICIOS_ICONOS = [
+  [/parking|aparcamiento/i, "parking", '<rect x="3" y="3" width="18" height="18" rx="4" fill="#155E8C"/><path d="M9.5 17V7h3.2a3 3 0 010 6H9.5" fill="none" stroke="#fff" stroke-width="2.2"/>'],
+  [/accesib|adaptad|movilidad.reducida|silla/i, "accesible", '<circle cx="12" cy="4.5" r="2" fill="#155E8C"/><path d="M10 8v6h5l2 5M10 11h5M8.5 12.5a5 5 0 106 6.5" fill="none" stroke="#155E8C" stroke-width="2" stroke-linecap="round"/>'],
+  [/mirador/i, "mirador", '<circle cx="7" cy="15" r="4" fill="none" stroke="#0B2B57" stroke-width="2"/><circle cx="17" cy="15" r="4" fill="none" stroke="#0B2B57" stroke-width="2"/><path d="M5 11l2-6h3l1 6M19 11l-2-6h-3l-1 6M11 15h2" fill="none" stroke="#0B2B57" stroke-width="2"/>'],
+  [/restaura|chiringuito|gastronom|bar\b/i, "restauracion", '<path d="M7 3v8a3 3 0 006 0V3M10 3v18M18 3c-3 2-3 7-3 10h3v8" fill="none" stroke="#E2572B" stroke-width="2" stroke-linecap="round"/>'],
+  [/parque.natural|natural|protegid/i, "natural", '<path d="M19 4C10 4 5 9 5 16c0 2 .5 3 1.5 4C15 20 20 13 19 4z" fill="#2E8B57"/>'],
+  [/virgen|cala|playa/i, "virgen", '<path d="M2 15c3-3 6-3 9 0s6 3 9 0M2 19c3-3 6-3 9 0s6 3 9 0" fill="none" stroke="#1F8FD0" stroke-width="2" stroke-linecap="round"/>'],
+  [/senderismo|sendero|ruta/i, "senderismo", '<circle cx="13" cy="4" r="2" fill="#2E8B57"/><path d="M10 21l2-6 3 3v3M9 12l2-4 4 2 2 3M11 8l-2 5" fill="none" stroke="#2E8B57" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>'],
+  [/fotograf|iconic/i, "fotografia", '<rect x="3" y="7" width="18" height="13" rx="3" fill="none" stroke="#7C4FC4" stroke-width="2"/><circle cx="12" cy="13.5" r="3.5" fill="none" stroke="#7C4FC4" stroke-width="2"/><path d="M8 7l2-3h4l2 3" fill="none" stroke="#7C4FC4" stroke-width="2"/>'],
+  [/familia|familiar/i, "familias", '<circle cx="8" cy="7" r="2.5" fill="#155E8C"/><circle cx="16" cy="7" r="2.5" fill="#155E8C"/><path d="M4 20v-6a4 4 0 018 0v6M12 20v-6a4 4 0 018 0v6" fill="#155E8C"/>'],
+  [/snorkel|buceo/i, "snorkel", '<rect x="3" y="8" width="14" height="8" rx="4" fill="none" stroke="#155E8C" stroke-width="2"/><path d="M20 4v11a4 4 0 01-4 4h-2" fill="none" stroke="#155E8C" stroke-width="2" stroke-linecap="round"/>'],
+];
+function serviciosDe(r) {
+  const fuentes = [].concat(r.servicios_disponibles || [], r.etiquetas || [], Object.keys(r.accesibilidad || {}));
+  const t = dict();
+  const vistos = new Set();
+  const out = [];
+  fuentes.forEach((f) => {
+    const m = SERVICIOS_ICONOS.find(([re]) => re.test(String(f)));
+    if (m && !vistos.has(m[1])) { vistos.add(m[1]); out.push({ id: m[1], svg: m[2], label: t["serv." + m[1]] || m[1] }); }
+  });
+  return out.slice(0, 4);
+}
+
+async function cargarRecomendado() {
+  try {
+    const d = await apiGet("/tourism/resources?publicado=true&page_size=200");
+    const conFoto = porCercania((d.items || []).filter((r) => primeraImagen(r) && ["playa", "mirador", "parque_natural", "ruta", "monumento"].includes(r.categoria)));
+    const candidatos = conFoto.slice(0, 10);
+    if (!candidatos.length) return;
+    const dia = Math.floor(Date.now() / 86400000);
+    recoActual = candidatos[dia % candidatos.length];
+    renderRecomendado();
+  } catch { /* sin recomendado: el bloque queda oculto */ }
+}
+function renderRecomendado() {
+  const r = recoActual;
+  const wrap = $("#home-reco");
+  if (!wrap || !r) return;
+  $("#reco-img").style.backgroundImage = `url('${primeraImagen(r).replace(/'/g, "%27")}')`;
+  $("#reco-nombre").textContent = r.nombre_i18n?.[currentLang] || r.nombre;
+  $("#reco-lugar").textContent = [r.direccion, r.municipio].filter(Boolean).join(", ") || "Níjar";
+  $("#reco-desc").textContent = r.descripcion_i18n?.[currentLang] || r.descripcion_corta || r.descripcion || "";
+  $("#reco-servs").innerHTML = serviciosDe(r).map((x) => `<span class="v5-serv"><svg viewBox="0 0 24 24" aria-hidden="true">${x.svg}</svg>${escapeHtml(x.label)}</span>`).join("");
+  const cat = CATS.find((c) => (c.res || []).includes(r.categoria)) || CATS[0];
+  $("#reco-open").onclick = () => openDetail(r, cat);
+  $("#reco-mas").onclick = () => abrirCategoria(cat.id);
+  wrap.hidden = false;
+}
+
+/* Actualidad municipal: la noticia más reciente (con foto si la hay) */
+let noticiaHome = null;
+async function cargarNoticiaHome() {
+  try {
+    const d = await apiGet("/noticias?page_size=6");
+    const items = d.items || [];
+    noticiaHome = items.find((n) => n.imagen_url) || items[0] || null;
+  } catch { noticiaHome = null; }
+  renderNoticiaHome();
+}
+function renderNoticiaHome() {
+  const wrap = $("#home-news");
+  if (!wrap || !noticiaHome) return;
+  const n = noticiaHome;
+  $("#news-img").style.backgroundImage = n.imagen_url ? `url('${n.imagen_url.replace(/'/g, "%27")}')` : "url('../shared/cabo-de-gata-hero.jpg')";
+  $("#news-titulo").textContent = n.titulo || "";
+  $("#news-fecha").textContent = fmtFechaNoticia(n.fecha || n.publicado_en);
+  $("#news-open").onclick = () => openNoticia(n);
+  wrap.hidden = false;
+}
+
+function renderHomeV5() {
+  renderExplora();
+  renderRecomendado();
+  renderNoticiaHome();
 }
 
 // ============================================================
@@ -1635,6 +1905,14 @@ resetChat();
 cargarConteos();
 cargarDestacado();
 setInterval(cargarDestacado, 30 * 60 * 1000); /* el tótem no se recarga: refresco del destacado */
+/* Home v5 */
+pintarQrHome();
+cargarFotosCategorias();
+cargarRecomendado();
+cargarNoticiaHome();
+pintarMiniMapa();
+setInterval(cargarNoticiaHome, 60 * 60 * 1000);
+setInterval(cargarRecomendado, 60 * 60 * 1000); /* cambia de lugar recomendado cada día */
 
 
 // ============================================================

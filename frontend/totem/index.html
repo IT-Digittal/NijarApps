@@ -8,8 +8,9 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Fira+Sans:wght@400;500;600;700;800&family=Dancing+Script:wght@500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./assets/totem.css?v=25" />
+  <link rel="stylesheet" href="./assets/totem-v5.css?v=1" />
 </head>
 <!--
   Interfaz de los tótems digitales interactivos (actuación A.1 · Exp. 18962/2025).
@@ -26,31 +27,31 @@
 
 <a href="#main" class="skip-link" data-i18n="a11y.skip">Saltar al contenido principal</a>
 
-<!-- ================= CABECERA COMPACTA (vistas internas) ================= -->
-<header class="tt-thead" role="banner">
-  <button class="tt-brand" id="btn-home-brand" aria-label="Ayuntamiento de Níjar — volver al inicio">
+<!-- ================= CABECERA (todas las vistas) ================= -->
+<header class="v5-head" role="banner">
+  <button class="v5-ayto" id="btn-home-brand" aria-label="Ayuntamiento de Níjar — volver al inicio">
     <img src="../shared/escudo-nijar.svg" alt="" aria-hidden="true" />
-    <strong>Ayuntamiento de <span style="color:var(--orange);">Níjar</span></strong>
+    <span>Ayuntamiento<br />de Níjar</span>
   </button>
-  <div class="tt-thead-langs" role="group" aria-label="Idioma / Language">
+  <span class="v5-sep" aria-hidden="true"></span>
+  <img class="v5-logo" src="../shared/vive-nijar-logo.svg" alt="Vive Níjar · Cabo de Gata" />
+  <div class="v5-langs" role="group" aria-label="Idioma / Language / Sprache / Langue">
     <button class="lang-btn" data-lang="es" aria-pressed="true" lang="es">ES</button>
     <button class="lang-btn" data-lang="en" aria-pressed="false" lang="en">EN</button>
     <button class="lang-btn" data-lang="de" aria-pressed="false" lang="de">DE</button>
     <button class="lang-btn" data-lang="fr" aria-pressed="false" lang="fr">FR</button>
   </div>
-  <div class="tt-thead-right">
-    <span class="tt-thead-date" id="header-date-pill" aria-live="off">—</span>
-    <span class="tt-thead-time" id="header-clock" aria-live="off">--:--</span>
+  <div class="v5-hora" aria-live="off">
+    <b id="header-clock">--:--</b>
+    <small id="header-date-pill">—</small>
+    <small class="v5-tiempo" id="header-weather" hidden></small>
+  </div>
+  <div class="v5-a11y" role="group" aria-label="Accesibilidad">
+    <button id="text-size-toggle" aria-pressed="false" data-i18n-aria="a11y.texto" aria-label="Aumentar tamaño del texto"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 18L9 5l5 13M5.8 13.5h6.4" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 18l3-8 3 8M15.9 15.6h4.2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="v5.texto">Texto</span></button>
+    <button id="voice-toggle" data-i18n-aria="v5.voz_aria" aria-label="Preguntar con la voz"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5L6 9H2v6h4l5 4z" fill="currentColor"/><path d="M15.5 8.5a5 5 0 010 7M18.5 5.5a9 9 0 010 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span data-i18n="v5.voz">Voz</span></button>
+    <button id="contrast-toggle" aria-pressed="false" data-i18n-aria="a11y.contraste" aria-label="Activar alto contraste"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 3a9 9 0 010 18z" fill="currentColor"/></svg><span data-i18n="v5.contraste">Contraste</span></button>
   </div>
 </header>
-
-<!-- Grupo de accesibilidad global, fijo top-right, siempre visible (WCAG 2.1) -->
-<div class="tt-a11yfab" role="group" aria-label="Accesibilidad">
-  <button class="tt-thead-a11y" id="text-size-toggle" aria-pressed="false" data-i18n-aria="a11y.texto" aria-label="Aumentar tamaño del texto">A</button>
-  <button class="tt-thead-a11y" id="contrast-toggle" aria-pressed="false" data-i18n-aria="a11y.contraste" aria-label="Activar alto contraste">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 010 18z" fill="currentColor" stroke="none"/></svg>
-  </button>
-</div>
 
 <main id="main" class="tt-main" role="main">
 
@@ -58,56 +59,125 @@
 
   <!-- ================= VISTA: INICIO ================= -->
   <section class="tt-view is-on" id="view-home" aria-label="Inicio">
-    <div class="tt-hhero" role="img" aria-label="Cabo de Gata — Níjar">
-      <img class="tt-hhero-img" id="hero-photo" src="" alt="" hidden />
-      <div class="tt-hhero-ov" aria-hidden="true"></div>
-      <div class="tt-hhero-welcome" data-i18n="hero.welcome">BIENVENIDO A NÍJAR · CABO DE GATA</div>
-      <div class="tt-hhero-weather" id="header-weather" hidden aria-live="off"></div>
-      <div class="tt-hhero-date"><span id="hero-date">—</span> · <span class="time" id="hero-time">--:--</span></div>
+    <div class="v5-hero" role="img" aria-label="Cabo de Gata — Níjar">
+      <img class="v5-hero-img" id="hero-photo" src="" alt="" hidden />
+      <div class="v5-hero-ov" aria-hidden="true"></div>
+      <div class="v5-hero-txt">
+        <p class="v5-hero-k" data-i18n="v5.bienvenido">Bienvenido a</p>
+        <h1 class="v5-hero-t">Níjar · Cabo de Gata</h1>
+        <p class="v5-hero-s" data-i18n="v5.hero_sub">Tu guía para descubrir playas, pueblos, rutas y agenda</p>
+      </div>
+      <p class="v5-script v5-hero-script" aria-hidden="true"><span data-i18n="v5.lema1">Mar, luz</span><br /><span data-i18n="v5.lema2">y naturaleza</span><svg viewBox="0 0 220 24" class="v5-trazo" aria-hidden="true"><path d="M4 16c50-10 120-14 212-6" fill="none" stroke="#E8742B" stroke-width="4" stroke-linecap="round"/></svg></p>
     </div>
 
-    <div class="tt-panel">
-      <svg class="tt-panel-curve tt-panel-curve--tr" viewBox="0 0 200 200" fill="none" stroke="#0B2B57" stroke-width="2" aria-hidden="true">
-        <path d="M210 40C120 40 60 100 60 210"/><path d="M210 80C150 80 100 130 100 210"/><path d="M210 120C180 120 140 160 140 210"/>
-      </svg>
-      <svg class="tt-panel-curve tt-panel-curve--bl" viewBox="0 0 200 200" fill="none" stroke="#E0912F" stroke-width="2.4" aria-hidden="true">
-        <path d="M-10 -10C90 20 150 90 170 210"/><path d="M-10 40C60 60 110 120 120 210"/>
-      </svg>
+    <div class="v5-body">
+      <div class="v5-grid" id="home-cats" role="list"><!-- accesos generados por JS --></div>
 
-      <div class="tt-ayuntopill" aria-hidden="true">
-        <img src="../shared/escudo-nijar.svg" alt="" />
-        <span>Ayuntamiento de <strong>Níjar</strong></span>
-      </div>
-
-      <div class="tt-phead">
-        <div class="ptitle">
-          <div class="k" data-i18n="home.kicker">DESCUBRE</div>
-          <h2 data-i18n="home.title">Nuestro territorio</h2>
-        </div>
-        <button class="touch" aria-label="Modo táctil" tabindex="-1">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 11V6a2 2 0 1 1 4 0v5"/><path d="M12 11V4.5a2 2 0 1 1 4 0V11"/><path d="M16 11V7.5a2 2 0 1 1 4 0V16a6 6 0 0 1-6 6h-1.6a6 6 0 0 1-5.2-3l-2.4-4.1a2 2 0 0 1 3.5-2l1.2 1.9"/></svg>
-        </button>
-      </div>
-
-      <div class="tt-avisos" id="home-avisos" hidden>
+      <div class="v5-avisos" id="home-avisos" hidden>
         <span class="lab" data-i18n="home.avisos">AVISOS</span>
         <div class="track"><span id="avisos-track">—</span></div>
       </div>
 
-      <div class="tt-pgrid" id="home-cats" role="list"><!-- tiles generados por JS --></div>
-
-      <button class="tt-feat" id="home-feat" hidden aria-label="Destacado esta semana">
-        <div class="ffill" id="feat-image" aria-hidden="true"></div>
-        <div class="fsh" aria-hidden="true"></div>
-        <div class="fin">
-          <div class="k" data-i18n="home.destacado">Destacado · Esta semana</div>
-          <h3 id="feat-title">—</h3>
-          <p id="feat-sub">—</p>
+      <section class="v5-sec" aria-labelledby="explora-t">
+        <div class="v5-sec-h">
+          <h2 id="explora-t" data-i18n="v5.explora">Explora el destino</h2>
+          <span class="v5-linea" aria-hidden="true"></span>
+          <span class="v5-script v5-sec-script" data-i18n="v5.inspira">Naturaleza que te inspira</span>
+          <button class="v5-pill v5-pill--solid" data-ir="explorar"><span data-i18n="v5.vermas">Ver más</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
         </div>
-        <span class="farrow" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-        </span>
-      </button>
+        <div class="v5-explora" id="home-explora"></div>
+      </section>
+
+      <div class="v5-row">
+        <article class="v5-card v5-dest" id="home-feat" hidden>
+          <div class="v5-card-h">
+            <span class="v5-badge v5-badge--orange" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z" fill="#fff"/></svg></span>
+            <h3 data-i18n="v5.destacado">Destacado de la semana</h3>
+            <button class="v5-pill" data-ir="agenda"><span data-i18n="v5.ver_agenda">Ver toda la agenda</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          </div>
+          <button class="v5-dest-b" id="feat-open">
+            <span class="v5-dest-img" id="feat-image" aria-hidden="true"></span>
+            <span class="v5-dest-txt">
+              <strong id="feat-title">—</strong>
+              <span class="v5-ico-l" id="feat-sub-row"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3" fill="none" stroke="#E8742B" stroke-width="2"/><path d="M3 10h18M8 3v4M16 3v4" stroke="#E8742B" stroke-width="2" stroke-linecap="round"/></svg><span id="feat-sub">—</span></span>
+              <span class="v5-ico-l" id="feat-lugar-row" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s7-6.3 7-12a7 7 0 10-14 0c0 5.7 7 12 7 12z" fill="#E8742B"/><circle cx="12" cy="10" r="2.6" fill="#fff"/></svg><span id="feat-lugar"></span></span>
+              <span class="v5-dest-desc" id="feat-desc"></span>
+            </span>
+          </button>
+        </article>
+
+        <article class="v5-card v5-ia">
+          <div class="v5-card-h">
+            <span class="v5-robot" aria-hidden="true"><svg viewBox="0 0 48 48"><rect x="9" y="14" width="30" height="24" rx="9" fill="#2C7BD6"/><rect x="13" y="19" width="22" height="14" rx="7" fill="#fff"/><circle cx="19" cy="26" r="2.6" fill="#0B2B57"/><circle cx="29" cy="26" r="2.6" fill="#0B2B57"/><path d="M24 14V8" stroke="#2C7BD6" stroke-width="3" stroke-linecap="round"/><circle cx="24" cy="7" r="3" fill="#E8742B"/><rect x="4" y="22" width="5" height="10" rx="2.5" fill="#2C7BD6"/><rect x="39" y="22" width="5" height="10" rx="2.5" fill="#2C7BD6"/><path d="M20 31.5h8" stroke="#0B2B57" stroke-width="2" stroke-linecap="round"/></svg></span>
+            <div class="v5-ia-tit">
+              <h3 data-i18n="chat.title">Asistente IA</h3>
+              <small data-i18n="v5.ia_guia">Tu guía personal del destino</small>
+            </div>
+            <span class="v5-pill v5-pill--static"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3 12h18M12 3a14 14 0 010 18M12 3a14 14 0 000 18" fill="none" stroke="currentColor" stroke-width="1.6"/></svg><span data-i18n="v5.idiomas4">Disponible en 4 idiomas</span></span>
+          </div>
+          <p class="v5-ia-desc" data-i18n="v5.ia_desc">Pregúntame sobre playas, rutas, pueblos, gastronomía, agenda o cualquier otra duda de Níjar.</p>
+          <div class="v5-ia-chips">
+            <button class="v5-chip" data-ia="recomendar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z" fill="#F5B731"/></svg><span data-i18n="rutas.recomend">¿Qué visitar hoy?</span></button>
+            <button class="v5-chip" data-ia="playas"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 15c3-3 6-3 9 0s6 3 9 0M2 19c3-3 6-3 9 0s6 3 9 0M7 10c2-4 7-5 10-2" fill="none" stroke="#1F8FD0" stroke-width="2" stroke-linecap="round"/></svg><span data-i18n="v5.mejores_playas">Mejores playas</span></button>
+            <button class="v5-chip" data-ia="ruta"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="13" cy="4" r="2" fill="#2E8B57"/><path d="M10 21l2-6 3 3v3M9 12l2-4 4 2 2 3M11 8l-2 5" fill="none" stroke="#2E8B57" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="v5.ruta_cercana">Ruta cercana</span></button>
+          </div>
+          <form class="v5-ia-form" id="home-ia-form" novalidate>
+            <label for="home-ia-input" class="sr-only" data-i18n="chatbot.label">Escribe tu pregunta</label>
+            <svg class="v5-ia-mic" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="2" width="6" height="12" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M5 10a7 7 0 0014 0M12 17v5" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+            <input id="home-ia-input" type="text" autocomplete="off" data-i18n-placeholder="v5.ia_placeholder" placeholder="Escribe tu pregunta…" />
+            <button type="submit" class="v5-ia-send" data-i18n-aria="chatbot.send" aria-label="Enviar pregunta"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          </form>
+        </article>
+      </div>
+
+      <div class="v5-row">
+        <article class="v5-card v5-mapa">
+          <div class="v5-card-h">
+            <span class="v5-badge v5-badge--navy" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 20l-6-2V4l6 2 6-2 6 2v14l-6-2-6 2zM9 6v14M15 4v14" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"/></svg></span>
+            <h3 data-i18n="map.title">Mapa del destino</h3>
+            <button class="v5-pill" data-ir="mapa"><span data-i18n="v5.ver_mapa">Ver mapa completo</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          </div>
+          <button class="v5-mapa-box" id="home-mapa" data-ir="mapa" aria-label="Abrir el mapa del destino"></button>
+        </article>
+
+        <article class="v5-card v5-reco" id="home-reco" hidden>
+          <div class="v5-card-h">
+            <span class="v5-badge v5-badge--orange" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 22s7-6.3 7-12a7 7 0 10-14 0c0 5.7 7 12 7 12z" fill="#fff"/><circle cx="12" cy="10" r="2.6" fill="#E8742B"/></svg></span>
+            <h3 data-i18n="v5.recomendado">Lugar recomendado</h3>
+            <button class="v5-pill" id="reco-mas"><span data-i18n="v5.mas_lugares">Ver más lugares</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          </div>
+          <button class="v5-reco-b" id="reco-open">
+            <span class="v5-reco-img" id="reco-img" aria-hidden="true"></span>
+            <strong id="reco-nombre">—</strong>
+            <span class="v5-ico-l"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s7-6.3 7-12a7 7 0 10-14 0c0 5.7 7 12 7 12z" fill="#0B2B57"/><circle cx="12" cy="10" r="2.6" fill="#fff"/></svg><span id="reco-lugar"></span></span>
+            <span class="v5-reco-desc" id="reco-desc"></span>
+            <span class="v5-servs" id="reco-servs"></span>
+          </button>
+        </article>
+      </div>
+
+      <div class="v5-row">
+        <article class="v5-card v5-news" id="home-news" hidden>
+          <div class="v5-news-h">
+            <img src="../shared/escudo-nijar.svg" alt="" aria-hidden="true" />
+            <div><h3>Ayuntamiento de Níjar</h3><small data-i18n="v5.actualidad">Actualidad municipal</small></div>
+            <button class="v5-pill" data-ir="noticias"><span data-i18n="v5.mas_noticias">Ver más noticias</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          </div>
+          <button class="v5-news-b" id="news-open">
+            <span class="v5-news-img" id="news-img" aria-hidden="true"></span>
+            <span class="v5-news-txt"><strong id="news-titulo">—</strong><small id="news-fecha"></small></span>
+          </button>
+        </article>
+
+        <article class="v5-card v5-qr">
+          <div class="v5-qr-txt">
+            <h3><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10.5 18.5h3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span data-i18n="qr.kicker_corto">Ábrelo en tu móvil</span></h3>
+            <p data-i18n="v5.qr_desc">Escanea este código QR y lleva toda la información de Níjar en tu móvil.</p>
+            <button class="v5-pill" data-dock-action="social"><span data-i18n="v5.redes">Síguenos en redes</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          </div>
+          <span class="v5-qr-code" data-qr-home="https://www.nijar.es" aria-hidden="true"></span>
+        </article>
+      </div>
     </div>
   </section>
 
@@ -208,6 +278,32 @@
     <div class="tt-mapsheet is-hidden" id="map-sheet"></div>
   </section>
 
+  <!-- ================= VISTA: EXPLORAR (todas las categorías) ================= -->
+  <section class="tt-view" id="view-explore" hidden aria-label="Explorar">
+    <div class="v5-subhero">
+      <p class="v5-miga"><span data-i18n="v5.inicio">Inicio</span> · <span data-i18n="v5.explorar">Explorar</span></p>
+      <h2 data-i18n="v5.explora">Explora el destino</h2>
+      <p class="v5-script v5-subhero-script" data-i18n="v5.inspira">Naturaleza que te inspira</p>
+    </div>
+    <div class="v5-body">
+      <div class="v5-explora v5-explora--todo" id="explore-grid"></div>
+    </div>
+  </section>
+
+  <!-- ================= VISTA: AVISOS (CMS + teléfonos de emergencia) ================= -->
+  <section class="tt-view" id="view-avisos" hidden aria-label="Avisos">
+    <div class="v5-subhero">
+      <p class="v5-miga"><span data-i18n="v5.inicio">Inicio</span> · <span data-i18n="v5.avisos">Avisos</span></p>
+      <h2 data-i18n="v5.avisos_t">Avisos municipales</h2>
+      <p class="v5-subhero-s" data-i18n="v5.avisos_s">Información práctica y teléfonos de emergencia</p>
+    </div>
+    <div class="v5-body">
+      <div class="v5-avisos-lista" id="avisos-lista"></div>
+      <h3 class="v5-h3" data-i18n="categorias.emergencias">Emergencias</h3>
+      <div class="tt-list" id="avisos-emergencias"></div>
+    </div>
+  </section>
+
 </main>
 
 <!-- ================= FICHA DE DETALLE (modal a pantalla completa) ================= -->
@@ -244,32 +340,20 @@
   </div>
 </dialog>
 
-<!-- ================= DOCK PERMANENTE (idiomas + accesos rápidos) ================= -->
-<footer class="tt-hdock" role="contentinfo">
-  <div class="tt-hlangs" role="group" aria-label="Idioma / Language / Sprache / Langue">
-    <button class="lang-btn" data-lang="es" aria-pressed="true" lang="es"><span class="c">ES</span><span class="cl">Español</span></button>
-    <button class="lang-btn" data-lang="en" aria-pressed="false" lang="en"><span class="c">EN</span><span class="cl">English</span></button>
-    <button class="lang-btn" data-lang="de" aria-pressed="false" lang="de"><span class="c">DE</span><span class="cl">Deutsch</span></button>
-    <button class="lang-btn" data-lang="fr" aria-pressed="false" lang="fr"><span class="c">FR</span><span class="cl">Français</span></button>
-  </div>
-  <div class="tt-hactions" role="group" aria-label="Accesos rápidos">
-    <button class="tt-dock-btn" data-dock-action="agenda" aria-label="Abrir agenda de eventos">
-      <span class="c"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4.5" width="18" height="17" rx="3"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/></svg></span>
-      <span class="cl" data-i18n="dock.agenda">Agenda</span>
-    </button>
-    <button class="tt-dock-btn is-primary" data-dock-action="chat" id="btn-open-chat" aria-label="Abrir asistente IA">
-      <span class="c"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.5 8.5 0 0 1-3.8-.9L3 21l1.9-5.7A8.38 8.38 0 0 1 4 11.5 8.5 8.5 0 0 1 12.5 3 8.38 8.38 0 0 1 21 11.5z"/></svg></span>
-      <span class="cl" data-i18n="dock.asistente">Asistente IA</span>
-    </button>
-    <button class="tt-dock-btn" data-dock-action="empresas" aria-label="Empresas y servicios locales">
-      <span class="c"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 21V10M20 21V10M2 10l2-6h16l2 6M2 10h20M9 21v-6h6v6"/><path d="M4 21h16"/></svg></span>
-      <span class="cl" data-i18n="dock.empresas">Empresas</span>
-    </button>
-    <button class="tt-dock-btn" data-dock-action="social" aria-label="Redes sociales del Ayuntamiento">
-      <span class="c"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.6" cy="6.4" r="1.3" fill="currentColor" stroke="none"/></svg></span>
-      <span class="cl">@nijar</span>
-    </button>
-  </div>
+<!-- ================= BARRA INFERIOR (vistas internas) + PIE ILUSTRADO ================= -->
+<nav class="v5-nav" aria-label="Navegación principal">
+  <button data-ir="inicio"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1z" fill="currentColor"/></svg><span data-i18n="v5.inicio">Inicio</span></button>
+  <button data-ir="explorar"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5" fill="currentColor"/><path d="M15.5 8.5l-2 5-5 2 2-5z" fill="#fff"/></svg><span data-i18n="v5.explorar">Explorar</span></button>
+  <button data-ir="mapa"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 20l-6-2V4l6 2 6-2 6 2v14l-6-2-6 2zM9 6v14M15 4v14" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg><span data-i18n="v5.mapa">Mapa</span></button>
+  <button data-ir="avisos"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 17V11a6 6 0 0112 0v6l2 2H4z" fill="#F5A623"/><path d="M10 21h4" stroke="#F5A623" stroke-width="2" stroke-linecap="round"/></svg><span data-i18n="v5.avisos">Avisos</span></button>
+  <span class="v5-nav-sep" aria-hidden="true"></span>
+  <button class="v5-nav-qr" data-qr-movil>
+    <span class="v5-nav-qr-code" data-qr-home="https://www.nijar.es" aria-hidden="true"></span>
+    <span><b data-i18n="qr.kicker_corto">Ábrelo en tu móvil</b><small data-i18n="v5.qr_corto">Escanea el código y llévate Níjar</small></span>
+  </button>
+</nav>
+<footer class="v5-pie" role="contentinfo">
+  <p class="v5-script" data-i18n="v5.pie">Níjar, siempre una buena idea</p>
 </footer>
 
 <!-- Elementos legacy conservados hidden para no romper handlers del JS actual.
@@ -279,8 +363,8 @@
 <div class="sr-only" aria-hidden="true">
   <span id="clock">--:--</span>
   <span id="footer-date"></span>
-  <button id="footer-voice" aria-label="Leer la última respuesta">Voz</button>
-  <button id="footer-contrast" aria-label="Alternar contraste">Contraste</button>
+  <button id="footer-voice" tabindex="-1" aria-label="Leer la última respuesta">Voz</button>
+  <button id="footer-contrast" tabindex="-1" aria-label="Alternar contraste">Contraste</button>
 </div>
 
 <!-- ================= MODAL @NIJAR — redes sociales ================= -->
@@ -348,6 +432,6 @@
 </dialog>
 
 <script src="./assets/vendor/qrcode-generator-1.4.4.js"></script>
-<script type="module" src="./assets/totem.js?v=31"></script>
+<script type="module" src="./assets/totem.js?v=32"></script>
 </body>
 </html>
