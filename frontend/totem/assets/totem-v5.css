@@ -519,7 +519,7 @@ body.high-contrast .v5-msg--yo .v5-msg-t { color: #fff; }
    Fase 4 · mapa del destino, avisos y emergencias
    ===================================================================== */
 .v5-subhero--mapa { --foto: url("../../shared/tiles/cabo.jpg"); }
-.v5-mapa { margin-top: -54px; z-index: 2; }
+.v5-mapag { margin-top: -54px; z-index: 2; }
 .v5-mapa-chips { margin: 0 0 14px; gap: 8px; }
 .v5-mapa-chips .v5-fchip { height: 54px; padding: 0 16px; font-size: 18px; }
 .v5-mapa-chips .v5-fchip small { min-width: 30px; padding: 2px 8px; border-radius: 999px; background: #EEF3F9; color: var(--v5-navy); font: 700 15px var(--v5-ff); text-align: center; }
@@ -527,8 +527,8 @@ body.high-contrast .v5-msg--yo .v5-msg-t { color: #fff; }
 .v5-mdot { width: 18px; height: 18px; border-radius: 50%; border: 2.5px solid #fff; box-shadow: 0 0 0 1.5px rgba(11, 43, 87, 0.25); flex: 0 0 auto; }
 
 .v5-mapa-card { position: relative; border-radius: var(--v5-r); overflow: hidden; background: #fff; box-shadow: var(--v5-sh); }
-.v5-mapa-box { height: 1130px; background: #DDEBF0; position: relative; z-index: 0; }
-.v5-mapa-box .leaflet-control-attribution { font-size: 12px; }
+.v5-mapag-box { height: 1130px; background: #DDEBF0; position: relative; z-index: 0; }
+.v5-mapag-box .leaflet-control-attribution { font-size: 12px; }
 .v5-mapa-ctrl { position: absolute; top: 18px; right: 18px; z-index: 5; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
 .v5-mapa-btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-width: 62px; height: 62px; padding: 0 14px;
