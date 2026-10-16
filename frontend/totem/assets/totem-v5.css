@@ -514,3 +514,82 @@ body.text-lg-mode .v5-chat-sug .v5-chip { font-size: 19px; }
 body.high-contrast .v5-msg-b { border: 2px solid #000E33; box-shadow: none; }
 body.high-contrast .v5-msg-t { color: #000E33; }
 body.high-contrast .v5-msg--yo .v5-msg-t { color: #fff; }
+
+/* =====================================================================
+   Fase 4 · mapa del destino, avisos y emergencias
+   ===================================================================== */
+.v5-subhero--mapa { --foto: url("../../shared/tiles/cabo.jpg"); }
+.v5-mapa { margin-top: -54px; z-index: 2; }
+.v5-mapa-chips { margin: 0 0 14px; gap: 8px; }
+.v5-mapa-chips .v5-fchip { height: 54px; padding: 0 16px; font-size: 18px; }
+.v5-mapa-chips .v5-fchip small { min-width: 30px; padding: 2px 8px; border-radius: 999px; background: #EEF3F9; color: var(--v5-navy); font: 700 15px var(--v5-ff); text-align: center; }
+.v5-mapa-chips .v5-fchip[aria-pressed="true"] small { background: rgba(255, 255, 255, 0.2); color: #fff; }
+.v5-mdot { width: 18px; height: 18px; border-radius: 50%; border: 2.5px solid #fff; box-shadow: 0 0 0 1.5px rgba(11, 43, 87, 0.25); flex: 0 0 auto; }
+
+.v5-mapa-card { position: relative; border-radius: var(--v5-r); overflow: hidden; background: #fff; box-shadow: var(--v5-sh); }
+.v5-mapa-box { height: 1130px; background: #DDEBF0; position: relative; z-index: 0; }
+.v5-mapa-box .leaflet-control-attribution { font-size: 12px; }
+.v5-mapa-ctrl { position: absolute; top: 18px; right: 18px; z-index: 5; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+.v5-mapa-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-width: 62px; height: 62px; padding: 0 14px;
+  border: 0; border-radius: 16px; background: #fff; color: var(--v5-navy); box-shadow: 0 4px 16px rgba(11, 43, 87, 0.2); cursor: pointer; font: 600 18px var(--v5-ff);
+}
+.v5-mapa-btn svg { width: 28px; height: 28px; }
+.v5-mapa-btn--aqui { color: #fff; background: var(--v5-orange-d, #C2541A); margin-top: 6px; }
+
+/* Pines, núcleos y posición del tótem */
+.v5-mpin { filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.3)); transition: transform .15s; }
+.v5-mpin svg { display: block; }
+.v5-mpin.is-sel { z-index: 900 !important; }
+.v5-mnucleo span {
+  display: inline-block; transform: translate(-50%, 6px); white-space: nowrap; padding: 3px 10px; border-radius: 999px;
+  background: rgba(255, 255, 255, 0.88); color: var(--v5-navy); font: 700 15px var(--v5-ff); letter-spacing: .2px; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+}
+.v5-maqui { position: relative; }
+.v5-maqui .punto { position: absolute; inset: 7px; border-radius: 50%; background: #C2541A; border: 4px solid #fff; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35); }
+.v5-maqui .pulso { position: absolute; inset: -14px; border-radius: 50%; background: rgba(232, 116, 43, 0.35); animation: v5-pulso 2.2s ease-out infinite; }
+@keyframes v5-pulso { from { transform: scale(.4); opacity: 1; } to { transform: scale(1.4); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .v5-maqui .pulso { animation: none; opacity: .5; } }
+
+/* Ficha inferior del punto seleccionado */
+.v5-mapa-sheet {
+  position: absolute; left: 18px; right: 18px; bottom: 18px; z-index: 6; display: flex; gap: 18px; padding: 16px; padding-right: 70px;
+  background: #fff; border-radius: 20px; box-shadow: 0 10px 34px rgba(11, 43, 87, 0.28);
+}
+.v5-msheet-img { flex: 0 0 auto; width: 210px; min-height: 190px; border-radius: 14px; background: center/cover no-repeat; display: grid; place-items: center; }
+.v5-msheet-img svg { width: 84px; height: 84px; }
+.v5-msheet-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.v5-msheet-tag { align-self: flex-start; padding: 4px 12px; border-radius: 999px; background: color-mix(in srgb, var(--c) 14%, #fff); color: color-mix(in srgb, var(--c) 70%, #000); font: 700 15px var(--v5-ff); }
+.v5-msheet-txt h3 { margin: 0; font: 800 30px/1.1 var(--v5-ff); color: var(--v5-navy); }
+.v5-msheet-dist { margin: 0; font: 600 17px var(--v5-ff); color: #A4500F; }
+.v5-msheet-acc { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: auto; padding-top: 6px; }
+.v5-msheet-x { position: absolute; top: 14px; right: 14px; width: 48px; height: 48px; border-radius: 50%; border: 0; background: #EEF3F9; color: var(--v5-navy); display: grid; place-items: center; cursor: pointer; }
+.v5-msheet-x svg { width: 24px; height: 24px; }
+
+/* Avisos */
+.v5-aviso { border-left: 0; align-items: center; }
+.v5-aviso-ico { flex: 0 0 auto; width: 58px; height: 58px; border-radius: 16px; background: linear-gradient(160deg, #F7B54A, #E8742B); display: grid; place-items: center; }
+.v5-aviso-ico svg { width: 32px; height: 32px; }
+.v5-aviso-f { display: inline-block; margin-top: 8px; padding: 3px 10px; border-radius: 999px; background: #FFF1E3; color: #A4500F; font: 600 14px var(--v5-ff); }
+
+/* Emergencias (vista Avisos y chip «Emergencias» del listado) */
+.v5-emerg { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.v5-emerg-card { display: flex; align-items: center; gap: 16px; padding: 18px; background: #fff; border-radius: 18px; box-shadow: var(--v5-sh); border-top: 5px solid #D13C36; }
+.v5-cards > .v5-emerg-card { grid-column: auto; }
+.v5-emerg-ico { flex: 0 0 auto; width: 64px; height: 64px; border-radius: 50%; background: #D13C36; display: grid; place-items: center; box-shadow: 0 0 0 6px #FBE4E2; }
+.v5-emerg-ico svg { width: 34px; height: 34px; }
+.v5-emerg-txt { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.v5-emerg-txt strong { font: 700 21px/1.2 var(--v5-ff); color: var(--v5-navy); }
+.v5-emerg-txt .emergency-number { display: inline-flex; align-items: center; gap: 8px; font: 800 30px/1.1 var(--v5-ff); color: #A4500F; letter-spacing: .3px; }
+.v5-emerg-txt .emergency-number svg { width: 24px; height: 24px; }
+.v5-emerg-txt small { font: 400 16px var(--v5-ff); color: var(--v5-muted); }
+
+body.text-lg-mode .v5-msheet-txt h3 { font-size: 34px; }
+body.text-lg-mode .v5-emerg-txt strong { font-size: 24px; }
+body.text-lg-mode .v5-emerg-txt small, body.text-lg-mode .v5-mnucleo span { font-size: 18px; }
+body.high-contrast .v5-mapa-card, body.high-contrast .v5-mapa-sheet, body.high-contrast .v5-emerg-card { box-shadow: none; border: 2px solid #000E33; }
+body.high-contrast .v5-msheet-dist, body.high-contrast .v5-emerg-txt small { color: #000E33; }
+
+/* Explorar (vista completa): tarjetas altas que llenan la pantalla del tótem */
+.v5-explora--todo .v5-xcard { height: 370px; }
+.v5-explora--todo .v5-xcard-t strong { font-size: 31px; }
