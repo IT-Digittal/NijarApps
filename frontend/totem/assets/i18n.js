@@ -995,6 +995,36 @@ const V5B = {
 };
 for (const lang of Object.keys(V5B)) Object.assign(I18N[lang] = I18N[lang] || {}, V5B[lang]);
 
+/* --- Rediseño v5 · fase 3: asistente IA --- */
+const V5C = {
+  es: {
+    "v5.donde_comer": "Dónde comer", "v5.agenda_semana": "Agenda de la semana", "v5.moverse": "Cómo moverse",
+    "v5.q_comer": "¿Dónde puedo comer cerca?", "v5.q_agenda": "¿Qué eventos hay esta semana?", "v5.q_moverse": "¿Cómo puedo moverme por Níjar y el Parque Natural?",
+    "v5.util": "¿Te ha sido útil?", "v5.util_si": "Sí, me ha sido útil", "v5.util_no": "No me ha sido útil", "v5.gracias": "¡Gracias por tu valoración!",
+    "v5.chat_nota": "Respuestas basadas en la información oficial del destino. Pulsa el micrófono para preguntar con la voz.",
+  },
+  en: {
+    "v5.donde_comer": "Where to eat", "v5.agenda_semana": "This week's events", "v5.moverse": "Getting around",
+    "v5.q_comer": "Where can I eat nearby?", "v5.q_agenda": "What events are on this week?", "v5.q_moverse": "How can I get around Níjar and the Natural Park?",
+    "v5.util": "Was this helpful?", "v5.util_si": "Yes, it was helpful", "v5.util_no": "No, it wasn't helpful", "v5.gracias": "Thanks for your feedback!",
+    "v5.chat_nota": "Answers based on official destination information. Tap the microphone to ask by voice.",
+  },
+  de: {
+    "v5.donde_comer": "Wo essen", "v5.agenda_semana": "Termine der Woche", "v5.moverse": "Unterwegs sein",
+    "v5.q_comer": "Wo kann ich in der Nähe essen?", "v5.q_agenda": "Welche Veranstaltungen gibt es diese Woche?", "v5.q_moverse": "Wie komme ich in Níjar und im Naturpark herum?",
+    "v5.util": "War das hilfreich?", "v5.util_si": "Ja, hilfreich", "v5.util_no": "Nein, nicht hilfreich", "v5.gracias": "Danke für deine Bewertung!",
+    "v5.chat_nota": "Antworten auf Basis offizieller Informationen. Tippe auf das Mikrofon, um per Stimme zu fragen.",
+  },
+  fr: {
+    "v5.donde_comer": "Où manger", "v5.agenda_semana": "Agenda de la semaine", "v5.moverse": "Se déplacer",
+    "v5.q_comer": "Où puis-je manger à proximité ?", "v5.q_agenda": "Quels événements ont lieu cette semaine ?", "v5.q_moverse": "Comment se déplacer à Níjar et dans le Parc naturel ?",
+    "v5.util": "Cette réponse vous a-t-elle aidé ?", "v5.util_si": "Oui, utile", "v5.util_no": "Non, pas utile", "v5.gracias": "Merci pour votre avis !",
+    "v5.chat_nota": "Réponses basées sur les informations officielles de la destination. Touchez le micro pour poser votre question à voix haute.",
+  },
+};
+for (const lang of Object.keys(V5C)) Object.assign(I18N[lang] = I18N[lang] || {}, V5C[lang]);
+
+
 
 export function translateAll(lang) {
   const dict = I18N[lang] || I18N.es;
