@@ -14,7 +14,8 @@
  * ortofoto PNOA del IGN como capa base y parcelario del Catastro como
  * superposición conmutable — patrón equivalente al de un geoportal municipal
  * de urbanismo. Ver la constante WMS más abajo. Además, selector de periodo con
- * las ortofotos históricas del IGN (PNOA histórico) y cortina para comparar dos
+ * las ortofotos históricas del IGN (PNOA histórico) y de la Junta de Andalucía (REDIAM e IECA)
+ * y cortina para comparar dos
  * periodos (instalarOrtofotos).
  */
 
@@ -370,7 +371,7 @@ async function pintarInfoGemelo() {
 
 async function renderGemelo2D(el) {
   el.innerHTML = sub("Gemelo digital", "Gemelo vivo del destino",
-    "Réplica digital operativa: los activos de la plataforma y de las verticales externas (IoT municipal con banderas de playa y aforo del parque; red Bettair de calidad del aire y meteorología) sobre un único mapa. Incluye ortofotos históricas del IGN (de 1956 a hoy) con selector de periodo y cortina para comparar. Los datos se recargan con «Actualizar».",
+    "Réplica digital operativa: los activos de la plataforma y de las verticales externas (IoT municipal con banderas de playa y aforo del parque; red Bettair de calidad del aire y meteorología) sobre un único mapa. Incluye ortofotos históricas del IGN y de la Junta de Andalucía (de 1956 a hoy) con selector de periodo y cortina para comparar. Los datos se recargan con «Actualizar».",
     '<button class="btn" id="gd-actualizar">Actualizar</button> <button class="btn btn--pri" onclick="UI.goD(\'gd-3d\')">Vista 3D →</button>') +
     '<div class="grid g4" style="margin-bottom:16px" id="gd-kpis"></div>' +
     '<div class="card card--pad0" style="overflow:hidden"><div id="gemelo-2d" style="height:600px;width:100%"></div></div>' +
@@ -528,8 +529,9 @@ async function renderGemelo2D(el) {
 /* Petición del cliente: elegir un año/periodo y ver cómo era el territorio
    (vuelo americano de 1956, vuelos de los 70-80, PNOA anuales…), y comparar
    dos periodos con una cortina deslizante. El catálogo lo da el backend
-   (/gemelo/ortofotos-historicas, leído del WMS «PNOA histórico» del IGN y
-   filtrado a los vuelos con imagen sobre Níjar). Los activos, el Catastro y
+   (/gemelo/ortofotos-historicas: WMS «PNOA histórico» del IGN más los vuelos
+   de la Junta de Andalucía —REDIAM e IECA—, filtrados a los que tienen imagen
+   sobre Níjar; cada vuelo trae su servicio). Los activos, el Catastro y
    la regla de medición siguen encima de la ortofoto elegida. */
 let ortoCatalogo = null;
 const ortoEstado = { a: "", b: "__actual", comparar: false, ratio: 0.5 };
@@ -545,12 +547,24 @@ function instalarOrtofotos(mapa) {
   let capaA = null;
   let capaB = null;
 
-  const wmsHistorico = (nombre, z) => L.tileLayer.wms(ortoCatalogo.url_wms, {
-    layers: nombre, format: "image/jpeg", transparent: false, version: "1.3.0",
-    maxZoom: 20, zIndex: z, attribution: "PNOA histórico &copy; Instituto Geográfico Nacional",
-  });
-  const etiqueta = (v) => v === "__actual" ? "Actual (PNOA)"
-    : ((ortoCatalogo.capas.find((c) => c.nombre === v) || {}).etiqueta || v);
+  const idDe = (c) => c.id || c.nombre;
+  const capaDe = (v) => ortoCatalogo.capas.find((c) => idDe(c) === v);
+  const fuenteCorta = (c) => (c.fuente || "IGN").startsWith("Junta") ? "Junta" : "IGN";
+  const wmsHistorico = (v, z) => {
+    const c = capaDe(v) || { nombre: v };
+    const junta = fuenteCorta(c) === "Junta";
+    return L.tileLayer.wms(c.url_wms || ortoCatalogo.url_wms, {
+      layers: c.nombre, format: c.formato || "image/jpeg", transparent: false, version: c.version || "1.3.0",
+      maxZoom: 20, zIndex: z,
+      attribution: junta ? "Ortofoto histórica &copy; Junta de Andalucía (" + esc((c.fuente || "").split("· ")[1] || "REDIAM/IECA") + ")"
+        : "PNOA histórico &copy; Instituto Geográfico Nacional",
+    });
+  };
+  const etiqueta = (v) => {
+    if (v === "__actual") return "Actual (PNOA)";
+    const c = capaDe(v);
+    return c ? c.etiqueta + " · " + fuenteCorta(c) : v;
+  };
 
   /* Cortina: línea vertical con asa arrastrable; solo el asa captura eventos */
   const cortina = L.DomUtil.create("div", "", mapa.getContainer());
@@ -621,7 +635,7 @@ function instalarOrtofotos(mapa) {
     onAdd() {
       caja = L.DomUtil.create("div", "leaflet-bar");
       caja.style.cssText = "background:#fff;padding:9px 11px;min-width:230px;font:13px system-ui;color:#0B2B57";
-      caja.innerHTML = '<b>🕰 Ortofoto histórica</b><div class="mini" style="margin-top:4px">Cargando vuelos del IGN…</div>';
+      caja.innerHTML = '<b>🕰 Ortofoto histórica</b><div class="mini" style="margin-top:4px">Cargando vuelos del IGN y de la Junta…</div>';
       L.DomEvent.disableClickPropagation(caja);
       L.DomEvent.disableScrollPropagation(caja);
       return caja;
@@ -633,12 +647,12 @@ function instalarOrtofotos(mapa) {
     if (!caja || !ortoCatalogo) return;
     const capas = ortoCatalogo.capas || [];
     if (!capas.length) {
-      caja.innerHTML = '<b>🕰 Ortofoto histórica</b><div class="mini" style="margin-top:4px;color:#67769A">El IGN no ofrece vuelos históricos para esta zona ahora mismo.</div>';
+      caja.innerHTML = '<b>🕰 Ortofoto histórica</b><div class="mini" style="margin-top:4px;color:#67769A">El IGN y la Junta no ofrecen vuelos históricos para esta zona ahora mismo.</div>';
       return;
     }
     const opts = (sel) => capas.map((c) =>
-      '<option value="' + esc(c.nombre) + '"' + (c.nombre === sel ? " selected" : "") + ">" +
-      esc(c.etiqueta) + " · " + esc(c.titulo) + "</option>").join("");
+      '<option value="' + esc(idDe(c)) + '"' + (idDe(c) === sel ? " selected" : "") + ' title="' + esc(c.fuente || "IGN") + '">' +
+      esc(c.etiqueta) + " · " + fuenteCorta(c) + " · " + esc(c.titulo) + "</option>").join("");
     const sel = "width:100%;margin-top:4px;padding:4px;border:1px solid #CBD3E1;border-radius:6px;font:13px system-ui";
     const btn = "border:1px solid #CBD3E1;background:#fff;border-radius:6px;padding:3px 9px;cursor:pointer;font:700 13px system-ui;color:#0B2B57";
     caja.innerHTML =
@@ -654,22 +668,23 @@ function instalarOrtofotos(mapa) {
           '<div class="mini" style="margin-top:4px;color:#67769A">Izquierda: periodo elegido · derecha: comparación. Arrastre el asa ⇔.</div>'
         : "") +
       (ortoCatalogo.cobertura_verificada ? "" : '<div class="mini" style="margin-top:4px;color:#B25E09">Algún periodo puede no cubrir toda la zona.</div>') +
-      '<div class="mini" style="margin-top:4px;color:#67769A">' + capas.length + " periodos · " + esc(capas[0].etiqueta) + " → " + esc(capas[capas.length - 1].etiqueta) + " · IGN</div>";
+      '<div class="mini" style="margin-top:4px;color:#67769A">' + capas.length + " vuelos · " + esc(capas[0].etiqueta) + " → " + esc(capas[capas.length - 1].etiqueta) + " · " +
+      ([...new Set(capas.map(fuenteCorta))].join(" y ").replace("Junta", "Junta de Andalucía")) + "</div>";
 
     caja.querySelector('[data-orto="a"]').onchange = (e) => { ortoEstado.a = e.target.value; aplicar(); };
     caja.querySelector('[data-orto="cmp"]').onchange = (e) => {
       ortoEstado.comparar = e.target.checked;
-      if (ortoEstado.comparar && !ortoEstado.a) ortoEstado.a = capas[0].nombre; /* el más antiguo */
+      if (ortoEstado.comparar && !ortoEstado.a) ortoEstado.a = idDe(capas[0]); /* el más antiguo */
       aplicar();
     };
     const b = caja.querySelector('[data-orto="b"]');
     if (b) b.onchange = (e) => { ortoEstado.b = e.target.value; aplicar(); };
     caja.querySelectorAll("[data-paso]").forEach((x) => {
       x.onclick = () => {
-        const i = capas.findIndex((c) => c.nombre === ortoEstado.a);
+        const i = capas.findIndex((c) => idDe(c) === ortoEstado.a);
         const j = i + Number(x.dataset.paso);
         if (j < -1 || j >= capas.length) return;
-        ortoEstado.a = j === -1 ? "" : capas[j].nombre;
+        ortoEstado.a = j === -1 ? "" : idDe(capas[j]);
         aplicar();
       };
     });
@@ -678,7 +693,7 @@ function instalarOrtofotos(mapa) {
   cargarOrtofotos()
     .then(() => { if (mapa === mapa2d) aplicar(); })
     .catch(() => {
-      if (caja) caja.innerHTML = '<b>🕰 Ortofoto histórica</b><div class="mini" style="margin-top:4px;color:#B25E09">Servicio de ortofotos del IGN no disponible ahora mismo.</div>';
+      if (caja) caja.innerHTML = '<b>🕰 Ortofoto histórica</b><div class="mini" style="margin-top:4px;color:#B25E09">Servicios de ortofotos (IGN y Junta) no disponibles ahora mismo.</div>';
     });
 }
 

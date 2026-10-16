@@ -20,9 +20,24 @@ const API_BASE = window.NIJAR_API_BASE
     ? `${window.location.origin}/api/v1`
     : "http://localhost:8000/api/v1");
 
-const TOTEM_ID = document.body.dataset.totemId || "urn:ngsi-ld:Totem:nijar:rodalquilar";
-const TOTEM_LAT = parseFloat(document.body.dataset.totemLat || "36.847");
-const TOTEM_LON = parseFloat(document.body.dataset.totemLon || "-2.041");
+/* Cada tótem se identifica en su URL de quiosco: …/totem/?totem=albaricoques
+   (se recuerda en el equipo). Sin parámetro: el del atributo data-totem-id. */
+const TOTEMS_CONOCIDOS = {
+  rodalquilar: [36.847, -2.041],
+  albaricoques: [36.8508, -2.1222],
+};
+const TOTEM_SLUG = (() => {
+  let slug = "";
+  try {
+    slug = (new URLSearchParams(location.search).get("totem") || "").toLowerCase().replace(/[^a-z0-9_-]/g, "").slice(0, 40);
+    if (slug) localStorage.setItem("totem.id", slug);
+    else slug = localStorage.getItem("totem.id") || "";
+  } catch { /* almacenamiento no disponible */ }
+  return slug || (document.body.dataset.totemId || "rodalquilar").split(":").pop();
+})();
+const TOTEM_ID = `urn:ngsi-ld:Totem:nijar:${TOTEM_SLUG}`;
+const TOTEM_LAT = TOTEMS_CONOCIDOS[TOTEM_SLUG]?.[0] ?? parseFloat(document.body.dataset.totemLat || "36.847");
+const TOTEM_LON = TOTEMS_CONOCIDOS[TOTEM_SLUG]?.[1] ?? parseFloat(document.body.dataset.totemLon || "-2.041");
 const IDLE_MS = 60_000;
 
 const VOICE_LOCALE = { es: "es-ES", en: "en-GB", de: "de-DE", fr: "fr-FR" };
@@ -92,13 +107,83 @@ let currentLang = localStorage.getItem("totem.lang") || "es";
 let currentCat = null;
 let currentChip = "todas";
 let idleTimer = null;
-let sessionId = `totem-${TOTEM_ID}-${Date.now()}`;
+let sessionId = `totem-${TOTEM_ID}-${Date.now()}`;  /* se renueva con cada visitante */
 let serviciosCache = null;      // /tourism/services (se agrupa por tipo en cliente)
 let mapaLeaflet = null;
 let lastAnswer = "";
 
 const $ = (s) => document.querySelector(s);
 const dict = () => I18N[currentLang] || I18N.es;
+
+// ============================================================
+// Telemetría de uso: qué ve cada visitante (anónima)
+// ============================================================
+/* Cada visitante es una sesión: empieza con su primera acción y termina cuando
+   el tótem vuelve al reposo por inactividad. Los eventos se envían en lotes a
+   /dashboards/totems/eventos y el panel los lista en «Tótems (A.1)». */
+const tele = (() => {
+  const cola = [];
+  let activa = false, inicio = 0, ultima = 0, nEventos = 0;
+  let silencio = false; /* repintados por cambio de idioma: no son acciones nuevas */
+
+  function enviar(usarBeacon = false) {
+    if (!cola.length) return;
+    const lotes = new Map(); /* un lote por sesión e idioma */
+    for (const e of cola.splice(0)) {
+      const clave = e.sesion + "|" + e.idioma;
+      if (!lotes.has(clave)) lotes.set(clave, { sesion: e.sesion, idioma: e.idioma, eventos: [] });
+      lotes.get(clave).eventos.push(e.datos);
+    }
+    for (const { sesion, idioma, eventos } of lotes.values()) {
+      for (let i = 0; i < eventos.length; i += 50) {
+        const cuerpo = JSON.stringify({ totem: TOTEM_SLUG, sesion_id: sesion, idioma, eventos: eventos.slice(i, i + 50) });
+        const url = `${API_BASE}/dashboards/totems/eventos`;
+        if (usarBeacon && navigator.sendBeacon) {
+          navigator.sendBeacon(url, new Blob([cuerpo], { type: "application/json" }));
+          continue;
+        }
+        fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: cuerpo, keepalive: true })
+          .then((r) => { if (!r.ok && r.status >= 500) throw new Error(String(r.status)); })
+          .catch(() => { /* sin red: se reintenta en el siguiente envío (con tope) */
+            if (cola.length < 300) eventos.slice(i, i + 50).forEach((d) => cola.push({ sesion, idioma, datos: d }));
+          });
+      }
+    }
+  }
+
+  function registrar(evento, datos = {}) {
+    if (silencio) return;
+    const ahora = Date.now();
+    if (!activa) {
+      activa = true; inicio = ahora; nEventos = 0;
+      sessionId = `totem-${TOTEM_ID}-${ahora}`;
+      cola.push({ sesion: sessionId, idioma: currentLang, datos: { evento: "inicio_sesion", ts: new Date(ahora).toISOString() } });
+    }
+    ultima = ahora;
+    nEventos++;
+    const limpio = { evento, ts: new Date(ahora).toISOString() };
+    for (const [k, v] of Object.entries(datos)) {
+      if (v == null || v === "") continue;
+      limpio[k] = typeof v === "string" ? v.slice(0, k === "detalle" ? 300 : k === "contenido" ? 200 : 64) : v;
+    }
+    cola.push({ sesion: sessionId, idioma: currentLang, datos: limpio });
+    if (cola.length >= 20) enviar();
+  }
+
+  function finSesion() {
+    if (!activa) return;
+    cola.push({ sesion: sessionId, idioma: currentLang, datos: {
+      evento: "fin_sesion", ts: new Date(ultima).toISOString(),
+      duracion_seg: Math.max(1, Math.round((ultima - inicio) / 1000)), detalle: `${nEventos} acciones`,
+    } });
+    activa = false;
+    enviar();
+  }
+
+  setInterval(() => enviar(), 8000);
+  window.addEventListener("pagehide", () => { finSesion(); enviar(true); });
+  return { registrar, finSesion, callar: (v) => { silencio = v; } };
+})();
 
 // ============================================================
 // Router de vistas
@@ -117,7 +202,7 @@ function showView(id) {
 document.querySelectorAll("[data-back]").forEach((b) => b.addEventListener("click", () => showView("view-home")));
 $("#btn-home-brand").addEventListener("click", () => showView("view-home"));
 document.querySelectorAll("#btn-open-chat, [data-open-chat]").forEach((b) =>
-  b.addEventListener("click", () => { showView("view-chat"); const inp = $("#chatbot-input"); if (inp) inp.focus(); })
+  b.addEventListener("click", () => { tele.registrar("chatbot", { seccion: "chatbot" }); showView("view-chat"); const inp = $("#chatbot-input"); if (inp) inp.focus(); })
 );
 $("#btn-open-map")?.addEventListener("click", abrirMapa);
 document.querySelectorAll('[data-dock-action="empresas"]').forEach((b) =>
@@ -127,7 +212,7 @@ document.querySelectorAll('[data-dock-action="agenda"]').forEach((b) =>
   b.addEventListener("click", () => abrirCategoria("eventos"))
 );
 document.querySelectorAll('[data-dock-action="social"]').forEach((b) =>
-  b.addEventListener("click", () => { const d = $("#social-dialog"); if (d) { d.showModal(); resetIdle(); } })
+  b.addEventListener("click", () => { const d = $("#social-dialog"); if (d) { tele.registrar("redes", { seccion: "redes" }); d.showModal(); resetIdle(); } })
 );
 {
   const sd = $("#social-dialog");
@@ -153,13 +238,18 @@ function applyLanguage(lang) {
   pintarFechas();
   pintarMeteo();
   const listaVisible = !document.getElementById("view-list").hidden;
+  tele.callar(true); /* repintado, no una acción nueva del visitante */
   if (currentCat && listaVisible) abrirCategoria(currentCat, currentChip);
   // Repintar la ficha abierta con el nuevo idioma (título, descripción, servicios, etiquetas…)
   if (dialog?.open && currentPoi) openDetail(currentPoi, currentPoiCat);
+  tele.callar(false);
   resetChat();
 }
 document.querySelectorAll(".lang-btn").forEach((btn) => {
-  btn.addEventListener("click", () => applyLanguage(btn.dataset.lang));
+  btn.addEventListener("click", () => {
+    if (btn.dataset.lang !== currentLang) tele.registrar("idioma", { detalle: btn.dataset.lang });
+    applyLanguage(btn.dataset.lang);
+  });
 });
 
 // ============================================================
@@ -169,14 +259,19 @@ const textBtn = $("#text-size-toggle");
 textBtn.addEventListener("click", () => {
   const on = document.body.classList.toggle("text-lg-mode");
   textBtn.setAttribute("aria-pressed", String(on));
+  tele.registrar("accesibilidad", { detalle: on ? "texto grande activado" : "texto grande desactivado" });
 });
 function toggleContrast() {
   const on = document.body.classList.toggle("high-contrast");
   $("#contrast-toggle").setAttribute("aria-pressed", String(on));
   $("#footer-contrast").setAttribute("aria-pressed", String(on));
 }
-$("#contrast-toggle").addEventListener("click", toggleContrast);
-$("#footer-contrast").addEventListener("click", toggleContrast);
+const contrasteConTelemetria = () => {
+  toggleContrast();
+  tele.registrar("accesibilidad", { detalle: document.body.classList.contains("high-contrast") ? "alto contraste activado" : "alto contraste desactivado" });
+};
+$("#contrast-toggle").addEventListener("click", contrasteConTelemetria);
+$("#footer-contrast").addEventListener("click", contrasteConTelemetria);
 $("#footer-voice").addEventListener("click", () => { if (lastAnswer) hablar(lastAnswer); });
 
 // ============================================================
@@ -527,6 +622,7 @@ async function cargarHeroFoto() {
 async function abrirCategoria(catId, chip = "todas") {
   const c = CATS.find((x) => x.id === catId);
   if (!c) return;
+  tele.registrar("seccion", { seccion: catId, detalle: chip !== "todas" ? chip : null });
   currentCat = catId;
   currentChip = chip;
   const t = dict();
@@ -828,6 +924,7 @@ async function renderNoticias(grid) {
 }
 
 async function openNoticia(n) {
+  tele.registrar("noticia", { seccion: currentCat === "eventos" ? "eventos" : "noticias", contenido_id: n.id != null ? String(n.id) : null, contenido: n.titulo });
   const t = dict();
   const bc = $("#poi-breadcrumb"); if (bc) bc.textContent = String(t["cat.noticias"] || "Noticias").toUpperCase();
   $("#poi-title").textContent = n.titulo || "—";
@@ -1009,6 +1106,9 @@ let currentPoi = null;
 let currentPoiCat = null;
 
 function openDetail(r, c) {
+  if (r !== currentPoi || !dialog.open) {
+    tele.registrar("ficha", { seccion: c?.id || currentCat, contenido_id: r.id != null ? String(r.id) : null, contenido: r.nombre || r.titulo });
+  }
   currentPoi = r;
   currentPoiCat = c;
   const t = dict();
@@ -1169,6 +1269,7 @@ function cargarLeaflet() {
 const COLOR_CAT = { playa: "#17B8C4", ruta: "#1E9E6E", monumento: "#7C6BF0", mirador: "#F5C518", parque_natural: "#2E7D4F", museo: "#E2572B", yacimiento: "#A66B2E" };
 
 async function abrirMapa(centro) {
+  tele.registrar("mapa", { seccion: "mapa", detalle: Array.isArray(centro) ? "desde una ficha" : null });
   showView("view-map");
   try {
     const [L, recursos] = await Promise.all([
@@ -1201,6 +1302,7 @@ async function abrirMapa(centro) {
 }
 
 function mostrarSheet(r) {
+  tele.registrar("mapa_punto", { seccion: "mapa", contenido_id: r.id != null ? String(r.id) : null, contenido: r.nombre });
   const t = dict();
   const nombre = r.nombre_i18n?.[currentLang] || r.nombre;
   const sheet = $("#map-sheet");
@@ -1256,6 +1358,7 @@ $("#chatbot-form").addEventListener("submit", async (e) => {
 async function askChatbot(message) {
   const input = $("#chatbot-input");
   if (!message) return;
+  tele.registrar("pregunta_chatbot", { seccion: "chatbot", detalle: message }); /* antes de la consulta: abre sesión */
   burbuja(message, true);
   input.value = "";
   const pensando = burbuja(dict()["chatbot.thinking"] || "Pensando…", false);
@@ -1428,6 +1531,7 @@ function recoCard(titulo, filas) {
 }
 
 $("#plan-route-btn").addEventListener("click", async () => {
+  tele.registrar("ruta_planificada", { seccion: "chatbot" });
   const t = dict();
   const pensando = burbuja(t["rutas.loading"] || "Calculando…", false);
   try {
@@ -1448,6 +1552,7 @@ $("#plan-route-btn").addEventListener("click", async () => {
 });
 
 $("#recommend-btn").addEventListener("click", async () => {
+  tele.registrar("recomendaciones", { seccion: "chatbot" });
   const t = dict();
   const pensando = burbuja(t["rutas.loading"] || "Calculando…", false);
   try {
@@ -1474,6 +1579,7 @@ $("#recommend-btn").addEventListener("click", async () => {
 // Inactividad — vuelve al estado inicial tras IDLE_MS
 // ============================================================
 function goToIdleState() {
+  tele.finSesion(); /* el siguiente visitante será otra sesión */
   if (dialog.open) dialog.close();
   $("#map-sheet").classList.add("is-hidden");
   currentCat = null;
@@ -1554,6 +1660,7 @@ function mostrarQR(url, titulo) {
   const d = $("#qr-dialog");
   if (!d || !url) return;
   const destino = /^https?:\/\//i.test(url) ? url : "https://" + url;
+  tele.registrar("qr", { seccion: currentCat || (dialog?.open ? currentPoiCat?.id : null) || "general", contenido: titulo || null, detalle: destino });
   $("#qr-title").textContent = titulo || urlLegible(destino);
   $("#qr-code").innerHTML = qrSvg(destino);
   $("#qr-url").textContent = urlLegible(destino);

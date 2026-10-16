@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from nijar_dti.api.v1.dependencies import require_roles
 from nijar_dti.config import get_settings
 from nijar_dti.core.database import get_db
+from nijar_dti.core.export import csv_response
 from nijar_dti.schemas.auth import CurrentUser
 from nijar_dti.schemas.chatbot import (
     ChatbotTelemetry,
@@ -21,9 +22,11 @@ from nijar_dti.schemas.chatbot import (
     TTSIn,
 )
 from nijar_dti.schemas.common import SerieDiaria
+from nijar_dti.schemas.interacciones import InteraccionChatbotOut, ListadoChatbot
 from nijar_dti.services import chatbot_rasa_adapter as svc
 from nijar_dti.services import chatbot_tts_service as tts_svc
 from nijar_dti.services import consumo_ia_service
+from nijar_dti.services import interacciones_service as inter_svc
 
 router = APIRouter()
 
@@ -129,3 +132,89 @@ async def telemetry_series(
     db: AsyncSession = Depends(get_db),
 ) -> SerieDiaria:
     return await svc.telemetria_series(db, desde, hasta, granularidad)
+
+
+# ----------------------- Listado de interacciones (panel) -----------------------
+
+# Las conversaciones son texto libre del visitante: solo perfiles de gestión y auditoría
+_ver_conversaciones = require_roles(
+    "administrador_tic", "analista_datos", "gestor_contenidos", "auditor"
+)
+
+
+def _filtros_listado(
+    desde: datetime | None = Query(None, description="Desde (fecha u hora)"),
+    hasta: datetime | None = Query(None, description="Hasta (una fecha sin hora incluye el día)"),
+    canal: str | None = Query(None, pattern=r"^(web|app|totem)$"),
+    totem: str | None = Query(None, pattern=r"^[a-z0-9_-]{1,40}$"),
+    idioma: str | None = Query(None, pattern=r"^(es|en|de|fr)$"),
+    intent: str | None = Query(None, max_length=100),
+    nivel: str | None = Query(None, pattern=r"^(alta|media|fuera_de_dominio)$"),
+    util: str | None = Query(None, pattern=r"^(si|no|sin)$", description="Valoración"),
+    q: str | None = Query(None, max_length=200, description="Texto en pregunta o respuesta"),
+    sesion: str | None = Query(None, max_length=100),
+    incluir_demo: bool = Query(False, description="Incluir los registros de demostración"),
+) -> dict[str, object]:
+    return {
+        "desde": desde,
+        "hasta": hasta,
+        "canal": canal,
+        "totem": totem,
+        "idioma": idioma,
+        "intent": intent,
+        "nivel": nivel,
+        "util": util,
+        "q": q,
+        "sesion": sesion,
+        "incluir_demo": incluir_demo,
+    }
+
+
+_ORDEN = Query("reciente", pattern=r"^(reciente|antiguo|latencia|confianza)$")
+
+
+@router.get(
+    "/interacciones",
+    response_model=ListadoChatbot,
+    summary="Listado de preguntas y respuestas del asistente (con filtros)",
+)
+async def listar_interacciones(
+    filtros: Annotated[dict[str, object], Depends(_filtros_listado)],
+    user: Annotated[CurrentUser, Depends(_ver_conversaciones)],
+    page: int = Query(1, ge=1, le=100_000),
+    page_size: int = Query(50, ge=1, le=200),
+    orden: str = _ORDEN,
+    db: AsyncSession = Depends(get_db),
+) -> ListadoChatbot:
+    return await inter_svc.listar_chatbot(
+        db, page=page, page_size=page_size, orden=orden, **filtros
+    )
+
+
+@router.get(
+    "/interacciones/export",
+    summary="Exportar las interacciones filtradas a CSV (Excel)",
+    response_class=Response,
+)
+async def exportar_interacciones(
+    filtros: Annotated[dict[str, object], Depends(_filtros_listado)],
+    user: Annotated[CurrentUser, Depends(_ver_conversaciones)],
+    orden: str = _ORDEN,
+    db: AsyncSession = Depends(get_db),
+) -> Response:
+    filas = await inter_svc.exportar_chatbot(db, orden=orden, **filtros)
+    hoy = datetime.now(UTC).strftime("%Y%m%d")
+    return csv_response(filas, f"interacciones_chatbot_{hoy}", excel=True)
+
+
+@router.get(
+    "/interacciones/sesion/{sesion_id}",
+    response_model=list[InteraccionChatbotOut],
+    summary="Conversación completa de una sesión",
+)
+async def conversacion_sesion(
+    sesion_id: str,
+    user: Annotated[CurrentUser, Depends(_ver_conversaciones)],
+    db: AsyncSession = Depends(get_db),
+) -> list[InteraccionChatbotOut]:
+    return await inter_svc.conversacion(db, sesion_id)
