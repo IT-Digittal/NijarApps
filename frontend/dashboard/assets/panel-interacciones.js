@@ -37,6 +37,7 @@ const EVENTOS = {
   chatbot: "Abre el asistente", pregunta_chatbot: "Pregunta al asistente", qr: "Muestra un QR",
   idioma: "Cambia de idioma", accesibilidad: "Accesibilidad", redes: "Redes sociales",
   ruta_planificada: "Planifica una ruta", recomendaciones: "Pide recomendaciones", interaccion: "Interacción (demo)",
+  valoracion_chatbot: "Valora el asistente", explorar: "Abre Explorar",
 };
 const SECCIONES = {
   playas: "Playas y calas", cabo: "Cabo de Gata", rutas: "Rutas y senderos", naturaleza: "Naturaleza",

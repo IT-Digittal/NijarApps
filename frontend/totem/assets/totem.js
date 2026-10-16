@@ -9,7 +9,7 @@
  * - Inactividad >60 s: vuelve al inicio en español (modo público).
  */
 
-import { I18N, translateAll } from "./i18n.js?v=27";
+import { I18N, translateAll } from "./i18n.js?v=28";
 import { DEMO_RESOURCES, answerChatbotDemo } from "./demo-data.js";
 
 // ============================================================
@@ -1787,31 +1787,60 @@ function mostrarSheet(r) {
 const chatLog = $("#chat-log");
 const speakBtn = $("#chatbot-speak");
 
+const ROBOT_SVG = '<svg viewBox="0 0 48 48" aria-hidden="true"><rect x="9" y="14" width="30" height="24" rx="9" fill="#2C7BD6"/><rect x="13" y="19" width="22" height="14" rx="7" fill="#fff"/><circle cx="19" cy="26" r="2.6" fill="#0B2B57"/><circle cx="29" cy="26" r="2.6" fill="#0B2B57"/><path d="M24 14V8" stroke="#2C7BD6" stroke-width="3" stroke-linecap="round"/><circle cx="24" cy="7" r="3" fill="#E8742B"/><path d="M20 31.5h8" stroke="#0B2B57" stroke-width="2" stroke-linecap="round"/></svg>';
+
 function resetChat() {
   const t = dict();
-  chatLog.innerHTML = `
-    <div class="tt-msg tt-msg--bot">
-      <span class="tt-avatar tt-avatar--bot" aria-hidden="true">${icono("bot", "tt-svg--avatar")}</span>
-      <div class="tt-bubble">${escapeHtml(t["chat.welcome"] || "¡Hola! ¿Qué te apetece hacer hoy?")}</div>
-    </div>`;
+  chatLog.innerHTML = "";
+  burbuja(t["chat.welcome"] || "¡Hola! ¿Qué te apetece hacer hoy?", false);
 }
 
-function burbuja(texto, esUsuario) {
+/* Burbuja de la conversación. Devuelve el elemento del texto (el resto del
+   código cambia su textContent cuando llega la respuesta). */
+function burbuja(texto, esUsuario, pensando = false) {
   const div = document.createElement("div");
-  div.className = `tt-msg ${esUsuario ? "tt-msg--user" : "tt-msg--bot"}`;
-  div.innerHTML = `
-    <span class="tt-avatar ${esUsuario ? "tt-avatar--user" : "tt-avatar--bot"}" aria-hidden="true">${icono(esUsuario ? "usuario" : "bot", "tt-svg--avatar")}</span>
-    <div class="tt-bubble"></div>`;
-  div.querySelector(".tt-bubble").textContent = texto;
+  div.className = `v5-msg ${esUsuario ? "v5-msg--yo" : "v5-msg--bot"}`;
+  div.innerHTML = (esUsuario ? "" : `<span class="v5-msg-av" aria-hidden="true">${ROBOT_SVG}</span>`) +
+    `<div class="v5-msg-b"><div class="v5-msg-t"></div></div>`;
+  const txt = div.querySelector(".v5-msg-t");
+  if (pensando) {
+    txt.innerHTML = `<span class="v5-puntos" aria-label="${escapeAttr(texto)}"><i></i><i></i><i></i></span>`;
+  } else txt.textContent = texto;
   chatLog.appendChild(div);
   div.scrollIntoView({ behavior: "smooth", block: "end" });
-  return div.querySelector(".tt-bubble");
+  return txt;
 }
 
 $("#chatbot-form").addEventListener("submit", async (e) => {
   e.preventDefault();
   await askChatbot($("#chatbot-input").value.trim());
 });
+document.querySelectorAll(".v5-chat-sug [data-pregunta]").forEach((b) => b.addEventListener("click", () => {
+  const t = dict();
+  askChatbot(t[b.dataset.pregunta] || b.textContent.trim());
+}));
+
+/* «¿Te ha sido útil?»: alimenta la satisfacción del asistente en el panel */
+function pedirValoracion(contenedor, interaccionId) {
+  if (!interaccionId) return;
+  const t = dict();
+  const fila = document.createElement("div");
+  fila.className = "v5-util";
+  fila.innerHTML = `<span>${escapeHtml(t["v5.util"] || "¿Te ha sido útil?")}</span>` +
+    `<button type="button" data-util="1" aria-label="${escapeAttr(t["v5.util_si"] || "Sí")}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 11v9H4v-9zM7 11l4-7c1.5 0 2.5 1 2.2 2.6L12.6 10H19a2 2 0 012 2.3l-1.2 6A2 2 0 0117.8 20H7" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></button>` +
+    `<button type="button" data-util="0" aria-label="${escapeAttr(t["v5.util_no"] || "No")}"><svg viewBox="0 0 24 24" aria-hidden="true" style="transform:rotate(180deg)"><path d="M7 11v9H4v-9zM7 11l4-7c1.5 0 2.5 1 2.2 2.6L12.6 10H19a2 2 0 012 2.3l-1.2 6A2 2 0 0117.8 20H7" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></button>`;
+  fila.querySelectorAll("[data-util]").forEach((b) => b.addEventListener("click", () => {
+    const util = b.dataset.util === "1";
+    fetch(`${API_BASE}/chatbot/feedback`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sesion_id: sessionId, interaccion_id: interaccionId, util }),
+    }).catch(() => {});
+    tele.registrar("valoracion_chatbot", { seccion: "chatbot", detalle: util ? "util" : "no util" });
+    fila.innerHTML = `<span>${escapeHtml(t["v5.gracias"] || "¡Gracias por tu valoración!")}</span>`;
+    resetIdle();
+  }));
+  contenedor.appendChild(fila);
+}
 
 async function askChatbot(message) {
   const input = $("#chatbot-input");
@@ -1819,7 +1848,7 @@ async function askChatbot(message) {
   tele.registrar("pregunta_chatbot", { seccion: "chatbot", detalle: message }); /* antes de la consulta: abre sesión */
   burbuja(message, true);
   input.value = "";
-  const pensando = burbuja(dict()["chatbot.thinking"] || "Pensando…", false);
+  const pensando = burbuja(dict()["chatbot.thinking"] || "Pensando…", false, true);
   speakBtn.classList.add("is-hidden");
 
   let data = null;
@@ -1835,17 +1864,26 @@ async function askChatbot(message) {
 
   lastAnswer = data.respuesta || "—";
   pensando.textContent = lastAnswer;
+  const caja = pensando.parentElement;
+  /* Preguntas relacionadas: se pueden tocar para seguir la conversación */
   if (Array.isArray(data.sugerencias) && data.sugerencias.length) {
-    const sug = document.createElement("p");
-    sug.className = "chatbot-suggestions";
-    sug.innerHTML = `${icono("idea", "tt-svg--tag")} ${escapeHtml(data.sugerencias.join(" · "))}`;
-    pensando.appendChild(sug);
+    const sug = document.createElement("div");
+    sug.className = "v5-msg-sug";
+    data.sugerencias.slice(0, 4).forEach((x) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.textContent = x;
+      b.addEventListener("click", () => askChatbot(x));
+      sug.appendChild(b);
+    });
+    caja.appendChild(sug);
   }
+  pedirValoracion(caja, data.interaccion_id);
   $("#chatbot-output").textContent = lastAnswer;   /* lector de pantalla */
   /* La voz del servidor no depende de speechSynthesis: se ofrece siempre */
   speakBtn.classList.remove("is-hidden");
   hablar(lastAnswer);
-  pensando.parentElement.scrollIntoView({ behavior: "smooth", block: "end" });
+  caja.parentElement.scrollIntoView({ behavior: "smooth", block: "end" });
   resetIdle();
 }
 
@@ -1980,18 +2018,44 @@ if (SpeechRec && voiceBtn) {
 // ============================================================
 // Planificador y recomendaciones (tarjetas dentro del chat)
 // ============================================================
-function recoCard(titulo, filas) {
+/* Tarjeta de sugerencias dentro del chat. `items`: [{ id, nombre, sub, tipo }]
+   tipo «recurso» o «evento»: al tocarlo se abre su ficha. */
+function recoCard(titulo, items) {
   const card = document.createElement("div");
-  card.className = "tt-reco-card";
-  card.innerHTML = `<h4>${escapeHtml(titulo.toUpperCase())}</h4><ol>${filas}</ol>`;
+  card.className = "v5-msg v5-msg--bot";
+  card.innerHTML = `<span class="v5-msg-av" aria-hidden="true">${ROBOT_SVG}</span>` +
+    `<div class="v5-msg-b v5-reco-chat"><h4>${escapeHtml(titulo)}</h4><ol></ol></div>`;
+  const ol = card.querySelector("ol");
+  items.forEach((it, i) => {
+    const li = document.createElement("li");
+    li.innerHTML = `<button type="button"><span class="n">${i + 1}</span><span class="tx"><b>${escapeHtml(it.nombre)}</b>` +
+      `${it.sub ? `<small>${escapeHtml(it.sub)}</small>` : ""}</span>${it.id ? CHEVRON : ""}</button>`;
+    const btn = li.querySelector("button");
+    if (it.id) btn.addEventListener("click", () => abrirSugerencia(it));
+    else btn.disabled = true;
+    ol.appendChild(li);
+  });
   chatLog.appendChild(card);
   card.scrollIntoView({ behavior: "smooth", block: "end" });
+}
+
+async function abrirSugerencia(it) {
+  try {
+    if (it.tipo === "evento") {
+      const ev = await apiGet(`/tourism/events/${encodeURIComponent(it.id)}`);
+      openDetail(ev, CATS.find((x) => x.id === "eventos"));
+    } else {
+      const r = await apiGet(`/tourism/resources/${encodeURIComponent(it.id)}`);
+      const cat = CATS.find((c) => (c.res || []).includes(r.categoria)) || null;
+      openDetail(r, cat);
+    }
+  } catch { /* sin conexión: se queda en el chat */ }
 }
 
 $("#plan-route-btn").addEventListener("click", async () => {
   tele.registrar("ruta_planificada", { seccion: "chatbot" });
   const t = dict();
-  const pensando = burbuja(t["rutas.loading"] || "Calculando…", false);
+  const pensando = burbuja(t["rutas.loading"] || "Calculando…", false, true);
   try {
     const res = await fetch(`${API_BASE}/rutas/planificar`, {
       method: "POST",
@@ -2004,7 +2068,7 @@ $("#plan-route-btn").addEventListener("click", async () => {
     const km = (data.distancia_total_m / 1000).toFixed(1);
     pensando.textContent = `${t["rutas.distancia"] || "Distancia"}: ${km} km · ${t["rutas.duracion"] || "Duración"}: ${data.duracion_desplazamiento_min} min`;
     recoCard(t["rutas.plan"] || "Ruta sugerida",
-      data.paradas.map((p) => `<li><strong>${p.orden}. ${escapeHtml(p.nombre)}</strong><span class="planner-cat">${escapeHtml(tagLabel(p.categoria))}</span></li>`).join(""));
+      data.paradas.map((p) => ({ id: p.id, tipo: "recurso", nombre: p.nombre, sub: `${tagLabel(p.categoria)} · ${fmtDistancia(p.distancia_acumulada_m / 1000)}` })));
   } catch { pensando.textContent = t["rutas.empty"] || "No hay propuestas disponibles."; }
   resetIdle();
 });
@@ -2012,7 +2076,7 @@ $("#plan-route-btn").addEventListener("click", async () => {
 $("#recommend-btn").addEventListener("click", async () => {
   tele.registrar("recomendaciones", { seccion: "chatbot" });
   const t = dict();
-  const pensando = burbuja(t["rutas.loading"] || "Calculando…", false);
+  const pensando = burbuja(t["rutas.loading"] || "Calculando…", false, true);
   try {
     const res = await fetch(`${API_BASE}/rutas/recomendaciones?idioma=${currentLang}`);
     if (!res.ok) throw new Error("no disponible");
@@ -2020,13 +2084,13 @@ $("#recommend-btn").addEventListener("click", async () => {
     pensando.textContent = t["rutas.recomend"] || "¿Qué visitar hoy?";
     if (data.eventos?.length) {
       recoCard(t["rutas.eventos"] || "Eventos próximos", data.eventos.map((e) => {
-        const f = e.fecha_inicio ? new Date(e.fecha_inicio).toLocaleDateString(currentLang, { day: "2-digit", month: "short" }) : "";
-        return `<li><strong>${escapeHtml(e.nombre)}</strong><span class="planner-cat">${escapeHtml(f)}</span></li>`;
-      }).join(""));
+        const f = e.fecha_inicio ? new Date(e.fecha_inicio).toLocaleDateString(currentLang, { weekday: "short", day: "numeric", month: "short" }) : "";
+        return { id: e.id, tipo: "evento", nombre: e.nombre, sub: [f, e.direccion].filter(Boolean).join(" · ") };
+      }));
     }
     if (data.recursos?.length) {
       recoCard(t["rutas.recursos"] || "Lugares recomendados", data.recursos.map((r) =>
-        `<li><strong>${escapeHtml(r.nombre)}</strong><span class="planner-cat">${escapeHtml(tagLabel(r.categoria))}</span></li>`).join(""));
+        ({ id: r.id, tipo: "recurso", nombre: r.nombre, sub: [tagLabel(r.categoria), r.motivo].filter(Boolean).join(" · ") })));
     }
     if (!data.eventos?.length && !data.recursos?.length) pensando.textContent = t["rutas.empty"] || "Sin recomendaciones ahora mismo.";
   } catch { pensando.textContent = t["rutas.empty"] || "Sin recomendaciones ahora mismo."; }

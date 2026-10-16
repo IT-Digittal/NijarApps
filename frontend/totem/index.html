@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Fira+Sans:wght@400;500;600;700;800&family=Dancing+Script:wght@500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./assets/totem.css?v=25" />
-  <link rel="stylesheet" href="./assets/totem-v5.css?v=2" />
+  <link rel="stylesheet" href="./assets/totem-v5.css?v=3" />
 </head>
 <!--
   Interfaz de los tótems digitales interactivos (actuación A.1 · Exp. 18962/2025).
@@ -221,46 +221,38 @@
 
   <!-- ================= VISTA: ASISTENTE IA ================= -->
   <section class="tt-view" id="view-chat" hidden aria-label="Asistente">
-    <div class="tt-listhead tt-wrap">
-      <button class="tt-back" data-back data-i18n-aria="a11y.volver" aria-label="Volver al inicio">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
-      </button>
-      <div class="tt-listhead-txt">
-        <div class="k" data-i18n="chat.badge">CHATBOT · 4 IDIOMAS</div>
-        <h2 data-i18n="chat.title">Asistente IA</h2>
+    <div class="v5-subhero v5-subhero--chat">
+      <button class="v5-volver" data-back data-i18n-aria="a11y.volver" aria-label="Volver al inicio"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <p class="v5-miga"><span data-i18n="v5.inicio">Inicio</span> · <span data-i18n="chat.title">Asistente IA</span></p>
+      <h2 data-i18n="chat.title">Asistente IA</h2>
+      <p class="v5-subhero-s" data-i18n="v5.ia_guia">Tu guía personal del destino</p>
+      <div class="v5-chat-estado">
+        <span class="v5-chat-online"><span class="dot" aria-hidden="true"></span><span data-i18n="chat.online">En línea</span></span>
+        <span class="v5-chat-online"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3 12h18M12 3a14 14 0 010 18M12 3a14 14 0 000 18" fill="none" stroke="currentColor" stroke-width="1.6"/></svg><span data-i18n="v5.idiomas4">Disponible en 4 idiomas</span></span>
       </div>
+      <span class="v5-chat-robot" aria-hidden="true"><svg viewBox="0 0 48 48" aria-hidden="true"><rect x="9" y="14" width="30" height="24" rx="9" fill="#2C7BD6"/><rect x="13" y="19" width="22" height="14" rx="7" fill="#fff"/><circle cx="19" cy="26" r="2.6" fill="#0B2B57"/><circle cx="29" cy="26" r="2.6" fill="#0B2B57"/><path d="M24 14V8" stroke="#2C7BD6" stroke-width="3" stroke-linecap="round"/><circle cx="24" cy="7" r="3" fill="#E8742B"/><rect x="4" y="22" width="5" height="10" rx="2.5" fill="#2C7BD6"/><rect x="39" y="22" width="5" height="10" rx="2.5" fill="#2C7BD6"/><path d="M20 31.5h8" stroke="#0B2B57" stroke-width="2" stroke-linecap="round"/></svg></span>
     </div>
-
-    <div class="tt-chatcard tt-wrap">
-      <span class="tt-chatcard-ico" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a8 8 0 01-8 8H4l3-3a8 8 0 1114-5z"/><path d="M8.5 11h.01M12 11h.01M15.5 11h.01"/></svg>
-      </span>
-      <div class="tt-chatcard-txt">
-        <small data-i18n="chat.marca">VIVE NÍJAR</small>
-        <strong data-i18n="chat.guia">Tu guía personal</strong>
-      </div>
-      <span class="tt-chatcard-online"><span class="dot" aria-hidden="true"></span><span data-i18n="chat.online">En línea</span></span>
+    <div class="v5-body v5-chat">
+      <article class="v5-card v5-chat-card">
+        <div class="v5-chat-log" id="chat-log" aria-live="polite"></div>
+        <div class="v5-chat-sug" role="group" aria-label="Sugerencias">
+          <button class="v5-chip" type="button" id="recommend-btn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z" fill="#F5B731"/></svg><span data-i18n="rutas.recomend">¿Qué visitar hoy?</span></button>
+          <button class="v5-chip" type="button" data-pregunta="v5.q_playas"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 15c3-3 6-3 9 0s6 3 9 0M2 19c3-3 6-3 9 0s6 3 9 0M7 10c2-4 7-5 10-2" fill="none" stroke="#1F8FD0" stroke-width="2" stroke-linecap="round"/></svg><span data-i18n="v5.mejores_playas">Mejores playas</span></button>
+          <button class="v5-chip" type="button" id="plan-route-btn"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="13" cy="4" r="2" fill="#2E8B57"/><path d="M10 21l2-6 3 3v3M9 12l2-4 4 2 2 3M11 8l-2 5" fill="none" stroke="#2E8B57" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="v5.ruta_cercana">Ruta cercana</span></button>
+          <button class="v5-chip" type="button" data-pregunta="v5.q_comer"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3v8a3 3 0 006 0V3M10 3v18M18 3c-3 2-3 7-3 10h3v8" fill="none" stroke="#B5703F" stroke-width="2" stroke-linecap="round"/></svg><span data-i18n="v5.donde_comer">Dónde comer</span></button>
+          <button class="v5-chip" type="button" data-pregunta="v5.q_agenda"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3" fill="none" stroke="#D13C36" stroke-width="2"/><path d="M3 10h18M8 3v4M16 3v4" stroke="#D13C36" stroke-width="2" stroke-linecap="round"/></svg><span data-i18n="v5.agenda_semana">Agenda de la semana</span></button>
+          <button class="v5-chip" type="button" data-pregunta="v5.q_moverse"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="14" rx="3" fill="none" stroke="#7C4FC4" stroke-width="2"/><path d="M4 10h16M7 21v-4M17 21v-4" stroke="#7C4FC4" stroke-width="2" stroke-linecap="round"/><circle cx="8" cy="13.5" r="1" fill="#7C4FC4"/><circle cx="16" cy="13.5" r="1" fill="#7C4FC4"/></svg><span data-i18n="v5.moverse">Cómo moverse</span></button>
+        </div>
+        <form class="v5-chat-form" id="chatbot-form" novalidate>
+          <button type="button" class="v5-chat-mic is-hidden" id="chatbot-voice" aria-pressed="false" data-i18n-aria="chatbot.voice_aria" aria-label="Preguntar con la voz"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="2" width="6" height="12" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M5 10a7 7 0 0014 0M12 17v5" fill="none" stroke="currentColor" stroke-width="2"/></svg></button>
+          <label for="chatbot-input" class="sr-only" data-i18n="chatbot.label">Escribe tu pregunta</label>
+          <input id="chatbot-input" type="text" autocomplete="off" data-i18n-placeholder="v5.ia_placeholder" placeholder="Escribe tu pregunta…" />
+          <button type="button" class="v5-chat-speak is-hidden" id="chatbot-speak" data-i18n-aria="chatbot.speak_aria" aria-label="Repetir en voz alta"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5L6 9H2v6h4l5 4z" fill="currentColor"/><path d="M15.5 8.5a5 5 0 010 7M18.5 5.5a9 9 0 010 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+          <button type="submit" class="v5-ia-send" data-i18n-aria="chatbot.send" aria-label="Enviar pregunta"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        </form>
+        <p class="v5-chat-nota" data-i18n="v5.chat_nota">Respuestas basadas en la información oficial del destino. Pulsa el micrófono para preguntar con la voz.</p>
+      </article>
     </div>
-
-    <div class="tt-chat-scroll tt-wrap" id="chat-log" aria-live="polite"></div>
-
-    <div class="tt-chat-chips tt-wrap">
-      <button class="tt-chip" type="button" id="plan-route-btn" data-i18n="rutas.plan">Sugerir ruta cercana</button>
-      <button class="tt-chip" type="button" id="recommend-btn" data-i18n="rutas.recomend">¿Qué visitar hoy?</button>
-      <button class="tt-chip tt-chip--ico is-hidden" type="button" id="chatbot-speak" data-i18n-aria="chatbot.speak_aria" aria-label="Repetir en voz alta"><svg class="tt-svg tt-svg--tag" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5L6 9H2v6h4l5 4V5z" fill="#0B2B57"/><path d="M15.5 8.5a5 5 0 010 7M18 6a8.5 8.5 0 010 12" stroke="#E0912F" stroke-width="2" fill="none" stroke-linecap="round"/></svg></button>
-    </div>
-
-    <form class="tt-chat-inputbar tt-wrap" id="chatbot-form" novalidate>
-      <label for="chatbot-input" class="sr-only" data-i18n="chatbot.label">Escribe tu pregunta</label>
-      <input id="chatbot-input" type="text" autocomplete="off"
-             data-i18n-placeholder="chatbot.placeholder" placeholder="Escribe tu pregunta…" />
-      <button type="button" class="tt-chat-mic is-hidden" id="chatbot-voice" aria-pressed="false" data-i18n-aria="chatbot.voice_aria" aria-label="Preguntar con la voz">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0014 0M12 17v5"/></svg>
-      </button>
-      <button type="submit" class="tt-chat-send" data-i18n-aria="chatbot.send" aria-label="Enviar pregunta">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
-      </button>
-    </form>
     <output id="chatbot-output" class="sr-only" aria-live="polite"></output>
     <div id="planner-output" class="sr-only" aria-hidden="true"></div>
   </section>
@@ -456,6 +448,6 @@
 </dialog>
 
 <script src="./assets/vendor/qrcode-generator-1.4.4.js"></script>
-<script type="module" src="./assets/totem.js?v=33"></script>
+<script type="module" src="./assets/totem.js?v=34"></script>
 </body>
 </html>
