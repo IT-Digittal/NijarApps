@@ -9,7 +9,7 @@
  * - Inactividad >60 s: vuelve al inicio en español (modo público).
  */
 
-import { I18N, translateAll } from "./i18n.js?v=28";
+import { I18N, translateAll } from "./i18n.js?v=29";
 import { DEMO_RESOURCES, answerChatbotDemo } from "./demo-data.js";
 
 // ============================================================
@@ -245,6 +245,11 @@ function applyLanguage(lang) {
   const listaVisible = !document.getElementById("view-list").hidden;
   tele.callar(true); /* repintado, no una acción nueva del visitante */
   if (currentCat && listaVisible) abrirCategoria(currentCat, currentChip);
+  if (!document.getElementById("view-avisos").hidden) abrirAvisos();
+  if (!document.getElementById("view-map").hidden && mapa.recursos.length) {
+    pintarChipsMapa();
+    if (mapa.sel) mostrarSheet(mapa.sel.r, mapa.sel, true);
+  }
   // Repintar la ficha abierta con el nuevo idioma (título, descripción, servicios, etiquetas…)
   if (dialog?.open && currentPoi) openDetail(currentPoi, currentPoiCat);
   tele.callar(false);
@@ -715,14 +720,30 @@ function abrirAvisos() {
   const lista = $("#avisos-lista");
   const avisos = (avisosCms || []).map((a) => ({
     titulo: (a.titulo_i18n && a.titulo_i18n[currentLang]) || a.titulo,
-    texto: stripHtml((a.contenido_i18n && a.contenido_i18n[currentLang]) || a.contenido || a.resumen || ""),
+    texto: stripHtml((a.cuerpo_i18n && a.cuerpo_i18n[currentLang]) || a.cuerpo || a.contenido || a.resumen || ""),
+    hasta: a.publicar_hasta ? new Date(a.publicar_hasta) : null,
   })).filter((a) => a.titulo);
-  const campana = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 17V11a6 6 0 0112 0v6l2 2H4z" fill="#F5A623"/><path d="M10 21h4" stroke="#F5A623" stroke-width="2" stroke-linecap="round"/></svg>';
+  const campana = '<span class="v5-aviso-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 17V11a6 6 0 0112 0v6l2 2H4z" fill="#fff"/><path d="M10 21h4" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg></span>';
+  const hasta = (d) => d && !isNaN(d) ? `<small class="v5-aviso-f">${escapeHtml((t["v5.vigente_hasta"] || "Vigente hasta el {f}").replace("{f}", d.toLocaleDateString(currentLang, { day: "numeric", month: "long" })))}</small>` : "";
   lista.innerHTML = avisos.length
-    ? avisos.map((a) => `<div class="v5-aviso">${campana}<div><strong>${escapeHtml(a.titulo)}</strong>${a.texto ? `<p>${escapeHtml(a.texto)}</p>` : ""}</div></div>`).join("")
+    ? avisos.map((a) => `<div class="v5-aviso">${campana}<div><strong>${escapeHtml(a.titulo)}</strong>${a.texto ? `<p>${escapeHtml(a.texto)}</p>` : ""}${hasta(a.hasta)}</div></div>`).join("")
     : `<div class="v5-vacio">${escapeHtml(t["v5.sin_avisos"] || "No hay avisos activos en este momento.")}</div>`;
   renderEmergencies($("#avisos-emergencias"));
+  pintarInfoTuristica();
   showView("view-avisos");
+}
+
+/* Oficinas de turismo y centros de visitantes (recursos publicados), por cercanía */
+const CAT_INFO = { id: "info", label: "v5.g_info", th: "th-servicio", res: ["oficina_turismo", "centro_visitantes"] };
+async function pintarInfoTuristica() {
+  const grid = $("#avisos-info");
+  let items = [];
+  try {
+    const d = await apiGet("/tourism/resources?publicado=true&page_size=200");
+    items = porCercania((d.items || []).filter((r) => CAT_INFO.res.includes(r.categoria)));
+  } catch { /* sin conexión: la sección queda oculta */ }
+  grid.hidden = $("#avisos-info-t").hidden = !items.length;
+  if (items.length) renderItems(grid, items, CAT_INFO);
 }
 
 /* Asistente desde la home: abre el chat y lanza la pregunta */
@@ -1402,13 +1423,15 @@ function renderEmergencies(grid) {
     { titulo: "Health Centre Níjar", numero: "+34 950 38 12 50", desc: "Medical care" },
     { titulo: "Police (Guardia Civil)", numero: "062", desc: "Public safety" },
   ];
+  const ico = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 3h5v6.5H21v5h-6.5V21h-5v-6.5H3v-5h6.5z" fill="#fff"/></svg>';
+  const tel = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.6 10.8a15 15 0 006.6 6.6l2.2-2.2a1 1 0 011-.25 11.4 11.4 0 003.6.57 1 1 0 011 1V20a1 1 0 01-1 1A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 1c0 1.25.2 2.45.57 3.6a1 1 0 01-.25 1z" fill="currentColor"/></svg>';
   grid.innerHTML = items.map((it) => `
-    <div class="tt-item emergency-card" role="region" aria-label="${escapeHtml(it.titulo)}">
-      <span class="tt-thumb th-servicio" aria-hidden="true" style="display:grid;place-items:center">${icono("emergencias", "tt-svg--xl")}</span>
-      <span class="tt-item-body">
-        <h3>${escapeHtml(it.titulo)}</h3>
-        <p class="emergency-number">${escapeHtml(it.numero)}</p>
-        <span class="tt-item-sub">${escapeHtml(it.desc)}</span>
+    <div class="v5-emerg-card" role="group" aria-label="${escapeAttr(it.titulo)}">
+      <span class="v5-emerg-ico">${ico}</span>
+      <span class="v5-emerg-txt">
+        <strong>${escapeHtml(it.titulo)}</strong>
+        <span class="emergency-number">${tel}${escapeHtml(it.numero)}</span>
+        <small>${escapeHtml(it.desc)}</small>
       </span>
     </div>`).join("");
 }
@@ -1724,7 +1747,66 @@ function cargarLeaflet() {
   });
 }
 
-const COLOR_CAT = { playa: "#17B8C4", ruta: "#1E9E6E", monumento: "#7C6BF0", mirador: "#F5C518", parque_natural: "#2E7D4F", museo: "#E2572B", yacimiento: "#A66B2E" };
+/* Grupos del mapa: cada categoría de recurso cae en un grupo con color e icono propios */
+const GRUPOS_MAPA = [
+  { id: "playas", label: "cat.playas_calas", color: "#1F8FD0", cats: ["playa"],
+    ico: '<path d="M3 14c2.5-2.5 5-2.5 7.5 0s5 2.5 7.5 0M3 18c2.5-2.5 5-2.5 7.5 0s5 2.5 7.5 0" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/><circle cx="15" cy="7" r="2.6" fill="#fff"/>' },
+  { id: "naturaleza", label: "cat.naturaleza", color: "#2E8B57", cats: ["parque_natural", "mirador"],
+    ico: '<path d="M18 4C10 4 6 8.5 6 15c0 1.8.4 2.8 1.3 3.7C15 18.7 19 12.5 18 4z" fill="#fff"/><path d="M7.5 18.5c2-4 5-7 8-9" stroke="#2E8B57" stroke-width="1.6" fill="none" stroke-linecap="round"/>' },
+  { id: "rutas", label: "cat.rutas_senderos", color: "#E8742B", cats: ["ruta"],
+    ico: '<circle cx="13" cy="4.5" r="2" fill="#fff"/><path d="M10 20l2-5.5 3 3V20M9 12l2-4 4 2 2 3M11 8l-2 5" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>' },
+  { id: "patrimonio", label: "v5.g_patrimonio", color: "#7C4FC4", cats: ["monumento", "yacimiento", "museo"],
+    ico: '<path d="M4 19h16M6 19v-8h12v8M4 11l8-6 8 6M10 19v-4h4v4" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"/>' },
+  { id: "interes", label: "v5.g_interes", color: "#155E8C", cats: ["punto_interes"],
+    ico: '<path d="M12 3.5l2.5 5.2 5.6.8-4 4 1 5.6-5.1-2.7-5.1 2.7 1-5.6-4-4 5.6-.8z" fill="#fff"/>' },
+  { id: "info", label: "v5.g_info", color: "#C2541A", cats: ["centro_visitantes", "oficina_turismo"],
+    ico: '<circle cx="12" cy="6.5" r="1.9" fill="#fff"/><path d="M12 10.5v8" stroke="#fff" stroke-width="2.8" stroke-linecap="round"/>' },
+];
+const GRUPO_OTROS = { id: "otros", label: "v5.g_otros", color: "#0B2B57", cats: [], ico: '<circle cx="12" cy="12" r="4" fill="#fff"/>' };
+const grupoDe = (cat) => GRUPOS_MAPA.find((g) => g.cats.includes(cat)) || GRUPO_OTROS;
+
+const mapa = { recursos: [], marcas: [], filtro: "todas", sel: null, aqui: null };
+
+function iconoPin(L, g, activo) {
+  const w = activo ? 58 : 44, h = Math.round(w * 1.3);
+  return L.divIcon({
+    className: "v5-mpin" + (activo ? " is-sel" : ""), iconSize: [w, h], iconAnchor: [w / 2, h - 2],
+    html: `<svg viewBox="0 0 24 31" width="${w}" height="${h}" aria-hidden="true"><path d="M12 30s11-10.4 11-18.2A11 11 0 001 11.8C1 19.6 12 30 12 30z" fill="${g.color}" stroke="#fff" stroke-width="1.8"/><g transform="translate(4.2 4) scale(.65)">${g.ico}</g></svg>`,
+  });
+}
+
+function pintarChipsMapa() {
+  const t = dict();
+  const cuenta = {};
+  mapa.recursos.forEach((r) => { const g = grupoDe(r.categoria).id; cuenta[g] = (cuenta[g] || 0) + 1; });
+  const grupos = [...GRUPOS_MAPA, GRUPO_OTROS].filter((g) => cuenta[g.id]);
+  const chip = (id, label, n, color) =>
+    `<button class="v5-fchip" data-mchip="${id}" aria-pressed="${mapa.filtro === id}">` +
+    (color ? `<span class="v5-mdot" style="background:${color}" aria-hidden="true"></span>` : iconoChip("rejilla")) +
+    `<span>${escapeHtml(label)}</span><small>${n}</small></button>`;
+  const wrap = $("#map-chips");
+  wrap.innerHTML = chip("todas", t["chips.todas"] || "Todas", mapa.recursos.length) +
+    grupos.map((g) => chip(g.id, t[g.label] || capitalize(g.id), cuenta[g.id], g.color)).join("");
+  wrap.querySelectorAll("[data-mchip]").forEach((b) => b.addEventListener("click", () => {
+    mapa.filtro = b.dataset.mchip;
+    tele.registrar("mapa", { seccion: "mapa", detalle: "filtro " + mapa.filtro });
+    pintarChipsMapa();
+    filtrarMapa(true);
+    resetIdle();
+  }));
+}
+
+function filtrarMapa(encuadrar) {
+  const L = window.L;
+  const visibles = [];
+  mapa.marcas.forEach(({ r, m, ll }) => {
+    const ver = mapa.filtro === "todas" || grupoDe(r.categoria).id === mapa.filtro;
+    if (ver) { if (!mapaLeaflet.hasLayer(m)) m.addTo(mapaLeaflet); visibles.push(ll); }
+    else if (mapaLeaflet.hasLayer(m)) m.remove();
+  });
+  if (mapa.sel && !mapaLeaflet.hasLayer(mapa.sel.m)) cerrarSheet();
+  if (encuadrar && visibles.length) mapaLeaflet.fitBounds(L.latLngBounds(visibles).pad(0.12), { maxZoom: 14 });
+}
 
 async function abrirMapa(centro) {
   tele.registrar("mapa", { seccion: "mapa", detalle: Array.isArray(centro) ? "desde una ficha" : null });
@@ -1736,48 +1818,94 @@ async function abrirMapa(centro) {
     ]);
     const cont = $("#totem-map");
     if (!mapaLeaflet) {
-      mapaLeaflet = L.map(cont, { zoomControl: true }).setView([36.82, -2.1], 11);
+      mapaLeaflet = L.map(cont, { zoomControl: false, tap: false }).setView([36.85, -2.11], 11);
       mapaLeaflet.attributionControl.setPrefix(false); /* el prefijo «Leaflet» es un enlace externo */
       L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 17, attribution: "&copy; OpenStreetMap" }).addTo(mapaLeaflet);
-      const pts = [];
-      recursos.forEach((r) => {
+      /* Núcleos de población como referencia */
+      NUCLEOS_MAPA.forEach(([nombre, lat, lon]) =>
+        L.marker([lat, lon], { interactive: false, keyboard: false, zIndexOffset: -1000, icon: L.divIcon({ className: "v5-mnucleo", iconSize: null, html: `<span>${escapeHtml(nombre)}</span>` }) }).addTo(mapaLeaflet));
+      /* El tótem: «Estás aquí» */
+      mapa.aqui = L.marker([TOTEM_LAT, TOTEM_LON], {
+        interactive: false, keyboard: false, zIndexOffset: 1000,
+        icon: L.divIcon({ className: "v5-maqui", iconSize: [34, 34], iconAnchor: [17, 17], html: '<span class="pulso"></span><span class="punto"></span>' }),
+      }).addTo(mapaLeaflet);
+      mapa.recursos = recursos.filter((r) => extractLatLon(r));
+      mapa.marcas = mapa.recursos.map((r) => {
         const ll = extractLatLon(r);
-        if (!ll) return;
-        pts.push(ll);
-        L.circleMarker(ll, {
-          radius: 11, weight: 3, color: "#fff",
-          fillColor: COLOR_CAT[r.categoria] || "#0E3A78", fillOpacity: 1,
-        }).on("click", () => mostrarSheet(r)).addTo(mapaLeaflet);
+        const m = L.marker(ll, { icon: iconoPin(L, grupoDe(r.categoria), false), title: r.nombre_i18n?.[currentLang] || r.nombre, riseOnHover: true });
+        const marca = { r, m, ll };
+        m.on("click", () => mostrarSheet(r, marca));
+        m.addTo(mapaLeaflet);
+        return marca;
       });
-      if (pts.length) mapaLeaflet.fitBounds(L.latLngBounds(pts).pad(0.15));
+      $("#map-zoom-in").onclick = () => { mapaLeaflet.zoomIn(); resetIdle(); };
+      $("#map-zoom-out").onclick = () => { mapaLeaflet.zoomOut(); resetIdle(); };
+      $("#map-aqui").onclick = () => { mapaLeaflet.setView([TOTEM_LAT, TOTEM_LON], 14); resetIdle(); };
+      pintarChipsMapa();
+      filtrarMapa(true);
     }
-    setTimeout(() => mapaLeaflet.invalidateSize(), 120);
-    if (Array.isArray(centro)) mapaLeaflet.setView(centro, 14);
+    setTimeout(() => {
+      mapaLeaflet.invalidateSize();
+      if (Array.isArray(centro)) {
+        mapaLeaflet.setView(centro, 15);
+        const marca = mapa.marcas.find((x) => Math.abs(x.ll[0] - centro[0]) < 1e-6 && Math.abs(x.ll[1] - centro[1]) < 1e-6);
+        if (marca) {
+          if (!mapaLeaflet.hasLayer(marca.m)) { mapa.filtro = "todas"; pintarChipsMapa(); filtrarMapa(false); }
+          mostrarSheet(marca.r, marca, true);
+        }
+      }
+    }, 120);
   } catch {
     $("#totem-map").innerHTML = `<p class="content-loading">${dict()["empty.contenido"] || "Mapa no disponible sin conexión"}</p>`;
   }
   resetIdle();
 }
 
-function mostrarSheet(r) {
-  tele.registrar("mapa_punto", { seccion: "mapa", contenido_id: r.id != null ? String(r.id) : null, contenido: r.nombre });
+function cerrarSheet() {
+  if (mapa.sel) mapa.sel.m.setIcon(iconoPin(window.L, grupoDe(mapa.sel.r.categoria), false));
+  mapa.sel = null;
+  const sheet = $("#map-sheet");
+  if (sheet) sheet.hidden = true;
+}
+
+function mostrarSheet(r, marca, silencioso) {
+  if (!silencioso) tele.registrar("mapa_punto", { seccion: "mapa", contenido_id: r.id != null ? String(r.id) : null, contenido: r.nombre });
   const t = dict();
+  if (mapa.sel) mapa.sel.m.setIcon(iconoPin(window.L, grupoDe(mapa.sel.r.categoria), false));
+  if (marca) { marca.m.setIcon(iconoPin(window.L, grupoDe(r.categoria), true)); mapa.sel = marca; }
+  const g = grupoDe(r.categoria);
   const nombre = r.nombre_i18n?.[currentLang] || r.nombre;
+  const ll = extractLatLon(r);
+  const img = primeraImagen(r);
+  const lugar = [r.direccion, r.municipio].filter(Boolean).join(", ");
+  const dist = ll ? fmtDistancia(haversineKm(ll[0], ll[1])) : "";
   const sheet = $("#map-sheet");
   sheet.innerHTML = `
-    <span class="tt-tag tt-tag--warn">${escapeHtml(tagLabel(r.categoria || ""))}</span>
-    <h3>${escapeHtml(nombre)}</h3>
-    <span class="tt-item-sub">${escapeHtml(r.municipio || "")}${r.direccion ? " · " + escapeHtml(r.direccion) : ""}</span>
-    <div class="tt-mapsheet-actions">
-      <button class="tt-cta" id="sheet-ficha">→ ${escapeHtml(t["map.verficha"] || "Ver ficha")}</button>
-      <button class="tt-cta tt-cta--ghost" id="sheet-cerrar">✕</button>
-    </div>`;
-  sheet.classList.remove("is-hidden");
+    <span class="v5-msheet-img" style="background-color:${g.color};${img ? `background-image:url('${escapeAttr(img.replace(/'/g, "%27"))}')` : ""}" aria-hidden="true">${img ? "" : `<svg viewBox="0 0 24 24">${g.ico}</svg>`}</span>
+    <div class="v5-msheet-txt">
+      <span class="v5-msheet-tag" style="--c:${g.color}">${escapeHtml(tagLabel(r.categoria || ""))}</span>
+      <h3>${escapeHtml(nombre)}</h3>
+      ${lugar ? `<p class="v5-ico-l">${ICO_PIN}${escapeHtml(lugar)}</p>` : ""}
+      ${dist ? `<p class="v5-msheet-dist">${escapeHtml((t["v5.a_de_aqui"] || "A {d} de aquí").replace("{d}", dist))}</p>` : ""}
+      <div class="v5-msheet-acc">
+        <button class="v5-boton v5-boton--solid" id="sheet-ficha">${escapeHtml(t["map.verficha"] || "Ver ficha")}${CHEVRON}</button>
+        ${ll ? `<button class="v5-boton" id="sheet-llegar">${svgDe('<path d="M3 11l18-8-8 18-2-8z" fill="#0B2B57"/>')}${escapeHtml(t["cta.como_llegar"] || "Cómo llegar")}</button>` : ""}
+      </div>
+    </div>
+    <button class="v5-msheet-x" id="sheet-cerrar" aria-label="${escapeAttr(t["a11y.cerrar"] || "Cerrar")}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg></button>`;
+  sheet.hidden = false;
   $("#sheet-ficha").addEventListener("click", () => {
     const c = CATS.find((x) => (x.res || []).includes(r.categoria)) || CATS[0];
     openDetail(r, c);
   });
-  $("#sheet-cerrar").addEventListener("click", () => sheet.classList.add("is-hidden"));
+  $("#sheet-llegar")?.addEventListener("click", () =>
+    mostrarQR(`https://www.google.com/maps/dir/?api=1&destination=${ll[0]},${ll[1]}`, (t["cta.como_llegar"] || "Cómo llegar") + " · " + nombre));
+  $("#sheet-cerrar").addEventListener("click", cerrarSheet);
+  /* Centra el punto en la parte visible, por encima de la ficha */
+  if (ll) {
+    const z = mapaLeaflet.getZoom();
+    mapaLeaflet.panTo(mapaLeaflet.unproject(mapaLeaflet.project(ll, z).add([0, sheet.offsetHeight / 2]), z), { animate: true });
+  }
   resetIdle();
 }
 
@@ -2103,7 +2231,7 @@ $("#recommend-btn").addEventListener("click", async () => {
 function goToIdleState() {
   tele.finSesion(); /* el siguiente visitante será otra sesión */
   if (dialog.open) dialog.close();
-  $("#map-sheet").classList.add("is-hidden");
+  cerrarSheet();
   currentCat = null;
   currentChip = "todas";
   lastAnswer = "";

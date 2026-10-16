@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Fira+Sans:wght@400;500;600;700;800&family=Dancing+Script:wght@500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./assets/totem.css?v=25" />
-  <link rel="stylesheet" href="./assets/totem-v5.css?v=3" />
+  <link rel="stylesheet" href="./assets/totem-v5.css?v=4" />
 </head>
 <!--
   Interfaz de los tótems digitales interactivos (actuación A.1 · Exp. 18962/2025).
@@ -259,20 +259,31 @@
 
   <!-- ================= VISTA: MAPA DEL DESTINO ================= -->
   <section class="tt-view" id="view-map" hidden aria-label="Mapa">
-    <div class="tt-subhead">
-      <button class="tt-back" data-back data-i18n-aria="a11y.volver" aria-label="Volver al inicio">←</button>
-      <div class="tt-subhead-txt">
-        <small><span data-i18n="nav.inicio">INICIO</span> · <span data-i18n="nav.explorar">EXPLORAR</span></small>
-        <h2 data-i18n="map.title">Mapa del destino</h2>
+    <div class="v5-subhero v5-subhero--lista v5-subhero--mapa">
+      <button class="v5-volver" data-back data-i18n-aria="a11y.volver" aria-label="Volver al inicio"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <p class="v5-miga"><span data-i18n="v5.inicio">Inicio</span> · <span data-i18n="v5.mapa">Mapa</span></p>
+      <h2 data-i18n="map.title">Mapa del destino</h2>
+      <p class="v5-subhero-s" data-i18n="v5.mapa_s">Descubre todos los rincones de Níjar</p>
+      <p class="v5-script v5-subhero-lema" data-i18n="v5.mapa_lema" aria-hidden="true">Explora a tu ritmo</p>
+    </div>
+    <div class="v5-body v5-mapa">
+      <div class="v5-chips v5-mapa-chips" id="map-chips" role="group" data-i18n-aria="v5.mapa_filtrar" aria-label="Filtrar el mapa"></div>
+      <div class="v5-mapa-card">
+        <div class="v5-mapa-box" id="totem-map" role="application" aria-label="Mapa interactivo del destino"></div>
+        <div class="v5-mapa-ctrl">
+          <button class="v5-mapa-btn" id="map-zoom-in" data-i18n-aria="v5.acercar" aria-label="Acercar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"/></svg></button>
+          <button class="v5-mapa-btn" id="map-zoom-out" data-i18n-aria="v5.alejar" aria-label="Alejar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"/></svg></button>
+          <button class="v5-mapa-btn v5-mapa-btn--aqui" id="map-aqui"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="currentColor"/><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 1.5v3M12 19.5v3M1.5 12h3M19.5 12h3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span data-i18n="v5.estas_aqui">Estás aquí</span></button>
+        </div>
+        <div class="v5-mapa-sheet" id="map-sheet" hidden></div>
       </div>
     </div>
-    <div class="tt-mapbox" id="totem-map" role="application" aria-label="Mapa interactivo del destino"></div>
-    <div class="tt-mapsheet is-hidden" id="map-sheet"></div>
   </section>
 
   <!-- ================= VISTA: EXPLORAR (todas las categorías) ================= -->
   <section class="tt-view" id="view-explore" hidden aria-label="Explorar">
-    <div class="v5-subhero">
+    <div class="v5-subhero v5-subhero--lista">
+      <button class="v5-volver" data-back data-i18n-aria="a11y.volver" aria-label="Volver al inicio"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       <p class="v5-miga"><span data-i18n="v5.inicio">Inicio</span> · <span data-i18n="v5.explorar">Explorar</span></p>
       <h2 data-i18n="v5.explora">Explora el destino</h2>
       <p class="v5-script v5-subhero-script" data-i18n="v5.inspira">Naturaleza que te inspira</p>
@@ -284,7 +295,8 @@
 
   <!-- ================= VISTA: AVISOS (CMS + teléfonos de emergencia) ================= -->
   <section class="tt-view" id="view-avisos" hidden aria-label="Avisos">
-    <div class="v5-subhero">
+    <div class="v5-subhero v5-subhero--lista">
+      <button class="v5-volver" data-back data-i18n-aria="a11y.volver" aria-label="Volver al inicio"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       <p class="v5-miga"><span data-i18n="v5.inicio">Inicio</span> · <span data-i18n="v5.avisos">Avisos</span></p>
       <h2 data-i18n="v5.avisos_t">Avisos municipales</h2>
       <p class="v5-subhero-s" data-i18n="v5.avisos_s">Información práctica y teléfonos de emergencia</p>
@@ -292,7 +304,9 @@
     <div class="v5-body">
       <div class="v5-avisos-lista" id="avisos-lista"></div>
       <h3 class="v5-h3" data-i18n="categorias.emergencias">Emergencias</h3>
-      <div class="tt-list" id="avisos-emergencias"></div>
+      <div class="v5-emerg" id="avisos-emergencias"></div>
+      <h3 class="v5-h3" id="avisos-info-t" data-i18n="v5.g_info" hidden>Información turística</h3>
+      <div class="v5-cards" id="avisos-info" hidden></div>
     </div>
   </section>
 
@@ -448,6 +462,6 @@
 </dialog>
 
 <script src="./assets/vendor/qrcode-generator-1.4.4.js"></script>
-<script type="module" src="./assets/totem.js?v=34"></script>
+<script type="module" src="./assets/totem.js?v=35"></script>
 </body>
 </html>
