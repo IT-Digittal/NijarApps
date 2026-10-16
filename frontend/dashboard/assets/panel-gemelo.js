@@ -19,7 +19,7 @@
  * periodos (instalarOrtofotos).
  */
 
-import { api, tokens } from "./api-client.js?v=18";
+import { invalidateCache, api, tokens } from "./api-client.js?v=18";
 
 /* Base de la API para las llamadas que no son JSON (subida/descarga de ficheros) */
 const API_BASE = (typeof window !== "undefined" && window.NIJAR_API_BASE)
@@ -192,14 +192,39 @@ async function cargarCapasGeo() {
 
 /* Popup de un rasgo vectorial: cabecera con el nombre de la capa + propiedades
    temáticas (uso, calificación, referencia catastral, superficie…). */
-function popupFeature(capa, props) {
+function popupFeature(capa, props, ref, docs) {
   const filas = Object.entries(props || {})
     .filter(([k, v]) => v != null && v !== "" && !k.startsWith("_"))
     .slice(0, 10)
     .map(([k, v]) => "<div style='font-size:12px'><b>" + esc(k.replace(/_/g, " ")) + ":</b> " + esc(String(v)) + "</div>")
     .join("");
+  /* Documentos del elemento (fichas, planos, escrituras…), como en el resto de activos */
+  let adjuntos = "";
+  if (ref && ref.id) {
+    const n = (docs && docs[TIPO_DOC_ELEMENTO + "::" + ref.id]) || 0;
+    adjuntos = enlaceDocumentos(TIPO_DOC_ELEMENTO, ref.id, nombreElemento(capa, props), ref.lat, ref.lon, n);
+  }
   return "<div style='min-width:190px'><div style='font-size:10.5px;font-weight:800;letter-spacing:.06em;color:#67769A'>" +
-    esc(String(capa.nombre).toUpperCase()) + "</div>" + filas + "</div>";
+    esc(String(capa.nombre).toUpperCase()) + "</div>" + filas + adjuntos + "</div>";
+}
+
+/* Documentos de los elementos de las capas geográficas (inventario, planeamiento…) */
+const TIPO_DOC_ELEMENTO = "elemento_geo";
+
+/* «U-SI-8c · San Isidro (Residencial patrimonial)»: identificable en el listado de documentos */
+function nombreElemento(capa, props) {
+  const p = props || {};
+  const capaCorta = String(capa.nombre || "").replace(/^Inventario · /, "");
+  const base = String(p.nombre || p.codigo || "Elemento");
+  const nucleo = p["núcleo"] && !base.includes(p["núcleo"]) ? " · " + p["núcleo"] : "";
+  return base + nucleo + (capaCorta && !base.includes(capaCorta) ? " (" + capaCorta + ")" : "");
+}
+
+function enlaceDocumentos(tipo, id, nombre, lat, lon, n) {
+  return "<div style='margin-top:7px;border-top:1px solid #E3E8F2;padding-top:6px'>" +
+    "<a href='#' data-doc-tipo='" + esc(tipo) + "' data-doc-id='" + esc(id) + "' data-doc-nombre='" + esc(nombre) + "'" +
+    " data-doc-lat='" + (lat != null ? lat : "") + "' data-doc-lon='" + (lon != null ? lon : "") + "'" +
+    " style='font-size:12px;font-weight:700;color:#1F6FE5;text-decoration:none'>&#128206; Documentos (" + n + ") · gestionar &raquo;</a></div>";
 }
 
 /* Tipo de entidad (API de documentos) por capa del gemelo */
@@ -222,11 +247,7 @@ function popupActivo(capa, a, docs) {
   const tipo = TIPO_DOC_POR_CAPA[capa.id] || "otro";
   const eid = idEntidad(a);
   const n = (docs && docs[tipo + "::" + eid]) || 0;
-  const adjuntos =
-    "<div style='margin-top:7px;border-top:1px solid #E3E8F2;padding-top:6px'>" +
-    "<a href='#' data-doc-tipo='" + esc(tipo) + "' data-doc-id='" + esc(eid) + "' data-doc-nombre='" + esc(a.nombre) + "'" +
-    " data-doc-lat='" + (a.ll ? a.ll[0] : "") + "' data-doc-lon='" + (a.ll ? a.ll[1] : "") + "'" +
-    " style='font-size:12px;font-weight:700;color:#1F6FE5;text-decoration:none'>&#128206; Documentos (" + n + ") · gestionar &raquo;</a></div>";
+  const adjuntos = enlaceDocumentos(tipo, eid, a.nombre, a.ll ? a.ll[0] : null, a.ll ? a.ll[1] : null, n);
   return "<div style='min-width:190px'><div style='font-size:10.5px;font-weight:800;letter-spacing:.06em;color:#67769A'>" +
     esc(capa.nombre.toUpperCase()) + "</div><b style='font-size:14px'>" + esc(a.nombre) + "</b>" +
     "<div style='margin:4px 0'><span style='display:inline-block;width:9px;height:9px;border-radius:50%;background:" +
@@ -261,6 +282,133 @@ async function conteoDocumentos() {
     });
     return m;
   } catch { return {}; }
+}
+
+/* ================= MENÚ DE CAPAS EN ÁRBOL (2D y 3D) ================= */
+/* Las capas se agrupan en categorías padre (Smart City, Inventario de bienes,
+   Catastro…). El padre marca o desmarca todas sus capas y muestra el estado
+   mixto; con ▸ se despliegan las hijas para elegirlas una a una. Un grupo con
+   una sola capa se muestra como capa suelta. Sirve al mapa 2D (Leaflet) y a la
+   vista 3D (MapLibre): cada visor dice cómo encender/apagar cada hoja. */
+
+const GRUPOS_ARBOL = [
+  ["turismo", "Turismo"],
+  ["smart", "Smart City"],
+  ["sensores", "Sensores y medio ambiente"],
+  ["inventario", "Inventario de bienes"],
+  ["catastro", "Catastro"],
+  ["planeamiento", "Planeamiento y suelo"],
+  ["territorio", "Territorio 3D"],
+  ["otras", "Otras capas"],
+  ["mediciones", "Mediciones"],
+];
+const GRUPO_ACTIVO = {
+  turismo: "turismo", alumbrado: "smart", luminarias: "smart", residuos: "smart", movilidad: "smart",
+  seguridad: "smart", sensores: "sensores", banderas: "sensores", aire: "sensores",
+};
+function grupoDeCapaGeo(cap) {
+  return { inventario: "inventario", catastro: "catastro", planeamiento: "planeamiento", clasificacion: "planeamiento" }[cap.grupo] || "otras";
+}
+function nombreHojaGeo(cap) {
+  return String(cap.nombre || cap.codigo).replace(/^Inventario · /, "");
+}
+function muestraPunto(color) {
+  return '<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:' + esc(color) + '"></span>';
+}
+function muestraArea(borde, relleno) {
+  return '<span style="display:inline-block;width:11px;height:11px;border:1.5px solid ' + esc(borde) + ";background:" + esc(relleno) + ';opacity:.85"></span>';
+}
+
+const arbolDesplegados = new Set(); /* grupos abiertos (se conservan al recargar el mapa) */
+
+function nuevoArbol() {
+  const porGrupo = new Map();
+  return {
+    add(grupo, hoja) {
+      if (!porGrupo.has(grupo)) porGrupo.set(grupo, []);
+      porGrupo.get(grupo).push(hoja);
+    },
+    montar(caja, { base, alBase, alCambiar, maxAlto = 520 }) {
+      caja.classList.add("arbol-capas");
+      caja.style.cssText = "background:#fff;padding:8px 10px;font:13px/1.35 system-ui,sans-serif;color:#0B2B57;min-width:230px;max-width:300px;max-height:" + maxAlto + "px;overflow:auto";
+      const estado = new Map(); /* id hoja → activa */
+      porGrupo.forEach((hojas) => hojas.forEach((h) => estado.set(h.id, !!h.activa())));
+      const grupos = GRUPOS_ARBOL.filter(([g]) => porGrupo.has(g))
+        .concat([...porGrupo.keys()].filter((g) => !GRUPOS_ARBOL.some(([x]) => x === g)).map((g) => [g, g]));
+
+      const casilla = (attrs, marcada) =>
+        '<input type="checkbox" ' + attrs + (marcada ? " checked" : "") + ' style="margin:0 6px 0 0;cursor:pointer;flex:0 0 auto">';
+      const n = (x) => (x != null ? '<span style="color:#67769A;margin-left:4px">(' + x + ")</span>" : "");
+
+      function pintar() {
+        let h = "";
+        if (base && base.length) {
+          h += '<div style="padding-bottom:6px;margin-bottom:6px;border-bottom:1px solid #E3E8F2">' + base.map((b) =>
+            '<label style="display:flex;align-items:center;gap:6px;padding:2px 0;cursor:pointer"><input type="radio" name="arbol-base" data-base="' + esc(b.id) + '"' +
+            (b.activa() ? " checked" : "") + ' style="margin:0">' + esc(b.nombre) + "</label>").join("") + "</div>";
+        }
+        grupos.forEach(([g, titulo]) => {
+          const hojas = porGrupo.get(g);
+          if (hojas.length === 1) {
+            const x = hojas[0];
+            h += '<label style="display:flex;align-items:center;padding:3px 0 3px 18px;cursor:pointer">' + casilla('data-hoja="' + esc(x.id) + '"', estado.get(x.id)) +
+              '<span style="margin-right:6px;display:inline-flex">' + x.muestra + "</span>" + esc(x.nombre) + n(x.n) + "</label>";
+            return;
+          }
+          const on = hojas.filter((x) => estado.get(x.id)).length;
+          const abierto = arbolDesplegados.has(g);
+          const total = hojas.reduce((t, x) => t + (x.n || 0), 0);
+          h += '<div data-grupo="' + esc(g) + '">' +
+            '<div style="display:flex;align-items:center;padding:3px 0">' +
+            '<button type="button" data-abrir="' + esc(g) + '" aria-expanded="' + abierto + '" title="' + (abierto ? "Plegar" : "Desplegar") + '" ' +
+            'style="border:0;background:none;width:18px;padding:0;cursor:pointer;color:#67769A;font-size:11px">' + (abierto ? "▾" : "▸") + "</button>" +
+            casilla('data-padre="' + esc(g) + '"', on === hojas.length) +
+            '<b data-abrir="' + esc(g) + '" style="cursor:pointer">' + esc(titulo) + "</b>" + n(total || null) +
+            '<span style="margin-left:auto;color:#67769A;font-size:11px;padding-left:6px">' + on + "/" + hojas.length + "</span></div>" +
+            (abierto
+              ? '<div style="padding-left:30px">' + hojas.map((x) =>
+                '<label style="display:flex;align-items:center;padding:2px 0;cursor:pointer">' + casilla('data-hoja="' + esc(x.id) + '"', estado.get(x.id)) +
+                '<span style="margin-right:6px;display:inline-flex">' + x.muestra + "</span><span>" + esc(x.nombre) + n(x.n) + "</span></label>").join("") + "</div>"
+              : "") + "</div>";
+        });
+        caja.innerHTML = h;
+        /* estado mixto del padre (no se puede poner por HTML) */
+        caja.querySelectorAll("[data-padre]").forEach((c) => {
+          const hojas = porGrupo.get(c.dataset.padre);
+          const on = hojas.filter((x) => estado.get(x.id)).length;
+          c.indeterminate = on > 0 && on < hojas.length;
+          c.title = on === hojas.length ? "Desmarcar todo el grupo" : "Marcar todo el grupo";
+        });
+      }
+
+      caja.addEventListener("click", (e) => {
+        const ab = e.target.closest("[data-abrir]");
+        if (!ab) return;
+        e.preventDefault();
+        const g = ab.dataset.abrir;
+        if (arbolDesplegados.has(g)) arbolDesplegados.delete(g); else arbolDesplegados.add(g);
+        pintar();
+      });
+      caja.addEventListener("change", (e) => {
+        const t = e.target;
+        if (t.dataset.base) { alBase(t.dataset.base); return; }
+        if (t.dataset.hoja) {
+          estado.set(t.dataset.hoja, t.checked);
+          alCambiar(t.dataset.hoja, t.checked);
+        } else if (t.dataset.padre) {
+          const hojas = porGrupo.get(t.dataset.padre);
+          const todas = hojas.every((x) => estado.get(x.id));
+          hojas.forEach((x) => {
+            if (estado.get(x.id) === !todas) return;
+            estado.set(x.id, !todas);
+            alCambiar(x.id, !todas);
+          });
+        }
+        pintar();
+      });
+      pintar();
+    },
+  };
 }
 
 /* ---------------- Leaflet / MapLibre desde CDN ---------------- */
@@ -418,18 +566,22 @@ async function renderGemelo2D(el) {
     const osm = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",
       { maxZoom: 18, attribution: "&copy; OpenStreetMap" }).addTo(mapa2d);
     const ortofoto = L.tileLayer.wms(WMS.pnoa.url, WMS.pnoa.opciones);
-    const capasBase = { "Callejero (OSM)": osm, "Ortofotografía PNOA": ortofoto };
 
     /* Capa catastral (superposición conmutable): parcelario oficial del Catastro. */
     const catastro = L.tileLayer.wms(WMS.catastro.url, WMS.catastro.opciones);
 
-    const grupos = {
-      '<span style="display:inline-block;width:10px;height:10px;border:1.5px solid #C8102E;background:rgba(200,16,46,.12);margin-right:4px"></span>Catastro · WMS oficial': catastro,
+    /* Menú de capas en árbol: cada hoja es una capa Leaflet; los grupos
+       (Smart City, Inventario de bienes…) se marcan o desmarcan enteros. */
+    const arbol = nuevoArbol();
+    const capaPorHoja = {};
+    const hoja = (grupo, id, nombre, muestra, n, capaLeaflet) => {
+      capaPorHoja[id] = capaLeaflet;
+      arbol.add(grupo, { id, nombre, muestra, n, activa: () => mapa2d.hasLayer(capaLeaflet) });
     };
+    hoja("catastro", "wms-catastro", "Catastro · WMS oficial", muestraArea("#C8102E", "rgba(200,16,46,.12)"), null, catastro);
 
-    /* Capas geográficas vectoriales del backend (planeamiento, catastro,
-       clasificación del suelo…). Se registran conmutables, apagadas por
-       defecto para no recargar la vista del gemelo en vivo. */
+    /* Capas geográficas vectoriales del backend (inventario, planeamiento,
+       catastro, clasificación del suelo…), apagadas por defecto. */
     (capasGeo || []).forEach((fc) => {
       const cap = fc.capa;
       const capaLeaflet = L.geoJSON(fc, {
@@ -439,13 +591,13 @@ async function renderGemelo2D(el) {
           fillColor: (feat.properties && feat.properties._color) || cap.color,
           fillOpacity: cap.opacidad != null ? cap.opacidad : 0.35,
         }),
-        onEachFeature: (feat, lyr) => lyr.bindPopup(popupFeature(cap, feat.properties)),
+        onEachFeature: (feat, lyr) => lyr.bindPopup(() => {
+          const c = lyr.getBounds ? lyr.getBounds().getCenter() : lyr.getLatLng();
+          return popupFeature(cap, feat.properties, { id: feat.id, lat: c.lat, lon: c.lng }, docs);
+        }),
       });
-      grupos[
-        '<span style="display:inline-block;width:10px;height:10px;border:1.5px solid ' +
-        (cap.color_borde || "#3A2FA0") + ";background:" + (cap.color || "#7C6BF0") +
-        ';opacity:.7;margin-right:4px"></span>' + esc(cap.nombre) + " (" + fc.features.length + ")"
-      ] = capaLeaflet;
+      hoja(grupoDeCapaGeo(cap), "geo-" + cap.codigo, nombreHojaGeo(cap),
+        muestraArea(cap.color_borde || "#3A2FA0", cap.color || "#7C6BF0"), fc.features.length, capaLeaflet);
     });
 
     const puntos = [];
@@ -460,10 +612,7 @@ async function renderGemelo2D(el) {
         }).bindPopup(popupActivo(capa, a, docs)).addTo(g);
       });
       if (!capa.apagada) g.addTo(mapa2d); /* las capas voluminosas arrancan apagadas */
-      grupos[
-        '<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:' + capa.color + ';margin-right:4px"></span>' +
-        capa.nombre + " (" + capa.items.length + ")"
-      ] = g;
+      hoja(GRUPO_ACTIVO[capa.id] || "otras", "act-" + capa.id, capa.nombre, muestraPunto(capa.color), capa.items.length, g);
     });
     /* Mediciones guardadas de la regla (persisten en la plataforma) */
     if ((mediciones || []).length) {
@@ -485,7 +634,7 @@ async function renderGemelo2D(el) {
         forma.addTo(gMed);
       });
       gMed.addTo(mapa2d);
-      grupos["📏 Mediciones guardadas (" + mediciones.length + ")"] = gMed;
+      hoja("mediciones", "mediciones", "Mediciones guardadas", "📏", mediciones.length, gMed);
       mapa2d.on("popupopen", (ev) => {
         const btn = ev.popup.getElement() && ev.popup.getElement().querySelector("[data-del-medicion]");
         if (!btn) return;
@@ -502,7 +651,35 @@ async function renderGemelo2D(el) {
         };
       });
     }
-    L.control.layers(capasBase, grupos, { collapsed: false }).addTo(mapa2d);
+    const ControlArbol = L.Control.extend({
+      options: { position: "topright" },
+      onAdd() {
+        const caja = L.DomUtil.create("div", "leaflet-bar");
+        L.DomEvent.disableClickPropagation(caja);
+        L.DomEvent.disableScrollPropagation(caja);
+        arbol.montar(caja, {
+          maxAlto: 540,
+          base: [
+            { id: "osm", nombre: "Callejero (OSM)", activa: () => mapa2d.hasLayer(osm) },
+            { id: "pnoa", nombre: "Ortofotografía PNOA", activa: () => mapa2d.hasLayer(ortofoto) },
+          ],
+          alBase: (id) => {
+            const [poner, quitar] = id === "pnoa" ? [ortofoto, osm] : [osm, ortofoto];
+            mapa2d.removeLayer(quitar);
+            poner.addTo(mapa2d);
+            poner.bringToBack();
+          },
+          alCambiar: (id, activa) => {
+            const capaLeaflet = capaPorHoja[id];
+            if (!capaLeaflet) return;
+            if (activa) capaLeaflet.addTo(mapa2d);
+            else mapa2d.removeLayer(capaLeaflet);
+          },
+        });
+        return caja;
+      },
+    });
+    new ControlArbol().addTo(mapa2d);
     catastro.setZIndex(10); /* el parcelario queda siempre sobre las ortofotos históricas */
     instalarMedicion(mapa2d);
     instalarOrtofotos(mapa2d);
@@ -892,9 +1069,9 @@ async function renderGemelo3D(el) {
     '<div class="card card--pad0" style="overflow:hidden"><div id="gemelo-3d" style="height:640px;width:100%;background:#0b1c33"></div></div>' +
     '<div class="mini" style="color:var(--muted);margin-top:8px">Terreno: Terrain Tiles (AWS Open Data, Mapzen/USGS) · Imagen: Esri World Imagery · Sin licencias ni claves.</div>';
 
-  let gl, capas, docs3d;
+  let gl, capas, docs3d, capasGeo3d;
   try {
-    [gl, capas, docs3d] = await Promise.all([maplibre(), cargarActivos(), conteoDocumentos()]);
+    [gl, capas, docs3d, capasGeo3d] = await Promise.all([maplibre(), cargarActivos(), conteoDocumentos(), cargarCapasGeo()]);
   } catch (e) {
     document.getElementById("gemelo-3d").innerHTML =
       '<div class="mini" style="color:#fff;padding:40px;text-align:center">No se pudo cargar el visor 3D: ' + esc(e.message || e) + "</div>";
@@ -955,36 +1132,116 @@ async function renderGemelo3D(el) {
             },
           });
         } catch { /* sin edificios: el terreno sigue funcionando */ }
-        /* Activos como capa de círculos WebGL: escala a cientos de puntos sin
-           coste por marcador (los Marker DOM no aguantan el parque completo). */
+        /* Menú de capas en árbol (igual que el 2D). Cada hoja enciende o apaga
+           una o varias capas de MapLibre (relleno + borde, o círculos). */
+        const arbol = nuevoArbol();
+        const capasDeHoja = {};
+        const visible = (ids) => ids.some((id) => mapa3d.getLayer(id) && mapa3d.getLayoutProperty(id, "visibility") !== "none");
+        const hoja = (grupo, id, nombre, muestra, n, idsCapas) => {
+          capasDeHoja[id] = idsCapas;
+          arbol.add(grupo, { id, nombre, muestra, n, activa: () => visible(idsCapas) });
+        };
+        if (mapa3d.getLayer("edificios-3d")) {
+          hoja("territorio", "edificios", "Edificios 3D (OSM)", muestraArea("#B9AE98", "#EFE7D6"), null, ["edificios-3d"]);
+        }
+
+        /* Capas geográficas (inventario, planeamiento…): se drapean sobre el
+           relieve; apagadas por defecto, como en el 2D. */
+        const rellenos = [];
+        const bajoEdificios = mapa3d.getLayer("edificios-3d") ? "edificios-3d" : undefined; /* drapeadas bajo los volúmenes */
+        (capasGeo3d || []).forEach((fc) => {
+          const cap = fc.capa;
+          const src = "geo-" + cap.codigo;
+          mapa3d.addSource(src, {
+            type: "geojson",
+            data: {
+              type: "FeatureCollection",
+              /* el id (UUID) va en propiedades: MapLibre solo admite ids numéricos */
+              features: fc.features.map((f) => ({ type: "Feature", geometry: f.geometry, properties: { ...(f.properties || {}), _fid: f.id, _capa: cap.codigo } })),
+            },
+          });
+          const ids = [];
+          if (cap.tipo_geometria !== "linea") {
+            mapa3d.addLayer({
+              id: src + "-relleno", type: "fill", source: src, layout: { visibility: "none" },
+              paint: { "fill-color": ["coalesce", ["get", "_color"], cap.color || "#7C6BF0"], "fill-opacity": Math.min(0.75, (cap.opacidad != null ? cap.opacidad : 0.35) + 0.1) },
+            }, bajoEdificios);
+            ids.push(src + "-relleno");
+            rellenos.push(src + "-relleno");
+          }
+          mapa3d.addLayer({
+            id: src + "-borde", type: "line", source: src, layout: { visibility: "none" },
+            paint: { "line-color": cap.color_borde || "#3A2FA0", "line-width": cap.tipo_geometria === "linea" ? 3 : 1.2 },
+          }, bajoEdificios);
+          ids.push(src + "-borde");
+          if (cap.tipo_geometria === "linea") rellenos.push(src + "-borde");
+          hoja(grupoDeCapaGeo(cap), "geo-" + cap.codigo, nombreHojaGeo(cap),
+            muestraArea(cap.color_borde || "#3A2FA0", cap.color || "#7C6BF0"), fc.features.length, ids);
+        });
+        const capaGeoPorCodigo = Object.fromEntries((capasGeo3d || []).map((fc) => [fc.capa.codigo, fc.capa]));
+
+        /* Activos como círculos WebGL, una capa por tipo (escala a cientos de
+           puntos sin coste por marcador) para poder conmutarlos por separado. */
         const features = [];
         capas.forEach((capa) => {
           capa.items.forEach((a) => {
             features.push({
               type: "Feature",
               geometry: { type: "Point", coordinates: [a.ll[1], a.ll[0]] },
-              properties: { color: a.sem === "ok" ? capa.color : COLOR_ESTADO[a.sem], html: popupActivo(capa, a, docs3d) },
+              properties: { capa: capa.id, color: a.sem === "ok" ? capa.color : COLOR_ESTADO[a.sem], html: popupActivo(capa, a, docs3d) },
             });
           });
         });
         mapa3d.addSource("activos", { type: "geojson", data: { type: "FeatureCollection", features } });
-        mapa3d.addLayer({
-          id: "activos-puntos",
-          type: "circle",
-          source: "activos",
-          paint: {
-            "circle-radius": 6.5,
-            "circle-color": ["get", "color"],
-            "circle-stroke-width": 2,
-            "circle-stroke-color": "#fff",
-          },
+        const puntosIds = [];
+        capas.forEach((capa) => {
+          if (!capa.disponible || !capa.items.length) return;
+          const id = "activos-" + capa.id;
+          mapa3d.addLayer({
+            id, type: "circle", source: "activos", filter: ["==", ["get", "capa"], capa.id],
+            layout: { visibility: capa.apagada ? "none" : "visible" },
+            paint: {
+              "circle-radius": capa.radio ? 4.5 : 6.5,
+              "circle-color": ["get", "color"],
+              "circle-stroke-width": capa.radio ? 1.2 : 2,
+              "circle-stroke-color": "#fff",
+            },
+          });
+          puntosIds.push(id);
+          hoja(GRUPO_ACTIVO[capa.id] || "otras", "act-" + capa.id, capa.nombre, muestraPunto(capa.color), capa.items.length, [id]);
         });
-        mapa3d.on("click", "activos-puntos", (e) => {
-          const f = e.features && e.features[0];
-          if (f) new gl.Popup({ offset: 10 }).setLngLat(f.geometry.coordinates).setHTML(f.properties.html).addTo(mapa3d);
+
+        /* Clic: primero los puntos; si no hay, el elemento de capa debajo */
+        mapa3d.on("click", (e) => {
+          const vis = (ids) => ids.filter((id) => mapa3d.getLayoutProperty(id, "visibility") !== "none");
+          const p = mapa3d.queryRenderedFeatures(e.point, { layers: vis(puntosIds) })[0];
+          if (p) {
+            new gl.Popup({ offset: 10 }).setLngLat(p.geometry.coordinates).setHTML(p.properties.html).addTo(mapa3d);
+            return;
+          }
+          const f = vis(rellenos).length ? mapa3d.queryRenderedFeatures(e.point, { layers: vis(rellenos) })[0] : null;
+          if (!f) return;
+          const cap = capaGeoPorCodigo[f.properties._capa] || { nombre: "" };
+          new gl.Popup({ offset: 6, maxWidth: "320px" }).setLngLat(e.lngLat)
+            .setHTML(popupFeature(cap, f.properties, { id: f.properties._fid, lat: e.lngLat.lat, lon: e.lngLat.lng }, docs3d))
+            .addTo(mapa3d);
         });
-        mapa3d.on("mouseenter", "activos-puntos", () => { mapa3d.getCanvas().style.cursor = "pointer"; });
-        mapa3d.on("mouseleave", "activos-puntos", () => { mapa3d.getCanvas().style.cursor = ""; });
+        const interactivas = () => puntosIds.concat(rellenos);
+        mapa3d.on("mousemove", (e) => {
+          const ids = interactivas().filter((id) => mapa3d.getLayoutProperty(id, "visibility") !== "none");
+          const hay = ids.length && mapa3d.queryRenderedFeatures(e.point, { layers: ids }).length;
+          mapa3d.getCanvas().style.cursor = hay ? "pointer" : "";
+        });
+
+        const caja = document.createElement("div");
+        caja.className = "maplibregl-ctrl maplibregl-ctrl-group";
+        arbol.montar(caja, {
+          maxAlto: 560,
+          alCambiar: (id, activa) => (capasDeHoja[id] || []).forEach((c) => {
+            if (mapa3d.getLayer(c)) mapa3d.setLayoutProperty(c, "visibility", activa ? "visible" : "none");
+          }),
+        });
+        mapa3d.addControl({ onAdd: () => caja, onRemove: () => caja.remove() }, "top-left");
       });
     } catch (e) {
       cont.innerHTML = '<div class="mini" style="color:#fff;padding:40px;text-align:center">Este navegador no soporta WebGL para la vista 3D: ' + esc(e.message || e) + "</div>";
@@ -1004,7 +1261,8 @@ async function renderGemelo3D(el) {
 const NOMBRE_TIPO_DOC = {
   recurso: "Recurso turístico", sensor: "Sensor IoT", cuadro: "Cuadro de alumbrado",
   contenedor: "Contenedor", movilidad: "Movilidad", camara: "Cámara CCTV",
-  bandera: "Bandera de playa", estacion_aire: "Estación de aire", otro: "Otro",
+  bandera: "Bandera de playa", estacion_aire: "Estación de aire",
+  elemento_geo: "Elemento de capa (inventario, planeamiento…)", otro: "Otro",
 };
 
 function tamanoLegible(b) {
@@ -1117,7 +1375,7 @@ async function renderDocumentos(el) {
       const resp = await fetch(API_BASE + "/documentos/" + d.id, {
         method: "DELETE", headers: { Authorization: "Bearer " + tokens.access },
       });
-      if (resp.ok) { if (UI.toast) UI.toast("Documento eliminado"); docFiltro = filtro; UI.rerenderD("gd-docs"); }
+      if (resp.ok) { invalidateCache("/documentos"); if (UI.toast) UI.toast("Documento eliminado"); docFiltro = filtro; UI.rerenderD("gd-docs"); }
       else if (UI.toast) UI.toast(resp.status === 403 ? "Tu rol no puede eliminar documentos" : "Error HTTP " + resp.status);
     };
   });
@@ -1148,6 +1406,7 @@ async function renderDocumentos(el) {
       method: "POST", headers: { Authorization: "Bearer " + tokens.access }, body: fd,
     });
     if (resp.ok) {
+      invalidateCache("/documentos"); /* el listado y los contadores de los popups, al día */
       if (UI.toast) UI.toast("Documento adjuntado a " + ent.nombre);
       docFiltro = filtro; UI.rerenderD("gd-docs");
     } else {

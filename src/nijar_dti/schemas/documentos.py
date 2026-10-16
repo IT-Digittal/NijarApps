@@ -18,6 +18,7 @@ TIPOS_ENTIDAD_VALIDOS = {
     "camara",
     "bandera",
     "estacion_aire",
+    "elemento_geo",  # elemento de una capa del gemelo (inventario, planeamiento…)
     "otro",
 }
 
