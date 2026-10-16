@@ -30,12 +30,13 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from sqlalchemy import delete, func, select
+from sqlalchemy import String, cast, delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from nijar_dti.core.database import AsyncSessionLocal
 from nijar_dti.core.logging import configure_logging
 from nijar_dti.data.cargar_capa import geojson_a_wkt
+from nijar_dti.models.documento_punto import DocumentoPunto
 from nijar_dti.models.geografia import (
     CapaGeografica,
     ElementoGeografico,
@@ -49,6 +50,7 @@ LON_NIJAR = (-2.36, -1.85)
 
 FUENTE = "Inventario Municipal de Bienes · Urbana (Ayuntamiento de Níjar, actualización 2025)"
 SRID_POR_DEFECTO = 25830  # ETRS89 / UTM huso 30N
+TIPO_DOCUMENTO = "elemento_geo"  # entidad_tipo de los documentos adjuntos a elementos de capa
 
 
 @dataclass(frozen=True)
@@ -169,6 +171,7 @@ async def importar(
     resumen: dict[str, Any] = {}
     for fc in colecciones:
         nucleo = fc["nucleo"]
+        pendientes: list[tuple[Any, ...]] = []
         por_cat: dict[str, int] = {}
         capas_tocadas: set[str] = set()
         for i, feat in enumerate(fc.get("features") or []):
@@ -178,7 +181,10 @@ async def importar(
                 continue
             capa = await _capa(db, categoria)
             if capa.codigo not in capas_tocadas:
-                # Reimportación: fuera los elementos previos de este núcleo en la capa
+                # Reimportación: los documentos adjuntos a elementos que se van a
+                # sustituir se reenganchan después al elemento equivalente.
+                pendientes += await _con_documentos(db, capa.id, nucleo)
+                # Fuera los elementos previos de este núcleo en la capa
                 await db.execute(
                     delete(ElementoGeografico).where(
                         ElementoGeografico.capa_id == capa.id,
@@ -211,7 +217,73 @@ async def importar(
             por_cat[categoria] = por_cat.get(categoria, 0) + 1
         resumen[nucleo] = por_cat
         await db.flush()
+        await _reenganchar_documentos(db, nucleo, pendientes)
     return resumen
+
+
+def _nucleo_de_elemento() -> Any:
+    return ElementoGeografico.propiedades["_nucleo"].as_string()
+
+
+async def _con_documentos(db: AsyncSession, capa_id: Any, nucleo: str) -> list[tuple[Any, ...]]:
+    """Elementos del núcleo en la capa con documentos: (capa, id, código, lon, lat)."""
+    punto = func.ST_PointOnSurface(ElementoGeografico.geometria)
+    con_docs = select(DocumentoPunto.entidad_id).where(
+        DocumentoPunto.entidad_tipo == TIPO_DOCUMENTO
+    )
+    filas = await db.execute(
+        select(
+            ElementoGeografico.capa_id,
+            ElementoGeografico.id,
+            ElementoGeografico.codigo,
+            func.ST_X(punto),
+            func.ST_Y(punto),
+        ).where(
+            ElementoGeografico.capa_id == capa_id,
+            _nucleo_de_elemento() == nucleo,
+            cast(ElementoGeografico.id, String).in_(con_docs),
+        )
+    )
+    return [tuple(f) for f in filas.all()]
+
+
+async def _reenganchar_documentos(
+    db: AsyncSession, nucleo: str, pendientes: list[tuple[Any, ...]]
+) -> int:
+    """Pasa los documentos de cada elemento sustituido al nuevo equivalente: mismo
+    código en la misma capa y núcleo, y a menos de ~20 m del original."""
+    hechos = 0
+    for capa_id, viejo_id, codigo, lon, lat in pendientes:
+        if lon is None or lat is None:
+            continue
+        origen = func.ST_SetSRID(func.ST_MakePoint(lon, lat), 4326)
+        distancia = func.ST_Distance(func.ST_PointOnSurface(ElementoGeografico.geometria), origen)
+        nuevo = (
+            await db.execute(
+                select(ElementoGeografico.id)
+                .where(
+                    ElementoGeografico.capa_id == capa_id,
+                    _nucleo_de_elemento() == nucleo,
+                    ElementoGeografico.codigo.is_not_distinct_from(codigo),
+                    ElementoGeografico.id != viejo_id,
+                    distancia < 0.0002,  # grados (~20 m)
+                )
+                .order_by(distancia)
+                .limit(1)
+            )
+        ).scalar_one_or_none()
+        if nuevo is None:
+            continue  # sin equivalente: el documento sigue en «Documentos del territorio»
+        await db.execute(
+            update(DocumentoPunto)
+            .where(
+                DocumentoPunto.entidad_tipo == TIPO_DOCUMENTO,
+                DocumentoPunto.entidad_id == str(viejo_id),
+            )
+            .values(entidad_id=str(nuevo))
+        )
+        hechos += 1
+    return hechos
 
 
 def _punto_utm(fc: dict[str, Any]) -> tuple[float, float] | None:

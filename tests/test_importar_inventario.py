@@ -101,3 +101,10 @@ def test_endpoint_importar_inventario_exige_sesion():
 
     r = TestClient(app).post("/api/v1/geo/inventario/importar", json={"colecciones": [{}]})
     assert r.status_code == 401
+
+
+def test_elementos_de_capa_admiten_documentos():
+    from nijar_dti.schemas.documentos import TIPOS_ENTIDAD_VALIDOS
+
+    assert inv.TIPO_DOCUMENTO == "elemento_geo"
+    assert inv.TIPO_DOCUMENTO in TIPOS_ENTIDAD_VALIDOS

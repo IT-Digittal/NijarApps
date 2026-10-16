@@ -96,6 +96,14 @@ Cada elemento muestra: núcleo, categoría, códigos, notas, superficie (m²,
 calculada de la geometría) y fuente. El estilo de las capas (colores de la
 leyenda del plano) se puede ajustar en el panel → «Capas del gemelo».
 
+
+**Documentos**: cada elemento admite documentos adjuntos (escrituras, planos,
+fichas…) desde su ficha en el mapa 2D o 3D («📎 Documentos · gestionar»), como
+el resto de activos del gemelo (`entidad_tipo = elemento_geo`, id = id del
+elemento). Al **reimportar** un núcleo, los documentos pasan al elemento
+equivalente (mismo código, misma capa y a menos de ~20 m); si no lo hay, el
+documento sigue en «Documentos del territorio».
+
 ## 5. Pendiente / mejoras
 - Si el Ayuntamiento aporta la **tabla del inventario** (Excel/BD: código,
   denominación, superficie registral, referencia catastral, uso), se puede unir
