@@ -134,6 +134,8 @@ class Settings(BaseSettings):
     # --- Gemelo digital: ortofotos históricas (WMS público del IGN, sin clave) ---
     # Selector de periodo del Gemelo vivo 2D (vuelos de 1956 a la actualidad).
     ortofoto_historica_wms_url: str = "https://www.ign.es/wms/pnoa-historico"
+    # Añade también los vuelos históricos de la Junta de Andalucía (REDIAM/IECA)
+    ortofotos_junta_activas: bool = True
 
     # --- Contenidos abiertos del tótem (workers/contenidos_abiertos.py) ---
     # Gastronomía y artesanía desde OpenStreetMap (Overpass API, sin clave).

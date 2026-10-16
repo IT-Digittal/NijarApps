@@ -30,12 +30,35 @@ cómo **verificarla**. El catálogo completo de fuentes está en
 | **Calidad del aire y meteo** (Bettair) | 🟡 | `/api/v1/gemelo/aire/resumen`, `/gemelo/aire/estaciones` | — | Requiere `BETTAIR_CLIENT_ID/SECRET` (los gestiona Bettair) |
 | **RSU y limpieza viaria** (siGEUS · Distromel) | 🟡 | `/api/v1/gemelo/estado` (`sigeus_configurado`); KPIs en `/verticales/residuos/*` al conectar | [runbook](runbook-sigeus-distromel.md) | `python -m scripts.verificar_sigeus` (requiere `SIGEUS_USUARIO/PASSWORD`) |
 | **Inventario Municipal de Bienes** (DWG del Ayuntamiento) | ✅ | Capas `inventario_*` del gemelo (`/api/v1/geo/capas`) | [runbook](runbook-inventario-bienes.md) | `scripts/importar_inventario.sh inventario.zip --dry-run` |
+| **Ortofotos históricas** (IGN PNOA histórico + Junta de Andalucía REDIAM/IECA) | 🟢 IGN · 🟡 Junta | `/api/v1/gemelo/ortofotos-historicas` (selector «Ortofoto histórica» del Gemelo vivo 2D) | ver detalle abajo | `docker exec -i nijar-dti-api python - < scripts/verificar_ortofotos.py` |
 | **Consumo eléctrico** (Datadis) | 🟡 público · ⏳ privado | `/api/v1/verticales/energia/municipio`, `/energia/suministros/{cups}/curva`, `/energia/datadis/estado` | [runbook](runbook-datadis.md) | `python -m scripts.verificar_datadis` (datos públicos sin usuario; privada con `DATADIS_USUARIO/PASSWORD`) |
 | **Contenidos abiertos del tótem** (OpenStreetMap + Wikipedia/Commons) | 🟢 | `/api/v1/tourism/services` (gastronomía), `/tourism/resources` (artesanía, fotos) | ver detalle abajo | `python -m nijar_dti.workers.contenidos_abiertos --dry-run` |
 
 ---
 
 ## Detalle por integración
+
+### Ortofotos históricas (IGN + Junta de Andalucía) · 🟢 IGN · 🟡 Junta
+
+Selector de periodo y cortina de comparación del Gemelo vivo 2D. Dos fuentes:
+
+- **IGN · PNOA histórico** (`ORTOFOTO_HISTORICA_WMS_URL`): un único WMS con todos
+  los vuelos; se leen del GetCapabilities y se filtran a los que tienen imagen
+  sobre Níjar.
+- **Junta de Andalucía** (`ORTOFOTOS_JUNTA_ACTIVAS=true`): la Junta publica un
+  WMS por vuelo — REDIAM (`/medioambiente/mapwms/REDIAM_Ortofoto_…`: 1956-57,
+  1977-83, 1984-85, 2006-07) e IECA/IDEAndalucía (`/wms/ortofoto_AAAA` y la
+  serie antigua `/wms/ortofotoAAAA`: 1998 → 2022). El catálogo está en
+  `services/ortofotos_service.py` (`SERVICIOS_JUNTA`) con URLs alternativas y
+  capas candidatas; al cargar se lee el GetCapabilities de cada servicio, se
+  elige la capa de ortofoto (descartando rejillas de hojas, fechas de vuelo…)
+  y se comprueba con un GetMap **en EPSG:3857** que hay imagen sobre Níjar.
+  Solo aparecen los que responden; caché de 24 h (1 h si no respondió ninguno).
+  Si un año falla, `scripts/verificar_ortofotos.py` muestra la URL probada, el
+  error y las capas que ofrece el servicio para ajustar `candidatas`.
+
+Las descargas de REDIAM (`portalrediam.cica.es`, mosaicos COG/ECW de varios
+cientos de GB) no se usan: los mismos vuelos se sirven por WMS.
 
 ### Contenidos abiertos del tótem (OpenStreetMap + Wikipedia/Commons) · 🟢
 Worker `workers/contenidos_abiertos.py` (conector `connectors/contenidos_abiertos.py`),

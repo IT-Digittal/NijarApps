@@ -8,10 +8,13 @@ muestra como fuente pendiente (sin datos ficticios).
 
 from __future__ import annotations
 
+import asyncio
+
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from nijar_dti.api.v1.dependencies import get_current_user
+from nijar_dti.config import get_settings
 from nijar_dti.connectors.bettair import BettairError
 from nijar_dti.connectors.openmeteo import OpenMeteoError
 from nijar_dti.connectors.thingsboard import ThingsBoardError
@@ -128,23 +131,46 @@ async def aire(user: CurrentUser = Depends(get_current_user)) -> EstacionesAireO
 @router.get(
     "/ortofotos-historicas",
     response_model=OrtofotosHistoricasOut,
-    summary="Ortofotos históricas de Níjar (PNOA histórico del IGN) para el selector de periodo",
+    summary="Ortofotos históricas de Níjar (IGN y Junta de Andalucía) para el selector de periodo",
 )
 async def ortofotos_historicas(
     user: CurrentUser = Depends(get_current_user),
 ) -> OrtofotosHistoricasOut:
-    """Vuelos disponibles (1956 → actualidad) con imagen sobre el municipio."""
-    try:
-        url, capas, verificada = await ortofotos_service.listar_ortofotos()
-    except httpx.HTTPError as exc:
-        raise HTTPException(
-            status_code=502, detail=f"Servicio de ortofotos del IGN no disponible: {exc}"
-        ) from exc
-    return OrtofotosHistoricasOut(
-        url_wms=url,
-        cobertura_verificada=verificada,
-        capas=[
-            OrtofotoHistoricaOut(nombre=o.nombre, titulo=o.titulo, anio=o.anio, etiqueta=o.etiqueta)
-            for o in capas
-        ],
+    """Vuelos disponibles (1956 → actualidad) con imagen sobre el municipio: PNOA
+    histórico del IGN y vuelos de la Junta (REDIAM e IECA), en orden cronológico."""
+    ign_res, (vuelos_junta, _) = await asyncio.gather(
+        _ign_o_none(), ortofotos_service.listar_ortofotos_junta()
     )
+    if ign_res is None and not vuelos_junta:
+        raise HTTPException(
+            status_code=502, detail="Servicios de ortofotos históricas (IGN y Junta) no disponibles"
+        )
+    url, capas, verificada = ign_res or (get_settings().ortofoto_historica_wms_url, [], True)
+    salida = [
+        OrtofotoHistoricaOut(
+            nombre=o.nombre, titulo=o.titulo, anio=o.anio, etiqueta=o.etiqueta, id=f"ign:{o.nombre}"
+        )
+        for o in capas
+    ] + [
+        OrtofotoHistoricaOut(
+            nombre=o.capa,
+            titulo=o.titulo,
+            anio=o.anio,
+            etiqueta=o.etiqueta,
+            id=o.id,
+            fuente=f"Junta de Andalucía · {o.organismo}",
+            url_wms=o.url,
+            version="1.1.1",
+            formato=o.formato,
+        )
+        for o in vuelos_junta
+    ]
+    salida.sort(key=lambda o: (o.anio, o.fuente != "IGN", o.etiqueta))
+    return OrtofotosHistoricasOut(url_wms=url, cobertura_verificada=verificada, capas=salida)
+
+
+async def _ign_o_none() -> tuple[str, list[ortofotos_service.OrtofotoHistorica], bool] | None:
+    try:
+        return await ortofotos_service.listar_ortofotos()
+    except httpx.HTTPError:
+        return None

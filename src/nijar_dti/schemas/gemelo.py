@@ -120,12 +120,17 @@ class AforoParqueOut(BaseModel):
 
 
 class OrtofotoHistoricaOut(BaseModel):
-    """Un vuelo/ortofoto histórica disponible para Níjar (capa del WMS del IGN)."""
+    """Un vuelo/ortofoto histórica disponible para Níjar (IGN o Junta de Andalucía)."""
 
     nombre: str  # nombre de la capa WMS (LAYERS)
     titulo: str
     anio: int
     etiqueta: str  # texto corto para el selector («1956-57», «2010»…)
+    id: str = ""  # valor único en el selector («ign:PNOA2010», «junta:1956-57»)
+    fuente: str = "IGN"  # «IGN» | «Junta de Andalucía · REDIAM» | «Junta de Andalucía · IECA»
+    url_wms: str | None = None  # servicio de este vuelo (None = el url_wms general del IGN)
+    version: str = "1.3.0"
+    formato: str = "image/jpeg"
 
 
 class OrtofotosHistoricasOut(BaseModel):
