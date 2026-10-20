@@ -138,6 +138,29 @@ async function tryRefresh() {
   }
 }
 
+/* fetch autenticado para lo que no es JSON (subidas multipart, descargas de
+   ficheros, exportaciones CSV): añade el token y, si ha caducado (401), lo
+   renueva y repite la petición una vez. Devuelve la Response tal cual. */
+export async function fetchAuth(path, init = {}) {
+  const url = /^https?:/.test(path) ? path : API_BASE + path;
+  const conToken = () => ({ ...init, headers: { ...(init.headers || {}), Authorization: "Bearer " + tokens.access } });
+  let resp = await fetch(url, conToken());
+  if (resp.status === 401 && tokens.refresh && (await tryRefresh())) resp = await fetch(url, conToken());
+  return resp;
+}
+
+/* Texto de error legible a partir de una respuesta fallida de la API */
+export async function mensajeError(resp) {
+  const j = await resp.json().catch(() => null);
+  const d = j && (j.detail ?? j.message);
+  if (Array.isArray(d)) return d.map((x) => x.msg || JSON.stringify(x)).join("; ");
+  if (d && typeof d === "object") return d.message || JSON.stringify(d);
+  if (d) return String(d);
+  if (resp.status === 413) return "El fichero es demasiado grande";
+  if (resp.status === 401) return "La sesión ha caducado: vuelve a iniciar sesión";
+  return "HTTP " + resp.status;
+}
+
 // ----------------- Endpoints -----------------
 
 export const api = {

@@ -24,6 +24,7 @@ from nijar_dti.schemas.tourism import (
     ServicioOut,
 )
 from nijar_dti.services import tourism_service as svc
+from nijar_dti.services import traduccion_service
 
 router = APIRouter()
 
@@ -153,6 +154,7 @@ async def list_events(
     hasta: str | None = Query(None, description="ISO 8601"),
     tipo: str | None = Query(None),
     publicado: bool | None = Query(None),
+    lang: str | None = Query(None, description="Idioma del tótem (completa en/de/fr)"),
     page: PageParams = Depends(_page_params),
     db: AsyncSession = Depends(get_db),
 ) -> Paginated[EventoTuristicoOut]:
@@ -166,6 +168,7 @@ async def list_events(
     )
     rows, total = await svc.listar_eventos(db, filtros, page)
     items = [await svc.evento_to_out(db, e) for e in rows]
+    items = await traduccion_service.traducir_eventos(db, items, lang)
     return Paginated[EventoTuristicoOut].build(items, total, page)
 
 
@@ -174,12 +177,17 @@ async def list_events(
     response_model=EventoTuristicoOut,
     summary="Detalle de un evento",
 )
-async def get_event(event_id: UUID, db: AsyncSession = Depends(get_db)) -> EventoTuristicoOut:
+async def get_event(
+    event_id: UUID,
+    lang: str | None = Query(None, description="Idioma del tótem (completa en/de/fr)"),
+    db: AsyncSession = Depends(get_db),
+) -> EventoTuristicoOut:
     try:
         e = await svc.obtener_evento(db, event_id)
     except svc.NotFound as exc:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
-    return await svc.evento_to_out(db, e)
+    out = await svc.evento_to_out(db, e)
+    return (await traduccion_service.traducir_eventos(db, [out], lang))[0]
 
 
 @router.post(

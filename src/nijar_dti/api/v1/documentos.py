@@ -58,6 +58,8 @@ async def subir_documento(
             descripcion=descripcion,
             subido_por=user.email,
         )
+    except svc.AlmacenNoDisponibleError as exc:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
     except svc.DocumentoError as exc:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
     await db.commit()

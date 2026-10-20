@@ -593,3 +593,59 @@ body.high-contrast .v5-msheet-dist, body.high-contrast .v5-emerg-txt small { col
 /* Explorar (vista completa): tarjetas altas que llenan la pantalla del tótem */
 .v5-explora--todo .v5-xcard { height: 370px; }
 .v5-explora--todo .v5-xcard-t strong { font-size: 31px; }
+
+/* Galería: imágenes ilustrativas de la zona (no son del lugar) */
+.v5-foto { position: relative; overflow: hidden; }
+.v5-foto-ilus { position: absolute; left: 8px; bottom: 8px; padding: 3px 9px; border-radius: 999px; background: rgba(11, 43, 87, 0.78); color: #fff; font: 600 13px var(--v5-ff); }
+
+/* Texto grande: todos los textos pequeños de las vistas crecen (~22 %); los titulares ya son grandes */
+body.text-lg-mode .tt-dateblock small { font-size: 14px; }
+body.text-lg-mode span.tt-tag.tt-tag--info,
+body.text-lg-mode span.tt-tag.tt-tag--rose,
+body.text-lg-mode span.v5-credito { font-size: 15px; }
+body.text-lg-mode .v5-pill.v5-pill--static span,
+body.text-lg-mode span.v5-foto-ilus,
+body.text-lg-mode span.v5-rcard-badge { font-size: 16px; }
+body.text-lg-mode .v5-nav-qr small,
+body.text-lg-mode span.v5-rchip,
+body.text-lg-mode span.v5-serv { font-size: 17px; }
+body.text-lg-mode #news-fecha,
+body.text-lg-mode .v5-chat-online span,
+body.text-lg-mode .v5-llegar-i small,
+body.text-lg-mode .v5-news-h small,
+body.text-lg-mode .v5-stat small,
+body.text-lg-mode .v5-tip small,
+body.text-lg-mode p.v5-chat-nota,
+body.text-lg-mode span.hoy,
+body.text-lg-mode span.lab,
+body.text-lg-mode span.v5-dhero-badge { font-size: 18px; }
+body.text-lg-mode .tt-item-meta span { font-size: 19px; }
+body.text-lg-mode .v5-ia-tit small,
+body.text-lg-mode .v5-pill span,
+body.text-lg-mode .v5-util span { font-size: 20px; }
+body.text-lg-mode .v5-qr-txt p { font-size: 21px; }
+body.text-lg-mode #avisos-track,
+body.text-lg-mode #list-miga,
+body.text-lg-mode .v5-mapa-btn.v5-mapa-btn--aqui span,
+body.text-lg-mode .v5-miga span,
+body.text-lg-mode .v5-nav-qr b,
+body.text-lg-mode .v5-para-i span,
+body.text-lg-mode button.v5-ficha,
+body.text-lg-mode p.content-loading,
+body.text-lg-mode p.v5-miga,
+body.text-lg-mode span.v5-cuenta { font-size: 22px; }
+body.text-lg-mode .v5-fchip span,
+body.text-lg-mode .v5-nav span,
+body.text-lg-mode .v5-stat b,
+body.text-lg-mode button.v5-boton { font-size: 23px; }
+body.text-lg-mode .v5-ico-l.v5-det-lugar b { font-size: 24px; }
+body.text-lg-mode .v5-aviso strong { font-size: 27px; }
+body.text-lg-mode #list-mapa-t,
+body.text-lg-mode .v5-card-h h3,
+body.text-lg-mode .v5-news-h h3 { font-size: 28px; }
+body.text-lg-mode .tt-item-body h3,
+body.text-lg-mode .v5-qr-txt span,
+body.text-lg-mode div.tt-dayhead { font-size: 29px; }
+body.text-lg-mode #content-grid .tt-dayhead { font-size: 29px; }
+body.text-lg-mode #content-grid .tt-dayhead .hoy { font-size: 18px; }
+body.text-lg-mode p.v5-dhero-s { font-size: 30px; }

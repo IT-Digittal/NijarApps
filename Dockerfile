@@ -79,6 +79,10 @@ COPY --chown=app:app frontend ./frontend
 # Eliminar herramientas de compilación si quedó alguna
 RUN find / -name '*.pyc' -delete 2>/dev/null || true
 
+# Almacén local de documentos (volumen en producción): debe pertenecer a `app`,
+# si no, la subida de documentos falla con «Permission denied».
+RUN mkdir -p /data/storage && chown app:app /data/storage
+
 USER app
 
 EXPOSE 8000

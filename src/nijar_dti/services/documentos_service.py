@@ -16,8 +16,11 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from nijar_dti.config import get_settings
+from nijar_dti.core.logging import get_logger
 from nijar_dti.models.documento_punto import DocumentoPunto
 from nijar_dti.schemas.documentos import TAMANO_MAX_BYTES, TIPOS_ENTIDAD_VALIDOS
+
+logger = get_logger(__name__)
 
 
 class DocumentoError(Exception):
@@ -26,6 +29,10 @@ class DocumentoError(Exception):
 
 class DocumentoNoEncontradoError(DocumentoError):
     pass
+
+
+class AlmacenNoDisponibleError(DocumentoError):
+    """El almacén de ficheros no admite escritura (permisos, disco lleno…)."""
 
 
 def _directorio_documentos() -> Path:
@@ -68,8 +75,17 @@ async def crear_documento(
     nombre = _nombre_seguro(nombre_archivo)
     sufijo = Path(nombre).suffix[:16]
     interno = f"{uuid.uuid4().hex}{sufijo}"
-    destino = _directorio_documentos() / interno
-    destino.write_bytes(contenido)
+    try:
+        destino = _directorio_documentos() / interno
+        destino.write_bytes(contenido)
+    except OSError as exc:
+        logger.error(
+            "documento_no_guardado", ruta=get_settings().storage_local_path, error=str(exc)
+        )
+        raise AlmacenNoDisponibleError(
+            "No se pudo guardar el fichero en el almacén de documentos. "
+            "Revise los permisos del volumen de almacenamiento."
+        ) from exc
 
     doc = DocumentoPunto(
         entidad_tipo=entidad_tipo,

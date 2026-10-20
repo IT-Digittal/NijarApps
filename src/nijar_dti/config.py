@@ -117,6 +117,9 @@ class Settings(BaseSettings):
     openai_model: str = "gpt-4o-mini"
     openai_timeout_seconds: int = 15
     openai_max_tokens: int = 400
+    # Traducción automática de avisos/noticias/agenda del tótem (usa la misma clave).
+    # Cada cuántos minutos se dejan traducidas de antemano las novedades (0 = nunca).
+    traducciones_refresco_minutos: int = 30
 
     # --- Voz del chatbot en el tótem (OpenAI TTS; usa la misma API key) ---
     openai_tts_model: str = "gpt-4o-mini-tts"

@@ -9,7 +9,7 @@
  * impacto (económico, ciudadano, ambiental).
  */
 
-import { api, getCachedUser } from "./api-client.js?v=18";
+import { api, getCachedUser } from "./api-client.js?v=19";
 
 let UI, U2, UI2;
 

@@ -19,11 +19,8 @@
  * periodos (instalarOrtofotos).
  */
 
-import { invalidateCache, api, tokens } from "./api-client.js?v=18";
+import { invalidateCache, api, fetchAuth, mensajeError } from "./api-client.js?v=19";
 
-/* Base de la API para las llamadas que no son JSON (subida/descarga de ficheros) */
-const API_BASE = (typeof window !== "undefined" && window.NIJAR_API_BASE)
-  || window.location.origin + "/api/v1";
 
 let U, UI, DTI;
 let mapa2d = null;
@@ -1273,9 +1270,7 @@ function tamanoLegible(b) {
 }
 
 async function descargarDocumento(id, nombre) {
-  const resp = await fetch(API_BASE + "/documentos/" + id + "/archivo", {
-    headers: { Authorization: "Bearer " + tokens.access },
-  });
+  const resp = await fetchAuth("/documentos/" + id + "/archivo");
   if (!resp.ok) throw new Error("HTTP " + resp.status);
   const blob = await resp.blob();
   const url = URL.createObjectURL(blob);
@@ -1372,11 +1367,9 @@ async function renderDocumentos(el) {
     b.onclick = async () => {
       const d = filas[Number(b.dataset.docDel)];
       if (!window.confirm('¿Eliminar "' + d.nombre_archivo + '" de ' + d.entidad_nombre + "?")) return;
-      const resp = await fetch(API_BASE + "/documentos/" + d.id, {
-        method: "DELETE", headers: { Authorization: "Bearer " + tokens.access },
-      });
+      const resp = await fetchAuth("/documentos/" + d.id, { method: "DELETE" });
       if (resp.ok) { invalidateCache("/documentos"); if (UI.toast) UI.toast("Documento eliminado"); docFiltro = filtro; UI.rerenderD("gd-docs"); }
-      else if (UI.toast) UI.toast(resp.status === 403 ? "Tu rol no puede eliminar documentos" : "Error HTTP " + resp.status);
+      else if (UI.toast) UI.toast(resp.status === 403 ? "Tu rol no puede eliminar documentos" : "Error: " + (await mensajeError(resp)));
     };
   });
 
@@ -1402,18 +1395,17 @@ async function renderDocumentos(el) {
     const desc = el.querySelector("#doc-desc").value.trim();
     if (desc) fd.append("descripcion", desc);
     msg.textContent = "Subiendo…";
-    const resp = await fetch(API_BASE + "/documentos", {
-      method: "POST", headers: { Authorization: "Bearer " + tokens.access }, body: fd,
-    });
+    let resp;
+    try { resp = await fetchAuth("/documentos", { method: "POST", body: fd }); }
+    catch (e) { msg.textContent = "Error de conexión al subir el documento: " + (e.message || e); return; }
     if (resp.ok) {
       invalidateCache("/documentos"); /* el listado y los contadores de los popups, al día */
       if (UI.toast) UI.toast("Documento adjuntado a " + ent.nombre);
       docFiltro = filtro; UI.rerenderD("gd-docs");
     } else {
-      const cuerpo = await resp.json().catch(() => null);
       msg.textContent = resp.status === 403
         ? "Tu rol no puede adjuntar documentos (administrador, gestor u operador)."
-        : "Error: " + ((cuerpo && cuerpo.detail) || "HTTP " + resp.status);
+        : "Error: " + (await mensajeError(resp));
     }
   });
 }

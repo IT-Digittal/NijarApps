@@ -10,7 +10,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Fira+Sans:wght@400;500;600;700;800&family=Dancing+Script:wght@500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./assets/totem.css?v=25" />
-  <link rel="stylesheet" href="./assets/totem-v5.css?v=5" />
+  <link rel="stylesheet" href="./assets/totem-v5.css?v=7" />
+  <link rel="stylesheet" href="./assets/totem-movil.css?v=4" />
 </head>
 <!--
   Interfaz de los tótems digitales interactivos (actuación A.1 · Exp. 18962/2025).
@@ -263,7 +264,7 @@
       <button class="v5-volver" data-back data-i18n-aria="a11y.volver" aria-label="Volver al inicio"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       <p class="v5-miga"><span data-i18n="v5.inicio">Inicio</span> · <span data-i18n="v5.mapa">Mapa</span></p>
       <h2 data-i18n="map.title">Mapa del destino</h2>
-      <p class="v5-subhero-s" data-i18n="v5.mapa_s">Descubre todos los rincones de Níjar</p>
+      <p class="v5-subhero-s" data-i18n="v5.mapa_sub">Descubre todos los rincones de Níjar</p>
       <p class="v5-script v5-subhero-lema" data-i18n="v5.mapa_lema" aria-hidden="true">Explora a tu ritmo</p>
     </div>
     <div class="v5-body v5-mapag">
@@ -459,9 +460,10 @@
   <div class="tt-qr-code" id="qr-code" aria-hidden="true"></div>
   <p class="tt-qr-sub" data-i18n="social.escanea">Escanea el código con la cámara de tu móvil</p>
   <p class="tt-qr-url" id="qr-url"></p>
+  <button class="v5-boton v5-boton--solid v5-qr-abrir" id="qr-abrir" hidden><span data-i18n="v5.abrir_enlace">Abrir enlace</span></button>
 </dialog>
 
 <script src="./assets/vendor/qrcode-generator-1.4.4.js"></script>
-<script type="module" src="./assets/totem.js?v=35"></script>
+<script type="module" src="./assets/totem.js?v=37"></script>
 </body>
 </html>

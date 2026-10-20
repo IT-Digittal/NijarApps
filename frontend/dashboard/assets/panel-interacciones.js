@@ -11,9 +11,8 @@
  * Se añaden al final de esas dos secciones del panel sin tocar su contenido.
  */
 
-import { api, tokens } from "./api-client.js?v=18";
+import { api, fetchAuth } from "./api-client.js?v=19";
 
-const API_BASE = window.NIJAR_API_BASE || window.location.origin + "/api/v1";
 
 function esc(s) {
   return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -65,7 +64,7 @@ function resumenChip(etq, valor) {
 
 /** Descarga con el token de sesión (un <a href> no lo enviaría). */
 async function descargar(ruta, params, nombre) {
-  const r = await fetch(API_BASE + ruta + "?" + params, { headers: { Authorization: "Bearer " + tokens.access } });
+  const r = await fetchAuth(ruta + "?" + params);
   if (!r.ok) throw new Error("Error " + r.status + " al exportar");
   const a = document.createElement("a");
   a.href = URL.createObjectURL(await r.blob());
