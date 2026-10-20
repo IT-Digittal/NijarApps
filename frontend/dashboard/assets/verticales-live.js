@@ -17,7 +17,7 @@
  *    referencias originales en closures.
  */
 
-import { api, tokens, invalidateCache } from "./api-client.js?v=18";
+import { api, invalidateCache, fetchAuth } from "./api-client.js?v=19";
 
 const CLAVE_ACCESO = "nijar.dti.access";
 const INTERVALO_SESION_MS = 500;
@@ -344,7 +344,6 @@ function fechaCorta(iso) {
   return d.toLocaleDateString("es-ES", { day: "numeric", month: "short" });
 }
 
-const API_BASE = window.NIJAR_API_BASE || window.location.origin + "/api/v1";
 
 /* Carga manual del fichero de datadis.es (mientras no hay usuario para su API) */
 function tarjetaImportar() {
@@ -370,9 +369,7 @@ function activarImportar(el) {
       const fd = new FormData();
       fd.append("archivo", f);
       try {
-        const r = await fetch(API_BASE + "/verticales/energia/datadis/importar", {
-          method: "POST", body: fd, headers: { Authorization: "Bearer " + tokens.access },
-        });
+        const r = await fetchAuth("/verticales/energia/datadis/importar", { method: "POST", body: fd });
         const j = await r.json().catch(() => ({}));
         if (!r.ok) { lineas.push("✘ " + f.name + ": " + (j.detail || ("error " + r.status))); continue; }
         lineas.push("✔ " + f.name + ": " + j.guardadas + " registros" + (j.desde ? " (" + j.desde + " → " + j.hasta + ")" : "") +

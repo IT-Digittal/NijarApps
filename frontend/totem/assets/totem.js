@@ -9,7 +9,7 @@
  * - Inactividad >60 s: vuelve al inicio en español (modo público).
  */
 
-import { I18N, translateAll } from "./i18n.js?v=29";
+import { I18N, translateAll } from "./i18n.js?v=31";
 import { DEMO_RESOURCES, answerChatbotDemo } from "./demo-data.js";
 
 // ============================================================
@@ -245,13 +245,30 @@ function applyLanguage(lang) {
   const listaVisible = !document.getElementById("view-list").hidden;
   tele.callar(true); /* repintado, no una acción nueva del visitante */
   if (currentCat && listaVisible) abrirCategoria(currentCat, currentChip);
-  if (!document.getElementById("view-avisos").hidden) abrirAvisos();
+  /* Contenidos que llegan traducidos del servidor: se vuelven a pedir en el nuevo idioma */
+  cargarAvisos().then(() => { if (!document.getElementById("view-avisos").hidden) abrirAvisos(); });
+  cargarNoticiaHome();
+  cargarDestacado();
+  if (dialog?.open && noticiaAbierta) openNoticia(noticiaAbierta, true);
   if (!document.getElementById("view-map").hidden && mapa.recursos.length) {
     pintarChipsMapa();
     if (mapa.sel) mostrarSheet(mapa.sel.r, mapa.sel, true);
   }
   // Repintar la ficha abierta con el nuevo idioma (título, descripción, servicios, etiquetas…)
-  if (dialog?.open && currentPoi) openDetail(currentPoi, currentPoiCat);
+  if (dialog?.open && currentPoi) {
+    const poi = currentPoi, cat = currentPoiCat;
+    openDetail(poi, cat);
+    /* Un evento puede venir traducido del servidor: se vuelve a pedir en el nuevo idioma */
+    if (poi.fecha_inicio && poi.id) {
+      apiGet(`/tourism/events/${encodeURIComponent(poi.id)}`).then((ev) => {
+        if (currentPoi !== poi) return;
+        tele.callar(true);
+        currentPoi = ev; /* mismo contenido: no cuenta como ficha nueva */
+        openDetail(ev, cat);
+        tele.callar(false);
+      }).catch(() => {});
+    }
+  }
   tele.callar(false);
   resetChat();
 }
@@ -380,9 +397,17 @@ setInterval(cargarMeteo, 10 * 60 * 1000); /* Open-Meteo se refresca ~cada 15 min
 // ============================================================
 // API helpers
 // ============================================================
+/* Avisos, noticias, agenda y eventos se piden en el idioma del tótem: el servidor
+   completa con traducción automática (y caché) lo que no venga traducido de origen. */
+const RUTAS_TRADUCIBLES = /^\/(noticias|cms\/publico|tourism\/events)/;
+function conIdioma(path) {
+  if (currentLang === "es" || !RUTAS_TRADUCIBLES.test(path)) return path;
+  return path + (path.includes("?") ? "&" : "?") + "lang=" + encodeURIComponent(currentLang);
+}
+
 async function apiGet(path) {
   /* no-store: el tótem no se recarga nunca; evita servir listados viejos de caché */
-  const res = await fetch(`${API_BASE}${path}`, { cache: "no-store" });
+  const res = await fetch(`${API_BASE}${conIdioma(path)}`, { cache: "no-store" });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
@@ -916,8 +941,14 @@ const TRAZO_SVG = '<svg viewBox="0 0 220 24" class="v5-trazo" aria-hidden="true"
 function fotoDeCategoria(c) {
   return (c.noticias && fondoNoticias) || fotoCategoria[c.id] || c.bg || "../shared/cabo-de-gata-hero.jpg";
 }
+/* Las rutas relativas dentro de la variable CSS --foto se resolverían respecto a la
+   hoja de estilos (assets/), no a la página: se pasan siempre como URL absoluta. */
+function urlAbs(u) {
+  if (!u) return "";
+  try { return new URL(u, location.href).href; } catch { return String(u); }
+}
 function ponerFoto(el, url) {
-  if (el) el.style.setProperty("--foto", url ? `url('${String(url).replace(/'/g, "%27")}')` : "none");
+  if (el) el.style.setProperty("--foto", url ? `url('${urlAbs(url).replace(/'/g, "%27")}')` : "none");
 }
 function lemaHtml(clave) {
   const lema = dict()[clave];
@@ -1085,7 +1116,7 @@ function empresaCard(e, index) {
   const sector = t["sector." + e.sector] || String(e.sector || "").replace(/_/g, " ");
   return `
     <article class="v5-rcard${e.destacado ? " is-dest" : ""}" data-emp-id="${escapeAttr(e.id)}" data-n="${index}">
-      <span class="v5-rcard-img${img ? "" : " is-vacia"}" style="--foto:url('${escapeAttr(img)}')" aria-hidden="true">
+      <span class="v5-rcard-img${img ? "" : " is-vacia"}" style="--foto:url('${escapeAttr(urlAbs(img))}')" aria-hidden="true">
         ${e.destacado ? `<span class="v5-rcard-badge">${escapeHtml(t["empresas.destacada"] || "Destacada")}</span>` : ""}
       </span>
       <span class="v5-rcard-b">
@@ -1207,7 +1238,7 @@ function itemCard(r, c, index) {
   const servs = serviciosDe(r).map((x) => `<span class="v5-rchip"><svg viewBox="0 0 24 24" aria-hidden="true">${x.svg}</svg>${escapeHtml(x.label)}</span>`).join("");
   return `
     <article class="v5-rcard" data-n="${index}">
-      <button class="v5-rcard-img${img ? "" : " is-vacia " + (c.th || "")}" style="--foto:url('${escapeAttr(img)}')" data-abrir aria-label="${escapeAttr(nombre)}">
+      <button class="v5-rcard-img${img ? "" : " is-vacia " + (c.th || "")}" style="--foto:url('${escapeAttr(urlAbs(img))}')" data-abrir aria-label="${escapeAttr(nombre)}">
         ${flag ? `<span class="v5-rcard-flag">${flag}</span>` : ""}
         <span class="v5-rcard-go" aria-hidden="true">${CHEVRON}</span>
       </button>
@@ -1261,7 +1292,7 @@ function noticiaCard(n, index) {
   const desc = stripHtml(n.descripcion || n.resumen || "");
   return `
     <article class="v5-rcard v5-rcard--noticia" data-slug="${escapeAttr(n.slug || "")}" data-n="${index}">
-      <button class="v5-rcard-img${img ? "" : " is-vacia th-evento"}" style="--foto:url('${escapeAttr(img)}')" data-abrir aria-label="${escapeAttr(n.titulo || "")}">
+      <button class="v5-rcard-img${img ? "" : " is-vacia th-evento"}" style="--foto:url('${escapeAttr(urlAbs(img))}')" data-abrir aria-label="${escapeAttr(n.titulo || "")}">
         ${cat ? `<span class="v5-rcard-badge">${escapeHtml(cat)}</span>` : ""}
         <span class="v5-rcard-go" aria-hidden="true">${CHEVRON}</span>
       </button>
@@ -1300,10 +1331,12 @@ async function renderNoticias(grid) {
   enlazarNoticias(grid, items);
 }
 
-async function openNoticia(n) {
-  tele.registrar("noticia", { seccion: currentCat === "eventos" ? "eventos" : "noticias", contenido_id: n.id != null ? String(n.id) : null, contenido: n.titulo });
+let noticiaAbierta = null; /* para repintarla (traducida) si cambia el idioma */
+async function openNoticia(n, repintado = false) {
+  if (!repintado) tele.registrar("noticia", { seccion: currentCat === "eventos" ? "eventos" : "noticias", contenido_id: n.id != null ? String(n.id) : null, contenido: n.titulo });
   const t = dict();
-  currentPoi = null; /* las noticias no se repintan al cambiar de idioma */
+  noticiaAbierta = n;
+  currentPoi = null;
   currentPoiCat = null;
   $("#det-miga").textContent = [t["v5.inicio"] || "Inicio", t["cat.noticias"] || "Noticias"].join(" · ");
   $("#det-titulo").textContent = n.titulo || "—";
@@ -1327,6 +1360,8 @@ async function openNoticia(n) {
   try {
     if (n.slug) {
       const d = await apiGet(`/noticias/${encodeURIComponent(n.slug)}`);
+      if (noticiaAbierta !== n) return; /* el visitante ya abrió otra cosa */
+      if (d && d.titulo) $("#det-titulo").textContent = d.titulo;
       if (d && d.contenido) $("#poi-body").textContent = stripHtml(d.contenido);
     }
   } catch { /* se queda con la descripción */ }
@@ -1452,6 +1487,7 @@ const dialog = {
   },
   close() {
     if (this.open) showView(vistaAntesDeFicha || "view-home");
+    noticiaAbierta = null;
     currentPoi = null;
     currentPoiCat = null;
   },
@@ -1517,7 +1553,7 @@ const ICO_DET = {
 };
 const svgDe = (cuerpo) => `<svg viewBox="0 0 24 24" aria-hidden="true">${cuerpo}</svg>`;
 /* Etiquetas que describen para quién es el lugar (bloque «Recomendado para») */
-const IDS_RECOMENDADO = new Set(["familias", "fotografia", "senderismo", "snorkel"]);
+const IDS_RECOMENDADO = new Set(["familias", "fotografia", "senderismo", "snorkel", "cultura", "aventura"]);
 
 function serviciosTodos(r) {
   const fuentes = [].concat(r.servicios_disponibles || [], r.etiquetas || [], Object.keys(r.accesibilidad || {}));
@@ -1531,6 +1567,61 @@ function serviciosTodos(r) {
   return out;
 }
 
+/* Recursos publicados: sitúan los eventos (que llegan sin coordenadas) y completan su galería */
+let recursosTodos = [];
+async function cargarRecursosTodos() {
+  try { recursosTodos = (await apiGet("/tourism/resources?publicado=true&page_size=200")).items || []; } catch { /* sin datos */ }
+}
+const sinTildes = (s) => String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+/* Núcleos y parajes del municipio (los nombres más largos primero, para que «San José» no gane a otros) */
+const LUGARES_MUNICIPIO = [
+  ["Salinas de Cabo de Gata", 36.768, -2.214], ["San Miguel de Cabo de Gata", 36.781, -2.239], ["Pozo de los Frailes", 36.787, -2.098],
+  ["La Isleta del Moro", 36.812, -2.053], ["Los Albaricoques", 36.955, -2.131], ["Campohermoso", 36.933, -2.124], ["Fernán Pérez", 36.929, -2.040],
+  ["Agua Amarga", 36.938, -1.935], ["Los Escullos", 36.803, -2.070], ["San Isidro", 36.906, -2.120], ["Rodalquilar", 36.847, -2.041],
+  ["Las Negras", 36.876, -2.004], ["San José", 36.763, -2.107], ["Cabo de Gata", 36.722, -2.193], ["Níjar", 36.966, -2.207],
+];
+/* Dónde es un evento: su recurso enlazado, un recurso con ese nombre en la dirección o, si no, el núcleo */
+function lugarDeEvento(r) {
+  if (r.recurso_id) {
+    const x = recursosTodos.find((y) => y.id === r.recurso_id);
+    if (x && extractLatLon(x)) return { recurso: x, ll: extractLatLon(x) };
+  }
+  const dir = sinTildes(r.direccion);
+  if (!dir) return null;
+  const cabeza = dir.split(",")[0].trim();
+  const rec = recursosTodos.find((y) => {
+    const n = sinTildes(y.nombre);
+    return extractLatLon(y) && n.length > 6 && (dir.includes(n) || (cabeza.length >= 8 && n.includes(cabeza)));
+  });
+  if (rec) return { recurso: rec, ll: extractLatLon(rec) };
+  const nuc = LUGARES_MUNICIPIO.find(([n]) => dir.includes(sinTildes(n)));
+  return nuc ? { ll: [nuc[1], nuc[2]], aprox: nuc[0] } : null;
+}
+const fotosDe = (r) => (r.imagenes || []).map((x) => (typeof x === "string" ? x : x && x.url)).filter(Boolean);
+
+/* «Recomendado para» por tipo de lugar o de evento, cuando sus etiquetas no lo dicen */
+const PARA_POR_TIPO = {
+  playa: ["snorkel", "fotografia"], ruta: ["senderismo", "fotografia"], parque_natural: ["senderismo", "fotografia"],
+  mirador: ["fotografia", "familias"], monumento: ["cultura", "familias", "fotografia"], yacimiento: ["cultura", "familias"],
+  museo: ["cultura", "familias"], centro_visitantes: ["familias", "cultura"], oficina_turismo: ["familias"], punto_interes: ["fotografia", "familias"],
+  naturaleza: ["senderismo", "familias"], cultural: ["cultura", "familias"], musical: ["cultura", "familias"], festivo: ["familias", "cultura"],
+  educativo: ["cultura", "familias"], gastronomico: ["cultura", "familias"], deportivo: ["aventura"],
+};
+const ICO_PARA = {
+  cultura: '<path d="M4 20h16M6 20V10h12v10M4 10l8-6 8 6M10 20v-5h4v5" fill="none" stroke="#7C4FC4" stroke-width="2" stroke-linejoin="round"/>',
+  aventura: '<path d="M3 17c3-2 5-2 8 0s5 2 8 0M14 4l-3 7h5l-4 6" fill="none" stroke="#E8742B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
+};
+function recomendadoPara(r, servs) {
+  const t = dict();
+  const out = servs.filter((x) => IDS_RECOMENDADO.has(x.id));
+  (PARA_POR_TIPO[r.categoria || r.tipo] || []).forEach((id) => {
+    if (out.length >= 4 || out.some((x) => x.id === id)) return;
+    const m = SERVICIOS_ICONOS.find((x) => x[1] === id);
+    out.push({ id, svg: m ? m[2] : ICO_PARA[id], label: t["serv." + id] || id });
+  });
+  return out;
+}
+
 function fmtDistancia(km) {
   return km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(1).replace(".", currentLang === "en" ? "." : ",")} km`;
 }
@@ -1539,6 +1630,7 @@ function openDetail(r, c) {
   if (r !== currentPoi || !dialog.open) {
     tele.registrar("ficha", { seccion: c?.id || currentCat, contenido_id: r.id != null ? String(r.id) : null, contenido: r.nombre || r.titulo });
   }
+  noticiaAbierta = null;
   currentPoi = r;
   currentPoiCat = c;
   const t = dict();
@@ -1554,11 +1646,14 @@ function openDetail(r, c) {
     : [tipoLugar, r.municipio].filter(Boolean).join(" · ");
   $("#det-lema").innerHTML = c ? lemaHtml("lema." + c.id) : "";
 
-  // Hero: foto real del recurso (o la de su categoría)
-  const fotos = (r.imagenes || []).map((x) => (typeof x === "string" ? x : x && x.url)).filter(Boolean);
-  ponerFoto($("#det-hero"), fotos[0] || (c ? fotoDeCategoria(c) : "../shared/cabo-de-gata-hero.jpg"));
+  // Hero: foto real del recurso; en eventos, la del lugar donde se celebran; si no, la de su categoría
+  const fotos = fotosDe(r);
+  const lugarEv = extractLatLon(r) ? null : lugarDeEvento(r);
+  const fotosLugar = lugarEv && lugarEv.recurso ? fotosDe(lugarEv.recurso) : [];
+  ponerFoto($("#det-hero"), fotos[0] || fotosLugar[0] || (c ? fotoDeCategoria(c) : "../shared/cabo-de-gata-hero.jpg"));
   /* Crédito de la foto (Wikimedia Commons: autor · licencia), obligatorio por la licencia CC */
-  const textoCredito = fotos[0] && r.enlaces_externos && r.enlaces_externos.imagen_credito;
+  const fuenteFoto = fotos[0] ? r : fotosLugar[0] ? lugarEv.recurso : null;
+  const textoCredito = fuenteFoto && fuenteFoto.enlaces_externos && fuenteFoto.enlaces_externos.imagen_credito;
   $("#det-credito").textContent = textoCredito ? "📷 " + textoCredito : "";
   $("#det-credito").hidden = !textoCredito;
 
@@ -1584,7 +1679,7 @@ function openDetail(r, c) {
   lugarEl.innerHTML = lugar ? ICO_PIN + `<b>${escapeHtml(lugar)}</b>` : "";
   lugarEl.hidden = !lugar;
   $("#poi-body").textContent = descLarga;
-  const latlon = extractLatLon(r);
+  const latlon = extractLatLon(r) || (lugarEv && lugarEv.ll) || null;
   const km = latlon ? haversineKm(latlon[0], latlon[1]) : null;
   const stats = [];
   if (km != null) stats.push(["distancia", fmtDistancia(km), t["info.desde_totem"] || "desde el tótem"]);
@@ -1626,17 +1721,22 @@ function openDetail(r, c) {
   $("#det-aviso").hidden = !aviso;
   $("#det-serv").hidden = !feats.length && !aviso;
 
-  // Galería (si hay varias fotos): al tocar una, pasa a la cabecera
-  const galeria = fotos.filter((u) => /\.(jpe?g|png|webp)(\?|$)|\/thumb\//i.test(u));
-  $("#det-fotos").innerHTML = galeria.map((u, i) =>
-    `<button class="v5-foto" style="--foto:url('${escapeAttr(u)}')" data-foto="${i}" aria-label="${escapeAttr(nombre)} · ${i + 1}"></button>`).join("");
+  // Galería: fotos propias y del lugar; si son menos de dos, se completa con imágenes
+  // ilustrativas de la zona (marcadas como tales). Al tocar una, pasa a la cabecera.
+  const esFoto = (u) => /\.(jpe?g|png|webp)(\?|$)|\/thumb\//i.test(u);
+  const galeria = [...new Set([...fotos, ...fotosLugar])].filter(esFoto).map((u) => ({ u }));
+  [c ? fotoDeCategoria(c) : null, "../shared/cabo-de-gata-hero.jpg", "../shared/tiles/naturaleza.jpg"].forEach((u) => {
+    if (u && galeria.length < 3 && !galeria.some((g) => g.u === u)) galeria.push({ u, ilus: true });
+  });
+  $("#det-fotos").innerHTML = galeria.map((g, i) =>
+    `<button class="v5-foto" style="--foto:url('${escapeAttr(urlAbs(g.u))}')" data-foto="${i}" aria-label="${escapeAttr(nombre)} · ${i + 1}">${g.ilus ? `<span class="v5-foto-ilus">${escapeHtml(t["v5.ilustrativa"] || "Imagen ilustrativa")}</span>` : ""}</button>`).join("");
   $("#det-galeria").hidden = galeria.length < 2;
   $("#det-fotos").querySelectorAll("[data-foto]").forEach((b) =>
-    b.addEventListener("click", () => ponerFoto($("#det-hero"), galeria[Number(b.dataset.foto)])));
+    b.addEventListener("click", () => ponerFoto($("#det-hero"), galeria[Number(b.dataset.foto)].u)));
 
   // Mapa y ubicación
   $("#det-mapa-card").hidden = !latlon;
-  if (latlon) miniMapaEn("ficha", $("#det-mapa"), [{ ll: latlon, nombre }], 13);
+  if (latlon) miniMapaEn("ficha", $("#det-mapa"), [{ ll: latlon, nombre: lugarEv ? (lugarEv.recurso ? (lugarEv.recurso.nombre_i18n?.[currentLang] || lugarEv.recurso.nombre) : lugarEv.aprox) : nombre }], lugarEv && lugarEv.aprox ? 12 : 13);
 
   // Consejos de la categoría
   pintarConsejos($("#det-consejos"), c ? c.id : null);
@@ -1651,7 +1751,7 @@ function openDetail(r, c) {
   $("#det-llegar").hidden = !llegar.length;
 
   // Recomendado para… (según sus etiquetas)
-  const para = servs.filter((x) => IDS_RECOMENDADO.has(x.id));
+  const para = recomendadoPara(r, servs);
   $("#det-para-items").innerHTML = para.map((x) => `<div class="v5-para-i">${svgDe(x.svg)}<span>${escapeHtml(x.label)}</span></div>`).join("");
   $("#det-para").hidden = !para.length;
 
@@ -2289,6 +2389,7 @@ setInterval(cargarDestacado, 30 * 60 * 1000); /* el tótem no se recarga: refres
 pintarQrHome();
 cargarFotosCategorias();
 cargarRecomendado();
+cargarRecursosTodos();
 cargarNoticiaHome();
 pintarMiniMapa();
 setInterval(cargarNoticiaHome, 60 * 60 * 1000);
@@ -2322,8 +2423,22 @@ function mostrarQR(url, titulo) {
   $("#qr-title").textContent = titulo || urlLegible(destino);
   $("#qr-code").innerHTML = qrSvg(destino);
   $("#qr-url").textContent = urlLegible(destino);
+  /* Abierto desde un móvil (no en el tótem): además del QR, se puede abrir el enlace */
+  const abrir = $("#qr-abrir");
+  if (abrir) {
+    abrir.hidden = !ES_MOVIL.matches;
+    abrir.onclick = () => abrirEnlaceExterno(destino);
+  }
   if (!d.open) d.showModal();
   if (typeof resetIdle === "function") resetIdle();
+}
+
+/* El tótem físico (1080 px) nunca sale de su URL. Si la misma página se abre en un
+   móvil, los enlaces externos sí pueden abrirse (pestaña nueva) desde la ventana del QR. */
+const ES_MOVIL = window.matchMedia("(max-width: 760px)");
+const abrirVentana = window.open.bind(window);
+function abrirEnlaceExterno(url) {
+  if (ES_MOVIL.matches) abrirVentana(url, "_blank", "noopener");
 }
 
 (function instalarModoQuiosco() {

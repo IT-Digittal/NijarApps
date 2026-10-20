@@ -1027,25 +1027,33 @@ for (const lang of Object.keys(V5C)) Object.assign(I18N[lang] = I18N[lang] || {}
 /* Fase 4 · mapa del destino y avisos */
 const V5D = {
   es: {
-    "v5.mapa_s": "Descubre todos los rincones de Níjar", "v5.mapa_lema": "Explora a tu ritmo", "v5.mapa_filtrar": "Filtrar el mapa",
+    "v5.abrir_enlace": "Abrir enlace",
+    "v5.ilustrativa": "Imagen ilustrativa", "serv.cultura": "Amantes de la cultura", "serv.aventura": "Aventura y deporte",
+    "v5.mapa_sub": "Descubre todos los rincones de Níjar", "v5.mapa_lema": "Explora a tu ritmo", "v5.mapa_filtrar": "Filtrar el mapa",
     "v5.acercar": "Acercar", "v5.alejar": "Alejar", "v5.estas_aqui": "Estás aquí", "v5.a_de_aqui": "A {d} de aquí",
     "v5.g_patrimonio": "Patrimonio", "v5.g_interes": "Puntos de interés", "v5.g_info": "Información turística", "v5.g_otros": "Otros",
     "v5.vigente_hasta": "Vigente hasta el {f}",
   },
   en: {
-    "v5.mapa_s": "Discover every corner of Níjar", "v5.mapa_lema": "Explore at your own pace", "v5.mapa_filtrar": "Filter the map",
+    "v5.abrir_enlace": "Open link",
+    "v5.ilustrativa": "Illustrative image", "serv.cultura": "Culture lovers", "serv.aventura": "Adventure & sport",
+    "v5.mapa_sub": "Discover every corner of Níjar", "v5.mapa_lema": "Explore at your own pace", "v5.mapa_filtrar": "Filter the map",
     "v5.acercar": "Zoom in", "v5.alejar": "Zoom out", "v5.estas_aqui": "You are here", "v5.a_de_aqui": "{d} from here",
     "v5.g_patrimonio": "Heritage", "v5.g_interes": "Points of interest", "v5.g_info": "Tourist information", "v5.g_otros": "Other",
     "v5.vigente_hasta": "Valid until {f}",
   },
   de: {
-    "v5.mapa_s": "Entdecke jeden Winkel von Níjar", "v5.mapa_lema": "Entdecke in deinem Tempo", "v5.mapa_filtrar": "Karte filtern",
+    "v5.abrir_enlace": "Link öffnen",
+    "v5.ilustrativa": "Symbolbild", "serv.cultura": "Kulturliebhaber", "serv.aventura": "Abenteuer & Sport",
+    "v5.mapa_sub": "Entdecke jeden Winkel von Níjar", "v5.mapa_lema": "Entdecke in deinem Tempo", "v5.mapa_filtrar": "Karte filtern",
     "v5.acercar": "Vergrößern", "v5.alejar": "Verkleinern", "v5.estas_aqui": "Sie sind hier", "v5.a_de_aqui": "{d} von hier",
     "v5.g_patrimonio": "Kulturerbe", "v5.g_interes": "Sehenswürdigkeiten", "v5.g_info": "Touristeninformation", "v5.g_otros": "Sonstiges",
     "v5.vigente_hasta": "Gültig bis {f}",
   },
   fr: {
-    "v5.mapa_s": "Découvrez tous les recoins de Níjar", "v5.mapa_lema": "Explorez à votre rythme", "v5.mapa_filtrar": "Filtrer la carte",
+    "v5.abrir_enlace": "Ouvrir le lien",
+    "v5.ilustrativa": "Image d'illustration", "serv.cultura": "Amateurs de culture", "serv.aventura": "Aventure et sport",
+    "v5.mapa_sub": "Découvrez tous les recoins de Níjar", "v5.mapa_lema": "Explorez à votre rythme", "v5.mapa_filtrar": "Filtrer la carte",
     "v5.acercar": "Zoom avant", "v5.alejar": "Zoom arrière", "v5.estas_aqui": "Vous êtes ici", "v5.a_de_aqui": "À {d} d'ici",
     "v5.g_patrimonio": "Patrimoine", "v5.g_interes": "Points d'intérêt", "v5.g_info": "Information touristique", "v5.g_otros": "Autres",
     "v5.vigente_hasta": "Valable jusqu'au {f}",

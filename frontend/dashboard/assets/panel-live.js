@@ -14,7 +14,7 @@
  * fuente real llevan un aviso visible de demostración.
  */
 
-import { api, tokens } from "./api-client.js?v=18";
+import { api, tokens } from "./api-client.js?v=19";
 
 const NO_DATA = "—";
 

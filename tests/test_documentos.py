@@ -5,7 +5,9 @@ from __future__ import annotations
 import pytest
 
 from nijar_dti.schemas.documentos import TAMANO_MAX_BYTES, TIPOS_ENTIDAD_VALIDOS
+from nijar_dti.services import documentos_service
 from nijar_dti.services.documentos_service import (
+    AlmacenNoDisponibleError,
     DocumentoError,
     _nombre_seguro,
     crear_documento,
@@ -62,6 +64,31 @@ class TestValidaciones:
                 descripcion=None,
                 subido_por=None,
             )
+
+
+async def test_almacen_sin_escritura_da_error_claro(monkeypatch, tmp_path):
+    """Volumen sin permisos (p. ej. creado como root): error explícito, no un 500."""
+    bloqueado = tmp_path / "no_es_un_directorio"
+    bloqueado.write_text("x")  # mkdir() sobre un fichero → OSError
+    monkeypatch.setattr(
+        documentos_service,
+        "get_settings",
+        lambda: type("S", (), {"storage_local_path": str(bloqueado)})(),
+    )
+    with pytest.raises(AlmacenNoDisponibleError, match="permisos"):
+        await crear_documento(
+            None,  # type: ignore[arg-type]
+            entidad_tipo="elemento_geo",
+            entidad_id="x",
+            entidad_nombre="X",
+            latitud=None,
+            longitud=None,
+            nombre_archivo="a.pdf",
+            tipo_mime="application/pdf",
+            contenido=b"datos",
+            descripcion=None,
+            subido_por=None,
+        )
 
 
 def test_nombre_seguro_sanea_rutas_y_control():

@@ -32,6 +32,7 @@ from nijar_dti.models.recurso_turistico import RecursoTuristico
 from nijar_dti.models.rol import Rol
 from nijar_dti.models.sensor import Sensor
 from nijar_dti.models.servicio import Servicio
+from nijar_dti.models.traduccion import Traduccion
 from nijar_dti.models.usuario import Usuario
 from nijar_dti.models.verticales import (
     CamaraCCTV,
@@ -75,6 +76,7 @@ __all__ = [
     "SectorAgua",
     "Sensor",
     "Servicio",
+    "Traduccion",
     "SuministroEnergia",
     "Usuario",
     "Visita",

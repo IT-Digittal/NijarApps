@@ -1,0 +1,226 @@
+/* =====================================================================
+   Tótem «Vive Níjar» en el móvil (pantallas de hasta 760 px).
+   El tótem físico es una pantalla vertical de 1080×1920 y su diseño está
+   en píxeles fijos; cuando la misma URL se abre en un móvil (QR, enlace
+   compartido…) esta hoja reordena la maquetación a una columna. No afecta
+   al tótem: solo actúa por debajo de 760 px de ancho.
+   ===================================================================== */
+@media (max-width: 760px) {
+  /* ---------- Cabecera: escudo, marca y accesibilidad; idiomas debajo ---------- */
+  .v5-head { flex-wrap: wrap; height: auto; gap: 8px 10px; padding: 8px 12px; }
+  .v5-ayto img { height: 40px; }
+  .v5-ayto span, .v5-sep, .v5-hora { display: none; }
+  .v5-logo { height: 34px; }
+  .v5-a11y { margin-left: auto; gap: 4px; }
+  .v5-a11y button { width: 42px; height: 42px; border-radius: 12px; }
+  .v5-a11y button svg { width: 22px; height: 22px; }
+  .v5-a11y button span { display: none; }
+  .v5-langs { order: 5; flex: 1 0 100%; margin-left: 0; padding: 3px; border-radius: 12px; }
+  .v5-langs .lang-btn { flex: 1; height: 34px; min-width: 0; font-size: 15px; }
+
+  /* ---------- Hero de inicio ---------- */
+  .v5-hero { height: 270px; }
+  .v5-hero-txt { left: 16px; right: 16px; top: 22px; }
+  .v5-hero-k { font-size: 20px; }
+  .v5-hero-t { font-size: 32px; margin-bottom: 6px; }
+  .v5-hero-s { font-size: 16px; max-width: 100%; }
+  .v5-hero-script { display: none; }
+
+  /* ---------- Cuerpo, accesos y avisos ---------- */
+  .v5-body { padding: 0 12px 16px; }
+  .v5-grid { margin-top: -78px; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .v5-tile { gap: 6px; padding: 10px 4px; border-radius: 14px; }
+  .v5-tile-ico { width: 50px; height: 50px; border-radius: 14px; }
+  .v5-tile-ico svg { width: 30px; height: 30px; }
+  .v5-tile-lab { font-size: 12.5px; }
+  .v5-tile-lab svg { display: none; }
+  .v5-avisos { height: 42px; margin-top: 12px; }
+  .v5-avisos .lab { padding: 0 10px; font-size: 12px; }
+  .v5-avisos .track { font-size: 15px; }
+
+  /* ---------- Secciones y tarjetas ---------- */
+  .v5-sec { margin-top: 16px; }
+  .v5-sec-h { flex-wrap: wrap; gap: 8px; }
+  .v5-sec-h h2 { font-size: 23px; }
+  .v5-linea, .v5-sec-script { display: none; }
+  .v5-sec-h .v5-pill { margin-left: auto; }
+  .v5-explora { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .v5-xcard, .v5-explora--todo .v5-xcard { height: 150px; }
+  .v5-xcard-t { left: 12px; right: 48px; bottom: 12px; }
+  .v5-xcard-t strong, .v5-explora--todo .v5-xcard-t strong { font-size: 19px; }
+  .v5-xcard-t small { font-size: 13px; }
+  .v5-xcard-go { width: 34px; height: 34px; right: 10px; bottom: 10px; }
+  .v5-row, .v5-row--det { grid-template-columns: 1fr; gap: 12px; margin-top: 12px; }
+  .v5-card { padding: 14px; }
+  .v5-card-h { flex-wrap: wrap; }
+  .v5-card-h h3 { font-size: 20px; }
+  .v5-dest-b, .v5-news-b { grid-template-columns: 1fr; }
+  .v5-dest-img { height: 170px; }
+  .v5-news-img { height: 160px; }
+  .v5-ia-tit h3 { font-size: 22px; }
+  .v5-ia-chips { grid-template-columns: 1fr 1fr 1fr; }
+  .v5-chip { font-size: 13px; min-height: 48px; }
+  .v5-mapa-box { min-height: 220px; }
+  .v5-reco-img { height: 160px; }
+  .v5-reco-b strong { font-size: 22px; }
+  /* «Ábrelo en tu móvil» no tiene sentido si ya se está en el móvil */
+  .v5-qr-code, .v5-nav-qr, .v5-nav-sep { display: none !important; }
+  .v5-qr { background: #fff; }
+
+  /* ---------- Barra inferior fija ---------- */
+  .v5-nav { position: sticky; bottom: 0; margin: 12px 0 0; padding: 6px 6px calc(6px + env(safe-area-inset-bottom)); border-radius: 16px 16px 0 0; gap: 2px; }
+  .v5-nav > button { font-size: 13px; padding: 6px 2px; gap: 2px; }
+  .v5-nav > button svg { width: 26px; height: 26px; }
+
+  /* ---------- Pie ilustrado ---------- */
+  .v5-pie { height: 90px; }
+  .v5-pie .v5-script { left: 96px; bottom: 26px; font-size: 22px; }
+
+  /* ---------- Cabeceras de las vistas internas ---------- */
+  .v5-subhero, .v5-subhero--lista, .v5-subhero--chat { padding: 18px 16px 64px 70px; min-height: 0; }
+  .v5-volver, .v5-subhero--lista .v5-volver, .v5-subhero--chat .v5-volver { left: 14px; top: 16px; width: 44px; height: 44px; }
+  .v5-volver svg { width: 22px; height: 22px; }
+  .v5-miga { font-size: 13px; margin-bottom: 6px; }
+  .v5-subhero h2 { font-size: 28px; }
+  .v5-subhero-s { font-size: 15px; }
+  .v5-subhero-script { font-size: 26px; }
+  .v5-subhero-lema { display: none; }
+  .v5-subhero-acc { position: static; margin-top: 10px; }
+  .v5-cuenta { font-size: 15px; }
+
+  /* ---------- Listados ---------- */
+  .v5-lista { margin-top: -44px; }
+  .v5-buscar { height: 52px; padding: 0 16px; }
+  .v5-buscar svg { width: 22px; height: 22px; }
+  .v5-buscar input { font-size: 16px; }
+  .v5-chips, .v5-mapa-chips { flex-wrap: nowrap; overflow-x: auto; margin: 12px -12px; padding: 0 12px 4px; scrollbar-width: none; }
+  .v5-chips::-webkit-scrollbar { display: none; }
+  .v5-fchip, .v5-mapa-chips .v5-fchip { flex: 0 0 auto; height: 44px; padding: 0 14px; font-size: 15px; }
+  .v5-fchip svg { width: 20px; height: 20px; }
+  .v5-cards { grid-template-columns: 1fr; gap: 12px; }
+  .v5-rcard-img { height: 180px; }
+  .v5-rcard-t { font-size: 21px; }
+  .v5-rcard-d { font-size: 15px; }
+  .v5-rcard-lugar { font-size: 15px; }
+  .v5-ficha { font-size: 16px; padding: 9px 18px; }
+  #content-grid .tt-dayhead { font-size: 18px; }
+  #content-grid .tt-item { flex-direction: row; }
+  #content-grid .tt-item .tt-thumb, #content-grid .tt-dateblock { flex: 0 0 74px; }
+  #content-grid .tt-item-body { padding: 12px 14px; gap: 4px; }
+  #content-grid .tt-item h3 { font-size: 17px; }
+  #content-grid .tt-item-meta { flex-wrap: wrap; gap: 4px 10px; }
+
+  /* ---------- Ficha ---------- */
+  .v5-dhero { height: 300px; }
+  .v5-dhero-txt { left: 16px; right: 16px; top: 76px; }
+  .v5-dhero-txt h2 { font-size: 30px; margin-bottom: 6px; }
+  .v5-dhero-s { font-size: 15px; -webkit-line-clamp: 2; }
+  .v5-dhero-lema { display: none; }
+  .v5-dhero-badge { left: 70px; top: 22px; font-size: 12px; padding: 5px 12px; }
+  .v5-credito { bottom: 64px; font-size: 10px; }
+  .v5-det { margin-top: -50px; }
+  .v5-det-desc { font-size: 16px; max-height: none; }
+  .v5-det-lugar { font-size: 16px; }
+  .v5-stats, .v5-feats, .v5-para { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .v5-stat { padding: 10px; }
+  .v5-stat b { font-size: 15px; }
+  .v5-stat small { font-size: 12.5px; }
+  .v5-det-acc { grid-template-columns: 1fr; }
+  .v5-boton { height: 52px; font-size: 16px; }
+  .v5-feat, .v5-para-i { font-size: 15px; padding: 10px; min-height: 0; }
+  .v5-galeria-fotos { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .v5-foto { height: 96px; }
+  .v5-foto-ilus { font-size: 10px; padding: 2px 6px; left: 4px; bottom: 4px; }
+
+  /* ---------- Asistente ---------- */
+  .v5-chat-robot { width: 76px; height: 76px; right: 14px; top: auto; bottom: 64px; }
+  .v5-chat-robot svg { width: 56px; height: 56px; }
+  .v5-chat-estado { gap: 6px; margin-top: 10px; }
+  .v5-chat-online { font-size: 12px; padding: 5px 10px; }
+  .v5-chat { margin-top: -50px; }
+  .v5-chat-card { padding: 12px; }
+  .v5-chat-log { height: 56vh; gap: 12px; }
+  .v5-msg { max-width: 100%; gap: 8px; }
+  .v5-msg-av { width: 38px; height: 38px; }
+  .v5-msg-av svg { width: 30px; height: 30px; }
+  .v5-msg-b { padding: 12px 14px; }
+  .v5-chat-sug { grid-template-columns: 1fr 1fr; }
+
+  /* ---------- Mapa del destino ---------- */
+  .v5-mapag { margin-top: -50px; }
+  .v5-mapag-box { height: 62vh; min-height: 380px; }
+  .v5-mapa-btn { min-width: 46px; height: 46px; padding: 0 10px; font-size: 14px; }
+  .v5-mapa-btn svg { width: 22px; height: 22px; }
+  .v5-mapa-sheet { left: 8px; right: 8px; bottom: 8px; flex-direction: column; gap: 10px; padding: 12px; padding-right: 12px; }
+  .v5-msheet-img { width: 100%; min-height: 0; height: 120px; }
+  .v5-msheet-txt h3 { font-size: 21px; padding-right: 40px; }
+  .v5-msheet-acc { grid-template-columns: 1fr 1fr; }
+  .v5-msheet-x { width: 40px; height: 40px; top: 140px; right: 12px; }
+
+  /* ---------- Avisos y emergencias ---------- */
+  .v5-aviso { padding: 14px; gap: 12px; }
+  .v5-aviso-ico { width: 44px; height: 44px; border-radius: 12px; }
+  .v5-aviso strong { font-size: 18px; }
+  .v5-aviso p { font-size: 15px; }
+  .v5-h3 { font-size: 22px; margin: 20px 0 10px; }
+  .v5-emerg { grid-template-columns: 1fr; gap: 10px; }
+  .v5-emerg-card { padding: 14px; gap: 12px; }
+  .v5-emerg-ico { width: 48px; height: 48px; }
+  .v5-emerg-txt strong { font-size: 17px; }
+  .v5-emerg-txt .emergency-number { font-size: 24px; }
+
+  /* El texto grande del tótem (px fijos de 1080) no debe romper el móvil */
+  body.text-lg-mode .v5-dhero-txt h2 { font-size: 34px; }
+  body.text-lg-mode .v5-rcard-t { font-size: 24px; }
+}
+
+@media (max-width: 760px) {
+  .v5-news-h { flex-wrap: wrap; }
+  .v5-news-h .v5-pill { margin-left: 0; }
+  .v5-qr-abrir { display: flex; width: 100%; margin-top: 12px; }
+  .v5-qr-abrir[hidden] { display: none; }
+}
+.v5-qr-abrir[hidden] { display: none; }
+
+/* Asistente y ficha del mapa, más compactos en el móvil */
+@media (max-width: 760px) {
+  .v5-chat-robot { display: none; }
+  .v5-msg-t { font-size: 16px; line-height: 1.45; }
+  .v5-msg-sug button { font-size: 14px; padding: 7px 12px; }
+  .v5-util { font-size: 14px; }
+  .v5-util button { width: 40px; height: 40px; }
+  .v5-reco-chat { min-width: 0; }
+  .v5-reco-chat h4 { font-size: 17px; }
+  .v5-reco-chat .tx b { font-size: 16px; }
+  .v5-reco-chat .tx small { font-size: 13px; }
+  .v5-chat-sug { gap: 8px; margin: 12px 0 10px; }
+  .v5-chat-sug .v5-chip { min-height: 48px; font-size: 14px; }
+  .v5-chat-sug .v5-chip svg { width: 22px; height: 22px; }
+  .v5-chat-form input, .v5-chat-form textarea { font-size: 16px; }
+
+  .v5-mapa-sheet { flex-direction: row; align-items: flex-start; gap: 12px; padding: 12px 52px 12px 12px; }
+  .v5-msheet-img { flex: 0 0 76px; width: 76px; height: 76px; border-radius: 12px; }
+  .v5-msheet-img svg { width: 40px; height: 40px; }
+  .v5-msheet-txt { gap: 4px; }
+  .v5-msheet-tag { font-size: 12px; padding: 2px 10px; }
+  .v5-msheet-txt h3 { font-size: 18px; padding-right: 0; }
+  .v5-msheet-txt .v5-ico-l { font-size: 14px; }
+  .v5-msheet-dist { font-size: 14px; }
+  .v5-msheet-acc { grid-column: 1 / -1; gap: 6px; padding-top: 4px; }
+  .v5-msheet-acc .v5-boton { height: 44px; font-size: 14px; padding: 0 8px; }
+  .v5-msheet-x { top: 10px; right: 10px; width: 36px; height: 36px; }
+}
+@media (max-width: 760px) {
+  .v5-chat-form { height: 58px; gap: 6px; padding: 0 6px; }
+  .v5-chat-mic, .v5-chat-speak { width: 44px; height: 44px; }
+  .v5-chat-mic svg, .v5-chat-speak svg { width: 22px; height: 22px; }
+  .v5-chat-form .v5-ia-send { width: 46px; height: 46px; }
+  .v5-chat-nota { font-size: 13px; }
+  body.text-lg-mode .v5-msg-t { font-size: 19px; }
+}
+@media (max-width: 760px) {
+  .v5-msheet-img { display: none; }
+  .v5-mapa-sheet { padding: 12px 12px 12px 14px; }
+  .v5-msheet-txt h3 { padding-right: 44px; }
+  .v5-msheet-acc .v5-boton { white-space: nowrap; }
+}

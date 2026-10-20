@@ -61,6 +61,15 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
                 refrescar_noticias_loop(interval_seconds=settings.noticias_refresco_minutos * 60)
             )
         )
+    # Traducción anticipada de avisos, eventos, noticias y agenda (en/de/fr) para el tótem
+    if settings.traducciones_refresco_minutos > 0:
+        from nijar_dti.services.traduccion_service import precalentar_traducciones_loop
+
+        tareas.append(
+            asyncio.create_task(
+                precalentar_traducciones_loop(settings.traducciones_refresco_minutos * 60)
+            )
+        )
     # Carga diaria de Datadis (consumo eléctrico municipal) a la hora configurada
     if settings.datadis_hora_carga >= 0:
         from nijar_dti.services.datadis_service import carga_diaria_loop

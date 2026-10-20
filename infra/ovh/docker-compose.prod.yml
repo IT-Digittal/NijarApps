@@ -60,6 +60,8 @@ services:
     restart: unless-stopped
     env_file: .env
     depends_on:
+      storage-init:
+        condition: service_completed_successfully
       db:
         condition: service_healthy
       redis:
@@ -74,6 +76,19 @@ services:
     deploy:
       resources:
         limits: { memory: 2G }
+    networks:
+      - nijar-net
+
+  # Ajusta el propietario del volumen de documentos al usuario `app` (uid 1000)
+  # de la imagen. Los volúmenes creados antes de este cambio quedaron como root.
+  storage-init:
+    image: nijar-dti-api:prod
+    container_name: nijar-dti-storage-init
+    user: "0:0"
+    command: ["sh", "-c", "mkdir -p /data/storage/documentos && chown -R 1000:1000 /data/storage"]
+    volumes:
+      - storage_data:/data/storage
+    restart: "no"
     networks:
       - nijar-net
 

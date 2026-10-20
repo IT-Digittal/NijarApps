@@ -7,11 +7,8 @@
  * configuración. Todo contra la API real con control de roles.
  */
 
-import { api, getCachedUser, invalidateCache, tokens } from "./api-client.js?v=18";
+import { api, getCachedUser, invalidateCache, fetchAuth } from "./api-client.js?v=19";
 
-/* Base de la API para descargas binarias (informes PDF) */
-const API_BASE_G = (typeof window !== "undefined" && window.NIJAR_API_BASE)
-  || window.location.origin + "/api/v1";
 
 const CATEGORIAS = ["playa", "monumento", "ruta", "mirador", "centro_visitantes", "parque_natural", "museo", "yacimiento", "punto_interes", "oficina_turismo"];
 const TIPOS_EVENTO = ["cultural", "gastronomico", "deportivo", "musical", "festivo", "naturaleza", "educativo", "otro"];
@@ -825,7 +822,7 @@ async function renderConfig(el) {
     kv("Usuario", u ? u.nombre_completo || u.email : "—") +
     kv("Email", u ? u.email : "—") +
     kv("Rol", u ? '<span class="bdg bdg-info">' + esc(u.rol) + "</span>" : "—") +
-    '<div class="chip-row" style="margin-top:14px"><button class="btn btn--sm" onclick="(async()=>{const m=await import(\'./api-client.js?v=18\');await m.api.logout();location.reload()})()">Cerrar sesión</button></div></div></div>';
+    '<div class="chip-row" style="margin-top:14px"><button class="btn btn--sm" onclick="(async()=>{const m=await import(\'./api-client.js?v=19\');await m.api.logout();location.reload()})()">Cerrar sesión</button></div></div></div>';
 }
 
 /* ---------------- helpers de tarjetas ---------------- */
@@ -937,7 +934,6 @@ async function renderCapasGemelo(el) {
    (centro de cada núcleo dentro del término) y después se importa: cada núcleo
    sustituye a su versión anterior. */
 
-const API_BASE_GESTION = window.NIJAR_API_BASE || window.location.origin + "/api/v1";
 const SRID_INVENTARIO = [
   ["25830", "ETRS89 · UTM 30N (EPSG:25830)"],
   ["23030", "ED50 · UTM 30N (EPSG:23030) · planos antiguos"],
@@ -959,9 +955,9 @@ function tarjetaImportarInventario() {
 }
 
 async function postInventario(colecciones, srid, dryRun, incluirFuera) {
-  const r = await fetch(API_BASE_GESTION + "/geo/inventario/importar", {
+  const r = await fetchAuth("/geo/inventario/importar", {
     method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: "Bearer " + tokens.access },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ colecciones, srid: Number(srid), dry_run: dryRun, incluir_fuera: incluirFuera }),
   });
   const j = await r.json().catch(() => ({}));
@@ -1544,8 +1540,7 @@ async function renderPublicidad(el) {
       const [anio, mes] = (el.querySelector("#pub-mes").value || "").split("-");
       if (!anio) { UI.toast("Elige el mes del informe"); return; }
       try {
-        const resp = await fetch(API_BASE_G + "/publicidad/" + e.id + "/informe?anio=" + anio + "&mes=" + Number(mes),
-          { headers: { Authorization: "Bearer " + tokens.access } });
+        const resp = await fetchAuth("/publicidad/" + e.id + "/informe?anio=" + anio + "&mes=" + Number(mes));
         if (!resp.ok) throw new Error("HTTP " + resp.status);
         const url = URL.createObjectURL(await resp.blob());
         const a = document.createElement("a");

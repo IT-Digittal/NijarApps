@@ -14,6 +14,7 @@ from nijar_dti.schemas.auth import CurrentUser
 from nijar_dti.schemas.cms import AvisoPublicoOut, ContenidoIn, ContenidoOut
 from nijar_dti.schemas.common import PageParams, Paginated
 from nijar_dti.services import cms_service as svc
+from nijar_dti.services import traduccion_service
 
 router = APIRouter()
 
@@ -51,11 +52,16 @@ def _to_out(c) -> ContenidoOut:
     response_model=list[AvisoPublicoOut],
     summary="Contenidos publicados para el tótem (público, sin autenticación)",
 )
-async def contenidos_publicos_totem(db: AsyncSession = Depends(get_db)) -> list[AvisoPublicoOut]:
+async def contenidos_publicos_totem(
+    lang: str | None = Query(None, description="Idioma del tótem (en/de/fr se traducen)"),
+    db: AsyncSession = Depends(get_db),
+) -> list[AvisoPublicoOut]:
     """Avisos y contenidos del canal tótem visibles ahora mismo. Endpoint
-    público: el tótem lo consulta sin sesión para alimentar su ticker."""
+    público: el tótem lo consulta sin sesión para alimentar su ticker. Con
+    ``lang`` se completa la traducción que el CMS no traiga (con caché)."""
     filas = await svc.contenidos_publicos_canal(db, "totem")
-    return [AvisoPublicoOut.model_validate(c) for c in filas]
+    avisos = [AvisoPublicoOut.model_validate(c) for c in filas]
+    return await traduccion_service.traducir_avisos(db, avisos, lang)
 
 
 @router.get(
