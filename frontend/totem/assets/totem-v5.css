@@ -202,6 +202,9 @@ body { background: var(--v5-bg); font-family: var(--v5-ff); overflow-x: hidden; 
   background: #CFE3EE; cursor: pointer; position: relative;
 }
 .v5-mapa-box .leaflet-container { width: 100%; height: 100%; position: absolute; inset: 0; background: #CFE3EE; }
+/* Leaflet apila sus capas con z-index 200–700: sin un contexto propio quedaban por
+   encima de la cabecera fija (z-index 60) al hacer scroll. */
+.v5-mapa-box, .v5-mapag-box { isolation: isolate; }
 .v5-mapa-box .leaflet-control-attribution { font-size: 10px; }
 .v5-pin-lab {
   background: rgba(255, 255, 255, 0.92); border: 0; border-radius: 8px; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
