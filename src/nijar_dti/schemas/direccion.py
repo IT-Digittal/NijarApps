@@ -138,7 +138,7 @@ class ResumenMunicipal(BaseModel):
 # ---------------------------------------------------------------------------
 
 # Origen del dato, que el panel muestra como etiqueta en cada indicador.
-OrigenDato = Literal["real", "integrar", "estimado", "modelo"]
+OrigenDato = Literal["real", "integrar", "estimado", "modelo", "ejemplo"]
 SentidoDelta = Literal["bueno", "malo", "neutro"]
 TipoBloque = Literal[
     "linea",

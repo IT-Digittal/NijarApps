@@ -75,6 +75,11 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         from nijar_dti.services.datadis_service import carga_diaria_loop
 
         tareas.append(asyncio.create_task(carga_diaria_loop(settings.datadis_hora_carga)))
+    # Captura mensual del histórico real (sustituye los meses de ejemplo por el dato real)
+    if settings.captura_metricas_hora >= 0:
+        from nijar_dti.services.metricas_historicas_service import captura_mensual_loop
+
+        tareas.append(asyncio.create_task(captura_mensual_loop(settings.captura_metricas_hora)))
     try:
         yield
     finally:

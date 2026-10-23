@@ -196,12 +196,29 @@ def prever_mensual(
     return salida
 
 
+def cola_homogenea(puntos: Sequence[tuple[str, float]]) -> list[float]:
+    """Valores del tramo final con el mismo origen que el último punto.
+
+    La previsión nunca mezcla histórico de ejemplo con dato real capturado: si
+    el tramo real aún no llega a 15 meses, ``prever_mensual`` no devuelve nada.
+    """
+    valores = [v for _, v in puntos]
+    origenes = getattr(puntos, "origenes", None)
+    if not origenes:
+        return valores
+    real = origenes[-1] != "ejemplo"
+    i = len(origenes)
+    while i > 0 and (origenes[i - 1] != "ejemplo") == real:
+        i -= 1
+    return valores[i:]
+
+
 def serie_con_prevision(
     puntos: Sequence[tuple[str, float]], meses_historia: int, horizonte: int
 ) -> tuple[list[str], list[SerieGrafico]]:
     """Etiquetas y series (real, previsión y banda) de un histórico mensual."""
     hist = list(puntos)[-max(meses_historia, 1) :]
-    prev = prever_mensual([v for _, v in puntos], horizonte)
+    prev = prever_mensual(cola_homogenea(puntos), horizonte)
     etiquetas = [etiqueta_periodo(p) for p, _ in hist]
     if prev and hist:
         ultimo = hist[-1][0]
@@ -258,7 +275,7 @@ def comparativa_anual(
     previo = [por_mes.get((anio - 1, m)) for m in range(1, 13)]
     ultimo_mes = int(puntos[-1][0][5:7])
     faltan = 12 - ultimo_mes
-    prev = prever_mensual([v * escala for _, v in puntos], faltan) if faltan else []
+    prev = prever_mensual([v * escala for v in cola_homogenea(puntos)], faltan) if faltan else []
     prevision: list[float | None] = [None] * 12
     if prev:
         if enlazar:  # en líneas, la previsión arranca en el último dato real
@@ -386,19 +403,72 @@ def frase_portada(estado_texto: str, n_alerta: int) -> str:
 
 
 # ============================================================== acceso a datos
-async def _historico(db: AsyncSession, vertical: str, indicador: str) -> list[tuple[str, float]]:
+class SerieHist(list[tuple[str, float]]):
+    """Serie mensual (periodo, valor) que recuerda el origen de cada punto."""
+
+    def __init__(self, puntos: Sequence[tuple[str, float]] = (), origenes: Sequence[str] = ()):
+        super().__init__(puntos)
+        self.origenes: list[str] = list(origenes) or ["ejemplo"] * len(self)
+
+
+def _clase(origen: str) -> str:
+    """«ejemplo» (seed de instalación) frente a «capturado» (dato real o derivado)."""
+    return "ejemplo" if origen == "ejemplo" else "capturado"
+
+
+def origen_serie(serie: Sequence[tuple[str, float]], base: OrigenDato = "real") -> OrigenDato:
+    """Origen que muestra el panel para un dato tomado del último punto de la serie."""
+    origenes = getattr(serie, "origenes", None)
+    if not origenes:
+        return base
+    ultimo = origenes[-1]
+    if ultimo == "ejemplo":
+        return "ejemplo"
+    if ultimo == "estimado" and base == "real":
+        return "estimado"
+    return base
+
+
+def nota_serie(serie: Sequence[tuple[str, float]]) -> str | None:
+    """Aclara al pie qué meses son dato real y cuáles histórico de ejemplo."""
+    origenes = getattr(serie, "origenes", None)
+    if not origenes or not serie:
+        return None
+    reales = [i for i, o in enumerate(origenes) if o != "ejemplo"]
+    if not reales:
+        return "Histórico de ejemplo de la instalación: se sustituye mes a mes por el dato real capturado"
+    if len(reales) == len(origenes):
+        return None
+    return (
+        f"Dato real desde {etiqueta_periodo(serie[reales[0]][0])}; "
+        "los meses anteriores son histórico de ejemplo"
+    )
+
+
+def con_nota(pie: str | None, serie: Sequence[tuple[str, float]]) -> str | None:
+    nota = nota_serie(serie)
+    if not nota:
+        return pie
+    return f"{pie} · {nota}" if pie else nota
+
+
+async def _historico(db: AsyncSession, vertical: str, indicador: str) -> SerieHist:
     filas = (
         await db.execute(
-            select(MetricaHistorica.periodo, MetricaHistorica.valor)
+            select(MetricaHistorica.periodo, MetricaHistorica.valor, MetricaHistorica.origen)
             .where(MetricaHistorica.vertical == vertical, MetricaHistorica.indicador == indicador)
             .order_by(MetricaHistorica.periodo)
         )
     ).all()
-    return [(str(p), float(v)) for p, v in filas]
+    return SerieHist([(str(p), float(v)) for p, v, _ in filas], [str(o) for _, _, o in filas])
 
 
 def _yoy(puntos: Sequence[tuple[str, float]]) -> float | None:
+    """Variación frente al mismo mes del año anterior (nunca mezcla ejemplo y dato real)."""
     if len(puntos) < 13:
+        return None
+    origenes = getattr(puntos, "origenes", None)
+    if origenes and _clase(origenes[-1]) != _clase(origenes[-13]):
         return None
     return delta_pct(puntos[-1][1], puntos[-13][1])
 
@@ -479,11 +549,18 @@ async def panel_resumen(db: AsyncSession) -> PanelDireccion:
     alum = k["alumbrado"]
 
     # Gasto eléctrico municipal mensual = facturación de edificios + alumbrado × precio
-    coste_edif = dict(await _historico(db, "energia", "coste_eur"))
-    kwh_alum = dict(await _historico(db, "alumbrado", "consumo_kwh"))
-    coste_ener = [
-        (p, coste_edif[p] + kwh_alum.get(p, 0.0) * s.precio_kwh_eur) for p in sorted(coste_edif)
-    ]
+    hist_edif = await _historico(db, "energia", "coste_eur")
+    hist_alum = await _historico(db, "alumbrado", "consumo_kwh")
+    coste_edif, kwh_alum = dict(hist_edif), dict(hist_alum)
+    org_edif = dict(zip([p for p, _ in hist_edif], hist_edif.origenes, strict=True))
+    org_alum = dict(zip([p for p, _ in hist_alum], hist_alum.origenes, strict=True))
+    coste_ener = SerieHist(
+        [(p, coste_edif[p] + kwh_alum.get(p, 0.0) * s.precio_kwh_eur) for p in sorted(coste_edif)],
+        [
+            "ejemplo" if "ejemplo" in (org_edif.get(p), org_alum.get(p, "ejemplo")) else "estimado"
+            for p in sorted(coste_edif)
+        ],
+    )
     gasto_mes = coste_ener[-1][1] if coste_ener else None
 
     # afluencia: suma de la previsión de los próximos 7 días frente a los 7 últimos
@@ -618,13 +695,16 @@ async def panel_resumen(db: AsyncSession) -> PanelDireccion:
             tipo="linea",
             titulo="Gasto eléctrico municipal: 24 meses y previsión",
             subtitulo="Facturación mensual de los suministros municipales y previsión a 3 meses",
-            origen="real",
+            origen=origen_serie(coste_ener),
             ancho=8,
             alto=270,
             etiquetas=etq_coste,
             series=series_coste,
             unidad="€",
-            pie="Histórico mensual de la plataforma · previsión estacional con intervalo del 80 %",
+            pie=con_nota(
+                "Histórico mensual de la plataforma · previsión estacional con intervalo del 80 %",
+                coste_ener,
+            ),
         ),
         BloquePanel(
             tipo="recomendaciones",
@@ -747,6 +827,7 @@ async def panel_resumen(db: AsyncSession) -> PanelDireccion:
                 fmt_num(gasto_mes),
                 unidad="€",
                 var=_yoy(coste_ener),
+                origen=origen_serie(coste_ener),
                 bajar_bueno=True,
                 detalle="edificios + alumbrado · último mes cerrado",
                 icono="euro",
@@ -1224,7 +1305,7 @@ async def panel_alumbrado(db: AsyncSession) -> PanelDireccion:
     # ahorro anual por luminaria VSAP renovada: su consumo × (1 − 1/f)
     kwh_vsap_medio = consumo_mes * kwh_tec["vsap"] / total_tec / o.vsap if o.vsap else 0.0
     ahorro_por_vsap = kwh_vsap_medio * 12 * (1 - 1 / f) * s.precio_kwh_eur
-    prev = prever_mensual([v for _, v in hist], 1)
+    prev = prever_mensual(cola_homogenea(hist), 1)
 
     etq_c, series_c, anio = comparativa_anual(hist, escala=0.001, enlazar=False)
     for se in series_c:
@@ -1253,14 +1334,14 @@ async def panel_alumbrado(db: AsyncSession) -> PanelDireccion:
             tipo="barras",
             titulo=f"Consumo mensual: {anio} frente a {anio - 1}",
             subtitulo="MWh por mes · previsión de los meses que faltan",
-            origen="real",
+            origen=origen_serie(hist),
             ancho=8,
             alto=290,
             etiquetas=etq_c,
             series=series_c,
             unidad="MWh",
             decimales=1,
-            pie="Histórico mensual de la plataforma · previsión estacional",
+            pie=con_nota("Histórico mensual de la plataforma · previsión estacional", hist),
         ),
         BloquePanel(
             tipo="donut",
@@ -1403,6 +1484,7 @@ async def panel_alumbrado(db: AsyncSession) -> PanelDireccion:
                 fmt_num(coste_mes),
                 unidad="€",
                 var=yoy,
+                origen=origen_serie(hist),
                 bajar_bueno=True,
                 detalle=f"{etiqueta_periodo(hist[-1][0]) if hist else ''} · vs año anterior",
                 icono="euro",
@@ -1413,6 +1495,7 @@ async def panel_alumbrado(db: AsyncSession) -> PanelDireccion:
                 fmt_num(consumo_mes),
                 unidad="kWh",
                 var=yoy,
+                origen=origen_serie(hist),
                 bajar_bueno=True,
                 detalle="red de alumbrado",
                 icono="bolt",
@@ -1450,8 +1533,8 @@ async def panel_alumbrado(db: AsyncSession) -> PanelDireccion:
                 unidad="kWh" if prev else None,
                 var=delta_pct(prev[0][0], hist[-1][1]) if prev and hist else None,
                 bajar_bueno=True,
-                detalle="según estacionalidad",
-                origen="modelo",
+                detalle="según estacionalidad" if prev else "con 15 meses de dato real",
+                origen="ejemplo" if origen_serie(hist) == "ejemplo" else "modelo",
                 icono="clock",
                 color="violet",
             ),
@@ -1473,7 +1556,7 @@ async def panel_agua(db: AsyncSession) -> PanelDireccion:
     bajo = [x for x in secs if (x.rendimiento_pct or 100) < OBJETIVO_RENDIMIENTO_AGUA]
     peor = secs[0] if secs else None
     etq_d, series_d = serie_con_prevision(consumo, 24, 3)
-    prev = prever_mensual([v for _, v in consumo], 1)
+    prev = prever_mensual(cola_homogenea(consumo), 1)
     ratio = [
         (x.nombre, round(100 * float(x.caudal_nocturno_ls) / float(x.caudal_entrada_ls), 1))
         for x in secs
@@ -1562,12 +1645,13 @@ async def panel_agua(db: AsyncSession) -> PanelDireccion:
             tipo="linea",
             titulo="Consumo mensual de agua y previsión",
             subtitulo="m³ suministrados por mes · previsión a 3 meses con intervalo del 80 %",
-            origen="real",
+            origen=origen_serie(consumo),
             ancho=8,
             alto=260,
             etiquetas=etq_d,
             series=series_d,
             unidad="m³",
+            pie=con_nota(None, consumo),
         ),
         pendiente(
             "Nivel de depósitos y calidad del agua",
@@ -1634,6 +1718,7 @@ async def panel_agua(db: AsyncSession) -> PanelDireccion:
                 fmt_num(consumo[-1][1]) if consumo else "—",
                 unidad="m³",
                 var=_yoy(consumo),
+                origen=origen_serie(consumo),
                 bajar_bueno=True,
                 detalle="último mes",
                 icono="drop",
@@ -1647,7 +1732,7 @@ async def panel_agua(db: AsyncSession) -> PanelDireccion:
                 var=_yoy(perdidas),
                 bajar_bueno=True,
                 detalle=f"{fmt_num(perd_mes)} m³ no registrados" if perd_mes else "",
-                origen="estimado",
+                origen=origen_serie(perdidas, "estimado"),
                 icono="euro",
                 color="coral",
                 color_valor="coral",
@@ -1681,8 +1766,8 @@ async def panel_agua(db: AsyncSession) -> PanelDireccion:
                 fmt_num(prev[0][0]) if prev else "—",
                 unidad="m³" if prev else None,
                 var=delta_pct(prev[0][0], consumo[-1][1]) if prev and consumo else None,
-                detalle="previsión estacional",
-                origen="modelo",
+                detalle="previsión estacional" if prev else "con 15 meses de dato real",
+                origen="ejemplo" if origen_serie(consumo) == "ejemplo" else "modelo",
                 icono="sun",
                 color="violet",
             ),
@@ -1782,13 +1867,16 @@ async def panel_residuos(db: AsyncSession) -> PanelDireccion:
             tipo="linea",
             titulo="Toneladas recogidas al mes y previsión",
             subtitulo="Total del municipio · el desglose por fracción llega con siGEUS",
-            origen="real",
+            origen=origen_serie(ton),
             ancho=8,
             alto=290,
             etiquetas=etq_t,
             series=series_t,
             unidad="t",
-            pie="Histórico mensual de la plataforma · previsión estacional con intervalo del 80 %",
+            pie=con_nota(
+                "Histórico mensual de la plataforma · previsión estacional con intervalo del 80 %",
+                ton,
+            ),
         ),
         BloquePanel(
             tipo="medidores",
@@ -1884,6 +1972,7 @@ async def panel_residuos(db: AsyncSession) -> PanelDireccion:
                 fmt_num(ton[-1][1]) if ton else "—",
                 unidad="t",
                 var=_yoy(ton),
+                origen=origen_serie(ton),
                 bajar_bueno=True,
                 detalle="vs mismo mes del año pasado",
                 icono="trash",
@@ -2035,12 +2124,13 @@ async def panel_movilidad(db: AsyncSession) -> PanelDireccion:
             tipo="linea",
             titulo="Accesos al municipio por mes y previsión",
             subtitulo="Vehículos registrados por los aforos · previsión a 3 meses",
-            origen="real",
+            origen=origen_serie(accesos),
             ancho=8,
             alto=270,
             etiquetas=etq_a,
             series=series_a,
             unidad="vehículos",
+            pie=con_nota(None, accesos),
         ),
         pendiente(
             "Visitantes por núcleo y tiempo de estancia",
@@ -2129,6 +2219,7 @@ async def panel_movilidad(db: AsyncSession) -> PanelDireccion:
                 "Accesos del mes",
                 fmt_num(accesos[-1][1]) if accesos else "—",
                 var=_yoy(accesos),
+                origen=origen_serie(accesos),
                 detalle="vs mismo mes del año pasado",
                 icono="chart",
                 color="teal",
@@ -2207,12 +2298,13 @@ async def panel_seguridad(db: AsyncSession) -> PanelDireccion:
             tipo="linea",
             titulo="Incidencias de seguridad por mes y previsión",
             subtitulo="Registradas en la plataforma · previsión a 3 meses",
-            origen="real",
+            origen=origen_serie(inc),
             ancho=8,
             alto=270,
             etiquetas=etq_i,
             series=series_i,
             unidad="incidencias",
+            pie=con_nota(None, inc),
         ),
         BloquePanel(
             tipo="donut",
@@ -2349,6 +2441,7 @@ async def panel_seguridad(db: AsyncSession) -> PanelDireccion:
                 "Incidencias del mes",
                 fmt_num(inc[-1][1]) if inc else "—",
                 var=_yoy(inc),
+                origen=origen_serie(inc),
                 bajar_bueno=True,
                 detalle="vs mismo mes del año pasado",
                 icono="shield",
@@ -2386,7 +2479,7 @@ async def panel_energia(db: AsyncSession) -> PanelDireccion:
     sums = await _todas(db, SuministroEnergia)
     consumo = await _historico(db, "energia", "consumo_kwh")
     coste = await _historico(db, "energia", "coste_eur")
-    prev = prever_mensual([v for _, v in consumo], 1)
+    prev = prever_mensual(cola_homogenea(consumo), 1)
     yoy = _yoy(consumo)
 
     etq_c, series_c, anio = comparativa_anual(consumo, escala=0.001)
@@ -2461,14 +2554,16 @@ async def panel_energia(db: AsyncSession) -> PanelDireccion:
             tipo="linea",
             titulo=f"Consumo mensual: {anio} frente a {anio - 1}",
             subtitulo="MWh por mes · previsión hasta diciembre",
-            origen="real",
+            origen=origen_serie(consumo),
             ancho=8,
             alto=290,
             etiquetas=etq_c,
             series=series_c,
             unidad="MWh",
             decimales=1,
-            pie="Histórico mensual de la plataforma (Datadis) · previsión estacional",
+            pie=con_nota(
+                "Histórico mensual de la plataforma (Datadis) · previsión estacional", consumo
+            ),
         ),
         BloquePanel(
             tipo="donut",
@@ -2607,6 +2702,7 @@ async def panel_energia(db: AsyncSession) -> PanelDireccion:
                 fmt_num(consumo_mes),
                 unidad="kWh",
                 var=yoy,
+                origen=origen_serie(consumo),
                 bajar_bueno=True,
                 detalle=f"{mes_txt} · vs año anterior",
                 icono="bolt",
@@ -2617,6 +2713,7 @@ async def panel_energia(db: AsyncSession) -> PanelDireccion:
                 fmt_num(coste_mes),
                 unidad="€",
                 var=_yoy(coste),
+                origen=origen_serie(coste),
                 bajar_bueno=True,
                 detalle=f"{o.edificios} edificios",
                 icono="euro",
@@ -2648,8 +2745,8 @@ async def panel_energia(db: AsyncSession) -> PanelDireccion:
                 unidad="kWh" if prev else None,
                 var=delta_pct(prev[0][0], consumo[-1][1]) if prev and consumo else None,
                 bajar_bueno=True,
-                detalle="según estacionalidad",
-                origen="modelo",
+                detalle="según estacionalidad" if prev else "con 15 meses de dato real",
+                origen="ejemplo" if origen_serie(consumo) == "ejemplo" else "modelo",
                 icono="clock",
                 color="violet",
             ),

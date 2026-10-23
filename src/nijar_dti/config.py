@@ -186,6 +186,8 @@ class Settings(BaseSettings):
     datadis_municipio_nombre: str = "Níjar"
     # Carga diaria automática (hora local de Madrid; -1 = desactivada)
     datadis_hora_carga: int = 7
+    # Captura diaria (hora de Madrid) del último mes cerrado en el histórico real; -1 la desactiva
+    captura_metricas_hora: int = 8
     datadis_timeout_seconds: int = 90
 
     # --- Gemelo digital: red Bettair de calidad del aire y meteo (OAuth2) ---

@@ -109,3 +109,23 @@ con cerrojo de PostgreSQL) y deja en los logs `Carga diaria de Datadis`.
   el total municipal puede ser algo inferior al real.
 - Las horas de la curva vienen como 1..24 (hora de fin); se guardan como inicio de
   hora en UTC.
+
+## Histórico mensual de la Vista de Gobierno
+
+Con la curva horaria privada cargada, la API guarda cada día (a las
+`CAPTURA_METRICAS_HORA`:30, hora de Madrid) el último mes **cerrado y completo**
+en `metricas_historicas`, sustituyendo el dato de ejemplo de la instalación:
+
+- `energia.consumo_kwh` (CUPS municipales salvo alumbrado) y `energia.coste_eur`
+  (consumo × €/kWh medio de los suministros, marcado como estimado).
+- `alumbrado.consumo_kwh` (CUPS con tipo `alumbrado`).
+
+Tras la primera carga privada, rellenar hacia atrás y comprobar:
+
+```bash
+docker exec nijar-dti-api python -m nijar_dti.workers.captura_metricas --desde 2025-01
+docker exec nijar-dti-api python -m nijar_dti.workers.captura_metricas --estado
+```
+
+Hasta tener 15 meses reales seguidos, el panel no muestra previsión para esas
+series (no mezcla dato real con histórico de ejemplo).
