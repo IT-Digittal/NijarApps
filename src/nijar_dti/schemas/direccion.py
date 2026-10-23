@@ -131,3 +131,126 @@ class ResumenMunicipal(BaseModel):
     interanual_turismo: list[KpiInteranual] = Field(default_factory=list)
     interanual_verticales: list[KpiInteranual] = Field(default_factory=list)
     generado_en: datetime
+
+
+# ---------------------------------------------------------------------------
+# Panel visual de cada módulo de la Vista de Gobierno (Vista de Gobierno 2.0)
+# ---------------------------------------------------------------------------
+
+# Origen del dato, que el panel muestra como etiqueta en cada indicador.
+OrigenDato = Literal["real", "integrar", "estimado", "modelo"]
+SentidoDelta = Literal["bueno", "malo", "neutro"]
+TipoBloque = Literal[
+    "linea",
+    "barras",
+    "barras_h",
+    "donut",
+    "ranking",
+    "calor",
+    "medidores",
+    "mapa",
+    "eventos",
+    "mini",
+    "servicios",
+    "recomendaciones",
+    "vivo",
+    "embudo",
+    "texto",
+    "pendiente",
+    "fuentes",
+    "preguntas",
+]
+
+
+class ChipHero(BaseModel):
+    valor: str
+    etiqueta: str
+
+
+class AnilloHero(BaseModel):
+    """Indicador circular de la cabecera (pct de 0 a 100 para el arco)."""
+
+    valor: str
+    etiqueta: str
+    pct: float = Field(..., ge=0, le=100)
+    color: str = "gold"
+
+
+class HeroPanel(BaseModel):
+    fondo: str  # clave de fondo del panel (turismo, alumbrado…)
+    estado: Estado | None = None
+    frase: str | None = None
+    superior: str | None = None
+    titulo: str
+    subtitulo: str
+    chips: list[ChipHero] = Field(default_factory=list)
+    anillo: AnilloHero | None = None
+
+
+class KpiPanel(BaseModel):
+    etiqueta: str
+    valor: str
+    unidad: str | None = None
+    delta: str | None = None
+    sentido: SentidoDelta = "neutro"
+    detalle: str | None = None
+    origen: OrigenDato = "real"
+    icono: str = "chart"
+    color: str = "navy"
+    color_valor: str | None = None
+    serie: list[float] = Field(default_factory=list)
+
+
+class SerieGrafico(BaseModel):
+    nombre: str
+    valores: list[float | None]
+    color: str = "navy"
+    discontinua: bool = False
+    relleno: bool = False
+    # "banda_inf"/"banda_sup" dibujan el intervalo de la previsión
+    rol: Literal["dato", "prevision", "banda_inf", "banda_sup", "referencia"] = "dato"
+    colores: list[str] | None = None  # color por barra (barras de una serie)
+
+
+class BloquePanel(BaseModel):
+    """Tarjeta del panel. Los campos usados dependen de ``tipo``."""
+
+    tipo: TipoBloque
+    titulo: str | None = None
+    subtitulo: str | None = None
+    origen: OrigenDato | None = None
+    ancho: int = Field(default=12, ge=3, le=12)
+    alto: int = 260
+    pie: str | None = None
+    # gráficos
+    etiquetas: list[str] = Field(default_factory=list)
+    series: list[SerieGrafico] = Field(default_factory=list)
+    unidad: str | None = None
+    decimales: int = 0
+    minimo: float | None = None
+    maximo: float | None = None
+    apilado: bool = False
+    # ranking, medidores, mapa, eventos, mini, servicios, fuentes, preguntas, embudo
+    items: list[dict] = Field(default_factory=list)
+    # mapa de calor
+    filas: list[str] = Field(default_factory=list)
+    columnas: list[str] = Field(default_factory=list)
+    matriz: list[list[float]] = Field(default_factory=list)
+    umbral: float | None = None
+    escala: list[str] = Field(default_factory=list)
+    # recomendaciones: filtro por área (lo resuelve el panel con /recomendaciones)
+    area: str | None = None
+    limite: int | None = None
+    texto: str | None = None
+
+
+class PanelDireccion(BaseModel):
+    """Panel completo de un módulo de la Vista de Gobierno."""
+
+    modulo: str
+    titulo: str
+    intro: str
+    hero: HeroPanel
+    kpis: list[KpiPanel] = Field(default_factory=list)
+    bloques: list[BloquePanel] = Field(default_factory=list)
+    generado_en: datetime

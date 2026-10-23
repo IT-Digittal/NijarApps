@@ -113,6 +113,8 @@ ignore = [
 # multilingües, plantillas Rasa generadas): las líneas largas son intencionadas.
 "src/nijar_dti/connectors/social/*" = ["E501"]
 "src/nijar_dti/services/chatbot_service.py" = ["E501"]
+# Paneles de la Vista de Gobierno: titulares y textos del panel en lenguaje natural.
+"src/nijar_dti/services/direccion_panel_service.py" = ["E501"]
 "src/nijar_dti/services/recomendaciones_service.py" = ["E501"]
 "src/nijar_dti/workers/rasa_generator.py" = ["E501"]
 "src/nijar_dti/workers/social_worker.py" = ["E501"]

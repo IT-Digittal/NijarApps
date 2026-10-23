@@ -116,6 +116,39 @@ def _reglas(k: dict[str, Any]) -> list[RecomendacionIA]:
                 accion="Priorizar instalación FV en los edificios con mayor consumo diurno.",
             )
         )
+    mov = k.get("movilidad")
+    if mov is not None and mov.ocupacion_parking_pct >= 85:
+        recs.append(
+            RecomendacionIA(
+                titulo="Activar avisos de aparcamiento y reforzar la lanzadera",
+                area="Movilidad",
+                prioridad="alta" if mov.ocupacion_parking_pct >= 95 else "media",
+                justificacion=(
+                    f"Los aparcamientos están al {mov.ocupacion_parking_pct:.0f}% de ocupación "
+                    f"({mov.plazas_ocupadas} de {mov.plazas_totales} plazas)."
+                ),
+                impacto="Reduce la circulación en busca de aparcamiento y la saturación de accesos.",
+                accion=(
+                    "Mostrar el aviso de saturación en tótems y app y desviar al aparcamiento "
+                    "disuasorio con la lanzadera."
+                ),
+            )
+        )
+    seg = k.get("seguridad")
+    if seg is not None and seg.sin_comunicacion > 0:
+        recs.append(
+            RecomendacionIA(
+                titulo="Reparar las cámaras sin comunicación",
+                area="Seguridad",
+                prioridad="alta",
+                justificacion=(
+                    f"{seg.sin_comunicacion} cámara(s) sin comunicación; la cobertura está en el "
+                    f"{seg.pct_online:.0f}%."
+                ),
+                impacto="Recupera la cobertura de videovigilancia en espacios públicos.",
+                accion="Priorizar la reparación de las cámaras en zonas con eventos próximos.",
+            )
+        )
     if big.sentimiento_medio is not None and big.sentimiento_medio < 0.1:
         recs.append(
             RecomendacionIA(
