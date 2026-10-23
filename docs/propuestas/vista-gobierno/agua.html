@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Ciclo del agua · Vista de Gobierno</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Nunito:wght@800;900&display=swap">
+<link rel="stylesheet" href="assets/vg.css">
+</head>
+<body>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="assets/vg.js"></script>
+<script>
+(function () {
+  const { line, bar } = VG;
+  const N = null;
+  const sect = ["San José Norte", "San Isidro", "Campohermoso", "Pujaire", "Níjar centro", "Agua Amarga", "Las Negras"];
+  const rend = [73, 79, 81, 82, 84, 86, 88];
+  const d30 = Array.from({ length: 30 }, (_, i) => `${((i + 23) % 30) + 1}`);
+  const noct = [3.1, 3.0, 3.2, 3.1, 3.0, 3.2, 3.1, 3.3, 3.2, 3.1, 3.2, 3.4, 3.3, 3.2, 3.3, 3.5, 3.6, 3.8, 4.1, 4.4, 4.6, 4.9, 5.1, 5.2, 5.4, 5.3, 5.5, 5.6, 5.5, 5.7];
+  const m = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+
+  VG.render({
+    active: "agua", crumb: "Ciclo del agua",
+    title: "Ciclo del agua · Resumen de Dirección",
+    intro: "El agua que se pierde en la red y lo que cuesta, dónde están las fugas y si la red aguantará la punta de verano.",
+    hero: {
+      img: "assets/img/playas.jpg", estado: "ambar", frase: "Necesita seguimiento",
+      titulo: "Cinco de siete sectores no llegan al 85 % de rendimiento; San José Norte pierde el 27 %",
+      sub: "El caudal nocturno mínimo de San José Norte sube un 80 % en dos semanas: patrón típico de una fuga oculta.",
+      chips: [["3", "Fugas activas"], ["82.400 m³", "No registrada/mes"], ["64 %", "Telelectura"], ["168 l", "Por habitante y día"]],
+      ring: { v: "80 %", l: "rendimiento · objetivo 85", pct: 80, c: "gold" },
+    },
+    kpis: [
+      { l: "Agua suministrada", v: "412.000", u: "m³", d: "−3 %", dg: "bueno", s: "octubre", tag: "integrar", i: "drop", c: "cyan", spark: [380, 395, 430, 470, 520, 560, 590, 498, 440, 412] },
+      { l: "Coste de las pérdidas", v: "49.000", u: "€/mes", d: "−4 %", dg: "bueno", s: "82.400 m³ no registrados", tag: "estimado", i: "euro", c: "coral", vc: "coral", spark: [56, 55, 57, 58, 54, 53, 52, 51, 51, 49] },
+      { l: "Rendimiento de red", v: "80", u: "%", d: "+1 pt", dg: "bueno", s: "objetivo 85 %", tag: "real", i: "gauge", c: "navy", spark: [78, 78, 79, 77, 78, 79, 80, 79, 78, 80] },
+      { l: "Fugas activas", v: "3", d: "36 h", dg: "neutro", s: "hasta reparación", tag: "real", i: "alert", c: "gold", spark: [5, 4, 6, 3, 4, 2, 3, 4, 2, 3] },
+      { l: "Consumo por habitante", v: "168", u: "l/día", d: "−5 l", dg: "bueno", s: "vs 2025", tag: "real", i: "users", c: "teal", spark: [176, 175, 173, 174, 172, 171, 170, 169, 169, 168] },
+      { l: "Demanda en agosto", v: "+38", u: "%", d: "previsión", dg: "neutro", s: "frente a octubre", tag: "modelo", i: "sun", c: "violet", spark: [412, 430, 470, 520, 560, 569] },
+    ],
+    rows: [
+      [
+        { span: 6, t: "Rendimiento de red por sector", s: "Los sectores bajo el 85 % concentran 71.000 m³ de pérdidas al mes", tag: "real",
+          parts: [{ k: "chart", h: 270, alt: "Rendimiento por sector",
+            legend: [["Bajo objetivo", "coral"], ["En objetivo (≥ 85 %)", "teal"]],
+            cfg: bar(sect, [{ n: "Rendimiento", d: rend, c: rend.map((v) => (v < 85 ? "coral" : "teal")) }], { horizontal: true, min: 60, max: 100, unit: "%", thick: 22 }) }],
+          f: "/verticales/agua/overview · caudal inyectado frente a telelectura" },
+        { span: 6, t: "Caudal nocturno mínimo · San José Norte", s: "Sube de 3,1 a 5,7 l/s en dos semanas: probable fuga oculta", tag: "real",
+          parts: [{ k: "chart", h: 270, alt: "Caudal nocturno mínimo 30 días",
+            legend: [["Caudal mínimo 2–5 h", "cyan"], ["Umbral de alerta", "coral", 1]],
+            cfg: line(d30, [
+              { n: "Caudal mínimo", d: noct, c: "cyan", fill: true },
+              { n: "Umbral de alerta", d: Array(30).fill(4.2), c: "coral", dash: true, pts: 0, w: 1.5 },
+            ], { unit: "l/s", fmt: (v) => VG.nf(v, 1), min: 0, max: 6 }) }],
+          f: "Últimos 30 días · detección automática por umbral" },
+      ],
+      [
+        { span: 8, t: "Demanda prevista frente a capacidad de suministro", s: "La punta de agosto deja un margen del 9 %", tag: "modelo",
+          parts: [{ k: "chart", h: 260, alt: "Demanda y capacidad mensual",
+            legend: [["Demanda 2026", "navy"], ["Previsión", "blue", 1], ["Capacidad", "coral", 1]],
+            cfg: line(m, [
+              { n: "Demanda", d: [11.8, 12.1, 12.6, 13.4, 14.9, 16.8, 18.6, 19.2, 16.1, 13.3, N, N], c: "navy", fill: true, pts: 3 },
+              { n: "Previsión", d: [N, N, N, N, N, N, N, N, N, 13.3, 12.4, 12.0], c: "blue", dash: true },
+              { n: "Capacidad", d: Array(12).fill(21), c: "coral", dash: true, pts: 0, w: 1.5 },
+            ], { unit: "mil m³/día", fmt: (v) => VG.nf(v, 1), min: 0, max: 24 }) }],
+          f: "Histórico + previsión de afluencia turística" },
+        { span: 4, t: "Nivel de depósitos", s: "Lectura en tiempo real", tag: "integrar",
+          parts: [{ k: "gauges", items: [[78, "Níjar", "teal"], [64, "San José", "gold"], [81, "Campohermoso", "teal"], [55, "Las Negras", "coral"]] },
+                  { k: "mini", items: [["0,6 mg/l", "Cloro libre medio"], ["0,4 NTU", "Turbidez"]] }],
+          f: "SCADA de la concesionaria" },
+      ],
+      [
+        { span: 6, t: "Pérdidas por sector", s: "Tamaño del punto: estado del sector",
+          parts: [{ k: "map", points: [
+            { n: "Níjar centro", lon: -2.206, lat: 36.967, e: "ambar", v: "84 %", left: true },
+            { n: "Campohermoso", lon: -2.125, lat: 36.94, e: "ambar", v: "81 %" },
+            { n: "San Isidro", lon: -2.13, lat: 36.906, e: "ambar", v: "79 %", left: true },
+            { n: "Pujaire", lon: -2.16, lat: 36.8, e: "ambar", v: "82 %", left: true },
+            { n: "Las Negras", lon: -2.003, lat: 36.875, e: "verde", v: "88 %" },
+            { n: "Agua Amarga", lon: -1.935, lat: 36.937, e: "verde", v: "86 %" },
+            { n: "San José Norte", lon: -2.105, lat: 36.765, e: "rojo", v: "73 % · fuga", r: 9 },
+          ] }] },
+        { span: 6, t: "Recomendaciones", ai: true,
+          parts: [{ k: "recs", items: [
+            { prio: "critica", t: "Búsqueda activa de fugas en San José Norte", p: "Caudal nocturno por encima del umbral 9 días seguidos.", imp: "14.000 €/año", plazo: "Esta semana", resp: "Concesionaria" },
+            { prio: "media", t: "Telelectura en San Isidro y Campohermoso", p: "Llevar del 64 % al 80 % de contadores leídos a distancia.", imp: "+3 pts rendimiento", plazo: "6 meses" },
+          ] }] },
+      ],
+      [
+        { span: 8, t: "Fuentes de datos del módulo", parts: [{ k: "srcs", items: [["Sectores, caudal y fugas", "real"], ["Inventario de contadores", "real"], ["Padrón e INE", "real"], ["Coste del m³", "estimado"], ["Previsión de demanda", "modelo"], ["Telelectura y facturación de la concesionaria", "integrar"], ["SCADA (depósitos y calidad)", "integrar"]] }] },
+        { span: 4, t: "Preguntas que responde", parts: [{ k: "pregs", items: ["¿Cuánta agua perdemos y cuánto cuesta?", "¿Dónde hay fugas?", "¿Aguantará la red la punta de verano?"] }] },
+      ],
+    ],
+  });
+})();
+</script>
+</body>
+</html>
