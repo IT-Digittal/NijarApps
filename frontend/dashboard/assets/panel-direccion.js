@@ -124,6 +124,7 @@ const DIR_CSS = `
 #view-direccion .vg-tag--integrar{color:#9a5b00;background:#fff2dc;border-color:#f3d39b}
 #view-direccion .vg-tag--estimado{color:#55617a;background:#eef1f6;border-color:#d7dde8}
 #view-direccion .vg-tag--modelo{color:#1A5FD0;background:#eaf1fe;border-color:#c6d8f8}
+#view-direccion .vg-tag--ejemplo{color:#6b5a2e;background:#faf6ec;border-color:#d9cba4;border-style:dashed}
 #view-direccion .vg-ai{display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:800;color:#5a45c9;background:#f1ecff}
 #view-direccion .vg-ai svg{width:12px;height:12px}
 #view-direccion .vg-kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:14px}
@@ -253,7 +254,7 @@ function cargarChart() {
 
 /* ---------------- piezas ---------------- */
 
-const TAG_TXT = { real: "Real hoy", integrar: "Al integrar", estimado: "Estimado", modelo: "Modelo predictivo" };
+const TAG_TXT = { real: "Real hoy", integrar: "Al integrar", estimado: "Estimado", modelo: "Modelo predictivo", ejemplo: "Dato de ejemplo" };
 const tag = (t) => (t ? '<span class="vg-tag vg-tag--' + t + '">' + TAG_TXT[t] + "</span>" : "");
 const FRASE = { verde: "Funciona con normalidad", ambar: "Necesita seguimiento", rojo: "Requiere una decisión" };
 const ESTADO_REC = { pendiente: "Pendiente", en_revision: "En revisión", aceptada: "Aceptada", descartada: "Descartada", ejecutada: "Ejecutada" };

@@ -4,7 +4,9 @@ A diferencia de los overviews (foto del mes actual), esta tabla guarda un punto
 por (vertical, indicador, periodo) de modo que se pueda calcular la comparativa
 interanual REAL de energía, agua, residuos, movilidad, seguridad y alumbrado
 (consumo, coste/facturación, toneladas, incidencias…). El seeder genera 2 años
-de histórico; en producción se poblaría capturando una foto cada mes.
+de histórico de EJEMPLO (``origen="ejemplo"``); el proceso de captura mensual
+(``services/metricas_historicas_service.py``) va sustituyendo cada mes por el
+dato real de las fuentes integradas (``origen="datadis"``, ``"estimado"``…).
 """
 
 from __future__ import annotations
@@ -36,6 +38,8 @@ class MetricaHistorica(Base, TimestampMixin):
     periodo: Mapped[str] = mapped_column(String(10), index=True)  # "2025-06"
     valor: Mapped[float] = mapped_column(Float)
     unidad: Mapped[str | None] = mapped_column(String(20), default=None)
+    # "ejemplo" (seed de instalación) | "datadis" (dato real) | "estimado" (derivado)
+    origen: Mapped[str] = mapped_column(String(20), default="ejemplo", server_default="ejemplo")
 
     __table_args__ = (
         Index(
