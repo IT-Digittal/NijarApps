@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Movilidad · Vista de Gobierno</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Nunito:wght@800;900&display=swap">
+<link rel="stylesheet" href="assets/vg.css">
+</head>
+<body>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="assets/vg.js"></script>
+<script>
+(function () {
+  const { line, bar, band } = VG;
+  const N = null;
+  const horas = ["8h", "9h", "10h", "11h", "12h", "13h", "14h", "15h", "16h", "17h", "18h", "19h", "20h"];
+  const dias = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
+  const perfil = [18, 30, 48, 64, 78, 86, 88, 86, 80, 70, 56, 40, 26];
+  const fd = [0.6, 0.58, 0.6, 0.66, 0.82, 1.12, 1.06];
+  const heat = fd.map((f) => perfil.map((v) => Math.min(100, Math.round(v * f))));
+
+  VG.render({
+    active: "movilidad", crumb: "Movilidad",
+    title: "Movilidad · Resumen de Dirección",
+    intro: "Dónde se concentran los visitantes, cuándo se saturan los aparcamientos de playa y qué avisos conviene activar.",
+    hero: {
+      img: "assets/img/rutas.jpg", estado: "verde", frase: "Funciona con normalidad",
+      titulo: "El sábado los aparcamientos de playa se saturan de 13:00 a 16:00",
+      sub: "Los Genoveses y Mónsul superarán el 95 % de ocupación; el resto del término tiene margen.",
+      chips: [["540 veh/h", "Tráfico en accesos"], ["14 h", "Saturación esta semana"], ["72 %", "Aforo del Parque"], ["7 / 12", "Tomas EV libres"]],
+      ring: { v: "86 %", l: "ocupación de parkings", pct: 86, c: "gold" },
+    },
+    kpis: [
+      { l: "Ocupación prevista 13 h", v: "97", u: "%", d: "ahora 86 %", dg: "malo", s: "parkings de playa", tag: "modelo", i: "car", c: "gold", spark: [20, 32, 51, 70, 86, 97] },
+      { l: "Horas de saturación", v: "14", u: "h", d: "+5 h", dg: "malo", s: "≥ 95 % esta semana", tag: "real", i: "clock", c: "coral", vc: "coral", spark: [4, 6, 9, 7, 12, 9, 14] },
+      { l: "Tráfico en accesos", v: "540", u: "veh/h", d: "+8 %", dg: "neutro", s: "interanual", tag: "real", i: "route", c: "navy", spark: [420, 450, 470, 520, 610, 700, 760, 720, 600, 540] },
+      { l: "Aforo del Parque", v: "72", u: "%", d: "2 playas", dg: "neutro", s: "con acceso regulado", tag: "real", i: "flag", c: "teal", spark: [55, 61, 70, 78, 74, 68, 72] },
+      { l: "Recarga eléctrica", v: "1.240", u: "kWh", d: "+22 %", dg: "bueno", s: "386 sesiones/mes", tag: "real", i: "bolt", c: "ok", spark: [710, 780, 860, 920, 1010, 1130, 1240] },
+      { l: "Visitantes por núcleo", v: "—", d: "WiFi público", dg: "neutro", s: "y contadores (DPIA)", tag: "integrar", i: "users", c: "violet" },
+    ],
+    rows: [
+      [
+        { span: 8, t: "Ocupación de aparcamientos de playa · sábado", s: "Previsión con intervalo y umbral de saturación del 95 %", tag: "modelo",
+          parts: [{ k: "chart", h: 290, alt: "Ocupación por hora con previsión",
+            legend: [["Real", "navy"], ["Previsión", "blue", 1], ["Saturación 95 %", "coral", 1]],
+            cfg: line(horas, [
+              { n: "Real", d: [20, 32, 51, 70, 86, N, N, N, N, N, N, N, N], c: "navy", fill: true, pts: 3 },
+              { n: "Previsión", d: [N, N, N, N, 86, 95, 98, 97, 93, 85, 72, 55, 38], c: "blue", dash: true },
+              ...band(horas, [N, N, N, N, 86, 90, 93, 92, 88, 79, 66, 49, 32], [N, N, N, N, 86, 99, 100, 100, 98, 91, 78, 61, 44], "blue"),
+              { n: "Saturación", d: Array(13).fill(95), c: "coral", dash: true, pts: 0, w: 1.5 },
+            ], { unit: "%", min: 0, max: 100 }) }],
+          f: "Aforos de parkings + curva típica por día y meteo" },
+        { span: 4, t: "Ocupación prevista a las 14:00", s: "Por aparcamiento", tag: "modelo",
+          parts: [{ k: "rank", max: 100, items: [
+            ["Los Genoveses", 100, "coral", "100 %"], ["Mónsul", 98, "coral", "98 %"], ["San José centro", 91, "gold", "91 %"],
+            ["Agua Amarga", 86, "gold", "86 %"], ["Las Negras", 79, "teal", "79 %"], ["Isleta del Moro", 66, "teal", "66 %"], ["Rodalquilar", 48, "teal", "48 %"]] }] },
+      ],
+      [
+        { span: 7, t: "¿Cuándo se llenan? Ocupación media por día y hora", s: "Últimas 4 semanas · en rojo, saturación", tag: "real",
+          parts: [{ k: "heat", rows: dias, cols: horas, data: heat, max: 100, alert: 95, unit: " %", scale: ["0 %", "100 %", "≥ 95 %"] }] },
+        { span: 5, t: "Tráfico por acceso", s: "Vehículos/hora ahora mismo", tag: "real",
+          parts: [{ k: "chart", h: 240, alt: "Tráfico por acceso",
+            cfg: bar(["AL-3108 San José", "N-344 Níjar", "AL-3106 Campohermoso", "AL-4200 Las Negras", "AL-5106 Agua Amarga"], [{ n: "Tráfico", d: [210, 140, 95, 60, 35], c: ["navy", "navy", "sky", "sky", "sky"] }], { horizontal: true, unit: "veh/h", thick: 22 }) }] },
+      ],
+      [
+        { span: 6, t: "Presión por núcleo este sábado",
+          parts: [{ k: "map", points: [
+            { n: "Níjar", lon: -2.206, lat: 36.967, e: "verde", v: "fluido", left: true },
+            { n: "Campohermoso", lon: -2.125, lat: 36.94, e: "verde", v: "fluido" },
+            { n: "Las Negras", lon: -2.003, lat: 36.875, e: "ambar", v: "79 %" },
+            { n: "Agua Amarga", lon: -1.935, lat: 36.937, e: "ambar", v: "86 %" },
+            { n: "San José", lon: -2.105, lat: 36.775, e: "ambar", v: "91 %", left: true },
+            { n: "Genoveses y Mónsul", lon: -2.12, lat: 36.735, e: "rojo", v: "saturación 13–16 h", r: 9 },
+          ] }] },
+        { span: 6, t: "Recomendaciones", ai: true,
+          parts: [{ k: "recs", items: [
+            { prio: "alta", t: "Aviso de saturación y lanzadera desde San José", p: "Activar mensaje en tótems y app de 12:30 a 16:00 el sábado.", imp: "−600 vehículos", plazo: "Sábado", resp: "Policía Local" },
+            { prio: "media", t: "Dos puntos de recarga más en San José", p: "Las tomas actuales están al 90 % de uso los fines de semana.", imp: "+380 sesiones/mes", plazo: "2027" },
+          ] }] },
+      ],
+      [
+        { span: 8, t: "Fuentes de datos del módulo", parts: [{ k: "srcs", items: [["Aforos y parkings", "real"], ["Puntos de recarga EV", "real"], ["ThingsBoard (aforo del Parque)", "real"], ["AENA (presión turística)", "real"], ["Previsión de ocupación", "modelo"], ["WiFi público y contadores", "integrar"]] }] },
+        { span: 4, t: "Preguntas que responde", parts: [{ k: "pregs", items: ["¿Dónde se concentran los visitantes?", "¿Cuándo se saturan los aparcamientos?", "¿Debe activarse algún aviso ciudadano?"] }] },
+      ],
+    ],
+  });
+})();
+</script>
+</body>
+</html>

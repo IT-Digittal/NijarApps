@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Turismo inteligente · Vista de Gobierno</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Nunito:wght@800;900&display=swap">
+<link rel="stylesheet" href="assets/vg.css">
+</head>
+<body>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="assets/vg.js"></script>
+<script>
+(function () {
+  const { line, bar, donut, band } = VG;
+  const N = null;
+  const sem = ["31 ago", "7 sep", "14 sep", "21 sep", "28 sep", "5 oct", "12 oct", "19 oct", "26 oct", "2 nov", "9 nov", "16 nov"];
+  const dias = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
+  const horas = ["9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20"];
+  const base = [20, 34, 52, 66, 72, 70, 64, 58, 50, 38, 24, 12];
+  const fact = [0.55, 0.5, 0.52, 0.6, 0.78, 1.25, 1.12];
+  const heat = fact.map((f) => base.map((v) => Math.min(100, Math.round(v * f))));
+
+  VG.render({
+    active: "turismo", crumb: "Turismo inteligente",
+    title: "Turismo inteligente · Resumen de Dirección",
+    intro: "Cuántos visitantes vienen, de dónde, qué se dice del destino y qué se espera las próximas semanas.",
+    hero: {
+      img: "assets/img/cabo.jpg", estado: "verde", frase: "Funciona con normalidad",
+      titulo: "Pico de 18.600 visitantes en Todos los Santos; después, un 31 % menos hasta mediados de noviembre",
+      sub: "Previsión del modelo de afluencia combinada con el aforo del Parque Natural y las series oficiales de INE, Junta y AENA.",
+      chips: [["31.764", "Menciones/mes"], ["+0,55", "Sentimiento"], ["34 / 34", "Banderas operativas"], ["12.480", "Usos de tótems"]],
+      ring: { v: "72 %", l: "aforo del Parque Natural", pct: 72, c: "teal" },
+    },
+    kpis: [
+      { l: "Visitantes previstos", v: "18.600", d: "+12 %", dg: "neutro", s: "semana del 26 oct", tag: "modelo", i: "users", c: "blue", spark: [27.4, 24.1, 21.8, 20.3, 19.6, 21.4, 16.6, 18.6] },
+      { l: "Pernoctaciones (prov.)", v: "412.300", d: "+4,2 %", dg: "bueno", s: "sep · INE EOH", tag: "real", i: "calendar", c: "navy", spark: [280, 310, 360, 420, 470, 452, 412] },
+      { l: "Gasto turístico", v: "+6,8", u: "%", d: "interanual", dg: "bueno", s: "Andalucía · EGATUR", tag: "real", i: "euro", c: "teal", spark: [2.1, 3.4, 4.0, 5.2, 5.9, 6.8] },
+      { l: "Pasajeros AENA", v: "98.400", d: "+6,0 %", dg: "bueno", s: "Almería · sep", tag: "real", i: "route", c: "sky", spark: [70, 76, 85, 96, 104, 110, 98.4] },
+      { l: "Usos de tótems", v: "12.480", d: "+9 %", dg: "bueno", s: "4.310 sesiones únicas", tag: "real", i: "present", c: "violet", spark: [8.1, 9.4, 10.2, 11.8, 12.9, 11.6, 12.48] },
+      { l: "Coste del chatbot IA", v: "0,003", u: "USD", d: "por conversación", dg: "neutro", s: "41 USD/mes", tag: "real", i: "ai", c: "gold", spark: [52, 48, 46, 44, 43, 42, 41] },
+    ],
+    rows: [
+      [
+        { span: 8, t: "Visitantes por semana: real y previsión a 4 semanas", s: "El puente de Todos los Santos sube un 12 %; luego comienza la temporada baja", tag: "modelo",
+          parts: [{ k: "chart", h: 290, alt: "Visitantes semanales y previsión",
+            legend: [["Real", "muted"], ["Previsión", "blue", 1], ["Intervalo 80 %", "#9ec0f5"]],
+            cfg: line(sem, [
+              { n: "Real", d: [31200, 27400, 24100, 21800, 20300, 19600, 21400, 16600, N, N, N, N], c: "#8A97B1", fill: true, pts: 3 },
+              { n: "Previsión", d: [N, N, N, N, N, N, N, 16600, 18600, 14100, 13200, 12800], c: "blue", dash: true },
+              ...band(sem, [N, N, N, N, N, N, N, 16600, 16900, 12300, 11200, 10600], [N, N, N, N, N, N, N, 16600, 20300, 15900, 15200, 15000], "blue"),
+            ], { unit: "visitantes" }) }],
+          f: "prediccion_service.prediccion_afluencia · validación del modelo: error medio 7,8 % en 12 semanas" },
+        { span: 4, t: "¿De dónde vienen?", s: "Idioma de las consultas en tótems y chatbot", tag: "real",
+          parts: [{ k: "chart", h: 190, alt: "Reparto por idioma", cfg: donut(["Español", "Inglés", "Alemán", "Francés", "Otros"], [52, 18, 16, 9, 5], ["navy", "teal", "gold", "sky", "muted"], { unit: "%" }) },
+                  { k: "rank", max: 52, items: [["Español", 52, "navy", "52 %"], ["Inglés", 18, "teal", "18 %"], ["Alemán", 16, "gold", "16 %"], ["Francés", 9, "sky", "9 %"]] }],
+          f: "Proxy del mercado de origen hasta integrar GA4" },
+      ],
+      [
+        { span: 7, t: "Ocupación del Parque Natural por día y hora", s: "Media de las 4 últimas semanas · sábados y domingos concentran la presión", tag: "real",
+          parts: [{ k: "heat", rows: dias, cols: horas, data: heat, max: 100, alert: 85, unit: " %", scale: ["0 %", "100 %", "≥ 85 % del aforo"] }],
+          f: "ThingsBoard · aforo del P. N. Cabo de Gata-Níjar" },
+        { span: 5, t: "Lo más consultado en tótems y chatbot", s: "Octubre · consultas por recurso", tag: "real",
+          parts: [{ k: "rank", items: [
+            ["Playa de los Genoveses", 2140, "navy"], ["Cala de San Pedro", 1720, "navy"], ["Faro de Cabo de Gata", 1580, "navy"],
+            ["Rodalquilar y su cerco", 1310, "teal"], ["Playa de Mónsul", 1260, "teal"], ["Cerámica y jarapas de Níjar", 1090, "gold"],
+            ["Agua Amarga", 940, "teal"], ["Isleta del Moro", 720, "teal"]] }] },
+      ],
+      [
+        { span: 4, t: "Lo que se dice del destino", s: "Sentimiento medio semanal (−1 a +1)", tag: "integrar",
+          parts: [{ k: "chart", h: 170, alt: "Sentimiento semanal", cfg: line(["S36", "S37", "S38", "S39", "S40", "S41", "S42", "S43"], [{ n: "Sentimiento", d: [0.48, 0.51, 0.5, 0.56, 0.53, 0.58, 0.54, 0.55], c: "teal", fill: true, pts: 3 }], { min: 0, max: 1, fmt: (v) => VG.nf(v, 2) }) },
+                  { k: "mini", items: [["Playas", "tema nº 1 · +0,71"], ["Aparcamiento", "tema crítico · −0,32"]] }],
+          f: "Social Listening: se activa con los tokens de Meta y X" },
+        { span: 4, t: "Indicadores oficiales frente al año pasado", s: "Variación interanual", tag: "real",
+          parts: [{ k: "chart", h: 250, alt: "Variación interanual", cfg: bar(["Gasto", "AENA", "Pernoct.", "Viajeros", "FRONTUR"], [{ n: "Variación", d: [6.8, 6.0, 4.2, 3.1, 2.4], c: ["teal", "teal", "teal", "teal", "teal"] }], { unit: "%", fmt: (v) => VG.nf(v, 1), thick: 30 }) }] },
+        { span: 4, t: "Recomendaciones", ai: true,
+          parts: [{ k: "recs", items: [
+            { prio: "alta", t: "Campaña de temporada baja en DE y FR", p: "Afluencia −31 % hasta mediados de noviembre; alemán y francés suman el 25 % de las consultas.", imp: "+2.400 visitantes", plazo: "2 semanas" },
+            { prio: "media", t: "Reforzar aviso de aparcamiento en Genoveses", p: "Es el tema más negativo en redes; activar mensaje en tótems los sábados.", imp: "Sentimiento", plazo: "Este sábado" },
+          ] }] },
+      ],
+      [
+        { span: 8, t: "Fuentes de datos del módulo", parts: [{ k: "srcs", items: [["INE EOH · EGATUR · FRONTUR", "real"], ["Junta de Andalucía", "real"], ["AENA", "real"], ["ThingsBoard (aforo y banderas)", "real"], ["Tótems y chatbot", "real"], ["Modelo de afluencia", "modelo"], ["Meta (Facebook, Instagram) y X", "integrar"], ["Google Analytics 4", "integrar"], ["App Vive Níjar", "integrar"]] }] },
+        { span: 4, t: "Preguntas que responde", parts: [{ k: "pregs", items: ["¿Cuántos visitantes vienen la semana que viene?", "¿De qué mercados llegan?", "¿Qué se dice del destino en redes?", "¿Dónde conviene reforzar la promoción?"] }] },
+      ],
+    ],
+  });
+})();
+</script>
+</body>
+</html>

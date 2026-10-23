@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Seguridad · Vista de Gobierno</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Nunito:wght@800;900&display=swap">
+<link rel="stylesheet" href="assets/vg.css">
+</head>
+<body>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="assets/vg.js"></script>
+<script>
+(function () {
+  const { line, bar, donut } = VG;
+  const d30 = Array.from({ length: 30 }, (_, i) => `${((i + 23) % 30) + 1}`);
+  const disp = [97.9, 98.1, 97.6, 98.3, 97.2, 96.8, 97.5, 98.0, 97.7, 96.1, 95.4, 96.9, 97.8, 98.2, 97.4, 97.9, 96.6, 95.9, 97.1, 97.6, 98.0, 96.4, 95.2, 96.8, 97.3, 96.0, 95.6, 96.2, 95.9, 96.0];
+
+  VG.render({
+    active: "seguridad", crumb: "Seguridad",
+    title: "Seguridad · Resumen de Dirección",
+    intro: "Cobertura real de las cámaras, tiempos de reparación, incidencias en vía pública y riesgo en los próximos eventos.",
+    hero: {
+      bg: "radial-gradient(circle at 80% 20%,rgba(120,150,230,.35),transparent 55%),linear-gradient(150deg,#141c2e,#46587e)",
+      estado: "ambar", frase: "Necesita seguimiento",
+      titulo: "San José y Níjar concentran casi la mitad de las incidencias del mes",
+      sub: "La cámara del paseo de San José lleva 4 días sin comunicación y el sábado hay mercadillo con 3.200 personas previstas.",
+      chips: [["1", "Sin comunicación"], ["92 %", "ANS de reparación"], ["58", "Incidencias/mes"], ["22 h", "Sin cobertura en 30 días"]],
+      ring: { v: "96 %", l: "cámaras online", pct: 96, c: "#3ddc7f" },
+    },
+    kpis: [
+      { l: "Disponibilidad 30 días", v: "96", u: "%", d: "−1 pt", dg: "malo", s: "objetivo 96 %", tag: "real", i: "cam", c: "ok", spark: disp.slice(-10) },
+      { l: "Horas sin cobertura", v: "22", u: "h", d: "+6 h", dg: "malo", s: "suma de cámaras", tag: "real", i: "clock", c: "gold", spark: [12, 14, 15, 13, 16, 18, 22] },
+      { l: "Fuera de servicio", v: "1", vc: "coral", d: "4 días", dg: "malo", s: "sin reparar", tag: "real", i: "alert", c: "coral", spark: [0, 1, 0, 2, 1, 0, 1] },
+      { l: "ANS de reparación", v: "92", u: "%", d: "obj. 95 %", dg: "malo", s: "últimos 90 días", tag: "real", i: "wrench", c: "navy", spark: [95, 96, 94, 93, 95, 92, 92] },
+      { l: "Incidencias vía pública", v: "58", d: "−6 %", dg: "bueno", s: "octubre", tag: "real", i: "shield", c: "blue", spark: [70, 66, 72, 64, 61, 62, 58] },
+      { l: "Eventos de analítica", v: "—", d: "aglomeración", dg: "neutro", s: "intrusión, vehículos", tag: "integrar", i: "ai", c: "violet" },
+    ],
+    rows: [
+      [
+        { span: 8, t: "Disponibilidad diaria de la red de cámaras", s: "Tres caídas bajo el ANS en la última quincena", tag: "real",
+          parts: [{ k: "chart", h: 270, alt: "Disponibilidad diaria de cámaras",
+            legend: [["Disponibilidad", "ok"], ["ANS 96 %", "coral", 1]],
+            cfg: line(d30, [
+              { n: "Disponibilidad", d: disp, c: "ok", fill: true, pts: 2 },
+              { n: "ANS", d: Array(30).fill(96), c: "coral", dash: true, pts: 0, w: 1.5 },
+            ], { unit: "%", fmt: (v) => VG.nf(v, 1), min: 92, max: 100 }) }],
+          f: "/verticales/seguridad/overview · 48 cámaras, 21 con analítica" },
+        { span: 4, t: "Incidencias por tipo", s: "Octubre · 58 en total", tag: "real",
+          parts: [{ k: "chart", h: 180, alt: "Incidencias por tipo", legend: [["Mobiliario", "navy"], ["Vandalismo", "coral"], ["Ruido", "gold"], ["Tráfico", "sky"], ["Otros", "muted"]],
+            cfg: donut(["Mobiliario urbano", "Vandalismo", "Ruido", "Tráfico", "Otros"], [19, 14, 11, 9, 5], ["navy", "coral", "gold", "sky", "muted"], { unit: "incidencias" }) }] },
+      ],
+      [
+        { span: 6, t: "Incidencias por núcleo", s: "San José y Níjar suman 26 de 58", tag: "real",
+          parts: [{ k: "rank", items: [["San José", 14, "coral"], ["Níjar", 12, "coral"], ["Campohermoso", 11, "navy"], ["San Isidro", 9, "navy"], ["Las Negras", 5, "sky"], ["Agua Amarga", 4, "sky"], ["Otros", 3, "muted"]] }] },
+        { span: 6, t: "Eventos con riesgo previsto", s: "Agenda municipal × afluencia prevista", tag: "modelo",
+          parts: [{ k: "evs", items: [
+            ["24", "oct", "Mercadillo de San José", "1 cámara sin servicio en la zona", '<span class="prio prio--critica">Alto</span>'],
+            ["31", "oct", "Festival de la Alfarería", "5.400 personas · casco histórico", '<span class="prio prio--alta">Medio</span>'],
+            ["1", "nov", "Todos los Santos", "Cementerios y accesos", '<span class="prio prio--media">Bajo</span>'],
+            ["8", "nov", "Concierto en Campohermoso", "1.800 personas", '<span class="prio prio--media">Bajo</span>'],
+          ] }] },
+      ],
+      [
+        { span: 6, t: "Cámaras por núcleo",
+          parts: [{ k: "map", points: [
+            { n: "Níjar", lon: -2.206, lat: 36.967, e: "verde", v: "14 / 14", left: true },
+            { n: "Campohermoso", lon: -2.125, lat: 36.94, e: "verde", v: "9 / 9" },
+            { n: "San Isidro", lon: -2.13, lat: 36.906, e: "verde", v: "6 / 6", left: true },
+            { n: "Las Negras", lon: -2.003, lat: 36.875, e: "verde", v: "4 / 4" },
+            { n: "Agua Amarga", lon: -1.935, lat: 36.937, e: "verde", v: "3 / 3" },
+            { n: "San José", lon: -2.105, lat: 36.765, e: "rojo", v: "11 / 12", r: 9 },
+          ] }] },
+        { span: 6, t: "Recomendaciones", ai: true,
+          parts: [{ k: "recs", items: [
+            { prio: "critica", t: "Reparar la cámara del paseo de San José", p: "4 días sin comunicación y mercadillo el sábado.", imp: "Cobertura", plazo: "48 h", resp: "Mantenimiento" },
+            { prio: "media", t: "Analítica de aglomeración en el Festival", p: "Activar conteo en las 3 cámaras del casco histórico.", imp: "Prevención", plazo: "31 oct" },
+          ] }] },
+      ],
+      [
+        { span: 8, t: "Fuentes de datos del módulo", parts: [{ k: "srcs", items: [["Estado de cámaras", "real"], ["Incidencias y ANS", "real"], ["Agenda municipal", "real"], ["Riesgo por evento", "modelo"], ["Analítica de vídeo", "integrar"], ["Avisos 112 y Policía Local", "integrar"]] }] },
+        { span: 4, t: "Preguntas que responde", parts: [{ k: "pregs", items: ["¿Qué dispositivos están fuera de servicio?", "¿Dónde hay más incidencias?", "¿Qué eventos requieren refuerzo?"] }] },
+      ],
+    ],
+  });
+})();
+</script>
+</body>
+</html>
