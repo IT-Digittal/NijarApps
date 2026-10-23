@@ -1,5 +1,10 @@
 # Vista de Gobierno 2.0 · maquetas
 
+> **Implementado.** El panel real está en `frontend/dashboard/assets/panel-direccion.js`
+> y sus datos salen de `GET /api/v1/direccion/panel/{modulo}`
+> (`src/nijar_dti/services/direccion_panel_service.py`). Estas maquetas quedan como
+> referencia de diseño; las cifras del panel real son las de la base de datos.
+
 Maquetas HTML de la propuesta de mejora de la Vista de Gobierno, con el aspecto
 que tendrá cada módulo en el panel antes de implementarlo.
 

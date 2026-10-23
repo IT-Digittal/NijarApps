@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Literal
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -10,10 +12,16 @@ from nijar_dti.core.database import get_db
 from nijar_dti.schemas.auth import CurrentUser
 from nijar_dti.schemas.direccion import (
     EstadoRecomendacionUpdate,
+    PanelDireccion,
     RecomendacionIA,
     ResumenMunicipal,
 )
-from nijar_dti.services import direccion_service, recomendaciones_service, usuarios_service
+from nijar_dti.services import (
+    direccion_panel_service,
+    direccion_service,
+    recomendaciones_service,
+    usuarios_service,
+)
 
 router = APIRouter()
 
@@ -63,3 +71,34 @@ async def actualizar_recomendacion(
         )
     except recomendaciones_service.RecomendacionNoEncontradaError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+
+ModuloPanel = Literal[
+    "resumen", "turismo", "alumbrado", "agua", "residuos", "movilidad", "seguridad", "energia"
+]
+
+
+@router.get(
+    "/panel/recomendaciones",
+    response_model=PanelDireccion,
+    summary="Panel visual de recomendaciones IA (embudo, áreas, resumen semanal, coste IA)",
+)
+async def panel_recomendaciones(
+    db: AsyncSession = Depends(get_db),
+    _: CurrentUser = Depends(_ver_recomendaciones),
+) -> PanelDireccion:
+    recs = await recomendaciones_service.generar(db)
+    return await direccion_panel_service.panel_recomendaciones(db, recs)
+
+
+@router.get(
+    "/panel/{modulo}",
+    response_model=PanelDireccion,
+    summary="Panel visual de un módulo de la Vista de Gobierno (KPIs, gráficos, mapa…)",
+)
+async def panel_modulo(
+    modulo: ModuloPanel,
+    db: AsyncSession = Depends(get_db),
+    _: CurrentUser = Depends(_ver_direccion),
+) -> PanelDireccion:
+    return await direccion_panel_service.panel(db, modulo)
