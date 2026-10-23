@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Alumbrado público · Vista de Gobierno</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Nunito:wght@800;900&display=swap">
+<link rel="stylesheet" href="assets/vg.css">
+</head>
+<body>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="assets/vg.js"></script>
+<script>
+(function () {
+  const { line, bar, donut } = VG;
+  const N = null;
+  const m = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+  const noche = ["18h", "19h", "20h", "21h", "22h", "23h", "0h", "1h", "2h", "3h", "4h", "5h", "6h", "7h", "8h"];
+
+  VG.render({
+    active: "alumbrado", crumb: "Alumbrado público",
+    title: "Alumbrado público · Resumen de Dirección",
+    intro: "Cuánto cuesta el alumbrado, cuánto ahorra el LED, dónde fallan los puntos de luz y dónde invertir en la siguiente fase.",
+    hero: {
+      bg: "radial-gradient(circle at 82% 18%,rgba(255,199,90,.55),transparent 50%),linear-gradient(150deg,#0f2145,#2f4f8f)",
+      estado: "ambar", frase: "Necesita seguimiento",
+      titulo: "El LED ya ahorra 6.800 € al mes; quedan 1.140 luminarias VSAP por renovar",
+      sub: "31 incidencias abiertas, 9 de ellas con más de una semana. Campohermoso concentra el 27 % de las VSAP pendientes.",
+      chips: [["97,8 %", "Disponibilidad"], ["31", "Incidencias abiertas"], ["2 / 48", "Cuadros en alerta"], ["412 kW", "Potencia instalada"]],
+      ring: { v: "72 %", l: "luminarias LED", pct: 72, c: "gold" },
+    },
+    kpis: [
+      { l: "Coste del mes", v: "9.800", u: "€", d: "−8 %", dg: "bueno", s: "vs oct 2025", tag: "real", i: "euro", c: "navy", spark: [12.6, 12.2, 11.4, 10.6, 10.1, 9.2, 8.7, 8.4, 9.0, 9.8] },
+      { l: "Consumo del mes", v: "61.300", u: "kWh", d: "−7 %", dg: "bueno", s: "red de alumbrado", tag: "real", i: "bolt", c: "gold", spark: [80, 72, 66, 58, 54, 52, 55, 60, 64, 61.3] },
+      { l: "Ahorro LED vs VSAP", v: "6.800", u: "€/mes", d: "41 %", dg: "bueno", s: "de energía", tag: "estimado", i: "leaf", c: "ok", spark: [5.1, 5.4, 5.7, 5.9, 6.1, 6.3, 6.5, 6.6, 6.7, 6.8] },
+      { l: "Tiempo de reparación", v: "2,6", u: "días", d: "−0,4", dg: "bueno", s: "media 30 días", tag: "real", i: "wrench", c: "teal", spark: [3.4, 3.2, 3.3, 3.0, 2.9, 3.1, 2.8, 2.7, 3.0, 2.6] },
+      { l: "Disponibilidad", v: "97,8", u: "%", d: "−0,3 pts", dg: "malo", s: "objetivo 98 %", tag: "real", i: "bulb", c: "sky", spark: [98.4, 98.2, 98.5, 98.1, 98.3, 98.0, 98.2, 97.9, 98.1, 97.8] },
+      { l: "Previsión noviembre", v: "64.900", u: "kWh", d: "+6 %", dg: "neutro", s: "noches más largas", tag: "modelo", i: "clock", c: "violet", spark: [55, 60, 64, 61.3, 64.9] },
+    ],
+    rows: [
+      [
+        { span: 8, t: "Consumo mensual: 2026 frente a 2025", s: "Un 7 % menos cada mes desde la fase 2 de renovación LED", tag: "real",
+          parts: [{ k: "chart", h: 290, alt: "Consumo mensual de alumbrado",
+            legend: [["2025", "muted"], ["2026", "gold"], ["Previsión", "navy"]],
+            cfg: bar(m, [
+              { n: "2025", d: [86, 78, 73, 64, 58, 55, 57, 63, 68, 66, 74, 80], c: "muted" },
+              { n: "2026", d: [80, 72, 66, 58, 54, 52, 55, 60, 64, 61.3, N, N], c: "gold" },
+              { n: "Previsión", d: [N, N, N, N, N, N, N, N, N, N, 64.9, 70.2], c: "navy" },
+            ], { unit: "MWh", fmt: (v) => VG.nf(v, 1), thick: 16 }) }],
+          f: "/verticales/alumbrado/overview + histórico de 24 meses · previsión por horas de oscuridad" },
+        { span: 4, t: "Parque de luminarias", s: "4.950 puntos de luz", tag: "real",
+          parts: [{ k: "chart", h: 180, alt: "Tecnología de luminarias", legend: [["LED", "gold"], ["VSAP", "navy"], ["Solar", "teal"]], cfg: donut(["LED", "VSAP", "Solar"], [3560, 1140, 250], ["gold", "navy", "teal"], { unit: "luminarias" }) },
+                  { k: "mini", items: [["1.140", "VSAP pendientes"], ["3,4 años", "retorno medio"], ["412 kW", "potencia instalada"], ["46 / 48", "cuadros online"]] }] },
+      ],
+      [
+        { span: 6, t: "Dónde invertir primero", s: "Luminarias VSAP pendientes por zona y ahorro anual de renovarlas", tag: "estimado",
+          parts: [{ k: "rank", items: [
+            ["Campohermoso", 310, "navy", "310 · 18.000 €"], ["San Isidro", 240, "navy", "240 · 13.900 €"], ["Níjar casco", 190, "navy", "190 · 11.000 €"],
+            ["Pujaire", 150, "sky", "150 · 8.700 €"], ["Atochares", 130, "sky", "130 · 7.500 €"], ["Fernán Pérez", 120, "sky", "120 · 7.000 €"]] }],
+          f: "Ahorro = diferencia de potencia × horas anuales × precio del kWh" },
+        { span: 6, t: "Incidencias abiertas por zona y antigüedad", s: "9 de 31 superan la semana", tag: "real",
+          parts: [{ k: "chart", h: 230, alt: "Incidencias por zona y antigüedad",
+            legend: [["< 2 días", "teal"], ["2–7 días", "gold"], ["> 7 días", "coral"]],
+            cfg: bar(["Campohermoso", "San José", "Níjar", "San Isidro", "Las Negras"], [
+              { n: "< 2 días", d: [3, 2, 2, 2, 1], c: "teal" }, { n: "2–7 días", d: [3, 3, 2, 1, 1], c: "gold" }, { n: "> 7 días", d: [3, 2, 2, 1, 1], c: "coral" },
+            ], { horizontal: true, stacked: true, thick: 22 }) }] },
+      ],
+      [
+        { span: 7, t: "Curva de encendido de una noche tipo", s: "Potencia por cuadro: detecta encendidos fuera de horario y regulación que no actúa", tag: "integrar",
+          parts: [{ k: "chart", h: 240, alt: "Curva nocturna de potencia",
+            legend: [["Cuadro C-14 San José", "coral"], ["Perfil esperado", "navy", 1]],
+            cfg: line(noche, [
+              { n: "Cuadro C-14", d: [6, 18, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 20, 14, 6], c: "coral", fill: true },
+              { n: "Perfil esperado", d: [0, 12, 21, 21, 21, 14, 11, 11, 11, 11, 11, 14, 21, 9, 0], c: "navy", dash: true, pts: 0, t: 0.15 },
+            ], { unit: "kW" }) }],
+          f: "Telegestión y Datadis privado · el C-14 no regula al 50 % de madrugada: 2.100 € al año de sobrecoste" },
+        { span: 5, t: "Recomendaciones", ai: true,
+          parts: [{ k: "recs", items: [
+            { prio: "alta", t: "Renovar las 310 VSAP de Campohermoso", p: "Mayor bolsa de VSAP y de incidencias del municipio.", imp: "18.000 €/año", plazo: "Q1 2027", resp: "Servicios Técnicos" },
+            { prio: "media", t: "Revisar la regulación del cuadro C-14", p: "Mantiene el 100 % de potencia toda la noche.", imp: "2.100 €/año", plazo: "1 semana" },
+          ] }] },
+      ],
+      [
+        { span: 8, t: "Fuentes de datos del módulo", parts: [{ k: "srcs", items: [["Inventario de luminarias y cuadros", "real"], ["Incidencias y ANS", "real"], ["Histórico mensual (2 años)", "real"], ["Precio del kWh y factor VSAP", "estimado"], ["Modelo por horas de oscuridad", "modelo"], ["Telegestión punto a punto", "integrar"], ["Datadis privado (curvas por cuadro)", "integrar"]] }] },
+        { span: 4, t: "Preguntas que responde", parts: [{ k: "pregs", items: ["¿Cuánto cuesta el alumbrado y cuánto ahorra el LED?", "¿Qué zonas tienen más problemas?", "¿Dónde invertir primero y con qué retorno?"] }] },
+      ],
+    ],
+  });
+})();
+</script>
+</body>
+</html>

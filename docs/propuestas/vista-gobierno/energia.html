@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Energía municipal · Vista de Gobierno</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Nunito:wght@800;900&display=swap">
+<link rel="stylesheet" href="assets/vg.css">
+</head>
+<body>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="assets/vg.js"></script>
+<script>
+(function () {
+  const { line, bar, donut } = VG;
+  const N = null;
+  const m = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+  const h24 = Array.from({ length: 24 }, (_, i) => `${i}h`);
+  const consumo = [38, 36, 35, 35, 36, 40, 52, 78, 104, 118, 124, 128, 130, 126, 120, 112, 104, 96, 88, 76, 62, 52, 45, 41];
+  const fv = [0, 0, 0, 0, 0, 0, 1, 4, 9, 14, 18, 21, 22, 21, 18, 14, 9, 4, 1, 0, 0, 0, 0, 0];
+  const m6 = ["may", "jun", "jul", "ago", "sep", "oct"];
+
+  VG.render({
+    active: "energia", crumb: "Energía municipal",
+    title: "Energía municipal · Resumen de Dirección",
+    intro: "La factura eléctrica del Ayuntamiento, qué edificios la generan y cuánto se puede recortar con autoconsumo y ajuste de potencias.",
+    hero: {
+      img: "assets/img/naturaleza.jpg", estado: "verde", frase: "Funciona con normalidad",
+      titulo: "Los edificios municipales consumen un 6 % menos que en 2025",
+      sub: "De enero a octubre, 322 MWh menos. La previsión de diciembre sube a 512 MWh por el frío y las noches largas.",
+      chips: [["467.921 kWh", "Consumo del mes"], ["88.600 €", "Coste del mes"], ["0,189 €", "Por kWh"], ["168 t", "CO₂ evitado/año"]],
+      ring: { v: "4 %", l: "autoconsumo · objetivo 15 %", pct: 27, c: "#3ddc7f" },
+    },
+    kpis: [
+      { l: "Consumo del mes", v: "467.921", u: "kWh", d: "−6 %", dg: "bueno", s: "vs oct 2025", tag: "real", i: "bolt", c: "navy", spark: [490, 470, 452, 428, 441, 488, 553, 571, 507, 468] },
+      { l: "Coste del mes", v: "88.600", u: "€", d: "−4 %", dg: "bueno", s: "41 edificios", tag: "real", i: "euro", c: "teal", spark: [94, 90, 87, 82, 84, 92, 103, 107, 95, 88.6] },
+      { l: "Ahorro por autoconsumo", v: "3.500", u: "€/mes", d: "4 %", dg: "neutro", s: "6 CUPS con FV", tag: "real", i: "sun", c: "gold", spark: [2.1, 2.6, 3.2, 3.8, 4.1, 4.3, 4.4, 4.2, 3.9, 3.5] },
+      { l: "Potencia sobredimensionada", v: "11", u: "CUPS", d: "9.200 €/año", dg: "malo", s: "en término fijo", tag: "integrar", i: "gauge", c: "coral" },
+      { l: "Previsión diciembre", v: "512.000", u: "kWh", d: "−6 %", dg: "bueno", s: "vs dic 2025", tag: "modelo", i: "clock", c: "violet", spark: [507, 468, 478, 512] },
+      { l: "CO₂ emitido", v: "112", u: "t/mes", d: "−7 t", dg: "bueno", s: "168 t evitadas al año", tag: "estimado", i: "leaf", c: "ok", spark: [118, 113, 109, 103, 106, 117, 133, 137, 122, 112] },
+    ],
+    rows: [
+      [
+        { span: 8, t: "Consumo mensual: 2026 frente a 2025", s: "Por debajo del año pasado los 10 meses; previsión hasta diciembre", tag: "real",
+          parts: [{ k: "chart", h: 290, alt: "Consumo mensual 2025, 2026 y previsión",
+            legend: [["2025", "muted"], ["2026", "teal"], ["Previsión", "gold", 1]],
+            cfg: line(m, [
+              { n: "2025", d: [520, 505, 480, 455, 470, 520, 590, 610, 540, 500, 510, 545], c: "#B4BFD3", pts: 0 },
+              { n: "2026", d: [490, 470, 452, 428, 441, 488, 553, 571, 507, 468, N, N], c: "teal", fill: true, pts: 3 },
+              { n: "Previsión", d: [N, N, N, N, N, N, N, N, N, 468, 478, 512], c: "gold", dash: true },
+            ], { unit: "MWh", min: 380, max: 650 }) }],
+          f: "Datadis + /verticales/energia/overview · octubre = valor actual de la plataforma" },
+        { span: 4, t: "¿Quién consume?", s: "Octubre por tipo de edificio", tag: "real",
+          parts: [{ k: "chart", h: 190, alt: "Consumo por tipo de edificio", cfg: donut(["Educación", "Deportes", "Administración", "Cultura y social"], [155, 133, 113, 68], ["navy", "blue", "teal", "violet"], { unit: "MWh" }) },
+                  { k: "rank", items: [["Educación", 155, "navy", "155 MWh"], ["Deportes", 133, "blue", "133 MWh"], ["Administración", 113, "teal", "113 MWh"], ["Cultura y social", 68, "violet", "68 MWh"]] }] },
+      ],
+      [
+        { span: 6, t: "Los 6 edificios que más consumen", s: "Octubre · kWh y coste", tag: "real",
+          parts: [{ k: "rank", items: [
+            ["Piscina cubierta Campohermoso", 64200, "navy", "64.200 · 12.100 €"], ["Pabellón de San Isidro", 41800, "navy", "41.800 · 7.900 €"],
+            ["Casa Consistorial", 38900, "navy", "38.900 · 7.400 €"], ["CEIP Virgen del Carmen", 29600, "sky", "29.600 · 5.600 €"],
+            ["Centro cultural Níjar", 24100, "sky", "24.100 · 4.600 €"], ["IES Campos de Níjar", 22800, "sky", "22.800 · 4.300 €"]] }] },
+        { span: 6, t: "Curva de un día laborable · Casa Consistorial", s: "Consumo y generación fotovoltaica posible en cubierta", tag: "integrar",
+          parts: [{ k: "chart", h: 230, alt: "Curva horaria de consumo y fotovoltaica",
+            legend: [["Consumo", "navy"], ["FV potencial", "gold"]],
+            cfg: line(h24, [{ n: "Consumo", d: consumo, c: "navy", fill: true }, { n: "FV potencial", d: fv.map((v) => v * 4), c: "gold", fill: true }], { unit: "kW" }) }],
+          f: "Datadis privado (curva horaria por CUPS) · 38 kW de consumo nocturno sin uso" },
+      ],
+      [
+        { span: 6, t: "Consumo eléctrico del municipio por sector", s: "Datadis público · la agricultura (invernaderos) es el primer consumidor", tag: "real",
+          parts: [{ k: "chart", h: 240, alt: "Consumo del municipio por sector",
+            legend: [["Agricultura", "ok"], ["Residencial", "navy"], ["Servicios", "teal"], ["Industria", "muted"]],
+            cfg: bar(m6, [
+              { n: "Agricultura", d: [11.2, 10.4, 9.8, 9.6, 12.1, 13.4], c: "ok" }, { n: "Residencial", d: [7.4, 8.6, 10.2, 10.9, 8.8, 7.6], c: "navy" },
+              { n: "Servicios", d: [4.1, 5.0, 6.2, 6.6, 5.1, 4.3], c: "teal" }, { n: "Industria", d: [2.0, 2.1, 2.0, 1.9, 2.1, 2.1], c: "#B4BFD3" },
+            ], { stacked: true, unit: "GWh", fmt: (v) => VG.nf(v, 1), thick: 30 }) }] },
+        { span: 6, t: "Recomendaciones", ai: true,
+          parts: [{ k: "recs", items: [
+            { prio: "alta", t: "FV en las 5 cubiertas de mayor consumo diurno", p: "Autoconsumo del 4 % al 15 %.", imp: "42.000 €/año", plazo: "2027", resp: "Área de Energía" },
+            { prio: "media", t: "Ajustar la potencia contratada de 11 suministros", p: "Su máximo registrado no llega al 60 % de lo contratado.", imp: "9.200 €/año", plazo: "1 mes" },
+          ] }] },
+      ],
+      [
+        { span: 8, t: "Fuentes de datos del módulo", parts: [{ k: "srcs", items: [["Datadis público (municipio por sector)", "real"], ["Suministros por CUPS y coste", "real"], ["Autoconsumo fotovoltaico", "real"], ["Factor de emisión CO₂", "estimado"], ["Previsión de consumo", "modelo"], ["Datadis privado (curvas horarias)", "integrar"]] }] },
+        { span: 4, t: "Preguntas que responde", parts: [{ k: "pregs", items: ["¿Qué edificios consumen más?", "¿Qué ahorra el autoconsumo?", "¿Dónde conviene invertir?"] }] },
+      ],
+    ],
+  });
+})();
+</script>
+</body>
+</html>
