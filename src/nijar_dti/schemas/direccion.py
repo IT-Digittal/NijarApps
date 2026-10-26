@@ -138,7 +138,7 @@ class ResumenMunicipal(BaseModel):
 # ---------------------------------------------------------------------------
 
 # Origen del dato, que el panel muestra como etiqueta en cada indicador.
-OrigenDato = Literal["real", "integrar", "estimado", "modelo", "ejemplo"]
+OrigenDato = Literal["real", "integrar", "estimado", "modelo", "ejemplo", "demo", "mixto"]
 SentidoDelta = Literal["bueno", "malo", "neutro"]
 TipoBloque = Literal[
     "linea",
@@ -253,4 +253,6 @@ class PanelDireccion(BaseModel):
     hero: HeroPanel
     kpis: list[KpiPanel] = Field(default_factory=list)
     bloques: list[BloquePanel] = Field(default_factory=list)
+    # Aviso visible cuando la pantalla muestra datos de demostración
+    aviso: str | None = None
     generado_en: datetime

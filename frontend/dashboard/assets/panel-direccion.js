@@ -124,6 +124,11 @@ const DIR_CSS = `
 #view-direccion .vg-tag--integrar{color:#9a5b00;background:#fff2dc;border-color:#f3d39b}
 #view-direccion .vg-tag--estimado{color:#55617a;background:#eef1f6;border-color:#d7dde8}
 #view-direccion .vg-tag--modelo{color:#1A5FD0;background:#eaf1fe;border-color:#c6d8f8}
+#view-direccion .vg-tag--demo{color:#9a3412;background:#fff1e6;border-color:#f5c39b;border-style:dashed}
+#view-direccion .vg-tag--mixto{color:#6d4c00;background:#fff8e1;border-color:#f0d78c}
+#view-direccion .vg-aviso{display:flex;gap:12px;align-items:flex-start;padding:12px 16px;border-radius:12px;background:#fff1e6;border:1px dashed #f0a868;color:#7c2d12;font-size:13px;line-height:1.5}
+#view-direccion .vg-aviso svg{width:20px;height:20px;flex:none;color:#c2410c}
+#view-direccion .vg-tile-demo{position:absolute;top:12px;right:12px;font-size:10px;font-weight:800;letter-spacing:.1em;padding:3px 8px;border-radius:6px;background:rgba(255,241,230,.92);color:#9a3412}
 #view-direccion .vg-tag--ejemplo{color:#6b5a2e;background:#faf6ec;border-color:#d9cba4;border-style:dashed}
 #view-direccion .vg-ai{display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:800;color:#5a45c9;background:#f1ecff}
 #view-direccion .vg-ai svg{width:12px;height:12px}
@@ -254,7 +259,7 @@ function cargarChart() {
 
 /* ---------------- piezas ---------------- */
 
-const TAG_TXT = { real: "Real hoy", integrar: "Al integrar", estimado: "Estimado", modelo: "Modelo predictivo", ejemplo: "Dato de ejemplo" };
+const TAG_TXT = { real: "Real hoy", integrar: "Al integrar", estimado: "Estimado", modelo: "Modelo predictivo", ejemplo: "Dato de ejemplo", demo: "Dato de demostración", mixto: "Real + demo" };
 const tag = (t) => (t ? '<span class="vg-tag vg-tag--' + t + '">' + TAG_TXT[t] + "</span>" : "");
 const FRASE = { verde: "Funciona con normalidad", ambar: "Necesita seguimiento", rojo: "Requiere una decisión" };
 const ESTADO_REC = { pendiente: "Pendiente", en_revision: "En revisión", aceptada: "Aceptada", descartada: "Descartada", ejecutada: "Ejecutada" };
@@ -530,7 +535,7 @@ function cuerpoBloque(b) {
       return h;
     }
     case "recomendaciones": return '<div class="vg-recs" data-recs="' + esc(b.area || "") + '" data-limite="' + (b.limite || "") + '"><div class="vg-vacio">Cargando…</div></div>';
-    case "vivo": return '<div data-vivo>' + PARTES.medidores({ items: b.items.map((x) => ({ nombre: x.medidor === "parkings" ? "Parkings" : "Contenedores", valor: Math.round(x.valor), color: x.medidor === "parkings" ? "gold" : "navy" })) }) + "</div>";
+    case "vivo": return '<div data-vivo>' + PARTES.medidores({ items: b.items.map((x) => ({ nombre: (x.medidor === "parkings" ? "Parkings" : "Contenedores") + (x.demo ? " (demo)" : ""), valor: Math.round(x.valor), color: x.medidor === "parkings" ? "gold" : "navy" })) }) + "</div>";
     default: return "";
   }
 }
@@ -548,7 +553,7 @@ function tarjeta(b) {
 function servicios(b) {
   return '<div class="vg-sec"><h3>' + esc(b.titulo) + "</h3><span>" + esc(b.subtitulo || "") + '</span></div><div class="vg-tiles">' +
     b.items.map((t) => '<button class="vg-tile" type="button" style="background-image:' + (FONDO[t.id] || FONDO.hero) + '" onclick="UI.goDir(\'' + esc(t.id) + "')\">" +
-      '<span class="vg-estado"><span class="vg-dot vg-dot--' + t.estado + '"></span>' + esc(t.frase) + "</span><h4>" + esc(t.nombre) +
+      (t.demo ? '<span class="vg-tile-demo">DEMO</span>' : "") + '<span class="vg-estado"><span class="vg-dot vg-dot--' + t.estado + '"></span>' + esc(t.frase) + "</span><h4>" + esc(t.nombre) +
       '</h4><span class="vg-tile-f">' + esc(t.indicador) + '</span><div class="vg-tile-b"><span class="vg-tile-c"><b>' + esc(t.valor) + "</b>" + esc(t.valor_etiqueta) +
       "</span>" + spark(t.serie, COLOR_SPARK_TILE[t.estado], 90, 28) + "</div></button>").join("") + "</div>";
 }
@@ -697,7 +702,8 @@ function renderPanel(id) {
       return;
     }
     _graficos = [];
-    let h = '<div class="vg">' + cabecera(p, id) + hero(p.hero) + '<div class="vg-kpis">' + p.kpis.map(kpi).join("") + "</div>";
+    let h = '<div class="vg">' + cabecera(p, id) +
+      (p.aviso ? '<div class="vg-aviso" role="note">' + ic("alert") + "<div><b>Atención.</b> " + esc(p.aviso) + "</div></div>" : "") + hero(p.hero) + '<div class="vg-kpis">' + p.kpis.map(kpi).join("") + "</div>";
     let fila = "";
     const cerrar = () => { if (fila) { h += '<div class="vg-grid">' + fila + "</div>"; fila = ""; } };
     p.bloques.forEach((b) => {
