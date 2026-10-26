@@ -179,3 +179,82 @@ class TestRutasPanel:
             "recomendaciones",
         }
         assert {"hero", "kpis", "bloques"} <= set(PanelDireccion.model_fields)
+
+
+class TestEtiquetadoDemo:
+    """Los datos de verticales en demo y las series sintéticas no se presentan como reales."""
+
+    def _panel(self, modulo: str):
+        from datetime import UTC, datetime
+
+        from nijar_dti.schemas.direccion import BloquePanel, HeroPanel, KpiPanel
+
+        return PanelDireccion(
+            modulo=modulo,
+            titulo="t",
+            intro="i",
+            hero=HeroPanel(fondo=modulo, titulo="h", subtitulo="s"),
+            kpis=[
+                KpiPanel(etiqueta="Cámaras online", valor="96"),
+                KpiPanel(etiqueta="Incidencias del mes", valor="48", origen="ejemplo"),
+                KpiPanel(etiqueta="Consumo del último mes", valor="10", origen="real"),
+                KpiPanel(etiqueta="Pernoctaciones", valor="1"),
+                KpiPanel(etiqueta="Usos de tótems", valor="2"),
+            ],
+            bloques=[
+                BloquePanel(tipo="ranking", titulo="Cámaras operativas por núcleo", origen="real"),
+                BloquePanel(tipo="eventos", titulo="Eventos con riesgo previsto", origen="modelo"),
+                BloquePanel(
+                    tipo="fuentes",
+                    items=[
+                        {"nombre": "Estado de las cámaras", "origen": "real"},
+                        {"nombre": "Agenda municipal", "origen": "real"},
+                    ],
+                ),
+            ],
+            generado_en=datetime.now(UTC),
+        )
+
+    def _estado(self, **over):
+        base = {
+            "vertical_demo": dict.fromkeys(dp.FUENTE_VERTICAL, True),
+            "contexto_demo": True,
+            "social_demo": True,
+            "actividad_mixta": True,
+        }
+        base.update(over)
+        return dp.EstadoDatos(**base)
+
+    def test_vertical_en_demo(self):
+        p = dp.etiquetar(self._panel("seguridad"), self._estado())
+        k = {x.etiqueta: x.origen for x in p.kpis}
+        assert k["Cámaras online"] == "demo"
+        assert k["Incidencias del mes"] == "ejemplo"  # el histórico conserva su origen
+        assert k["Consumo del último mes"] == "real"  # dato real capturado de Datadis
+        b = {x.titulo: x.origen for x in p.bloques if x.titulo}
+        assert b["Cámaras operativas por núcleo"] == "demo"
+        assert b["Eventos con riesgo previsto"] == "modelo"  # sale de la agenda, no de la vertical
+        fuentes = {it["nombre"]: it["origen"] for it in p.bloques[-1].items}
+        assert fuentes == {"Estado de las cámaras": "demo", "Agenda municipal": "real"}
+        assert p.aviso and "FD-012" in p.aviso
+
+    def test_vertical_integrada_no_se_marca(self):
+        demo = {v: v != "seguridad" for v in dp.FUENTE_VERTICAL}
+        p = dp.etiquetar(self._panel("seguridad"), self._estado(vertical_demo=demo))
+        assert {x.etiqueta: x.origen for x in p.kpis}["Cámaras online"] == "real"
+        assert p.aviso is None
+
+    def test_contexto_sintetico_y_actividad_mixta(self):
+        p = dp.etiquetar(self._panel("turismo"), self._estado())
+        k = {x.etiqueta: x.origen for x in p.kpis}
+        assert k["Pernoctaciones"] == "demo"
+        assert k["Usos de tótems"] == "mixto"
+        p = dp.etiquetar(
+            self._panel("turismo"), self._estado(contexto_demo=False, actividad_mixta=False)
+        )
+        k = {x.etiqueta: x.origen for x in p.kpis}
+        assert k["Pernoctaciones"] == "real" and k["Usos de tótems"] == "real"
+
+    def test_eventos_demo_identificables(self):
+        urns = dp.urns_eventos_demo()
+        assert urns and all(u.startswith("urn:ngsi-ld:EventoTuristico:") for u in urns)

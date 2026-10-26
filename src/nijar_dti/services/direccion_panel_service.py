@@ -25,6 +25,7 @@ import math
 import statistics
 from collections import Counter, defaultdict
 from collections.abc import Sequence
+from dataclasses import dataclass, field
 from datetime import UTC, date, datetime, timedelta
 from typing import Any
 from zoneinfo import ZoneInfo
@@ -520,6 +521,7 @@ async def _eventos_proximos(db: AsyncSession, limite: int = 4) -> list[EventoTur
                 EventoTuristico.publicado.is_(True),
                 EventoTuristico.activo.is_(True),
                 EventoTuristico.fecha_fin >= ahora,
+                EventoTuristico.urn.notin_(urns_eventos_demo()),
             )
             .order_by(EventoTuristico.fecha_inicio)
             .limit(limite)
@@ -1040,7 +1042,7 @@ async def panel_turismo(db: AsyncSession) -> PanelDireccion:
     pern, aena = por_clave.get("pernoctaciones"), por_clave.get("pasajeros_aena")
     ia = await consumo_ia_service.resumen(db, desde30, hasta)
     coste_conv = (ia.coste_estimado_usd / ia.llamadas) if ia.llamadas else None
-    origen_social: OrigenDato = "integrar" if s.social_dry_run else "real"
+    origen_social: OrigenDato = "demo" if s.social_dry_run else "real"
 
     sent_txt = (
         f"{big.sentimiento_medio:+.2f}".replace(".", ",")
@@ -2274,7 +2276,7 @@ async def panel_seguridad(db: AsyncSession) -> PanelDireccion:
         key=lambda z: (-sum(1 for c in por_zona[z] if c.estado != "operativo"), -len(por_zona[z])),
     )
     caidas = [c for c in cams if c.estado != "operativo"]
-    zona_caida = zonas[caidas[0].zona_id].nombre if caidas and caidas[0].zona_id in zonas else None
+    lugar_caida = caidas[0].nombre if len(caidas) == 1 else None  # emplazamiento de la cámara
     etq_i, series_i = serie_con_prevision(inc, 24, 3)
     puntos = [
         {
@@ -2289,7 +2291,7 @@ async def panel_seguridad(db: AsyncSession) -> PanelDireccion:
     ]
     titulo = (
         f"{o.online} de {o.camaras} cámaras operativas; {o.sin_comunicacion} sin comunicación"
-        + (f" en {zona_caida}" if zona_caida else "")
+        + (f" ({lugar_caida})" if lugar_caida else "")
         if o.sin_comunicacion
         else f"Las {o.camaras} cámaras de videovigilancia están operativas"
     )
@@ -2958,6 +2960,239 @@ async def panel_recomendaciones(db: AsyncSession, recs: list[RecomendacionIA]) -
     )
 
 
+# ======================================================= DATOS DE DEMOSTRACIÓN
+# Fuente del catálogo (fuentes_datos) que alimenta cada vertical técnica. Mientras
+# su estado no sea «operativa», los datos de esa vertical son los de demostración
+# cargados en la instalación y el panel los etiqueta como tales.
+FUENTE_VERTICAL = {
+    "alumbrado": "FD-008",
+    "agua": "FD-009",
+    "residuos": "FD-010",
+    "movilidad": "FD-011",
+    "seguridad": "FD-012",
+    "energia": "FD-013",
+}
+_NOMBRE_VERTICAL = {
+    "alumbrado": "Alumbrado público",
+    "agua": "Ciclo del agua",
+    "residuos": "Residuos",
+    "movilidad": "Movilidad",
+    "seguridad": "Seguridad",
+    "energia": "Energía municipal",
+}
+
+
+def urns_eventos_demo() -> list[str]:
+    """URN de los eventos de demostración de la instalación (no son agenda real)."""
+    from nijar_dti.data.seeds.demo_data import generar_eventos_seed
+
+    return [str(e["urn"]) for e in generar_eventos_seed()]
+
+
+@dataclass
+class EstadoDatos:
+    """Qué datos del panel son reales y cuáles de demostración."""
+
+    vertical_demo: dict[str, bool] = field(default_factory=dict)
+    contexto_demo: bool = True  # INE, Junta, AENA, FRONTUR
+    social_demo: bool = True  # Social Listening en modo de prueba
+    actividad_mixta: bool = False  # visitas, chatbot u opiniones de demo junto a las reales
+
+    def demo(self, vertical: str) -> bool:
+        return self.vertical_demo.get(vertical, True)
+
+    def verticales_demo(self) -> list[str]:
+        return [v for v in FUENTE_VERTICAL if self.demo(v)]
+
+
+async def estado_datos(db: AsyncSession) -> EstadoDatos:
+    from nijar_dti.models.contexto import ContextoTuristico
+    from nijar_dti.models.faq import InteraccionChatbot
+    from nijar_dti.models.fuente_dato import FuenteDato
+    from nijar_dti.services.datadis_service import hay_suministros_reales
+
+    filas = (
+        await db.execute(
+            select(FuenteDato.codigo, FuenteDato.estado).where(
+                FuenteDato.codigo.in_(list(FUENTE_VERTICAL.values()))
+            )
+        )
+    ).all()
+    operativas = {str(c) for c, e in filas if str(e) == "operativa"}
+    demo = {v: cod not in operativas for v, cod in FUENTE_VERTICAL.items()}
+    # Energía es real en cuanto hay suministros cargados desde Datadis (API o fichero).
+    if await hay_suministros_reales(db):
+        demo["energia"] = False
+
+    contexto_real = (
+        await db.execute(
+            select(func.count()).where(
+                func.coalesce(ContextoTuristico.metadatos["sintetico"].as_string(), "false")
+                != "true"
+            )
+        )
+    ).scalar_one()
+    actividad_demo = (
+        await db.execute(
+            select(func.count()).where(InteraccionChatbot.sesion_id.like("demo-session-%"))
+        )
+    ).scalar_one() + (
+        await db.execute(select(func.count()).where(Opinion.fuente_id_externo.like("demo-%")))
+    ).scalar_one()
+    return EstadoDatos(
+        vertical_demo=demo,
+        contexto_demo=not contexto_real,
+        social_demo=get_settings().social_dry_run,
+        actividad_mixta=bool(actividad_demo),
+    )
+
+
+_A_DEMO = {"real", "estimado", "modelo"}
+# Bloques y fuentes de una vertical que NO salen de sus datos de demostración.
+_NO_VERTICALES = {
+    "Eventos con riesgo previsto",
+    "Agenda municipal",
+    "Riesgo por evento",
+    "Previsión estacional",
+    "Previsión de demanda",
+    "Previsión de llenado",
+    "Previsión de accesos",
+    "Previsión de consumo",
+    "ThingsBoard (aforo del Parque)",
+}
+
+
+# KPIs y gráficos que salen del histórico mensual: ya llevan su propio origen
+# (ejemplo, o dato real capturado de Datadis) y no dependen del inventario demo.
+_HISTORICO = (
+    "Coste del último mes",
+    "Consumo del último mes",
+    "Previsión del mes en curso",
+    "Demanda del mes en curso",
+    "Agua suministrada",
+    "Coste de las pérdidas",
+    "Toneladas del mes",
+    "Accesos del mes",
+    "Incidencias del mes",
+    "Consumo mensual",
+    "Toneladas recogidas al mes",
+    "Accesos al municipio por mes",
+    "Incidencias de seguridad por mes",
+)
+
+
+def _es_historico(nombre: str | None) -> bool:
+    return bool(nombre) and str(nombre).startswith(_HISTORICO)
+
+
+def _marcar_vertical_demo(panel: PanelDireccion, vertical: str) -> None:
+    for k in panel.kpis:
+        if k.origen in _A_DEMO and not _es_historico(k.etiqueta):
+            k.origen = "demo"
+    for b in panel.bloques:
+        if b.titulo in _NO_VERTICALES or _es_historico(b.titulo):
+            continue
+        if b.origen in _A_DEMO:
+            b.origen = "demo"
+        if b.tipo == "fuentes":
+            for it in b.items:
+                if it.get("origen") in _A_DEMO and it.get("nombre") not in _NO_VERTICALES:
+                    it["origen"] = "demo"
+    panel.aviso = (
+        f"Datos de demostración: {_NOMBRE_VERTICAL[vertical]} aún no está integrado con el "
+        f"sistema municipal ({FUENTE_VERTICAL[vertical]}). Las cifras, estados y ubicaciones de "
+        "esta pantalla son de ejemplo y no deben usarse para decidir."
+    )
+
+
+def _cambiar(panel: PanelDireccion, etiquetas: set[str], origen: OrigenDato) -> None:
+    """Cambia el origen de los KPIs y bloques con esas etiquetas o títulos."""
+    for k in panel.kpis:
+        if k.etiqueta in etiquetas and k.origen != "ejemplo":
+            k.origen = origen
+    for b in panel.bloques:
+        if b.titulo in etiquetas and b.origen != "ejemplo":
+            b.origen = origen
+
+
+def _cambiar_fuentes(panel: PanelDireccion, nombres: set[str], origen: OrigenDato) -> None:
+    for b in panel.bloques:
+        if b.tipo == "fuentes":
+            for it in b.items:
+                if it.get("nombre") in nombres:
+                    it["origen"] = origen
+
+
+_CONTEXTO = {
+    "Pernoctaciones",
+    "Pasajeros AENA",
+    "Indicadores oficiales frente al año pasado",
+    "Indicadores oficiales",
+    "Turismo frente al año pasado",
+}
+_FUENTES_CONTEXTO = {"INE EOH · EGATUR · FRONTUR", "Junta de Andalucía", "AENA"}
+_ACTIVIDAD = {
+    "Usos de tótems",
+    "¿De dónde vienen?",
+    "¿Cuándo se usan los tótems? Día y hora",
+    "Lo más consultado en tótems y chatbot",
+    "Satisfacción ciudadana",
+    "Incidencias críticas",
+}
+_SOCIAL = {"Menciones en redes", "Lo que se dice del destino"}
+
+
+def etiquetar(panel: PanelDireccion, est: EstadoDatos) -> PanelDireccion:
+    """Corrige el origen de cada dato según qué fuentes son reales y cuáles de demostración."""
+    modulo = panel.modulo
+    if modulo in FUENTE_VERTICAL and est.demo(modulo):
+        _marcar_vertical_demo(panel, modulo)
+    if est.contexto_demo:
+        _cambiar(panel, _CONTEXTO, "demo")
+        _cambiar_fuentes(panel, _FUENTES_CONTEXTO, "demo")
+    if est.social_demo:
+        _cambiar(panel, _SOCIAL, "demo")
+        _cambiar_fuentes(panel, {"Meta (Facebook, Instagram) y X"}, "demo")
+    if est.actividad_mixta:
+        _cambiar(panel, _ACTIVIDAD, "mixto")
+        _cambiar_fuentes(panel, {"Tótems y chatbot"}, "mixto")
+
+    demos = est.verticales_demo()
+    if modulo == "resumen":
+        for b in panel.bloques:
+            if b.tipo == "servicios":
+                for t in b.items:
+                    t["demo"] = (
+                        est.contexto_demo or est.social_demo
+                        if t["id"] == "turismo"
+                        else est.demo(str(t["id"]))
+                    )
+            elif (b.tipo == "mapa" and demos) or (
+                b.titulo == "¿En qué se va el gasto eléctrico?" and est.demo("energia")
+            ):
+                b.origen = "demo"
+            elif b.tipo == "vivo":
+                for it in b.items:
+                    vert = "movilidad" if it.get("medidor") == "parkings" else "residuos"
+                    it["demo"] = est.demo(vert)
+        # El ahorro y el CO₂ se calculan sobre alumbrado y energía.
+        if est.demo("alumbrado") or est.demo("energia"):
+            _cambiar(panel, {"Ahorro estimado del mes", "CO₂ evitado"}, "demo")
+        if demos:
+            nombres = ", ".join(_NOMBRE_VERTICAL[v].lower() for v in demos)
+            panel.aviso = (
+                f"Parte de esta pantalla son datos de demostración: {nombres} aún no están "
+                "integrados con los sistemas municipales. Cada dato lleva su etiqueta de origen."
+            )
+    if modulo == "recomendaciones" and demos:
+        panel.aviso = (
+            "Las recomendaciones de "
+            + ", ".join(_NOMBRE_VERTICAL[v].lower() for v in demos)
+            + " se calculan sobre datos de demostración hasta su integración."
+        )
+    return panel
+
+
 async def panel(db: AsyncSession, modulo: str) -> PanelDireccion:
     """Panel del módulo indicado (excepto ``recomendaciones``, que necesita la lista)."""
     constructores = {
@@ -2970,7 +3205,7 @@ async def panel(db: AsyncSession, modulo: str) -> PanelDireccion:
         "seguridad": panel_seguridad,
         "energia": panel_energia,
     }
-    return await constructores[modulo](db)
+    return etiquetar(await constructores[modulo](db), await estado_datos(db))
 
 
-__all__ = ["MODULOS", "panel", "panel_recomendaciones"]
+__all__ = ["MODULOS", "estado_datos", "etiquetar", "panel", "panel_recomendaciones"]

@@ -88,7 +88,8 @@ async def panel_recomendaciones(
     _: CurrentUser = Depends(_ver_recomendaciones),
 ) -> PanelDireccion:
     recs = await recomendaciones_service.generar(db)
-    return await direccion_panel_service.panel_recomendaciones(db, recs)
+    panel = await direccion_panel_service.panel_recomendaciones(db, recs)
+    return direccion_panel_service.etiquetar(panel, await direccion_panel_service.estado_datos(db))
 
 
 @router.get(
