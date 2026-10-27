@@ -12,7 +12,7 @@ from dataclasses import asdict
 from datetime import UTC, datetime, timedelta
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import delete, func, select
+from sqlalchemy import delete, func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from nijar_dti.config import get_settings
@@ -34,6 +34,9 @@ from nijar_dti.schemas.contexto import (
 
 logger = get_logger(__name__)
 MADRID = ZoneInfo("Europe/Madrid")
+_CERROJO_CONTEXTO = (
+    17_010_945  # pg_advisory_xact_lock: una sola descarga aunque haya varios workers
+)
 
 
 async def ingerir_registros(
@@ -215,6 +218,15 @@ async def actualizacion_diaria_loop(hora: int) -> None:
         await asyncio.sleep(espera)
         try:
             async with AsyncSessionLocal() as db:
+                libre = (
+                    await db.execute(
+                        text("SELECT pg_try_advisory_xact_lock(:k)"), {"k": _CERROJO_CONTEXTO}
+                    )
+                ).scalar()
+                if not libre:
+                    # otro worker de uvicorn ya está descargando las series
+                    await asyncio.sleep(60)
+                    continue
                 resultado = await actualizar_desde_fuentes(db)
                 await db.commit()
             logger.info("Contexto oficial actualizado", resultado=resultado)
