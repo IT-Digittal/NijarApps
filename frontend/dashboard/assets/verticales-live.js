@@ -387,6 +387,71 @@ function activarImportar(el) {
   };
 }
 
+/* Descarga en el formato de los pliegos (Anexo I: CUPS · Anexo II: consumos por tarifa) */
+function ultimos12Meses() {
+  const hoy = new Date();
+  const fin = new Date(hoy.getFullYear(), hoy.getMonth(), 0);
+  const ini = new Date(fin.getFullYear() - 1, fin.getMonth() + 1, 1);
+  const iso = (d) => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  return [iso(ini), iso(fin)];
+}
+
+function tarjetaDescarga(estado) {
+  const [ini, fin] = ultimos12Meses();
+  const n = estado && estado.suministros_reales ? estado.suministros_reales : 0;
+  return '<div class="card" style="margin-top:16px"><div class="card__h"><div><div class="card__t">Descargar suministros y consumos (Anexos I y II)</div>' +
+    '<div class="card__s">Formato de los pliegos de suministro eléctrico: <b>Anexo I</b>, un CUPS por fila con peaje, tensión, potencias P1–P6 y distribuidora; ' +
+    '<b>Anexo II</b>, número de CUPS y energía consumida por tarifa y periodo (T1–T6). ' +
+    (n ? n + " suministros municipales de Datadis." : "Disponible cuando se carguen los suministros de la API privada de Datadis.") + "</div></div></div>" +
+    '<div style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">' +
+    '<label class="mini">Desde<br><input type="date" id="ax-desde" value="' + ini + '"></label>' +
+    '<label class="mini">Hasta<br><input type="date" id="ax-hasta" value="' + fin + '"></label>' +
+    '<label class="mini">Suministros<br><select id="ax-tipo"><option value="">Todos</option><option value="alumbrado">Alumbrado público</option><option value="edificios">Edificios y resto</option></select></label>' +
+    '<button class="btn btn--pri" data-ax="xlsx">Excel (Anexos I y II)</button>' +
+    '<button class="btn" data-ax="i">CSV Anexo I</button>' +
+    '<button class="btn" data-ax="ii">CSV Anexo II</button>' +
+    '<span class="mini" id="ax-resultado" style="color:var(--muted)"></span></div></div>';
+}
+
+function activarDescarga(el) {
+  el.querySelectorAll("[data-ax]").forEach((btn) => {
+    btn.onclick = async () => {
+      const out = el.querySelector("#ax-resultado");
+      const q = new URLSearchParams();
+      const desde = el.querySelector("#ax-desde").value;
+      const hasta = el.querySelector("#ax-hasta").value;
+      const tipo = el.querySelector("#ax-tipo").value;
+      if (desde) q.set("desde", desde);
+      if (hasta) q.set("hasta", hasta);
+      if (tipo) q.set("tipo", tipo);
+      const formato = btn.dataset.ax;
+      const ruta = formato === "xlsx" ? "/verticales/energia/anexos.xlsx" : "/verticales/energia/anexos/" + formato + ".csv";
+      out.textContent = "Preparando el fichero…";
+      btn.disabled = true;
+      try {
+        const r = await fetchAuth(ruta + "?" + q.toString());
+        if (!r.ok) {
+          const j = await r.json().catch(() => ({}));
+          throw new Error(j.detail || ("error " + r.status));
+        }
+        const blob = await r.blob();
+        const disp = r.headers.get("content-disposition") || "";
+        const m = disp.match(/filename="([^"]+)"/);
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = m ? m[1] : (formato === "xlsx" ? "suministros_nijar.xlsx" : "anexo_" + formato + ".csv");
+        a.click();
+        URL.revokeObjectURL(a.href);
+        out.textContent = "Descargado.";
+      } catch (e) {
+        out.textContent = "No se pudo descargar: " + (e.message || e);
+      } finally {
+        btn.disabled = false;
+      }
+    };
+  });
+}
+
 function pintarEnergiaMunicipio(el, serie, estado) {
   const V4 = window.__V4;
   const X = V4.ui;
@@ -400,9 +465,10 @@ function pintarEnergiaMunicipio(el, serie, estado) {
     h += '<div class="card"><div class="card__t">Aún no hay datos de Datadis</div>' +
       '<div class="mini" style="margin-top:6px;color:var(--muted)">La API de Datadis exige un usuario registrado incluso para los datos públicos. ' +
       'Con usuario, la carga es automática cada día; mientras tanto, importa los meses con el fichero de la web.<br>' + esc(privado) + '</div></div>';
-    h += tarjetaImportar();
+    h += tarjetaDescarga(estado) + tarjetaImportar();
     el.innerHTML = h;
     activarImportar(el);
+    activarDescarga(el);
     return;
   }
   const dias = serie.serie;
@@ -430,9 +496,10 @@ function pintarEnergiaMunicipio(el, serie, estado) {
       '</span><span class="v">' + Math.round(s[1] / totalSect * 100) + "%</span></div>").join("") + "</div></div></div>";
   h += "</div>";
   h += '<div class="mini" style="margin-top:10px;color:var(--muted)">Datadis oculta los registros con pocos contratos por protección de datos, por lo que el total puede ser algo inferior al real. ' + esc(privado) + ".</div>";
-  h += tarjetaImportar();
+  h += tarjetaDescarga(estado) + tarjetaImportar();
   el.innerHTML = h;
   activarImportar(el);
+  activarDescarga(el);
 }
 
 function instalarEnergiaMunicipio() {

@@ -170,6 +170,7 @@ class Suministro:
     tipo_punto: int | None
     valido_desde: str | None
     valido_hasta: str | None
+    provincia: str | None = None
 
 
 @dataclass(frozen=True)
@@ -201,6 +202,7 @@ def parsear_suministros(datos: Any) -> list[Suministro]:
                 tipo_punto=int(str(tipo)) if str(tipo or "").isdigit() else None,
                 valido_desde=s.get("validDateFrom"),
                 valido_hasta=s.get("validDateTo"),
+                provincia=s.get("province"),
             )
         )
     return out
@@ -229,6 +231,38 @@ def parsear_curva(datos: Any) -> list[LecturaHoraria]:
             )
         )
     return out
+
+
+def detalle_contrato(datos: Any) -> dict[str, Any]:
+    """Datos del contrato vigente (detalle V2): peaje, tensión y potencias P1…P6.
+
+    Es lo que piden los pliegos de suministro eléctrico (Anexo I). Si hay varios
+    contratos se toma el último por fecha de inicio.
+    """
+    contratos = datos.get("contract") if isinstance(datos, dict) else datos
+    validos = [c for c in contratos or [] if isinstance(c, dict)]
+    if not validos:
+        return {}
+    c = max(validos, key=lambda x: str(x.get("startDate") or ""))
+    potencias = [
+        round(float(p), 3) if isinstance(p, int | float) else None
+        for p in (c.get("contractedPowerkW") or [])
+    ]
+    return {
+        "tarifa_acceso": (str(c.get("accessFare") or "").strip() or None),
+        "codigo_tarifa": (str(c.get("codeFare") or "").strip() or None),
+        "tension": (str(c.get("tension") or "").strip() or None),
+        "potencias_kw": potencias[:6],
+        "distribuidora": c.get("distributor"),
+        "comercializadora": c.get("marketer"),
+        "provincia": c.get("province"),
+        "municipio": c.get("municipality"),
+        "codigo_postal": c.get("postalCode"),
+        "discriminacion_horaria": c.get("timeDiscrimination"),
+        "fecha_inicio": c.get("startDate"),
+        "fecha_fin": c.get("endDate"),
+        "autoconsumo": c.get("selfConsumptionTypeDesc"),
+    }
 
 
 def potencia_contratada(datos: Any) -> float | None:
@@ -374,13 +408,16 @@ class ClienteDatadis:
         )
         return parsear_suministros(datos)
 
-    async def potencia_contratada(self, s: Suministro) -> float | None:
-        datos = await self._get_json(
+    async def contrato(self, s: Suministro) -> Any:
+        """Respuesta cruda del detalle de contrato V2 de un suministro."""
+        return await self._get_json(
             URL_PRIVADA + "/get-contract-detail-v2",
             self._con_nif({"cups": s.cups, "distributorCode": s.codigo_distribuidora}),
             requiere_token=True,
         )
-        return potencia_contratada(datos)
+
+    async def potencia_contratada(self, s: Suministro) -> float | None:
+        return potencia_contratada(await self.contrato(s))
 
     async def curva_horaria(
         self, s: Suministro, mes_desde: str, mes_hasta: str
