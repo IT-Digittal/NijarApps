@@ -8,8 +8,9 @@ El acceso de lectura se controla por permiso de módulo (`ver_alumbrado`,
 from __future__ import annotations
 
 from datetime import UTC, date, datetime, timedelta
+from typing import Literal
 
-from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Response, UploadFile
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -41,7 +42,7 @@ from nijar_dti.schemas.verticales import (
     SuministrosPage,
     ZonaAlumbradoOut,
 )
-from nijar_dti.services import datadis_service
+from nijar_dti.services import datadis_service, energia_anexos_service
 from nijar_dti.services import verticales_service as svc
 
 router = APIRouter()
@@ -262,6 +263,62 @@ async def energia_curva(
     hasta = datetime.now(UTC)
     datos = await datadis_service.curva_suministro(db, cups, hasta - timedelta(days=dias), hasta)
     return [LecturaHorariaOut(**d) for d in datos]
+
+
+def _intervalo_anexos(desde: date | None, hasta: date | None) -> tuple[date, date]:
+    d, h = energia_anexos_service.ultimos_12_meses(date.today())
+    desde, hasta = desde or d, hasta or h
+    if desde > hasta:
+        raise HTTPException(status_code=422, detail="«desde» debe ser anterior a «hasta»")
+    if (hasta - desde).days > 3 * 366:
+        raise HTTPException(status_code=422, detail="El intervalo máximo es de 3 años")
+    return desde, hasta
+
+
+@router.get(
+    "/energia/anexos.xlsx",
+    summary="Suministros y consumos en el formato de los pliegos (Anexos I y II, Excel)",
+    response_class=Response,
+)
+async def energia_anexos_excel(
+    desde: date | None = Query(None, description="Por defecto, hace 12 meses"),
+    hasta: date | None = Query(None, description="Por defecto, fin del mes pasado"),
+    tipo: Literal["alumbrado", "edificios"] | None = Query(None),
+    db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(_ver_energia),
+) -> Response:
+    desde, hasta = _intervalo_anexos(desde, hasta)
+    filas_i, filas_ii, por_cups = await energia_anexos_service.anexos(db, desde, hasta, tipo)
+    contenido = energia_anexos_service.excel_anexos(filas_i, filas_ii, por_cups, desde, hasta)
+    nombre = f"suministros_electricos_nijar_{desde:%Y%m}_{hasta:%Y%m}.xlsx"
+    return Response(
+        contenido,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="{nombre}"'},
+    )
+
+
+@router.get(
+    "/energia/anexos/{anexo}.csv",
+    summary="Anexo I (CUPS) o Anexo II (consumos por tarifa y periodo) en CSV",
+    response_class=Response,
+)
+async def energia_anexo_csv(
+    anexo: Literal["i", "ii"],
+    desde: date | None = Query(None),
+    hasta: date | None = Query(None),
+    tipo: Literal["alumbrado", "edificios"] | None = Query(None),
+    db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(_ver_energia),
+) -> Response:
+    desde, hasta = _intervalo_anexos(desde, hasta)
+    filas_i, filas_ii, _ = await energia_anexos_service.anexos(db, desde, hasta, tipo)
+    nombre = f"anexo_{anexo}_suministros_nijar_{desde:%Y%m}_{hasta:%Y%m}.csv"
+    return Response(
+        energia_anexos_service.csv_anexo(anexo, filas_i, filas_ii),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{nombre}"'},
+    )
 
 
 @router.get(

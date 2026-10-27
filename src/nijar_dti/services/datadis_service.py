@@ -32,8 +32,10 @@ from nijar_dti.connectors.datadis import (
     DatadisError,
     LecturaHoraria,
     RegistroPublico,
+    detalle_contrato,
     normalizar,
     parsear_registro_publico,
+    potencia_contratada,
 )
 from nijar_dti.core.logging import get_logger
 from nijar_dti.models.energia_datadis import ConsumoHorarioEnergia, EnergiaMunicipioDiario
@@ -194,6 +196,8 @@ async def cargar_privado(
             "codigo_postal": sm.codigo_postal,
             "valido_desde": sm.valido_desde,
             "valido_hasta": sm.valido_hasta,
+            "direccion": sm.direccion,
+            "provincia": sm.provincia,
         }
         if obj is None:
             obj = SuministroEnergia(cups=sm.cups, edificio=sm.direccion[:160], metadatos=metadatos)
@@ -202,9 +206,12 @@ async def cargar_privado(
         else:
             obj.metadatos = {**(obj.metadatos or {}), **metadatos}
         try:
-            potencia = await cli.potencia_contratada(sm)
+            datos_contrato = await cli.contrato(sm)
+            potencia = potencia_contratada(datos_contrato)
             if potencia is not None:
                 obj.potencia_contratada_kw = potencia
+            # peaje, tensión y potencias P1…P6 para los anexos de los pliegos
+            obj.metadatos = {**(obj.metadatos or {}), "contrato": detalle_contrato(datos_contrato)}
             lecturas = await cli.curva_horaria(sm, mes_desde, mes_hasta)
         except DatadisAutenticacionError:
             raise

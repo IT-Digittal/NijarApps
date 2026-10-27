@@ -129,3 +129,29 @@ docker exec nijar-dti-api python -m nijar_dti.workers.captura_metricas --estado
 
 Hasta tener 15 meses reales seguidos, el panel no muestra previsión para esas
 series (no mezcla dato real con histórico de ejemplo).
+
+## Descarga en el formato de los pliegos (Anexos I y II)
+
+Petición del Servicio de Gestión de Infraestructuras: descargar los suministros
+y consumos estructurados como los anexos de los pliegos de suministro eléctrico.
+
+- **Dónde**: Verticales → Energía → «Consumo del municipio» → tarjeta «Descargar
+  suministros y consumos». Filtros: fechas (por defecto los últimos 12 meses
+  completos) y tipo (todos, alumbrado público, edificios y resto).
+- **Endpoints** (permiso `ver_energia`):
+  `GET /api/v1/verticales/energia/anexos.xlsx?desde=&hasta=&tipo=` y
+  `GET /api/v1/verticales/energia/anexos/{i|ii}.csv` (CSV con «;» y coma decimal).
+- **Anexo I** (un CUPS por fila): dirección, municipio, provincia, peaje de acceso,
+  tensión y potencias P1–P6 del detalle de contrato de Datadis (`get-contract-detail-v2`,
+  guardado en `metadatos.contrato` en cada carga privada), distribuidora y su CIF
+  (tabla `CIF_DISTRIBUIDORAS`; si no se conoce, en blanco).
+- **Anexo II** (por peaje): número de CUPS y kWh en cada periodo T1–T6, calculados
+  desde la curva horaria con los periodos de la Circular 3/2020 (Península; fines de
+  semana y festivos nacionales de fecha fija en el periodo más barato).
+- El Excel añade una hoja «Detalle por CUPS» (kWh por periodo de cada suministro) y
+  otra de «Notas» con la metodología.
+- **Datos que Datadis no da**: «Esencial (SI/NO)» y el CIF de distribuidoras
+  pequeñas: salen en blanco para que los complete el Ayuntamiento.
+
+Los datos de contrato se rellenan en la siguiente carga privada (`datadis_carga
+--solo privado`); hasta entonces peaje, tensión y potencias salen vacíos.
