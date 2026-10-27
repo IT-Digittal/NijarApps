@@ -44,7 +44,13 @@ class TestConectoresDryRun:
         assert julios and eneros
         assert max(julios) > max(eneros)
 
-    def test_modo_real_no_configurado_falla(self):
+    def test_modo_real_sin_red_falla_de_forma_explicita(self, monkeypatch):
+        import httpx
+
+        def sin_red(self, *a, **k):
+            raise httpx.ConnectError("sin red")
+
+        monkeypatch.setattr(httpx.Client, "get", sin_red)
         with pytest.raises(ContextoConnectorError):
             INEFronturConnector(dry_run=False).fetch_series()
 

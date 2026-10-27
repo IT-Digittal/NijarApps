@@ -17,11 +17,17 @@ from sqlalchemy.orm import Mapped, mapped_column
 from nijar_dti.core.database import Base
 from nijar_dti.models._mixins import TimestampMixin
 
+# Valor de ``CuadroMando.comunicaciones`` de un cuadro real del inventario
+# todavía sin telegestión conectada (no se conoce su estado en tiempo real).
+SIN_TELEMETRIA = "sin telemetría"
+
 
 class TecnologiaLuminaria(StrEnum):
     LED = "led"
     VSAP = "vsap"  # Vapor de sodio de alta presión
     SOLAR = "solar"
+    HM = "hm"  # Halogenuro metálico
+    DESCONOCIDA = "desconocida"  # sin dato en el inventario
 
 
 class EstadoActivo(StrEnum):

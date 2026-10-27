@@ -1,23 +1,30 @@
 """Conectores concretos de fuentes públicas oficiales.
 
-Implementan el patrón del proyecto: ruta real con ``httpx`` cuando
-``dry_run`` es False y datos sintéticos coherentes cuando es True (modo por
-defecto). Las series sintéticas reproducen la fuerte estacionalidad estival
-de Almería/Cabo de Gata para que el pipeline, el modelo semántico y el
-cálculo del factor de expansión sean validables sin red.
+Implementan el patrón del proyecto: ruta real (``oficiales.py``, ``httpx``)
+cuando ``dry_run`` es False y datos sintéticos coherentes cuando es True. Las
+series sintéticas reproducen la estacionalidad estival de Almería/Cabo de Gata
+y llevan ``metadatos["sintetico"] = True`` para que la Vista de Gobierno las
+etiquete como demostración; los datos reales nunca llevan esa marca.
 
-Las APIs reales son de acceso libre y sin credenciales:
-- INE: API Tempus3 JSON (https://servicios.ine.es/wstempus/js/ES/...).
-- Junta de Andalucía: portal de datos abiertos.
-- AENA: estadísticas de tráfico de pasajeros.
+Fuentes reales (acceso libre, sin credenciales):
+
+==================  ===========================================  ==================
+conector            serie                                        origen
+==================  ===========================================  ==================
+ine_eoh             pernoctaciones hoteleras, prov. Almería      INE EOH · EOT1460
+ine_frontur         turistas internacionales, Andalucía          INE FRONTUR · FREG351
+ine_egatur          gasto de turistas internacionales, Andalucía INE EGATUR · FREG537
+junta_andalucia     viajeros en hoteles, prov. Almería           IECA (BADEA) · 8035
+aena                pasajeros del aeropuerto de Almería (LEI)    Excel mensual de AENA
+==================  ===========================================  ==================
 """
 
 from __future__ import annotations
 
 from datetime import date
 
+from nijar_dti.connectors.contexto import oficiales
 from nijar_dti.connectors.contexto.base import (
-    ContextoConnectorError,
     ContextoRecord,
     FuentePublicaConnector,
 )
@@ -53,24 +60,39 @@ def _serie_mensual_sintetica(base_anual_media: float, anios: int) -> list[tuple[
     return out
 
 
-class _DryRunMixin(FuentePublicaConnector):
-    """Si no es dry_run y no hay implementación real, falla de forma explícita."""
-
-    def _real_no_disponible(self) -> list[ContextoRecord]:
-        raise ContextoConnectorError(
-            f"Conector '{self.fuente}' en modo real no configurado en este entorno. "
-            "Use dry_run=True o implemente la llamada a la API oficial."
-        )
+def _anios_naturales(anios: int, ref: date | None = None) -> list[int]:
+    """Años naturales que cubren los últimos ``anios`` años hasta hoy."""
+    ref = ref or date.today()
+    return list(range(ref.year - anios, ref.year + 1))
 
 
-class INEFronturConnector(_DryRunMixin):
+def _meta(base: dict, punto: oficiales.PuntoMensual | None = None, **extra) -> dict:
+    meta = {**base, **extra}
+    if punto is not None and punto.provisional:
+        meta["provisional"] = True
+    return meta
+
+
+class INEFronturConnector(FuentePublicaConnector):
     """Turismo internacional (Frontur) — INE, mensual, ámbito Andalucía."""
 
     fuente = "ine_frontur"
 
     def fetch_series(self, anios: int = 3) -> list[ContextoRecord]:
         if not self.dry_run:
-            return self._real_no_disponible()
+            meta = {"operacion": "FRONTUR", "serie": "FREG351", "tabla": 10823, "fuente": "INE"}
+            return [
+                ContextoRecord(
+                    fuente=self.fuente,
+                    indicador="turistas_internacionales",
+                    periodo=p.periodo,
+                    valor=p.valor,
+                    unidad="turistas",
+                    ambito="andalucia",
+                    metadatos=_meta(meta, p),
+                )
+                for p in oficiales.serie_ine("FREG351", 10823, anios * 12)
+            ]
         return [
             ContextoRecord(
                 fuente=self.fuente,
@@ -85,14 +107,29 @@ class INEFronturConnector(_DryRunMixin):
         ]
 
 
-class INEEgaturConnector(_DryRunMixin):
+class INEEgaturConnector(FuentePublicaConnector):
     """Gasto turístico (Egatur) — INE, trimestral, ámbito Andalucía."""
 
     fuente = "ine_egatur"
 
     def fetch_series(self, anios: int = 3) -> list[ContextoRecord]:
         if not self.dry_run:
-            return self._real_no_disponible()
+            # El INE publica el gasto mensual en millones de euros: se agrega por
+            # trimestres completos, como la serie que usa el panel.
+            meta = {"operacion": "EGATUR", "serie": "FREG537", "tabla": 10839, "fuente": "INE"}
+            meses = oficiales.serie_ine("FREG537", 10839, anios * 12 + 2, escala=1_000_000)
+            return [
+                ContextoRecord(
+                    fuente=self.fuente,
+                    indicador="gasto_turistico_total_eur",
+                    periodo=q,
+                    valor=valor,
+                    unidad="euros",
+                    ambito="andalucia",
+                    metadatos=_meta(meta, provisional=True) if prov else dict(meta),
+                )
+                for q, valor, prov in oficiales.trimestres(meses)
+            ]
         # Agrega la serie mensual sintética en trimestres
         mensual = _serie_mensual_sintetica(1_150_000_000, anios)  # euros/mes
         por_trimestre: dict[str, float] = {}
@@ -114,7 +151,7 @@ class INEEgaturConnector(_DryRunMixin):
         ]
 
 
-class INEEohConnector(_DryRunMixin):
+class INEEohConnector(FuentePublicaConnector):
     """Encuesta de Ocupación Hotelera (EOH) — INE, mensual, provincia de Almería.
 
     Las pernoctaciones son la referencia para calibrar el factor de expansión.
@@ -124,7 +161,19 @@ class INEEohConnector(_DryRunMixin):
 
     def fetch_series(self, anios: int = 3) -> list[ContextoRecord]:
         if not self.dry_run:
-            return self._real_no_disponible()
+            meta = {"operacion": "EOH", "serie": "EOT1460", "tabla": 2074, "fuente": "INE"}
+            return [
+                ContextoRecord(
+                    fuente=self.fuente,
+                    indicador="pernoctaciones",
+                    periodo=p.periodo,
+                    valor=p.valor,
+                    unidad="pernoctaciones",
+                    ambito="provincia_almeria",
+                    metadatos=_meta(meta, p),
+                )
+                for p in oficiales.serie_ine("EOT1460", 2074, anios * 12)
+            ]
         return [
             ContextoRecord(
                 fuente=self.fuente,
@@ -139,14 +188,32 @@ class INEEohConnector(_DryRunMixin):
         ]
 
 
-class JuntaAndaluciaConnector(_DryRunMixin):
+class JuntaAndaluciaConnector(FuentePublicaConnector):
     """Observatorio Turístico de Andalucía — viajeros alojados, mensual."""
 
     fuente = "junta_andalucia"
 
     def fetch_series(self, anios: int = 3) -> list[ContextoRecord]:
         if not self.dry_run:
-            return self._real_no_disponible()
+            # IECA (Junta): explotación de la EOH, viajeros en hoteles de la provincia.
+            meta = {
+                "fuente": "IECA · Encuesta de Ocupación Hotelera",
+                "consulta": oficiales.IECA_EOH_PROVINCIAS,
+            }
+            hoy = date.today()
+            desde = f"{hoy.year - anios:04d}{hoy.month:02d}"
+            return [
+                ContextoRecord(
+                    fuente=self.fuente,
+                    indicador="viajeros_alojados",
+                    periodo=p.periodo,
+                    valor=p.valor,
+                    unidad="viajeros",
+                    ambito="provincia_almeria",
+                    metadatos=dict(meta),
+                )
+                for p in oficiales.serie_ieca_viajeros(desde, f"{hoy.year:04d}{hoy.month:02d}")
+            ]
         return [
             ContextoRecord(
                 fuente=self.fuente,
@@ -161,14 +228,26 @@ class JuntaAndaluciaConnector(_DryRunMixin):
         ]
 
 
-class AENAConnector(_DryRunMixin):
+class AENAConnector(FuentePublicaConnector):
     """Pasajeros del Aeropuerto de Almería — AENA, mensual."""
 
     fuente = "aena"
 
     def fetch_series(self, anios: int = 3) -> list[ContextoRecord]:
         if not self.dry_run:
-            return self._real_no_disponible()
+            meta = {"iata": "LEI", "fuente": "AENA · estadísticas de tráfico (Excel mensual)"}
+            return [
+                ContextoRecord(
+                    fuente=self.fuente,
+                    indicador="pasajeros_aeropuerto_almeria",
+                    periodo=p.periodo,
+                    valor=p.valor,
+                    unidad="pasajeros",
+                    ambito="almeria",
+                    metadatos=_meta(meta, p),
+                )
+                for p in oficiales.serie_aena("ALMERÍA", _anios_naturales(anios))
+            ]
         return [
             ContextoRecord(
                 fuente=self.fuente,

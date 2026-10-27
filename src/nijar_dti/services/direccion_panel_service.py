@@ -1283,6 +1283,20 @@ async def panel_turismo(db: AsyncSession) -> PanelDireccion:
 
 
 # =================================================================== ALUMBRADO
+_DESCARGA = {"vsap", "hm"}  # lámparas de descarga: candidatas a renovar a LED
+
+
+def _telegestion(cuadros: list[CuadroMando]) -> str:
+    """Fabricante de telegestión declarado en el inventario (p. ej. "SOL-X")."""
+    fabricantes = Counter(
+        str((q.metadatos.get("telegestion") or {}).get("fabricante"))
+        for q in cuadros
+        if isinstance(q.metadatos, dict)
+        and (q.metadatos.get("telegestion") or {}).get("fabricante")
+    )
+    return fabricantes.most_common(1)[0][0] if fabricantes else "punto a punto"
+
+
 async def panel_alumbrado(db: AsyncSession) -> PanelDireccion:
     s = get_settings()
     k = await direccion_service._kpis(db)
@@ -1304,9 +1318,17 @@ async def panel_alumbrado(db: AsyncSession) -> PanelDireccion:
     total_tec = sum(kwh_tec.values()) or 1.0
     led_kwh = consumo_mes * kwh_tec["led"] / total_tec
     ahorro_mes = led_kwh * (f - 1) * s.precio_kwh_eur
-    # ahorro anual por luminaria VSAP renovada: su consumo × (1 − 1/f)
-    kwh_vsap_medio = consumo_mes * kwh_tec["vsap"] / total_tec / o.vsap if o.vsap else 0.0
-    ahorro_por_vsap = kwh_vsap_medio * 12 * (1 - 1 / f) * s.precio_kwh_eur
+    # Inventario real de WeLight sin telegestión: los estados no se conocen aún.
+    real_sin_tele = o.fuente_inventario == "welight" and not o.telemetria
+    # Ahorro anual de renovar a LED cada luminaria de descarga (VSAP y halogenuro
+    # metálico): su consumo (escalado al real del mes) × (1 − 1/f).
+    escala = consumo_mes / total_tec
+    ahorro_kwh_zona: dict[str, float] = defaultdict(float)
+    for x in lums:
+        if x.tecnologia in _DESCARGA:
+            ahorro_kwh_zona[x.zona_id] += float(x.consumo_mes_kwh or 0) * escala
+    factor_ahorro = 12 * (1 - 1 / f) * s.precio_kwh_eur
+    pendientes = sum(1 for x in lums if x.tecnologia in _DESCARGA)
     prev = prever_mensual(cola_homogenea(hist), 1)
 
     etq_c, series_c, anio = comparativa_anual(hist, escala=0.001, enlazar=False)
@@ -1319,16 +1341,45 @@ async def panel_alumbrado(db: AsyncSession) -> PanelDireccion:
 
     por_zona_vsap = sorted(
         (
-            (zonas[z].nombre if z in zonas else z, n)
-            for z, n in Counter(x.zona_id for x in lums if x.tecnologia == "vsap").items()
+            (zonas[z].nombre if z in zonas else z, n, ahorro_kwh_zona[z] * factor_ahorro)
+            for z, n in Counter(x.zona_id for x in lums if x.tecnologia in _DESCARGA).items()
         ),
-        key=lambda kv: -kv[1],
+        key=lambda kv: -kv[2],
     )
     averias = Counter(x.zona_id for x in lums if x.estado == "averia")
     sincom = Counter(x.zona_id for x in lums if x.estado == "sin_comunicacion")
     zonas_inc = sorted({*averias, *sincom}, key=lambda z: -(averias[z] + sincom[z]))[:6]
     cuadros_alarma = [c for c in cuadros if c.alarmas or c.estado != "operativo"]
     yoy = _yoy(hist)
+
+    tele = _telegestion(cuadros)
+    cups_alumbrado = {
+        c for q in cuadros if isinstance(q.metadatos, dict) for c in q.metadatos.get("cups") or []
+    }
+    por_nucleo = Counter(x.zona_id for x in lums)
+    led_nucleo = Counter(x.zona_id for x in lums if x.tecnologia == "led")
+    top_nucleos = [z for z, _ in por_nucleo.most_common(10)]
+    bloque_nucleos = BloquePanel(
+        tipo="barras_h",
+        titulo="Puntos de luz por núcleo",
+        subtitulo=f"Los 10 núcleos con más luminarias de {fmt_num(len(por_nucleo))}",
+        origen="real",
+        ancho=6,
+        alto=300,
+        apilado=True,
+        etiquetas=[zonas[z].nombre if z in zonas else z for z in top_nucleos],
+        series=[
+            SerieGrafico(
+                nombre="LED", valores=[float(led_nucleo[z]) for z in top_nucleos], color="gold"
+            ),
+            SerieGrafico(
+                nombre="Otras tecnologías",
+                valores=[float(por_nucleo[z] - led_nucleo[z]) for z in top_nucleos],
+                color="navy",
+            ),
+        ],
+        unidad="luminarias",
+    )
 
     pct_led = o.pct_led
     bloques = [
@@ -1352,40 +1403,52 @@ async def panel_alumbrado(db: AsyncSession) -> PanelDireccion:
             origen="real",
             ancho=4,
             alto=180,
-            etiquetas=["LED", "VSAP", "Solar"],
+            etiquetas=["LED", "VSAP", "Solar"] + (["Otras"] if o.otras else []),
             series=[
                 SerieGrafico(
                     nombre="Luminarias",
-                    valores=[o.led, o.vsap, o.solar],
-                    colores=["gold", "navy", "teal"],
+                    valores=[o.led, o.vsap, o.solar] + ([o.otras] if o.otras else []),
+                    colores=["gold", "navy", "teal"] + (["sky"] if o.otras else []),
                 )
             ],
             unidad="luminarias",
             items=[
-                {"valor": fmt_num(o.vsap), "texto": "VSAP pendientes"},
+                {"valor": fmt_num(pendientes), "texto": "VSAP/HM por renovar"},
                 {"valor": f"{fmt_num(o.potencia_instalada_kw)} kW", "texto": "potencia instalada"},
-                {"valor": f"{o.cuadros_online} / {o.cuadros_total}", "texto": "cuadros online"},
-                {"valor": fmt_num(o.circuitos_total), "texto": "circuitos"},
+                {"valor": fmt_num(o.cuadros_total), "texto": "cuadros de mando"}
+                if real_sin_tele
+                else {
+                    "valor": f"{o.cuadros_online} / {o.cuadros_total}",
+                    "texto": "cuadros online",
+                },
+                {"valor": fmt_num(len(cups_alumbrado)), "texto": "CUPS de alumbrado"}
+                if real_sin_tele
+                else {"valor": fmt_num(o.circuitos_total), "texto": "circuitos"},
             ],
+            pie="Otras = halogenuro metálico o tecnología sin dato en el inventario"
+            if o.otras
+            else None,
         ),
         BloquePanel(
             tipo="ranking",
             titulo="Dónde invertir primero",
-            subtitulo="Luminarias VSAP pendientes por zona y ahorro anual de renovarlas",
+            subtitulo="Luminarias VSAP/HM por zona y ahorro anual de renovarlas a LED",
             origen="estimado",
             ancho=6,
             items=[
                 {
                     "nombre": n,
                     "valor": c,
-                    "texto": f"{c} · {fmt_num(c * ahorro_por_vsap)} €/año",
+                    "texto": f"{c} · {fmt_num(a)} €/año",
                     "color": "navy" if i < 3 else "sky",
                 }
-                for i, (n, c) in enumerate(por_zona_vsap[:6])
+                for i, (n, c, a) in enumerate(por_zona_vsap[:6])
             ],
-            pie="Ahorro = consumo medio de una VSAP × (1 − 1/factor LED) × precio del kWh",
+            pie="Ahorro = consumo de esas luminarias × (1 − 1/factor LED) × precio del kWh",
         ),
-        BloquePanel(
+        bloque_nucleos
+        if real_sin_tele
+        else BloquePanel(
             tipo="barras_h",
             titulo="Luminarias con problemas por zona",
             subtitulo=f"{o.en_averia} en avería y {o.sin_comunicacion} sin comunicación",
@@ -1411,7 +1474,14 @@ async def panel_alumbrado(db: AsyncSession) -> PanelDireccion:
         else pendiente(
             "Luminarias con problemas", "No hay luminarias en avería ni sin comunicación.", 6
         ),
-        BloquePanel(
+        pendiente(
+            "Averías y alarmas de los cuadros",
+            f"Llegarán al conectar la telegestión {tele} de los {fmt_num(o.cuadros_total)} "
+            "cuadros: averías, pérdidas de comunicación y alarmas en tiempo real.",
+            7,
+        )
+        if real_sin_tele
+        else BloquePanel(
             tipo="eventos",
             titulo="Cuadros de mando con alarmas",
             subtitulo=f"{len(cuadros_alarma)} de {len(cuadros)} cuadros requieren revisión",
@@ -1440,11 +1510,19 @@ async def panel_alumbrado(db: AsyncSession) -> PanelDireccion:
         ),
         bloque_fuentes(
             [
-                ("Inventario de luminarias y cuadros", "real"),
+                (
+                    "Inventario WeLight (luminarias y cuadros)"
+                    if o.fuente_inventario == "welight"
+                    else "Inventario de luminarias y cuadros",
+                    "real",
+                ),
                 ("Histórico mensual de consumo", "real"),
                 ("Precio del kWh y factor VSAP", "estimado"),
                 ("Previsión estacional", "modelo"),
-                ("Telegestión punto a punto", "integrar"),
+                (
+                    f"Telegestión {tele}" if real_sin_tele else "Telegestión punto a punto",
+                    "integrar",
+                ),
                 ("Datadis privado (curvas por cuadro)", "integrar"),
             ]
         ),
@@ -1463,14 +1541,26 @@ async def panel_alumbrado(db: AsyncSession) -> PanelDireccion:
         hero=_hero(
             "alumbrado",
             sem,
-            f"El LED ahorra {fmt_num(ahorro_mes)} € al mes; quedan {fmt_num(o.vsap)} luminarias VSAP por renovar",
-            f"{o.incidencias_abiertas} incidencias abiertas · {o.cuadros_alerta} cuadros en alerta"
+            f"El LED ahorra {fmt_num(ahorro_mes)} € al mes; quedan {fmt_num(pendientes)} luminarias VSAP/HM por renovar",
+            (
+                f"Inventario WeLight: {fmt_num(o.total_luminarias)} puntos de luz en "
+                f"{fmt_num(o.cuadros_total)} cuadros · telegestión {tele} pendiente de conectar"
+                if real_sin_tele
+                else f"{o.incidencias_abiertas} incidencias abiertas · {o.cuadros_alerta} cuadros en alerta"
+            )
             + (
-                f" · {por_zona_vsap[0][0]} concentra la mayor bolsa de VSAP"
+                f" · {por_zona_vsap[0][0]} concentra el mayor ahorro por renovar"
                 if por_zona_vsap
                 else ""
             ),
             [
+                (fmt_num(o.total_luminarias), "Puntos de luz"),
+                (fmt_num(o.cuadros_total), "Cuadros de mando"),
+                (fmt_num(len(cups_alumbrado)), "CUPS de alumbrado"),
+                (f"{fmt_num(o.potencia_instalada_kw)} kW", "Potencia instalada"),
+            ]
+            if real_sin_tele
+            else [
                 (f"{fmt_num(o.disponibilidad_pct, 1)} %", "Disponibilidad"),
                 (str(o.incidencias_abiertas), "Incidencias abiertas"),
                 (f"{o.cuadros_alerta} / {o.cuadros_total}", "Cuadros en alerta"),
@@ -1513,21 +1603,43 @@ async def panel_alumbrado(db: AsyncSession) -> PanelDireccion:
                 icono="leaf",
                 color="ok",
             ),
-            kpi(
-                "Luminarias en avería",
-                fmt_num(o.en_averia),
-                detalle=f"{o.sin_comunicacion} sin comunicación",
-                icono="wrench",
-                color="coral",
-                color_valor="coral" if o.en_averia else None,
-            ),
-            kpi(
-                "Disponibilidad",
-                fmt_num(o.disponibilidad_pct, 1),
-                unidad="%",
-                detalle=f"{fmt_num(o.operativas)} operativas",
-                icono="bulb",
-                color="sky",
+            *(
+                [
+                    kpi(
+                        "Luminarias por renovar",
+                        fmt_num(pendientes),
+                        detalle=f"VSAP y halogenuro · {fmt_num(pendientes / (o.total_luminarias or 1) * 100, 1)} % del parque",
+                        icono="wrench",
+                        color="coral",
+                    ),
+                    kpi(
+                        "Disponibilidad",
+                        "—",
+                        detalle=f"con la telegestión {tele}",
+                        origen="integrar",
+                        icono="bulb",
+                        color="sky",
+                    ),
+                ]
+                if real_sin_tele
+                else [
+                    kpi(
+                        "Luminarias en avería",
+                        fmt_num(o.en_averia),
+                        detalle=f"{o.sin_comunicacion} sin comunicación",
+                        icono="wrench",
+                        color="coral",
+                        color_valor="coral" if o.en_averia else None,
+                    ),
+                    kpi(
+                        "Disponibilidad",
+                        fmt_num(o.disponibilidad_pct, 1),
+                        unidad="%",
+                        detalle=f"{fmt_num(o.operativas)} operativas",
+                        icono="bulb",
+                        color="sky",
+                    ),
+                ]
             ),
             kpi(
                 "Previsión del mes en curso",
@@ -2964,6 +3076,7 @@ async def panel_recomendaciones(db: AsyncSession, recs: list[RecomendacionIA]) -
 # Fuente del catálogo (fuentes_datos) que alimenta cada vertical técnica. Mientras
 # su estado no sea «operativa», los datos de esa vertical son los de demostración
 # cargados en la instalación y el panel los etiqueta como tales.
+FUENTES_CONTEXTO = frozenset({"ine_eoh", "ine_egatur", "ine_frontur", "junta_andalucia", "aena"})
 FUENTE_VERTICAL = {
     "alumbrado": "FD-008",
     "agua": "FD-009",
@@ -2994,7 +3107,9 @@ class EstadoDatos:
     """Qué datos del panel son reales y cuáles de demostración."""
 
     vertical_demo: dict[str, bool] = field(default_factory=dict)
-    contexto_demo: bool = True  # INE, Junta, AENA, FRONTUR
+    contexto_demo: bool = True  # alguna serie oficial (INE, Junta, AENA) sigue siendo sintética
+    # Fuentes de contexto sin dato real; None = todas si ``contexto_demo``, ninguna si no.
+    contexto_fuentes_demo: frozenset[str] | None = None
     social_demo: bool = True  # Social Listening en modo de prueba
     actividad_mixta: bool = False  # visitas, chatbot u opiniones de demo junto a las reales
 
@@ -3004,12 +3119,18 @@ class EstadoDatos:
     def verticales_demo(self) -> list[str]:
         return [v for v in FUENTE_VERTICAL if self.demo(v)]
 
+    def fuentes_contexto_demo(self) -> frozenset[str]:
+        if self.contexto_fuentes_demo is not None:
+            return self.contexto_fuentes_demo
+        return FUENTES_CONTEXTO if self.contexto_demo else frozenset()
+
 
 async def estado_datos(db: AsyncSession) -> EstadoDatos:
     from nijar_dti.models.contexto import ContextoTuristico
     from nijar_dti.models.faq import InteraccionChatbot
     from nijar_dti.models.fuente_dato import FuenteDato
     from nijar_dti.services.datadis_service import hay_suministros_reales
+    from nijar_dti.services.inventario_alumbrado_service import fuente_inventario
 
     filas = (
         await db.execute(
@@ -3023,15 +3144,24 @@ async def estado_datos(db: AsyncSession) -> EstadoDatos:
     # Energía es real en cuanto hay suministros cargados desde Datadis (API o fichero).
     if await hay_suministros_reales(db):
         demo["energia"] = False
+    # Alumbrado es real con el inventario de WeLight cargado; lo que aún no
+    # tiene (telegestión) el propio panel lo muestra como pendiente de integrar.
+    if await fuente_inventario(db) == "welight":
+        demo["alumbrado"] = False
 
-    contexto_real = (
-        await db.execute(
-            select(func.count()).where(
-                func.coalesce(ContextoTuristico.metadatos["sintetico"].as_string(), "false")
-                != "true"
+    con_dato_real = set(
+        (
+            await db.execute(
+                select(ContextoTuristico.fuente)
+                .where(
+                    func.coalesce(ContextoTuristico.metadatos["sintetico"].as_string(), "false")
+                    != "true"
+                )
+                .distinct()
             )
-        )
-    ).scalar_one()
+        ).scalars()
+    )
+    contexto_demo = FUENTES_CONTEXTO - {str(f) for f in con_dato_real}
     actividad_demo = (
         await db.execute(
             select(func.count()).where(InteraccionChatbot.sesion_id.like("demo-session-%"))
@@ -3041,7 +3171,8 @@ async def estado_datos(db: AsyncSession) -> EstadoDatos:
     ).scalar_one()
     return EstadoDatos(
         vertical_demo=demo,
-        contexto_demo=not contexto_real,
+        contexto_demo=bool(contexto_demo),
+        contexto_fuentes_demo=frozenset(contexto_demo),
         social_demo=get_settings().social_dry_run,
         actividad_mixta=bool(actividad_demo),
     )
@@ -3123,14 +3254,29 @@ def _cambiar_fuentes(panel: PanelDireccion, nombres: set[str], origen: OrigenDat
                     it["origen"] = origen
 
 
-_CONTEXTO = {
-    "Pernoctaciones",
-    "Pasajeros AENA",
-    "Indicadores oficiales frente al año pasado",
-    "Indicadores oficiales",
-    "Turismo frente al año pasado",
+# Qué series oficiales alimentan cada KPI, bloque o fila de "fuentes" del panel.
+_CONTEXTO: dict[str, frozenset[str]] = {
+    "Pernoctaciones": frozenset({"ine_eoh"}),
+    "Pasajeros AENA": frozenset({"aena"}),
+    "Indicadores oficiales frente al año pasado": FUENTES_CONTEXTO,
+    "Indicadores oficiales": FUENTES_CONTEXTO,
+    "Turismo frente al año pasado": FUENTES_CONTEXTO,
 }
-_FUENTES_CONTEXTO = {"INE EOH · EGATUR · FRONTUR", "Junta de Andalucía", "AENA"}
+_FUENTES_CONTEXTO: dict[str, frozenset[str]] = {
+    "INE EOH · EGATUR · FRONTUR": frozenset({"ine_eoh", "ine_egatur", "ine_frontur"}),
+    "Junta de Andalucía": frozenset({"junta_andalucia"}),
+    "AENA": frozenset({"aena"}),
+}
+
+
+def _origen_contexto(fuentes: frozenset[str], demo: frozenset[str]) -> OrigenDato | None:
+    """``demo`` si todas sus series son sintéticas, ``mixto`` si solo algunas."""
+    sinteticas = fuentes & demo
+    if not sinteticas:
+        return None
+    return "demo" if sinteticas == fuentes else "mixto"
+
+
 _ACTIVIDAD = {
     "Usos de tótems",
     "¿De dónde vienen?",
@@ -3147,9 +3293,14 @@ def etiquetar(panel: PanelDireccion, est: EstadoDatos) -> PanelDireccion:
     modulo = panel.modulo
     if modulo in FUENTE_VERTICAL and est.demo(modulo):
         _marcar_vertical_demo(panel, modulo)
-    if est.contexto_demo:
-        _cambiar(panel, _CONTEXTO, "demo")
-        _cambiar_fuentes(panel, _FUENTES_CONTEXTO, "demo")
+    demo_ctx = est.fuentes_contexto_demo()
+    if demo_ctx:
+        for nombre, fuentes in _CONTEXTO.items():
+            if origen := _origen_contexto(fuentes, demo_ctx):
+                _cambiar(panel, {nombre}, origen)
+        for nombre, fuentes in _FUENTES_CONTEXTO.items():
+            if origen := _origen_contexto(fuentes, demo_ctx):
+                _cambiar_fuentes(panel, {nombre}, origen)
     if est.social_demo:
         _cambiar(panel, _SOCIAL, "demo")
         _cambiar_fuentes(panel, {"Meta (Facebook, Instagram) y X"}, "demo")

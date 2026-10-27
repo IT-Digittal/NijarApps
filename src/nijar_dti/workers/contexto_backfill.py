@@ -12,6 +12,10 @@ Uso:
     # Imprime un resumen por consola
     python -m nijar_dti.workers.contexto_backfill --dry-run
 
+    # Descarga las series oficiales (INE, Junta, AENA) y las guarda en la BD,
+    # sustituyendo las sintéticas de cada fuente que responda
+    python -m nijar_dti.workers.contexto_backfill --guardar
+
 El factor de expansión preliminar se calcula a partir de las pernoctaciones
 EOH del último periodo disponible en el propio dataset.
 """
@@ -19,6 +23,7 @@ EOH del último periodo disponible en el propio dataset.
 from __future__ import annotations
 
 import argparse
+import asyncio
 import json
 import sys
 from dataclasses import asdict
@@ -44,12 +49,31 @@ def _ultimo_eoh(registros: list[dict]) -> float | None:
     return float(eoh[-1]["valor"])
 
 
+async def _guardar(anios: int) -> dict[str, str]:
+    from nijar_dti.core.database import AsyncSessionLocal
+    from nijar_dti.services.contexto_service import actualizar_desde_fuentes
+
+    async with AsyncSessionLocal() as db:
+        resultado = await actualizar_desde_fuentes(db, anios)
+        await db.commit()
+    return resultado
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Backfill de contexto histórico DTI Níjar")
     parser.add_argument("--dry-run", action="store_true", help="Usa series sintéticas (sin red)")
     parser.add_argument("--anios", type=int, default=3, help="Años de histórico a generar")
     parser.add_argument("--output", type=str, default=None, help="Ruta del JSON de salida")
+    parser.add_argument(
+        "--guardar", action="store_true", help="Descarga las series reales y las guarda en la BD"
+    )
     args = parser.parse_args(argv)
+
+    if args.guardar:
+        resultado = asyncio.run(_guardar(args.anios))
+        for fuente, estado in sorted(resultado.items()):
+            print(f"  - {fuente}: {estado}")
+        return 0 if not any(e.startswith("error") for e in resultado.values()) else 1
 
     dataset = generar_dataset(dry_run=args.dry_run, anios=args.anios)
     registros = dataset["registros"]

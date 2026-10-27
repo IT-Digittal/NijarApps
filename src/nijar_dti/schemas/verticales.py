@@ -85,6 +85,11 @@ class AlumbradoOverview(BaseModel):
     ahorro_energetico_pct: float
     incidencias_abiertas: int
     zonas: list[ZonaAlumbradoOut]
+    otras: int = 0  # halogenuro metálico o tecnología sin dato en el inventario
+    # False si el inventario es real (WeLight) pero aún sin telegestión: estados,
+    # averías y comunicaciones no se conocen todavía.
+    telemetria: bool = True
+    fuente_inventario: str | None = None  # "welight" | None (inventario de demostración)
 
 
 # ---------------------------------------------------------------------- AGUA

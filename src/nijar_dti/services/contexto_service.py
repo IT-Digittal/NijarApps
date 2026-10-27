@@ -7,16 +7,23 @@ pernoctaciones oficiales (INE EOH).
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+import asyncio
+from dataclasses import asdict
+from datetime import UTC, datetime, timedelta
+from zoneinfo import ZoneInfo
 
-from sqlalchemy import select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from nijar_dti.config import get_settings
+from nijar_dti.connectors.contexto.base import FuentePublicaConnector
 from nijar_dti.connectors.contexto.expansion import (
     ESTANCIA_MEDIA_NOCHES,
     FactorExpansion,
     calcular_factor_expansion,
 )
+from nijar_dti.connectors.contexto.fuentes import todos_los_conectores
+from nijar_dti.core.logging import get_logger
 from nijar_dti.models.contexto import ContextoTuristico
 from nijar_dti.schemas.contexto import (
     ContextoIngestResult,
@@ -24,6 +31,9 @@ from nijar_dti.schemas.contexto import (
     ContextoRecordIn,
     ContextoSerie,
 )
+
+logger = get_logger(__name__)
+MADRID = ZoneInfo("Europe/Madrid")
 
 
 async def ingerir_registros(
@@ -125,3 +135,89 @@ async def factor_expansion(
         estancia_media_noches=estancia_media_noches,
     )
     return fe, periodo_ref
+
+
+# ------------------------------------------------- actualización desde fuentes --
+def _es_sintetico():
+    return func.coalesce(ContextoTuristico.metadatos["sintetico"].as_string(), "false") == "true"
+
+
+async def actualizar_desde_fuentes(
+    db: AsyncSession,
+    anios: int | None = None,
+    conectores: list[FuentePublicaConnector] | None = None,
+) -> dict[str, str]:
+    """Descarga las series reales de INE, Junta y AENA y las guarda.
+
+    Cada fuente es independiente: si una falla se conserva lo que ya hubiera
+    (real o de demostración) y se sigue con las demás. Cuando una fuente
+    devuelve datos reales se borran sus series sintéticas, para que el panel
+    no mezcle meses inventados con datos oficiales.
+    """
+    anios = anios or get_settings().contexto_backfill_anios
+    resultado: dict[str, str] = {}
+    for conector in conectores or todos_los_conectores(dry_run=False):
+        try:
+            registros = await asyncio.to_thread(conector.fetch_series, anios)
+        except Exception as exc:  # noqa: BLE001 — una fuente caída no frena las demás
+            logger.warning(
+                "Fuente de contexto no disponible", fuente=conector.fuente, error=str(exc)
+            )
+            resultado[conector.fuente] = f"error: {exc}"
+            continue
+        if not registros:
+            resultado[conector.fuente] = "sin datos"
+            continue
+        await db.execute(
+            delete(ContextoTuristico).where(
+                ContextoTuristico.fuente == conector.fuente, _es_sintetico()
+            )
+        )
+        r = await ingerir_registros(db, [ContextoRecordIn(**asdict(x)) for x in registros])
+        resultado[conector.fuente] = (
+            f"{r.recibidos} registros ({registros[0].periodo} a {registros[-1].periodo})"
+        )
+    return resultado
+
+
+def _segundos_hasta(hora: int, ahora: datetime | None = None) -> float:
+    ahora = ahora or datetime.now(MADRID)
+    objetivo = ahora.replace(hour=hora, minute=45, second=0, microsecond=0)
+    if objetivo <= ahora:
+        objetivo += timedelta(days=1)
+    return (objetivo - ahora).total_seconds()
+
+
+async def _hay_series_sinteticas(db: AsyncSession) -> bool:
+    n = (await db.execute(select(func.count()).where(_es_sintetico()))).scalar_one()
+    return bool(n)
+
+
+async def actualizacion_diaria_loop(hora: int) -> None:
+    """Refresca cada día las series oficiales (el INE y AENA publican a mitad de mes).
+
+    Si al arrancar aún quedan series de demostración, la primera descarga se
+    hace a los pocos minutos en lugar de esperar al día siguiente.
+    """
+    from nijar_dti.core.database import AsyncSessionLocal
+
+    primera = True
+    while True:
+        espera = _segundos_hasta(hora)
+        if primera:
+            primera = False
+            try:
+                async with AsyncSessionLocal() as db:
+                    if await _hay_series_sinteticas(db):
+                        espera = 120
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("No se pudo revisar el contexto al arrancar", error=str(exc))
+        await asyncio.sleep(espera)
+        try:
+            async with AsyncSessionLocal() as db:
+                resultado = await actualizar_desde_fuentes(db)
+                await db.commit()
+            logger.info("Contexto oficial actualizado", resultado=resultado)
+        except Exception as exc:  # noqa: BLE001 — el bucle no debe morir
+            logger.error("Error al actualizar el contexto oficial", error=str(exc))
+        await asyncio.sleep(60)
