@@ -185,15 +185,26 @@ class LecturaHoraria:
 
 
 def parsear_suministros(datos: Any) -> list[Suministro]:
+    """Suministros de la respuesta, sin repetir CUPS.
+
+    Si la autorización de tercero está duplicada en Datadis (p. ej. 318 «CUPS
+    autorizados» para 159 suministros), cada CUPS llega dos veces: se toma una
+    sola para no descargar su curva dos veces.
+    """
     filas = datos.get("supplies") if isinstance(datos, dict) else datos
     out = []
+    vistos: set[str] = set()
     for s in filas or []:
         if not isinstance(s, dict) or not s.get("cups"):
             continue
+        cups = str(s["cups"]).strip().upper()
+        if cups in vistos:
+            continue
+        vistos.add(cups)
         tipo = s.get("pointType")
         out.append(
             Suministro(
-                cups=str(s["cups"]).strip().upper(),
+                cups=cups,
                 direccion=str(s.get("address") or s["cups"]).strip(),
                 codigo_postal=s.get("postalCode"),
                 municipio=s.get("municipality"),

@@ -163,3 +163,11 @@ def test_ventana_por_defecto():
     assert svc.ventana_por_defecto(date(2026, 10, 3)) == (
         date(2026, 9, 1), date(2026, 10, 2), "2026/09", "2026/10",
     )  # fmt: skip
+
+
+def test_suministros_duplicados_en_la_autorizacion_se_cuentan_una_vez():
+    fila = {"cups": "ES0031000000000001AB", "address": "CL REAL 1", "distributorCode": "2"}
+    sums = dd.parsear_suministros(
+        {"supplies": [fila, dict(fila), {**fila, "cups": "es0031000000000002ab"}]}
+    )
+    assert [s.cups for s in sums] == ["ES0031000000000001AB", "ES0031000000000002AB"]
