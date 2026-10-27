@@ -36,6 +36,12 @@ class TestSemaforo:
         )
         assert ds._semaforo_alumbrado(o).estado == "ambar"
 
+    def test_alumbrado_sin_telegestion_no_inventa_estados(self):
+        o = SimpleNamespace(telemetria=False, total_luminarias=10184, pct_led=91.5)
+        sem = ds._semaforo_alumbrado(o)
+        assert "10.184 puntos de luz" in sem.indicador_clave
+        assert "telegestión" in sem.recomendacion
+
     def test_energia_verde_con_autoconsumo(self):
         o = SimpleNamespace(consumo_mes_kwh=1000.0, autoconsumo_pct=12.0)
         assert ds._semaforo_energia(o).estado == "verde"

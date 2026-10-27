@@ -32,6 +32,8 @@ cómo **verificarla**. El catálogo completo de fuentes está en
 | **Inventario Municipal de Bienes** (DWG del Ayuntamiento) | ✅ | Capas `inventario_*` del gemelo (`/api/v1/geo/capas`) | [runbook](runbook-inventario-bienes.md) | `scripts/importar_inventario.sh inventario.zip --dry-run` |
 | **Ortofotos históricas** (IGN PNOA histórico + Junta de Andalucía REDIAM/IECA) | 🟢 IGN · 🟡 Junta | `/api/v1/gemelo/ortofotos-historicas` (selector «Ortofoto histórica» del Gemelo vivo 2D) | ver detalle abajo | `docker exec -i nijar-dti-api python - < scripts/verificar_ortofotos.py` |
 | **Consumo eléctrico** (Datadis) | 🟡 público · ⏳ privado | `/api/v1/verticales/energia/municipio`, `/energia/suministros/{cups}/curva`, `/energia/datadis/estado` | [runbook](runbook-datadis.md) | `python -m scripts.verificar_datadis` (datos públicos sin usuario; privada con `DATADIS_USUARIO/PASSWORD`) |
+| **Series oficiales de turismo** (INE EOH/FRONTUR/EGATUR, Junta-IECA, AENA) | 🟢 | Vista de Gobierno (Turismo, portada), `/api/v1/data/contexto/*` | [runbook](runbook-contexto-oficial.md) | `python -m nijar_dti.workers.contexto_backfill --guardar` |
+| **Inventario de alumbrado** (Excel de WeLight; telegestión SOL-X) | ✅ inventario · ⏳ telegestión | `/api/v1/verticales/alumbrado/*`, Vista de Gobierno · Alumbrado | [runbook](runbook-inventario-alumbrado-welight.md) | `python -m nijar_dti.workers.importar_inventario_alumbrado Inventario.xlsx --dry-run` |
 | **Contenidos abiertos del tótem** (OpenStreetMap + Wikipedia/Commons) | 🟢 | `/api/v1/tourism/services` (gastronomía), `/tourism/resources` (artesanía, fotos) | ver detalle abajo | `python -m nijar_dti.workers.contenidos_abiertos --dry-run` |
 
 ---

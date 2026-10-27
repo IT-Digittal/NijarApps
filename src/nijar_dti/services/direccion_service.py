@@ -79,6 +79,23 @@ def _riesgo(estado: str) -> str:
 
 
 def _semaforo_alumbrado(o: AlumbradoOverview) -> EstadoVertical:
+    if not getattr(o, "telemetria", True):
+        # Inventario real sin telegestión: no hay estados en tiempo real que evaluar.
+        return EstadoVertical(
+            clave="alumbrado",
+            nombre="Alumbrado público",
+            icono="bulb",
+            estado="verde",
+            indicador_clave=(
+                f"{o.total_luminarias:,} puntos de luz · {o.pct_led:.0f}% LED".replace(",", ".")
+                + " · telegestión pendiente"
+            ),
+            riesgo="bajo",
+            recomendacion=(
+                "Conectar la telegestión SOL-X de los cuadros para conocer averías y "
+                "comunicaciones en tiempo real."
+            ),
+        )
     if o.en_averia > 30 or o.disponibilidad_pct < 90:
         estado = "rojo"
     elif o.sin_comunicacion > 0 or o.cuadros_alerta > 0 or o.incidencias_abiertas > 0:

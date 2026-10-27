@@ -131,8 +131,12 @@ class Settings(BaseSettings):
     cobertura_token: str = ""
 
     # --- Contexto histórico (backfill fuentes públicas INE/Junta/AENA) ---
-    contexto_backfill_dry_run: bool = True  # True = series sintéticas sin llamar a APIs
+    # False = refresco diario desde las APIs oficiales (INE Tempus/INEbase, IECA,
+    # Excel de AENA); True = solo las series sintéticas de demostración.
+    contexto_backfill_dry_run: bool = False
     contexto_backfill_anios: int = 3
+    # Hora (Madrid) del refresco diario de las series oficiales; -1 lo desactiva.
+    contexto_hora_actualizacion: int = 9
 
     # --- Gemelo digital: ortofotos históricas (WMS público del IGN, sin clave) ---
     # Selector de periodo del Gemelo vivo 2D (vuelos de 1956 a la actualidad).

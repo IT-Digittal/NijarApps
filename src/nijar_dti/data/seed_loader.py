@@ -506,7 +506,12 @@ async def seed_demo_chatbot(db: AsyncSession) -> None:
 
 
 async def seed_contexto_backfill(db: AsyncSession) -> None:
-    """Backfill de contexto (INE/Junta/AENA) en dry-run si la tabla está vacía."""
+    """Backfill de contexto (INE/Junta/AENA) en dry-run si la tabla está vacía.
+
+    Carga rápida de las series sintéticas (marcadas como tales) para no retrasar
+    el arranque: ``actualizacion_diaria_loop`` las sustituye por las oficiales a
+    los 2 minutos de arrancar (ver ``docs/integraciones/runbook-contexto-oficial.md``).
+    """
     from sqlalchemy import func as sqlfunc
 
     count = int(

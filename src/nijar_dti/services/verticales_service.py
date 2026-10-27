@@ -12,7 +12,7 @@ from collections import Counter
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from nijar_dti.models.alumbrado import CuadroMando, Luminaria, ZonaAlumbrado
+from nijar_dti.models.alumbrado import SIN_TELEMETRIA, CuadroMando, Luminaria, ZonaAlumbrado
 from nijar_dti.models.verticales import (
     CamaraCCTV,
     Contenedor,
@@ -65,6 +65,11 @@ async def alumbrado_overview(db: AsyncSession) -> AlumbradoOverview:
     consumo = float(sum(float(x.consumo_mes_kwh or 0) for x in lums))
     potencia = round(sum(x.potencia_w for x in lums) / 1000, 1)
 
+    fuente = next(
+        (c.metadatos.get("fuente") for c in cuadros if isinstance(c.metadatos, dict)), None
+    )
+    telemetria = not cuadros or any(c.comunicaciones != SIN_TELEMETRIA for c in cuadros)
+
     cuadros_online = sum(1 for c in cuadros if c.estado == "operativo")
     cuadros_alerta = sum(1 for c in cuadros if c.estado in ("alerta", "sin_comunicacion"))
     circuitos = sum(c.circuitos for c in cuadros)
@@ -89,6 +94,9 @@ async def alumbrado_overview(db: AsyncSession) -> AlumbradoOverview:
         ahorro_energetico_pct=31.0,
         incidencias_abiertas=incidencias,
         zonas=[ZonaAlumbradoOut.model_validate(z) for z in zonas],
+        otras=total - led - vsap - solar,
+        telemetria=telemetria,
+        fuente_inventario=fuente,
     )
 
 
