@@ -168,6 +168,9 @@ async def cargar_publico(
 # ------------------------------------------------------------- privada ----
 
 
+LOTE_LECTURAS = 2000  # filas por INSERT (8 columnas: muy por debajo del límite de parámetros)
+
+
 def momento_utc(lectura: LecturaHoraria) -> datetime:
     """Inicio de la hora en UTC. Datadis numera las horas 1..24 (hora de fin)."""
     local = datetime.combine(lectura.fecha, time(0), tzinfo=MADRID) + timedelta(
@@ -219,16 +222,25 @@ async def cargar_privado(
             cuenta["errores"] += 1
             logger.warning("Datadis: fallo en suministro", cups=sm.cups, error=str(exc))
             continue
-        for lec in lecturas:
-            stmt = insert(ConsumoHorarioEnergia).values(
-                id=uuid4(),
-                cups=lec.cups or sm.cups,
-                momento=momento_utc(lec),
-                consumo_kwh=lec.consumo_kwh,
-                excedente_kwh=lec.excedente_kwh,
-                autoconsumo_kwh=lec.autoconsumo_kwh,
-                metodo=(lec.metodo or None) and str(lec.metodo)[:20],
-            )
+        # Inserción por lotes (miles de lecturas por CUPS) y commit por suministro:
+        # la carga avanza visiblemente y, si se interrumpe, lo ya cargado queda guardado.
+        filas = [
+            {
+                "id": uuid4(),
+                "cups": lec.cups or sm.cups,
+                "momento": momento_utc(lec),
+                "consumo_kwh": lec.consumo_kwh,
+                "excedente_kwh": lec.excedente_kwh,
+                "autoconsumo_kwh": lec.autoconsumo_kwh,
+                "metodo": (lec.metodo or None) and str(lec.metodo)[:20],
+            }
+            for lec in lecturas
+        ]
+        # una sola fila por hora (p. ej. lecturas repetidas el día del cambio de hora):
+        # un mismo INSERT no puede actualizar dos veces la misma fila
+        filas = list({(f["cups"], f["momento"]): f for f in filas}.values())
+        for i in range(0, len(filas), LOTE_LECTURAS):
+            stmt = insert(ConsumoHorarioEnergia).values(filas[i : i + LOTE_LECTURAS])
             await db.execute(
                 stmt.on_conflict_do_update(
                     constraint="uq_energia_consumo_cups_momento",
@@ -241,7 +253,14 @@ async def cargar_privado(
                     },
                 )
             )
-            cuenta["lecturas"] += 1
+        cuenta["lecturas"] += len(filas)
+        await db.commit()
+        logger.info(
+            "Datadis: suministro cargado",
+            progreso=f"{cuenta['suministros']}/{len(suministros)}",
+            cups=sm.cups,
+            lecturas=len(filas),
+        )
     await db.flush()
     await recalcular_consumo_mes(db)
     return cuenta
