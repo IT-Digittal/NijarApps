@@ -292,6 +292,14 @@ def potencia_contratada(datos: Any) -> float | None:
 # --------------------------------------------------------------- cliente ----
 
 
+def _consulta_repetida(r: httpx.Response) -> bool:
+    """429 por el límite diario de Datadis («Consulta ya realizada en las últimas 24 horas»).
+
+    Reintentar no sirve: la misma consulta no se admite hasta el día siguiente.
+    """
+    return r.status_code == 429 and "ya realizada" in r.text.lower()
+
+
 class ClienteDatadis:
     """Cliente asíncrono con token perezoso y reintentos ante 429/5xx."""
 
@@ -335,7 +343,7 @@ class ClienteDatadis:
                     raise DatadisError(f"Sin conexión con Datadis: {exc}") from exc
                 await _esperar(2.0 * 2**n)
                 continue
-            if r.status_code not in _REINTENTABLES or n == 3:
+            if r.status_code not in _REINTENTABLES or n == 3 or _consulta_repetida(r):
                 return r
             try:
                 espera = min(float(r.headers.get("retry-after", "")), 60.0)

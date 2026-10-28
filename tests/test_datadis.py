@@ -138,6 +138,21 @@ async def test_privado_con_nif_autorizado_y_reintento_429():
     assert [s.cups for s in sums] == ["ES1"]
 
 
+async def test_429_por_consulta_repetida_no_se_reintenta():
+    llamadas = {"n": 0}
+
+    def manejador(req: httpx.Request) -> httpx.Response:
+        if req.url.path == dd.URL_LOGIN:
+            return httpx.Response(200, text='"tok"')
+        llamadas["n"] += 1
+        return httpx.Response(429, text="Consulta ya realizada en las últimas 24 horas. ")
+
+    async with _cliente(manejador, usuario="u", password="p") as cli:
+        with pytest.raises(dd.DatadisError):
+            await cli.suministros()
+    assert llamadas["n"] == 1
+
+
 # ------------------------------------------------------------ utilidades ----
 
 
