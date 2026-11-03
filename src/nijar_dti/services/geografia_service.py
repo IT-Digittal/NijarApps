@@ -254,18 +254,35 @@ async def listar_mediciones(db: AsyncSession) -> list[MedicionGemeloOut]:
 async def crear_medicion(
     db: AsyncSession, datos: MedicionGemeloIn, creado_por: str | None
 ) -> MedicionGemeloOut:
-    """Guarda una medición; distancia y área se recalculan en el servidor."""
+    """Guarda una medición; distancia y área se recalculan en el servidor.
+
+    - línea: longitud · polígono y rectángulo: perímetro y área
+    - círculo (``[centro, borde]``): perímetro 2πr y área πr² (r = distancia centro-borde)
+    """
     puntos = [(float(lat), float(lon)) for lat, lon in datos.puntos]
-    es_poligono = datos.tipo == TipoMedicion.POLIGONO.value and len(puntos) >= 3
-    distancia = distancia_geodesica_m(puntos)
-    if es_poligono:
-        distancia += distancia_geodesica_m([puntos[-1], puntos[0]])
+    area: float | None = None
+    if datos.tipo == TipoMedicion.CIRCULO.value:
+        radio = distancia_geodesica_m(puntos[:2])
+        if radio <= 0:
+            raise ValueError("El círculo necesita un radio mayor que cero")
+        tipo, puntos = TipoMedicion.CIRCULO, puntos[:2]
+        distancia, area = 2 * math.pi * radio, math.pi * radio * radio
+    elif (
+        datos.tipo in (TipoMedicion.POLIGONO.value, TipoMedicion.RECTANGULO.value)
+        and len(puntos) >= 3
+    ):
+        tipo = TipoMedicion(datos.tipo)
+        distancia = distancia_geodesica_m(puntos) + distancia_geodesica_m([puntos[-1], puntos[0]])
+        area = area_esferica_m2(puntos)
+    else:
+        tipo = TipoMedicion.LINEA
+        distancia = distancia_geodesica_m(puntos)
     medicion = MedicionGemelo(
         nombre=datos.nombre.strip(),
-        tipo=TipoMedicion.POLIGONO if es_poligono else TipoMedicion.LINEA,
+        tipo=tipo,
         puntos=[[lat, lon] for lat, lon in puntos],
         distancia_m=round(distancia, 2),
-        area_m2=round(area_esferica_m2(puntos), 2) if es_poligono else None,
+        area_m2=round(area, 2) if area is not None else None,
         creado_por=creado_por,
     )
     db.add(medicion)

@@ -80,6 +80,11 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         from nijar_dti.services.metricas_historicas_service import captura_mensual_loop
 
         tareas.append(asyncio.create_task(captura_mensual_loop(settings.captura_metricas_hora)))
+    # Registros de las verticales: cambios de estado de los activos (cámaras, contenedores…)
+    if settings.registros_deteccion_minutos > 0:
+        from nijar_dti.services.registros_service import deteccion_loop
+
+        tareas.append(asyncio.create_task(deteccion_loop(settings.registros_deteccion_minutos)))
     # Refresco diario de las series oficiales de turismo (INE, Junta, AENA)
     if settings.contexto_hora_actualizacion >= 0 and not settings.contexto_backfill_dry_run:
         from nijar_dti.services.contexto_service import actualizacion_diaria_loop

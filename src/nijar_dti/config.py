@@ -247,6 +247,10 @@ class Settings(BaseSettings):
     # Término de potencia medio (peajes + cargos + comercializadora), €/kW·año:
     # para estimar el ahorro de ajustar la potencia contratada de un suministro.
     precio_potencia_kw_anio_eur: float = 30.0
+
+    # --- Registros de las verticales (log de eventos con filtros) ---
+    registros_deteccion_minutos: int = 5  # cada cuánto se detectan cambios de estado; -1 = no
+    registros_retencion_dias: int = 180
     factor_co2_kwh_kg: float = 0.19
     baseline_consumo_vsap_factor: float = 1.45  # VSAP consumiría ~45% más que LED
     # Motor de las recomendaciones de dirección: reglas (por defecto) u OpenAI

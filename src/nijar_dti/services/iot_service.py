@@ -30,6 +30,34 @@ async def get_sensor_by_urn(db: AsyncSession, urn: str) -> Sensor | None:
     return res.scalar_one_or_none()
 
 
+async def _registrar_lectura(
+    db: AsyncSession, sensor: Sensor, payload: ObservacionIn, valido: bool, motivo: str | None
+) -> None:
+    """Deja la lectura en el registro de su vertical (cámaras, aforos, alumbrado)."""
+    from nijar_dti.services.registros_service import VERTICAL_SENSOR, registrar_seguro
+
+    vertical = VERTICAL_SENSOR.get(str(sensor.tipo))
+    if vertical is None:
+        return
+    valor = (
+        ""
+        if payload.valor is None
+        else f": {payload.valor:g} {payload.unidades or sensor.unidades_medida or ''}"
+    )
+    await registrar_seguro(
+        db,
+        vertical,
+        "lectura" if valido else "alarma",
+        f"{sensor.nombre}{valor.rstrip()}" + ("" if valido else f" · fuera de rango ({motivo})"),
+        severidad="info" if valido else "aviso",
+        activo_codigo=sensor.urn.split(":")[-1],
+        activo_nombre=sensor.nombre,
+        origen="iot",
+        datos={"valores": payload.valores} if payload.valores else None,
+        momento=payload.observado_en,
+    )
+
+
 async def ingerir_observacion(db: AsyncSession, payload: ObservacionIn) -> IngestResponse:
     sensor = await get_sensor_by_urn(db, payload.sensor_urn)
     if sensor is None:
@@ -59,6 +87,7 @@ async def ingerir_observacion(db: AsyncSession, payload: ObservacionIn) -> Inges
     db.add(obs)
     await db.flush()
     await db.refresh(obs)
+    await _registrar_lectura(db, sensor, payload, valido, motivo)
     return IngestResponse(observacion_id=obs.id, valido=valido, motivo_invalidez=motivo)
 
 

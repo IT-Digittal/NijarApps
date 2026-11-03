@@ -174,7 +174,10 @@ async def crear_medicion(
     db: AsyncSession = Depends(get_db),
     user: CurrentUser = Depends(get_current_user),
 ) -> MedicionGemeloOut:
-    return await svc.crear_medicion(db, datos, creado_por=user.email)
+    try:
+        return await svc.crear_medicion(db, datos, creado_por=user.email)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
 @router.delete(

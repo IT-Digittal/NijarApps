@@ -395,6 +395,17 @@ async def importar(db: AsyncSession, inv: InventarioAlumbrado) -> dict[str, Any]
         )
         marcados = int(getattr(res, "rowcount", 0) or 0)
     resumen = inv.resumen() | {"suministros_marcados_alumbrado": marcados}
+    from nijar_dti.services.registros_service import registrar_seguro
+
+    await registrar_seguro(
+        db,
+        "alumbrado",
+        "sistema",
+        f"Inventario de WeLight importado: {resumen['luminarias']} luminarias, "
+        f"{resumen['cuadros']} cuadros y {resumen['zonas']} zonas",
+        origen="welight",
+        datos={k: v for k, v in resumen.items() if k != "avisos"},
+    )
     logger.info(
         "Inventario de alumbrado importado", **{k: v for k, v in resumen.items() if k != "avisos"}
     )
