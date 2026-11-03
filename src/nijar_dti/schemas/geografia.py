@@ -83,7 +83,8 @@ class MedicionGemeloIn(BaseModel):
     """
 
     nombre: str = Field(min_length=2, max_length=150)
-    tipo: Literal["linea", "poligono"] = "linea"
+    tipo: Literal["linea", "poligono", "circulo", "rectangulo"] = "linea"
+    # círculo: [centro, punto del borde] · rectángulo: sus 4 esquinas
     puntos: list[tuple[float, float]] = Field(min_length=2, max_length=500)
 
     @field_validator("puntos")

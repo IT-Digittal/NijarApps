@@ -56,4 +56,58 @@ class TestMedicionGemeloIn:
 
     def test_tipo_invalido(self):
         with pytest.raises(ValueError):
-            MedicionGemeloIn(nombre="X", tipo="circulo", puntos=[(36.9, -2.1), (36.91, -2.09)])
+            MedicionGemeloIn(nombre="X", tipo="estrella", puntos=[(36.9, -2.1), (36.91, -2.09)])
+
+
+class _BDFalsa:
+    def __init__(self):
+        self.obj = None
+
+    def add(self, obj):
+        self.obj = obj
+
+    async def flush(self):
+        from datetime import UTC, datetime
+        from uuid import uuid4
+
+        self.obj.id = uuid4()
+        self.obj.created_at = datetime.now(UTC)
+
+
+class TestFiguras:
+    async def test_circulo_perimetro_y_area(self):
+        from nijar_dti.services.geografia_service import crear_medicion
+
+        centro, borde = (36.95, -2.10), (36.95 + 1000 / 111_195, -2.10)  # radio ≈ 1 km
+        m = await crear_medicion(
+            _BDFalsa(),  # type: ignore[arg-type]
+            MedicionGemeloIn(nombre="Radio colegio", tipo="circulo", puntos=[centro, borde]),
+            creado_por="a@b.es",
+        )
+        assert m.tipo == "circulo" and len(m.puntos) == 2
+        assert m.distancia_m == pytest.approx(2 * math.pi * 1000, rel=0.01)
+        assert m.area_m2 == pytest.approx(math.pi * 1000**2, rel=0.02)
+
+    async def test_circulo_sin_radio(self):
+        from nijar_dti.services.geografia_service import crear_medicion
+
+        with pytest.raises(ValueError):
+            await crear_medicion(
+                _BDFalsa(),  # type: ignore[arg-type]
+                MedicionGemeloIn(
+                    nombre="Nada", tipo="circulo", puntos=[(36.9, -2.1), (36.9, -2.1)]
+                ),
+                creado_por=None,
+            )
+
+    async def test_rectangulo_como_poligono(self):
+        from nijar_dti.services.geografia_service import crear_medicion
+
+        esquinas = [(36.95, -2.10), (36.95, -2.09), (36.96, -2.09), (36.96, -2.10)]
+        m = await crear_medicion(
+            _BDFalsa(),  # type: ignore[arg-type]
+            MedicionGemeloIn(nombre="Parcela", tipo="rectangulo", puntos=esquinas),
+            creado_por=None,
+        )
+        assert m.tipo == "rectangulo"
+        assert m.area_m2 == pytest.approx(area_esferica_m2(esquinas), rel=1e-6)

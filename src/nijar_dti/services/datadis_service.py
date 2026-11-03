@@ -40,6 +40,7 @@ from nijar_dti.connectors.datadis import (
 from nijar_dti.core.logging import get_logger
 from nijar_dti.models.energia_datadis import ConsumoHorarioEnergia, EnergiaMunicipioDiario
 from nijar_dti.models.verticales import SuministroEnergia
+from nijar_dti.services.registros_service import registrar_seguro
 
 logger = get_logger(__name__)
 
@@ -233,6 +234,16 @@ async def cargar_privado(
         except DatadisError as exc:
             cuenta["errores"] += 1
             logger.warning("Datadis: fallo en suministro", cups=sm.cups, error=str(exc))
+            await registrar_seguro(
+                db,
+                "energia",
+                "carga",
+                f"Datadis no devolvió la curva: {exc}",
+                severidad="aviso",
+                activo_codigo=sm.cups,
+                activo_nombre=sm.direccion,
+                origen="datadis",
+            )
             continue
         # Inserción por lotes (miles de lecturas por CUPS) y commit por suministro:
         # la carga avanza visiblemente y, si se interrumpe, lo ya cargado queda guardado.
@@ -266,6 +277,21 @@ async def cargar_privado(
                 )
             )
         cuenta["lecturas"] += len(filas)
+        await registrar_seguro(
+            db,
+            "energia",
+            "carga",
+            (
+                f"{len(filas)} lecturas horarias cargadas ({mes_desde} a {mes_hasta})"
+                if filas
+                else f"Datadis no tiene consumos de {mes_desde} a {mes_hasta}"
+            ),
+            severidad="info" if filas else "aviso",
+            activo_codigo=sm.cups,
+            activo_nombre=sm.direccion,
+            origen="datadis",
+            datos={"lecturas": len(filas)},
+        )
         if guardar_cada_suministro:
             await db.commit()
         logger.info(

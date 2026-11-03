@@ -645,6 +645,18 @@ async def _tabla_vacia(db: AsyncSession, model) -> bool:
     return n == 0
 
 
+async def seed_registros_demo(db: AsyncSession) -> None:
+    """Una semana de registros de ejemplo en las verticales sin integrar (si no hay ninguno)."""
+    from nijar_dti.models.registro_vertical import RegistroVertical
+    from nijar_dti.services.registros_service import sembrar_demo
+
+    if not await _tabla_vacia(db, RegistroVertical):
+        return
+    await db.flush()  # los activos de las verticales recién creados
+    n = await sembrar_demo(db)
+    log.info("Registros de demostración de las verticales creados: %d", n)
+
+
 async def seed_verticales(db: AsyncSession) -> None:
     """Carga los activos de las verticales Smart City (idempotente por tabla)."""
     # Alumbrado
@@ -901,6 +913,7 @@ async def run() -> None:
             await seed_demo_incidencias(db)
             await seed_contexto_backfill(db)
             await seed_verticales(db)
+            await seed_registros_demo(db)
             await backfill_coordenadas_verticales(db)
             await seed_fuentes_datos(db)
             await seed_empresas_publicidad(db)

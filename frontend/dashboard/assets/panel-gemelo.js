@@ -617,21 +617,25 @@ async function renderGemelo2D(el) {
       mediciones.forEach((m) => {
         const pts = (m.puntos || []).map((p) => [p[0], p[1]]);
         if (pts.length < 2) return;
-        const forma = m.tipo === "poligono"
-          ? L.polygon(pts, { color: "#B25E09", weight: 2.5, fillColor: "#F9E795", fillOpacity: 0.22 })
-          : L.polyline(pts, { color: "#B25E09", weight: 2.5, dashArray: "8 5" });
-        const detalle = fmtDistancia(m.distancia_m) + (m.area_m2 != null ? " · " + fmtArea(m.area_m2) : "");
+        const relleno = { color: "#B25E09", weight: 2.5, fillColor: "#F9E795", fillOpacity: 0.22 };
+        const radio = m.tipo === "circulo" ? L.latLng(pts[0]).distanceTo(L.latLng(pts[1])) : null;
+        const forma = m.tipo === "circulo" ? L.circle(pts[0], { ...relleno, radius: radio })
+          : m.tipo === "poligono" || m.tipo === "rectangulo" ? L.polygon(pts, relleno)
+            : L.polyline(pts, { color: "#B25E09", weight: 2.5, dashArray: "8 5" });
+        const detalle = (radio != null ? "radio " + fmtDistancia(radio) : fmtDistancia(m.distancia_m)) +
+          (m.area_m2 != null ? " · " + fmtArea(m.area_m2) : "");
         forma.bindTooltip(esc(m.nombre) + " · " + detalle, { sticky: true });
         forma.bindPopup(
           "<div style='min-width:190px'><b>" + esc(m.nombre) + "</b>" +
-          "<div style='font-size:12px'>" + (m.tipo === "poligono" ? "Perímetro: " : "Distancia: ") + fmtDistancia(m.distancia_m) + "</div>" +
+          (radio != null ? "<div style='font-size:12px'>Radio: " + fmtDistancia(radio) + "</div>" : "") +
+          "<div style='font-size:12px'>" + (m.tipo === "linea" ? "Distancia: " : "Perímetro: ") + fmtDistancia(m.distancia_m) + "</div>" +
           (m.area_m2 != null ? "<div style='font-size:12px'>Área: " + fmtArea(m.area_m2) + "</div>" : "") +
           (m.creado_por ? "<div style='font-size:11px;color:#67769A'>" + esc(m.creado_por) + "</div>" : "") +
           "<button class='btn btn--sm' data-del-medicion='" + esc(m.id) + "' style='margin-top:6px'>Eliminar</button></div>");
         forma.addTo(gMed);
       });
       gMed.addTo(mapa2d);
-      hoja("mediciones", "mediciones", "Mediciones guardadas", "📏", mediciones.length, gMed);
+      hoja("mediciones", "mediciones", "Mediciones y figuras guardadas", "📏", mediciones.length, gMed);
       mapa2d.on("popupopen", (ev) => {
         const btn = ev.popup.getElement() && ev.popup.getElement().querySelector("[data-del-medicion]");
         if (!btn) return;
@@ -914,6 +918,7 @@ function instalarMedicion(mapa) {
   medicion = {
     mapa, activa: false, cerrada: false, puntos: [], total: 0,
     grupo: L.layerGroup().addTo(mapa), guia: null, boton: null, botonGuardar: null,
+    botonesFigura: {}, figura: null, /* figura en curso: { modo, inicio, capa, etiqueta } */
   };
   const Regla = L.Control.extend({
     options: { position: "topleft" },
@@ -929,12 +934,25 @@ function instalarMedicion(mapa) {
       L.DomEvent.disableClickPropagation(div);
       L.DomEvent.on(a, "click", (e) => { L.DomEvent.stop(e); alternarMedicion(); });
       medicion.boton = a;
+      const figura = (icono, modo, titulo) => {
+        const b = L.DomUtil.create("a", "", div);
+        b.href = "#";
+        b.innerHTML = icono;
+        b.style.fontSize = "15px";
+        b.title = titulo;
+        b.setAttribute("role", "button");
+        b.setAttribute("aria-label", titulo);
+        L.DomEvent.on(b, "click", (e) => { L.DomEvent.stop(e); alternarFigura(modo); });
+        medicion.botonesFigura[modo] = b;
+      };
+      figura("◯", "circulo", "Dibujar un círculo · clic en el centro y clic otra vez para fijar el radio · Esc: borrar");
+      figura("▭", "rectangulo", "Dibujar un rectángulo · clic en una esquina y clic en la opuesta · Esc: borrar");
       const g = L.DomUtil.create("a", "", div);
       g.href = "#";
       g.innerHTML = "💾";
       g.style.fontSize = "14px";
       g.style.display = "none";
-      g.title = "Guardar la medición en la plataforma (visible para todo el equipo)";
+      g.title = "Guardar la medición o figura en la plataforma (visible para todo el equipo)";
       g.setAttribute("role", "button");
       g.setAttribute("aria-label", "Guardar la medición dibujada");
       L.DomEvent.on(g, "click", (e) => { L.DomEvent.stop(e); guardarMedicion(); });
@@ -947,12 +965,14 @@ function instalarMedicion(mapa) {
 
 async function guardarMedicion() {
   if (!medicion.puntos.length) return;
-  const nombre = prompt("Nombre de la medición (p. ej. «Sendero Rodalquilar – El Playazo»):");
+  const nombre = prompt(medicion.forma
+    ? "Nombre de la figura (p. ej. «Radio de 500 m del colegio»):"
+    : "Nombre de la medición (p. ej. «Sendero Rodalquilar – El Playazo»):");
   if (!nombre || nombre.trim().length < 2) return;
   try {
     await api.crearMedicionGemelo({
       nombre: nombre.trim().slice(0, 150),
-      tipo: medicion.cerrada ? "poligono" : "linea",
+      tipo: medicion.forma || (medicion.cerrada ? "poligono" : "linea"),
       puntos: medicion.puntos.map((p) => [p.lat, p.lng]),
     });
   } catch (e) {
@@ -967,6 +987,7 @@ async function guardarMedicion() {
 
 function alternarMedicion() {
   if (medicion.activa || medicion.puntos.length) { limpiarMedicion(); return; }
+  if (medicion.figura) limpiarMedicion();
   medicion.activa = true;
   medicion.boton.style.background = "#02C39A";
   const mapa = medicion.mapa;
@@ -974,6 +995,7 @@ function alternarMedicion() {
   mapa.doubleClickZoom.disable();
   mapa.on("click", clickMedicion);
   mapa.on("mousemove", moverMedicion);
+  modoDibujo(true);
   mapa.on("dblclick", finMedicion);
   document.addEventListener("keydown", escMedicion);
 }
@@ -1029,6 +1051,7 @@ function finMedicion() {
   if (medicion.guia) { medicion.grupo.removeLayer(medicion.guia); medicion.guia = null; }
   mapa.off("click", clickMedicion);
   mapa.off("mousemove", moverMedicion);
+  modoDibujo(false);
   mapa.off("dblclick", finMedicion);
   mapa.getContainer().style.cursor = "";
   setTimeout(() => mapa.doubleClickZoom.enable(), 50);
@@ -1042,19 +1065,130 @@ function finMedicion() {
 }
 
 function limpiarMedicion() {
+  if (medicion.figura) finFigura(true);
   if (medicion.activa) finMedicion();
   medicion.grupo.clearLayers();
   medicion.puntos = [];
   medicion.total = 0;
   medicion.cerrada = false;
+  medicion.forma = null;
   medicion.guia = null;
   medicion.boton.style.background = "";
+  Object.values(medicion.botonesFigura).forEach((b) => { b.style.background = ""; });
   medicion.botonGuardar.style.display = "none";
   document.removeEventListener("keydown", escMedicion);
 }
 
 function escMedicion(e) {
   if (e.key === "Escape") limpiarMedicion();
+}
+
+/* ---- Figuras: círculo (centro + radio) y rectángulo (dos esquinas opuestas) ----
+   Dos clics: el primero fija el centro o la primera esquina, el segundo el
+   radio o la esquina opuesta; entre medias la figura sigue al ratón con su
+   radio, perímetro y área. Funciona también en pantallas táctiles (dos toques). */
+
+/* Mientras se mide o dibuja, los marcadores y capas no capturan el clic (si no,
+   un clic sobre un punto abriría su ficha en vez de colocar el vértice). */
+function modoDibujo(activo) {
+  if (!document.getElementById("estilo-dibujo-mapa")) {
+    const st = document.createElement("style");
+    st.id = "estilo-dibujo-mapa";
+    st.textContent = ".mapa-dibujando .leaflet-overlay-pane .leaflet-interactive," +
+      ".mapa-dibujando .leaflet-marker-pane .leaflet-interactive{pointer-events:none!important}";
+    document.head.appendChild(st);
+  }
+  medicion.mapa.getContainer().classList.toggle("mapa-dibujando", activo);
+}
+
+const ESTILO_FIGURA = { color: "#C8102E", weight: 2.5, fillColor: "#C8102E", fillOpacity: 0.12 };
+
+function alternarFigura(modo) {
+  const enCurso = medicion.figura || medicion.activa || medicion.puntos.length;
+  const mismo = medicion.figura && medicion.figura.modo === modo;
+  if (enCurso) limpiarMedicion();
+  if (mismo) return; /* segundo clic en el mismo botón: lo apaga */
+  const mapa = medicion.mapa;
+  medicion.figura = { modo, inicio: null, capa: null, etiqueta: null, activa: true };
+  modoDibujo(true);
+  medicion.botonesFigura[modo].style.background = "#02C39A";
+  mapa.getContainer().style.cursor = "crosshair";
+  mapa.doubleClickZoom.disable();
+  mapa.on("click", clickFigura);
+  mapa.on("mousemove", moverFigura);
+  document.addEventListener("keydown", escMedicion);
+}
+
+function esquinas(a, b) {
+  return [L.latLng(a.lat, a.lng), L.latLng(a.lat, b.lng), L.latLng(b.lat, b.lng), L.latLng(b.lat, a.lng)];
+}
+
+function textoFigura(modo, a, b) {
+  const mapa = medicion.mapa;
+  if (modo === "circulo") {
+    const r = mapa.distance(a, b);
+    return "Radio: " + fmtDistancia(r) + "<br>Perímetro: " + fmtDistancia(2 * Math.PI * r) + "<br>Área: " + fmtArea(Math.PI * r * r);
+  }
+  const ancho = mapa.distance(L.latLng(a.lat, a.lng), L.latLng(a.lat, b.lng));
+  const alto = mapa.distance(L.latLng(a.lat, a.lng), L.latLng(b.lat, a.lng));
+  return fmtDistancia(ancho) + " × " + fmtDistancia(alto) + "<br>Perímetro: " + fmtDistancia(2 * (ancho + alto)) +
+    "<br>Área: " + fmtArea(areaGeodesica(esquinas(a, b)));
+}
+
+function dibujarFigura(b) {
+  const f = medicion.figura;
+  const a = f.inicio;
+  if (f.modo === "circulo") {
+    const r = Math.max(1, medicion.mapa.distance(a, b));
+    if (f.capa) f.capa.setRadius(r);
+    else f.capa = L.circle(a, { ...ESTILO_FIGURA, radius: r, interactive: false }).addTo(medicion.grupo);
+  } else {
+    const limites = L.latLngBounds(a, b);
+    if (f.capa) f.capa.setBounds(limites);
+    else f.capa = L.rectangle(limites, { ...ESTILO_FIGURA, interactive: false }).addTo(medicion.grupo);
+  }
+  const centro = f.modo === "circulo" ? a : L.latLngBounds(a, b).getCenter();
+  if (f.etiqueta) f.etiqueta.setLatLng(centro).setContent(textoFigura(f.modo, a, b));
+  else {
+    f.etiqueta = L.tooltip({ permanent: true, direction: "center" })
+      .setLatLng(centro).setContent(textoFigura(f.modo, a, b)).addTo(medicion.grupo);
+  }
+}
+
+function clickFigura(e) {
+  const f = medicion.figura;
+  if (!f) return;
+  if (!f.inicio) {
+    f.inicio = e.latlng;
+    L.circleMarker(e.latlng, { radius: 4.5, color: "#fff", weight: 2, fillColor: "#C8102E", fillOpacity: 1 })
+      .addTo(medicion.grupo);
+    return;
+  }
+  if (medicion.mapa.latLngToContainerPoint(f.inicio).distanceTo(medicion.mapa.latLngToContainerPoint(e.latlng)) < 4) return;
+  dibujarFigura(e.latlng);
+  medicion.forma = f.modo;
+  medicion.puntos = f.modo === "circulo" ? [f.inicio, e.latlng] : esquinas(f.inicio, e.latlng);
+  finFigura(false);
+}
+
+function moverFigura(e) {
+  const f = medicion.figura;
+  if (f && f.inicio) dibujarFigura(e.latlng);
+}
+
+function finFigura(borrar) {
+  const mapa = medicion.mapa;
+  const f = medicion.figura;
+  mapa.off("click", clickFigura);
+  mapa.off("mousemove", moverFigura);
+  modoDibujo(false);
+  mapa.getContainer().style.cursor = "";
+  setTimeout(() => mapa.doubleClickZoom.enable(), 50);
+  if (borrar || !f) { medicion.figura = null; return; }
+  medicion.figura = null;
+  /* figura terminada: queda dibujada, su botón en ámbar y se puede guardar */
+  medicion.botonesFigura[f.modo].style.background = "#F9E795";
+  medicion.botonGuardar.style.display = "";
 }
 
 /* ================= VISTA 3D DEL TERRITORIO ================= */

@@ -29,6 +29,7 @@ from nijar_dti.models.observacion import Observacion
 from nijar_dti.models.opinion import Opinion
 from nijar_dti.models.recomendacion_direccion import RecomendacionDireccion
 from nijar_dti.models.recurso_turistico import RecursoTuristico
+from nijar_dti.models.registro_vertical import EstadoActivo, RegistroVertical
 from nijar_dti.models.rol import Rol
 from nijar_dti.models.sensor import Sensor
 from nijar_dti.models.servicio import Servicio
@@ -66,6 +67,8 @@ __all__ = [
     "EnergiaMunicipioDiario",
     "MetricaPublicidad",
     "MetricaHistorica",
+    "RegistroVertical",
+    "EstadoActivo",
     "Luminaria",
     "Observacion",
     "Opinion",

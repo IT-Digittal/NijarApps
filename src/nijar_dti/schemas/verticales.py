@@ -366,3 +366,39 @@ class DetalleSuministroEnergia(BaseModel):
     perfil_horario_kwh: list[float] = []  # consumo medio por hora del día (0-23), últimos 30 días
     perfil_laborable_kwh: list[float] = []
     perfil_festivo_kwh: list[float] = []
+
+
+# -------------------------------------------------- REGISTROS DE LAS VERTICALES
+class RegistroVerticalOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: Any
+    vertical: str
+    tipo: str
+    severidad: str
+    mensaje: str
+    momento: datetime
+    activo_codigo: str | None = None
+    activo_nombre: str | None = None
+    origen: str
+    datos: dict[str, Any] | None = None
+    demo: bool = False
+
+
+class RegistrosPage(BaseModel):
+    items: list[RegistroVerticalOut]
+    total: int
+    page: int
+    page_size: int
+
+
+class ResumenRegistros(BaseModel):
+    vertical: str
+    ultimas_24h: int
+    criticos_24h: int
+    avisos_24h: int
+    ultimos_7d: int
+    por_tipo_7d: dict[str, int]
+    ultimo: datetime | None = None
+    total: int
+    solo_demo: bool

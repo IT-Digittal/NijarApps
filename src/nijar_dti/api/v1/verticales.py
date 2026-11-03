@@ -14,7 +14,7 @@ from fastapi import APIRouter, Depends, File, HTTPException, Query, Response, Up
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from nijar_dti.api.v1.dependencies import require_permiso, require_roles
+from nijar_dti.api.v1.dependencies import get_current_user, require_permiso, require_roles
 from nijar_dti.config import get_settings
 from nijar_dti.connectors.datadis_fichero import FicheroDatadisError, leer_fichero
 from nijar_dti.core.database import get_db
@@ -37,15 +37,23 @@ from nijar_dti.schemas.verticales import (
     LuminariasPage,
     MovilidadOverview,
     PuntoMovilidadOut,
+    RegistrosPage,
+    RegistroVerticalOut,
     ResiduosOverview,
     ResumenEnergiaMunicipal,
+    ResumenRegistros,
     SectorAguaOut,
     SeguridadOverview,
     SuministroAnalisis,
     SuministrosPage,
     ZonaAlumbradoOut,
 )
-from nijar_dti.services import datadis_service, energia_anexos_service, energia_municipal_service
+from nijar_dti.services import (
+    datadis_service,
+    energia_anexos_service,
+    energia_municipal_service,
+    registros_service,
+)
 from nijar_dti.services import verticales_service as svc
 
 router = APIRouter()
@@ -512,3 +520,105 @@ async def export_suministros(
 ):
     page = await svc.energia_suministros(db, page=1, page_size=100000)
     return csv_response(page.items, "energia_suministros_nijar")
+
+
+# ---------------------------------------------------------------- REGISTROS
+VerticalRegistros = Literal["alumbrado", "agua", "residuos", "movilidad", "seguridad", "energia"]
+
+
+def _puede_ver(user: CurrentUser, vertical: str) -> None:
+    if f"ver_{vertical}" not in user.permisos:
+        raise HTTPException(status_code=403, detail=f"Sin permiso para ver la vertical {vertical}")
+
+
+def _filtros_registros(
+    vertical: str,
+    tipo: str | None,
+    severidad: str | None,
+    activo: str | None,
+    buscar: str | None,
+    desde: datetime | None,
+    hasta: datetime | None,
+    incluir_demo: bool,
+) -> registros_service.FiltrosRegistros:
+    return registros_service.FiltrosRegistros(
+        vertical=vertical,
+        tipo=tipo,
+        severidad=severidad,
+        activo=activo,
+        buscar=buscar,
+        desde=desde,
+        hasta=hasta,
+        incluir_demo=incluir_demo,
+    )
+
+
+@router.get(
+    "/{vertical}/registros",
+    response_model=RegistrosPage,
+    summary="Registros (eventos) de una vertical, con filtros y paginación",
+)
+async def registros_vertical(
+    vertical: VerticalRegistros,
+    tipo: Literal["alarma", "estado", "lectura", "carga", "incidencia", "sistema"] | None = None,
+    severidad: Literal["info", "aviso", "critico"] | None = None,
+    activo: str | None = Query(None, max_length=80, description="Código o nombre del activo"),
+    buscar: str | None = Query(None, max_length=120, description="Texto en el mensaje"),
+    desde: datetime | None = None,
+    hasta: datetime | None = None,
+    incluir_demo: bool = True,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(50, ge=1, le=500),
+    db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(get_current_user),
+) -> RegistrosPage:
+    _puede_ver(user, vertical)
+    f = _filtros_registros(vertical, tipo, severidad, activo, buscar, desde, hasta, incluir_demo)
+    filas, total = await registros_service.listar(db, f, page, page_size)
+    return RegistrosPage(
+        items=[RegistroVerticalOut.model_validate(r) for r in filas],
+        total=total,
+        page=page,
+        page_size=page_size,
+    )
+
+
+@router.get(
+    "/{vertical}/registros/resumen",
+    response_model=ResumenRegistros,
+    summary="Recuento de registros de una vertical (24 h, 7 días, por tipo)",
+)
+async def registros_resumen(
+    vertical: VerticalRegistros,
+    db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(get_current_user),
+) -> ResumenRegistros:
+    _puede_ver(user, vertical)
+    return ResumenRegistros(**await registros_service.resumen(db, vertical))
+
+
+@router.get(
+    "/{vertical}/registros.csv",
+    summary="Exportar los registros filtrados de una vertical (CSV, máx. 20.000)",
+    response_class=Response,
+)
+async def registros_csv(
+    vertical: VerticalRegistros,
+    tipo: Literal["alarma", "estado", "lectura", "carga", "incidencia", "sistema"] | None = None,
+    severidad: Literal["info", "aviso", "critico"] | None = None,
+    activo: str | None = Query(None, max_length=80),
+    buscar: str | None = Query(None, max_length=120),
+    desde: datetime | None = None,
+    hasta: datetime | None = None,
+    incluir_demo: bool = True,
+    db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(get_current_user),
+) -> Response:
+    _puede_ver(user, vertical)
+    f = _filtros_registros(vertical, tipo, severidad, activo, buscar, desde, hasta, incluir_demo)
+    filas, _ = await registros_service.listar(db, f, 1, 20_000)
+    return Response(
+        registros_service.csv_registros(filas),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="registros_{vertical}.csv"'},
+    )

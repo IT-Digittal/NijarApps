@@ -131,6 +131,8 @@ class TipoMedicion(StrEnum):
 
     LINEA = "linea"
     POLIGONO = "poligono"
+    CIRCULO = "circulo"  # puntos = [centro, punto del borde]
+    RECTANGULO = "rectangulo"  # puntos = las 4 esquinas
 
 
 class MedicionGemelo(Base, TimestampMixin):
