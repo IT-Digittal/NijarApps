@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import date, datetime
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict
 
@@ -277,3 +278,91 @@ class ImportacionDatadisOut(BaseModel):
     no_interpretables: int
     desde: date | None
     hasta: date | None
+
+
+# ------------------------------------------- ENERGÍA MUNICIPAL (Datadis real)
+class MesConsumoEnergia(BaseModel):
+    periodo: str  # AAAA-MM
+    kwh: float
+    alumbrado_kwh: float = 0.0
+    edificios_kwh: float = 0.0
+    completo: bool = True  # False = mes en curso o con días sin lectura
+
+
+class SuministroAnalisis(BaseModel):
+    """Un CUPS municipal con su consumo real y el análisis de su contrato."""
+
+    cups: str
+    direccion: str
+    tipo: str  # "alumbrado" | "edificio"
+    tarifa: str | None = None
+    potencia_contratada_kw: float | None = None
+    consumo_mes_kwh: float = 0.0
+    consumo_mes_anterior_kwh: float = 0.0
+    variacion_mes_pct: float | None = None
+    consumo_mismo_mes_anio_anterior_kwh: float | None = None
+    variacion_interanual_pct: float | None = None
+    consumo_12m_kwh: float = 0.0
+    coste_mes_eur: float = 0.0
+    pico_horario_kw: float | None = None  # mayor consumo en una hora (≈ kW medios de esa hora)
+    pico_momento: datetime | None = None
+    utilizacion_pct: float | None = None  # pico horario / potencia contratada
+    potencia_recomendada_kw: float | None = None
+    ahorro_potencia_eur_anio: float | None = None
+    autoconsumo_12m_kwh: float = 0.0
+    excedente_12m_kwh: float = 0.0
+    ultima_lectura: datetime | None = None
+    dias_sin_lectura: int | None = None
+    meses_con_datos: int = 0
+    estado: str = "ok"  # ok | sin_datos_recientes | sin_datos
+
+
+class RecomendacionEnergia(BaseModel):
+    prioridad: str  # alta | media | informativa
+    titulo: str
+    detalle: str
+    cups: list[str] = []
+    ahorro_eur_anio: float | None = None
+
+
+class ResumenEnergiaMunicipal(BaseModel):
+    hay_datos: bool
+    periodo: str | None = None  # último mes cerrado analizado
+    suministros_total: int = 0
+    suministros_con_datos: int = 0
+    suministros_alumbrado: int = 0
+    suministros_edificios: int = 0
+    consumo_mes_kwh: float = 0.0
+    consumo_mes_alumbrado_kwh: float = 0.0
+    consumo_mes_edificios_kwh: float = 0.0
+    variacion_mes_pct: float | None = None
+    variacion_interanual_pct: float | None = None
+    coste_mes_eur: float = 0.0
+    precio_kwh_eur: float = 0.0
+    co2_mes_t: float = 0.0
+    consumo_12m_kwh: float = 0.0
+    coste_12m_eur: float = 0.0
+    potencia_contratada_total_kw: float = 0.0
+    contratos_a_revisar: int = 0
+    ahorro_potencia_eur_anio: float = 0.0
+    autoconsumo_12m_kwh: float = 0.0
+    excedente_12m_kwh: float = 0.0
+    cups_con_autoconsumo: int = 0
+    sin_datos_recientes: int = 0
+    ultima_lectura: datetime | None = None
+    serie_mensual: list[MesConsumoEnergia] = []
+    por_tarifa: dict[str, int] = {}
+    top_consumo: list[SuministroAnalisis] = []
+    recomendaciones: list[RecomendacionEnergia] = []
+    notas: list[str] = []
+
+
+class DetalleSuministroEnergia(BaseModel):
+    suministro: SuministroAnalisis
+    contrato: dict[str, Any] = {}
+    distribuidora: str | None = None
+    codigo_postal: str | None = None
+    serie_mensual: list[MesConsumoEnergia] = []
+    perfil_horario_kwh: list[float] = []  # consumo medio por hora del día (0-23), últimos 30 días
+    perfil_laborable_kwh: list[float] = []
+    perfil_festivo_kwh: list[float] = []

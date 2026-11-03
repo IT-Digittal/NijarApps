@@ -1049,7 +1049,7 @@ function renderHome(){
    {n:"Residuos",d:"684 contenedores (412 con sensor de llenado), rutas optimizadas y costes por fracción.",i:"trash",cls:"ic-teal",on:true,go:"UI.enterResiduos()",st:'<span class="bdg bdg-info">Propuesta · demo</span>',cta:"Ver demo funcional"},
    {n:"Movilidad",d:"Aforos de acceso al Parque, aparcamientos de playas y lanzadera estival.",i:"car",cls:"ic-sky",on:true,go:"UI.enterMovilidad()",st:'<span class="bdg bdg-info">Propuesta · demo</span>',cta:"Ver demo funcional"},
    {n:"Seguridad",d:"CCTV con analítica, botones SOS y eventos integrados con Policía Local.",i:"cam",cls:"ic-slate",on:true,go:"UI.enterSeguridad()",st:'<span class="bdg bdg-info">Propuesta · demo</span>',cta:"Ver demo funcional"},
-   {n:"Energía municipal",d:"34 edificios, 61 CUPS y fotovoltaica de autoconsumo sobre el mismo motor de costes.",i:"bolt",cls:"ic-ok",on:true,go:"UI.enterEnergia()",st:'<span class="bdg bdg-info">Propuesta · demo</span>',cta:"Ver demo funcional"}
+   {n:"Energía municipal",d:"Suministros eléctricos del Ayuntamiento con su consumo real de Datadis: costes, contratos, potencia a revisar y autoconsumo.",i:"bolt",cls:"ic-ok",on:true,go:"UI.enterEnergia()",st:'<span class="bdg bdg-ok">Datos reales · Datadis</span>',cta:"Ver suministros"}
   ];
   $("#home-verticals").innerHTML=V.map(function(v){
     var open=v.on?('onclick="'+v.go+'"'):'onclick="UI.toast(&#39;Vertical prevista para fases futuras del PSTD&#39;)"';
@@ -3801,7 +3801,7 @@ UI.presentation=function(on){
   var map={ "view-residuos":{ic:"trash",t:"Residuos",k:[["Llenado medio","57 <small>%</small>","2 contenedores > 90%"],["Recogido ayer","32,8 <small>t</small>","Selectiva 35%"],["Rutas dinámicas","−18 <small>% km</small>","14 desbordes evitados"],["Incidencias","5","2 desbordes en ruta de tarde"]],rec:"Añadir CT-0214 y CT-0388 a la ruta de esta tarde antes del desborde previsto (19:30)."},
    "view-movilidad":{ic:"car",t:"Movilidad",k:[["Vehículos al Parque","2.418","93% de la capacidad diaria"],["Genoveses","96 <small>%</small>","Acceso rodado cortado"],["Lanzadera","342","+ refuerzo recomendado 12:20"],["Parkings","80 <small>%</small>","Mónsul con 49 plazas libres"]],rec:"Mantener el corte de Genoveses hasta las 18:00 y redirigir cartelería hacia Mónsul."},
    "view-seguridad":{ic:"cam",t:"Seguridad",k:[["Cámaras online","23 <small>/24</small>","CAM-17 sin comunicación"],["Eventos hoy","11","1 en revisión"],["Verificación media","2,4 <small>min</small>","8% falsos positivos"],["Incidentes graves","0","3 leves gestionados"]],rec:"Revisar la alimentación de CAM-17 (tercer corte en 10 días) antes del festivo."},
-   "view-energia":{ic:"bolt",t:"Energía municipal",k:[["Consumo","96,4 <small>MWh</small>","−12% CO₂ interanual"],["Coste","15.900 <small>€</small>","0,165 €/kWh medio"],["Fotovoltaica","26 <small>%</small>","Autoconsumo 87%"],["Derivas","2","Ayuntamiento · bombeos"]],rec:"Ajustar el horario de climatización del Ayuntamiento: arranca a las 05:30 con el edificio vacío."}};
+   "view-energia":(window.__energiaPresentacion&&window.__energiaPresentacion())||{ic:"bolt",t:"Energía municipal",k:[["Consumo","96,4 <small>MWh</small>","−12% CO₂ interanual"],["Coste","15.900 <small>€</small>","0,165 €/kWh medio"],["Fotovoltaica","26 <small>%</small>","Autoconsumo 87%"],["Derivas","2","Ayuntamiento · bombeos"]],rec:"Ajustar el horario de climatización del Ayuntamiento: arranca a las 05:30 con el edificio vacío."}};
   var key=null;for(var k in map){if($("#"+k).classList.contains("on")){key=k;break}}
   if(!key)return presPrev2(true);
   var c=map[key],p=$("#pres");
@@ -3838,6 +3838,7 @@ X.renderHome();
 <script type="module" src="./assets/panel-mapa.js?v=2"></script>
 <!-- Verticales Smart City alimentadas por /api/v1/verticales -->
 <script type="module" src="./assets/verticales-live.js?v=6"></script>
+<script type="module" src="./assets/energia-municipal.js?v=3"></script>
 <!-- Alertas, visitantes, integraciones e informes con datos reales -->
 <script type="module" src="./assets/panel-extra.js?v=2"></script>
 <!-- Gemelo digital del destino (Fase 1): mapa vivo 2D + vista 3D del territorio -->

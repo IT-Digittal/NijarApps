@@ -214,6 +214,13 @@ async def generar(db: AsyncSession) -> list[RecomendacionIA]:
         recs = await generar_openai(db)
     else:
         recs = _con_clave(_reglas(await direccion_service._kpis(db)))
+    # Energía: potencia sobredimensionada y subidas de consumo con los datos reales de Datadis
+    try:
+        from nijar_dti.services import energia_municipal_service
+
+        recs.extend(_con_clave(await energia_municipal_service.recomendaciones_direccion(db)))
+    except Exception as exc:  # noqa: BLE001 — sin datos de energía no se frena el resto
+        log.warning("Recomendaciones de energía no disponibles: %s", exc)
     await _merge_estados(db, recs)
     recs.sort(key=lambda r: _ORDEN.get(r.prioridad, 9))
     return recs

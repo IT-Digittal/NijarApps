@@ -28,6 +28,7 @@ from nijar_dti.schemas.verticales import (
     CamaraCCTVOut,
     ContenedoresPage,
     CuadroMandoOut,
+    DetalleSuministroEnergia,
     EnergiaMunicipioSerie,
     EnergiaOverview,
     EstadoDatadis,
@@ -37,12 +38,14 @@ from nijar_dti.schemas.verticales import (
     MovilidadOverview,
     PuntoMovilidadOut,
     ResiduosOverview,
+    ResumenEnergiaMunicipal,
     SectorAguaOut,
     SeguridadOverview,
+    SuministroAnalisis,
     SuministrosPage,
     ZonaAlumbradoOut,
 )
-from nijar_dti.services import datadis_service, energia_anexos_service
+from nijar_dti.services import datadis_service, energia_anexos_service, energia_municipal_service
 from nijar_dti.services import verticales_service as svc
 
 router = APIRouter()
@@ -263,6 +266,70 @@ async def energia_curva(
     hasta = datetime.now(UTC)
     datos = await datadis_service.curva_suministro(db, cups, hasta - timedelta(days=dias), hasta)
     return [LecturaHorariaOut(**d) for d in datos]
+
+
+@router.get(
+    "/energia/municipal/resumen",
+    response_model=ResumenEnergiaMunicipal,
+    summary="Energía municipal real (Datadis): consumo, coste, evolución y recomendaciones",
+)
+async def energia_municipal_resumen(
+    db: AsyncSession = Depends(get_db), user: CurrentUser = Depends(_ver_energia)
+) -> ResumenEnergiaMunicipal:
+    return energia_municipal_service.resumen(await energia_municipal_service.analizar(db))
+
+
+@router.get(
+    "/energia/municipal/suministros",
+    response_model=list[SuministroAnalisis],
+    summary="Suministros municipales (CUPS) con consumo real y análisis de potencia",
+)
+async def energia_municipal_suministros(
+    tipo: Literal["alumbrado", "edificios", "revisar", "autoconsumo", "sin_datos"] | None = None,
+    buscar: str | None = Query(None, max_length=80),
+    orden: Literal[
+        "consumo", "variacion", "ahorro", "utilizacion", "cups", "direccion"
+    ] = "consumo",
+    db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(_ver_energia),
+) -> list[SuministroAnalisis]:
+    a = await energia_municipal_service.analizar(db)
+    return energia_municipal_service.filtrar(a.filas, tipo, buscar, orden)
+
+
+@router.get(
+    "/energia/municipal/suministros.csv",
+    summary="Listado de suministros con consumo y análisis de potencia (CSV)",
+    response_class=Response,
+)
+async def energia_municipal_suministros_csv(
+    tipo: Literal["alumbrado", "edificios", "revisar", "autoconsumo", "sin_datos"] | None = None,
+    db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(_ver_energia),
+) -> Response:
+    a = await energia_municipal_service.analizar(db)
+    filas = energia_municipal_service.filtrar(a.filas, tipo, None, "consumo")
+    return Response(
+        energia_municipal_service.csv_suministros(filas, a.periodo),
+        media_type="text/csv; charset=utf-8",
+        headers={
+            "Content-Disposition": f'attachment; filename="suministros_nijar_{a.periodo}.csv"'
+        },
+    )
+
+
+@router.get(
+    "/energia/municipal/suministros/{cups}",
+    response_model=DetalleSuministroEnergia,
+    summary="Ficha de un suministro: contrato, evolución mensual y perfil horario",
+)
+async def energia_municipal_detalle(
+    cups: str, db: AsyncSession = Depends(get_db), user: CurrentUser = Depends(_ver_energia)
+) -> DetalleSuministroEnergia:
+    d = await energia_municipal_service.detalle(db, cups)
+    if d is None:
+        raise HTTPException(status_code=404, detail="Suministro no encontrado")
+    return d
 
 
 def _intervalo_anexos(desde: date | None, hasta: date | None) -> tuple[date, date]:

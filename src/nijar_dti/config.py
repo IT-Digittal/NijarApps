@@ -244,6 +244,9 @@ class Settings(BaseSettings):
     # Factores para calcular ahorro € y CO₂ evitado (no hay dato directo: se
     # muestran como "estimado"). Ajustables por entorno.
     precio_kwh_eur: float = 0.165
+    # Término de potencia medio (peajes + cargos + comercializadora), €/kW·año:
+    # para estimar el ahorro de ajustar la potencia contratada de un suministro.
+    precio_potencia_kw_anio_eur: float = 30.0
     factor_co2_kwh_kg: float = 0.19
     baseline_consumo_vsap_factor: float = 1.45  # VSAP consumiría ~45% más que LED
     # Motor de las recomendaciones de dirección: reglas (por defecto) u OpenAI
