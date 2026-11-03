@@ -6,6 +6,8 @@ Uso (en producción, dentro del contenedor de la API):
     python -m nijar_dti.workers.datadis_carga --solo publico --desde 2025-01-01
     python -m nijar_dti.workers.datadis_carga --solo privado --mes-desde 2026/01
     python -m nijar_dti.workers.datadis_carga --dry-run          # consulta sin guardar
+    # repetir solo algunos suministros (p. ej. los que dieron 429 el día anterior)
+    python -m nijar_dti.workers.datadis_carga --solo privado --mes-desde 2025/01 --cups ES1,ES2
 
 Ventana por defecto: datos públicos del mes en curso hasta ayer (y del mes
 anterior en los 5 primeros días); curva privada del mes en curso (y anterior).
@@ -37,6 +39,8 @@ async def ejecutar(a: argparse.Namespace) -> int:
             mes_desde=a.mes_desde,
             mes_hasta=mes_hasta,
             solo=a.solo,
+            cups={c.strip().upper() for c in a.cups.split(",") if c.strip()} if a.cups else None,
+            guardar=not a.dry_run,
         )
         print(json.dumps(resultado, ensure_ascii=False, indent=2, default=str))
         if a.dry_run:
@@ -57,6 +61,7 @@ def main() -> None:
     p.add_argument("--hasta", help="datos públicos hasta AAAA-MM-DD (por defecto, ayer)")
     p.add_argument("--mes-desde", help="curva privada desde AAAA/MM")
     p.add_argument("--mes-hasta", help="curva privada hasta AAAA/MM (por defecto, mes actual)")
+    p.add_argument("--cups", help="solo estos CUPS, separados por comas (curva privada)")
     p.add_argument("--dry-run", action="store_true")
     sys.exit(asyncio.run(ejecutar(p.parse_args())))
 
