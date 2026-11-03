@@ -155,3 +155,30 @@ y consumos estructurados como los anexos de los pliegos de suministro eléctrico
 
 Los datos de contrato se rellenan en la siguiente carga privada (`datadis_carga
 --solo privado`); hasta entonces peaje, tensión y potencias salen vacíos.
+
+## Pantallas del vertical «Energía municipal» (datos reales)
+
+Con los suministros cargados de la API privada, el vertical deja de mostrar la
+maqueta de demostración y pinta los datos reales (`frontend/dashboard/assets/energia-municipal.js`,
+servicio `services/energia_municipal_service.py`, endpoints `/api/v1/verticales/energia/municipal/*`):
+
+| Sección | Qué muestra |
+|---|---|
+| Resumen ejecutivo | Consumo y coste estimado del último mes cerrado, alumbrado frente a edificios, interanual, CO₂, evolución mensual (18 meses), los que más consumen y recomendaciones |
+| Consumo del municipio | Datadis público (todo el término) + descarga de los Anexos I y II |
+| Suministros (CUPS) | Los CUPS con búsqueda, filtros (alumbrado, edificios, potencia a revisar, autoconsumo, sin lecturas) y CSV; ficha con contrato, potencia usada, consumo mensual, perfil horario laborable/festivo y últimos 7 días |
+| Autoconsumo | Energía autoconsumida y excedentes que publica Datadis (12 meses) |
+| Costes y contratos | Coste estimado y contratos con la potencia sobredimensionada, con propuesta y ahorro |
+| Informes | Resumen del mes listo para copiar y descargas (Anexos, suministros, potencia a revisar) |
+
+Criterios:
+
+- **Coste** = consumo × `PRECIO_KWH_EUR` (Datadis no da facturas): siempre «estimado».
+- **Potencia a revisar**: pico horario de los últimos 12 meses < 50 % de la mayor
+  potencia contratada y al menos 6 meses completos de lecturas. Propuesta = pico ×
+  1,3 redondeado a 0,5 kW; ahorro = kW que se reducen × `PRECIO_POTENCIA_KW_ANIO_EUR`
+  (30 €/kW·año por defecto). Confirmar con el maxímetro de la factura.
+- **Sin lecturas recientes**: más de 10 días sin consumos en Datadis.
+- El mismo criterio de potencia alimenta el KPI de la Vista de Gobierno → Energía y
+  las recomendaciones de Dirección del área «Energía».
+- El análisis se guarda en memoria 10 minutos y se recalcula al entrar lecturas nuevas.

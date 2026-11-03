@@ -263,6 +263,9 @@ async def cargar_privado(
         )
     await db.flush()
     await recalcular_consumo_mes(db)
+    from nijar_dti.services.energia_municipal_service import invalidar_cache
+
+    invalidar_cache()
     return cuenta
 
 

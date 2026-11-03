@@ -2617,20 +2617,27 @@ async def panel_energia(db: AsyncSession) -> PanelDireccion:
     ).all()
     curva: list[float] | None = None
     sobredim: int | None = None
+    ahorro_potencia = 0.0
+    alumbrado_cups = {su.cups for su in sums if (su.tipo or "").lower() == "alumbrado"}
     if horarias:
         acum: dict[int, list[float]] = defaultdict(list)
-        maximo: dict[str, float] = defaultdict(float)
         por_hora_dia: dict[tuple[date, int], float] = defaultdict(float)
         for cups, momento, kwh in horarias:
-            por_hora_dia[(momento.date(), momento.hour)] += float(kwh)
-            maximo[str(cups)] = max(maximo[str(cups)], float(kwh))
+            if str(cups) in alumbrado_cups:
+                continue  # curva de los edificios: el alumbrado va en su propio módulo
+            local = momento.astimezone(_MADRID)
+            por_hora_dia[(local.date(), local.hour)] += float(kwh)
         for (_, h), v in por_hora_dia.items():
             acum[h].append(v)
-        curva = [round(statistics.fmean(acum[h]), 1) if acum.get(h) else 0.0 for h in range(24)]
-        contratada = {su.cups: float(su.potencia_contratada_kw) for su in sums}
-        sobredim = sum(
-            1 for c, m in maximo.items() if contratada.get(c) and m < 0.6 * contratada[c]
-        )
+        if acum:
+            curva = [round(statistics.fmean(acum[h]), 1) if acum.get(h) else 0.0 for h in range(24)]
+        # Mismo criterio que Energía municipal → Costes y contratos
+        from nijar_dti.services import energia_municipal_service
+
+        analisis = await energia_municipal_service.analizar(db)
+        revisar = [f for f in analisis.filas if f.ahorro_potencia_eur_anio]
+        sobredim = len(revisar)
+        ahorro_potencia = sum(f.ahorro_potencia_eur_anio or 0 for f in revisar)
 
     # Datadis público: consumo del municipio por sector y mes (6 meses)
     filas_mun = (
@@ -2846,7 +2853,11 @@ async def panel_energia(db: AsyncSession) -> PanelDireccion:
                 "Potencia sobredimensionada",
                 str(sobredim) if sobredim is not None else "—",
                 unidad="CUPS" if sobredim is not None else None,
-                detalle="máximo < 60 % de lo contratado"
+                detalle=(
+                    f"ahorro estimado {fmt_num(ahorro_potencia)} €/año"
+                    if sobredim
+                    else "pico < 50 % de lo contratado"
+                )
                 if sobredim is not None
                 else "con Datadis privado",
                 origen="real" if sobredim is not None else "integrar",
