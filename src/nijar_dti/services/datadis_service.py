@@ -180,11 +180,23 @@ def momento_utc(lectura: LecturaHoraria) -> datetime:
 
 
 async def cargar_privado(
-    db: AsyncSession, cli: ClienteDatadis, mes_desde: str, mes_hasta: str
+    db: AsyncSession,
+    cli: ClienteDatadis,
+    mes_desde: str,
+    mes_hasta: str,
+    *,
+    cups: set[str] | None = None,
+    guardar_cada_suministro: bool = True,
 ) -> dict[str, int]:
-    """Suministros municipales + curva horaria entre dos meses (``AAAA/MM``)."""
+    """Suministros municipales + curva horaria entre dos meses (``AAAA/MM``).
+
+    ``cups``: solo esos suministros (p. ej. para repetir uno que dio error).
+    ``guardar_cada_suministro=False`` no hace commit (prueba en seco).
+    """
     cuenta = {"suministros": 0, "nuevos": 0, "lecturas": 0, "errores": 0}
     suministros = await cli.suministros()
+    if cups:
+        suministros = [sm for sm in suministros if sm.cups in cups]
     for sm in suministros:
         cuenta["suministros"] += 1
         obj = (
@@ -254,7 +266,8 @@ async def cargar_privado(
                 )
             )
         cuenta["lecturas"] += len(filas)
-        await db.commit()
+        if guardar_cada_suministro:
+            await db.commit()
         logger.info(
             "Datadis: suministro cargado",
             progreso=f"{cuenta['suministros']}/{len(suministros)}",
@@ -400,6 +413,8 @@ async def ejecutar_carga(
     mes_desde: str | None = None,
     mes_hasta: str | None = None,
     solo: str | None = None,
+    cups: set[str] | None = None,
+    guardar: bool = True,
 ) -> dict[str, Any]:
     """Carga pública y/o privada. No propaga errores de Datadis: los resume."""
     s = get_settings()
@@ -419,7 +434,12 @@ async def ejecutar_carga(
             else:
                 try:
                     resultado["privado"] = await cargar_privado(
-                        db, cli, mes_desde or m_ini, mes_hasta or m_fin
+                        db,
+                        cli,
+                        mes_desde or m_ini,
+                        mes_hasta or m_fin,
+                        cups=cups,
+                        guardar_cada_suministro=guardar,
                     )
                 except DatadisError as exc:
                     resultado["privado"] = {"error": str(exc)}
