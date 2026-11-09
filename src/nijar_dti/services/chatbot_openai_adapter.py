@@ -26,6 +26,7 @@ from nijar_dti.models.faq import InteraccionChatbot, NivelConfianza
 from nijar_dti.models.recurso_turistico import RecursoTuristico
 from nijar_dti.schemas.chatbot import ChatQueryIn, ChatResponseOut, FuenteRespuesta
 from nijar_dti.services import chatbot_service as lexical
+from nijar_dti.services import normativa_service
 
 log = logging.getLogger(__name__)
 
@@ -44,6 +45,12 @@ def _instrucciones(idioma: str) -> str:
         "conocimiento general del destino (geografía, naturaleza, cultura almeriense). "
         "NUNCA inventes horarios, precios, teléfonos ni servicios que no estén en el contexto: "
         "si no tienes el dato, dilo y recomienda consultar en la Oficina de Turismo. "
+        "Si la pregunta trata de normas municipales (ordenanzas: venta ambulante, terrazas, "
+        "ruidos, residuos, vertidos, circulación, taxis, tasas…) responde con la NORMATIVA "
+        "MUNICIPAL del contexto: resume lo que dice, cita entre comillas el nombre de la "
+        "ordenanza y el artículo, y añade que el texto oficial es el publicado en la sede "
+        "electrónica (puedes dar el enlace al PDF del contexto). Si la normativa del contexto "
+        "no responde a la pregunta, dilo y no lo supongas. "
         "Si la pregunta no tiene relación con el turismo o los servicios de Níjar, "
         "indica amablemente que solo puedes ayudar con el destino."
     )
@@ -100,10 +107,22 @@ async def _titulares_agenda() -> list[str]:
     return lineas
 
 
-async def _contexto(db: AsyncSession, payload: ChatQueryIn) -> tuple[str, list[str]]:
-    """Construye el contexto de grounding y devuelve (texto, intents_usados)."""
+async def _contexto(
+    db: AsyncSession, payload: ChatQueryIn
+) -> tuple[str, list[str], list[normativa_service.Pasaje]]:
+    """Construye el contexto de grounding y devuelve (texto, intents_usados, pasajes)."""
     partes: list[str] = []
     intents: list[str] = []
+
+    # Normativa municipal (ordenanzas de la sede electrónica) afín a la pregunta
+    pasajes: list[normativa_service.Pasaje] = []
+    try:
+        pasajes = await normativa_service.buscar_fragmentos(db, payload.pregunta, limite=4)
+    except Exception:  # noqa: BLE001 — sin normativa, el asistente sigue respondiendo
+        log.warning("No se pudo consultar la normativa municipal", exc_info=True)
+    if pasajes:
+        partes.append("NORMATIVA MUNICIPAL relacionada (ordenanza, artículo, enlace y texto):")
+        partes.append(normativa_service.contexto_asistente(pasajes))
 
     # FAQs más afines a la pregunta (reutiliza el matching del motor léxico)
     faqs = await lexical._cargar_faqs_activas(db)
@@ -182,7 +201,7 @@ async def _contexto(db: AsyncSession, payload: ChatQueryIn) -> tuple[str, list[s
         )
         partes.extend(agenda)
 
-    return "\n".join(partes), intents
+    return "\n".join(partes), intents, pasajes
 
 
 async def _llamada_openai(settings: Settings, mensajes: list[dict]) -> tuple[str, dict]:
@@ -218,7 +237,7 @@ async def consultar_openai(
         return await _fallback(db, payload, settings)
 
     try:
-        contexto, intents = await _contexto(db, payload)
+        contexto, intents, pasajes = await _contexto(db, payload)
         mensajes = [
             {"role": "system", "content": _instrucciones(payload.idioma)},
             {
@@ -234,21 +253,27 @@ async def consultar_openai(
         log.warning("OpenAI no disponible (%s) — usando fallback", exc)
         return await _fallback(db, payload, settings)
 
-    # Confianza: alta si hubo FAQs afines en el contexto, media en caso contrario
-    nivel = NivelConfianza.ALTA if intents else NivelConfianza.MEDIA
-    score = 0.9 if intents else 0.6
+    # Confianza: alta si hubo FAQs u ordenanzas afines en el contexto, media si no
+    nivel = NivelConfianza.ALTA if intents or pasajes else NivelConfianza.MEDIA
+    score = 0.9 if intents or pasajes else 0.6
     intent = intents[0] if intents else None
 
-    fuentes = [
-        FuenteRespuesta(
-            tipo="openai",
-            referencia=settings.openai_model,
-            descripcion="Respuesta generada por IA con datos oficiales de la plataforma",
-        )
-    ] + [
-        FuenteRespuesta(tipo="faq", referencia=i, descripcion="FAQ municipal usada como contexto")
-        for i in intents[:3]
-    ]
+    fuentes = (
+        [
+            FuenteRespuesta(
+                tipo="openai",
+                referencia=settings.openai_model,
+                descripcion="Respuesta generada por IA con datos oficiales de la plataforma",
+            )
+        ]
+        + [
+            FuenteRespuesta(
+                tipo="faq", referencia=i, descripcion="FAQ municipal usada como contexto"
+            )
+            for i in intents[:3]
+        ]
+        + normativa_service.fuentes(pasajes)
+    )
 
     latencia_ms = int((time.perf_counter() - inicio) * 1000)
     interaccion = InteraccionChatbot(
