@@ -434,11 +434,26 @@ async def consultar(db: AsyncSession, payload: ChatQueryIn) -> ChatResponseOut:
 
     mejor, score = _buscar_mejor_intent(payload.pregunta, payload.idioma, faqs)
 
+    respuesta_normativa = None
     if mejor is None or score < UMBRAL_CONFIANZA_MEDIA:
+        # Sin FAQ que encaje: ¿lo responde alguna ordenanza municipal?
+        from nijar_dti.services import normativa_service
+
+        try:
+            pasajes = await normativa_service.buscar_fragmentos(db, payload.pregunta, limite=2)
+        except Exception:  # noqa: BLE001
+            pasajes = []
+        respuesta_normativa = normativa_service.respuesta_basica(pasajes, payload.idioma)
+    if respuesta_normativa is not None:
+        nivel = NivelConfianza.MEDIA
+        respuesta, fuentes_n = respuesta_normativa
+        intent_detectado: str | None = "normativa_municipal"
+        fuentes: list[FuenteRespuesta] | None = fuentes_n
+    elif mejor is None or score < UMBRAL_CONFIANZA_MEDIA:
         nivel = NivelConfianza.FUERA_DE_DOMINIO
         respuesta = _fuera_de_dominio_msg(payload.idioma)
-        intent_detectado: str | None = None
-        fuentes: list[FuenteRespuesta] | None = None
+        intent_detectado = None
+        fuentes = None
     elif score < UMBRAL_CONFIANZA_ALTA:
         nivel = NivelConfianza.MEDIA
         respuesta = _respuesta_idioma(mejor, payload.idioma)

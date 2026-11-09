@@ -25,6 +25,7 @@ from nijar_dti.models.fuente_dato import FuenteDato
 from nijar_dti.models.geografia import CapaGeografica, ElementoGeografico, MedicionGemelo
 from nijar_dti.models.incidencia import Incidencia
 from nijar_dti.models.metrica_historica import MetricaHistorica
+from nijar_dti.models.normativa import Normativa, NormativaFragmento
 from nijar_dti.models.observacion import Observacion
 from nijar_dti.models.opinion import Opinion
 from nijar_dti.models.recomendacion_direccion import RecomendacionDireccion
@@ -68,6 +69,8 @@ __all__ = [
     "MetricaPublicidad",
     "MetricaHistorica",
     "RegistroVertical",
+    "Normativa",
+    "NormativaFragmento",
     "EstadoActivo",
     "Luminaria",
     "Observacion",

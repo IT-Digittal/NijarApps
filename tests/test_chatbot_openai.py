@@ -52,7 +52,7 @@ class TestInstrucciones:
 class TestConsultarOpenai:
     async def test_respuesta_con_grounding(self, monkeypatch):
         async def fake_contexto(db, payload):
-            return "FAQs oficiales relacionadas:\n- P: ¿Playas?", ["playas_destacadas"]
+            return "FAQs oficiales relacionadas:\n- P: ¿Playas?", ["playas_destacadas"], []
 
         async def fake_llamada(settings, mensajes):
             assert any(m["role"] == "user" for m in mensajes)
@@ -72,7 +72,7 @@ class TestConsultarOpenai:
 
     async def test_sin_faqs_afines_nivel_media(self, monkeypatch):
         async def fake_contexto(db, payload):
-            return "", []
+            return "", [], []
 
         async def fake_llamada(settings, mensajes):
             return "Respuesta general del destino.", {}
@@ -83,6 +83,31 @@ class TestConsultarOpenai:
         out = await adapter.consultar_openai(FakeSession(), _payload(), settings=_settings())
         assert out.nivel_confianza == "media"
         assert out.intent_detectado is None
+
+    async def test_cita_la_normativa_en_las_fuentes(self, monkeypatch):
+        from uuid import uuid4
+
+        from nijar_dti.services.normativa_service import Pasaje
+
+        pasaje = Pasaje(
+            uuid4(), "Ordenanza del comercio ambulante", "Artículo 12", "Prohibida…", 0.3
+        )
+
+        async def fake_contexto(db, payload):
+            return "NORMATIVA MUNICIPAL…", [], [pasaje]
+
+        async def fake_llamada(settings, mensajes):
+            assert "ordenanza" in mensajes[0]["content"].lower()
+            return "No: la «Ordenanza del comercio ambulante» (art. 12) lo prohíbe.", {}
+
+        monkeypatch.setattr(adapter, "_contexto", fake_contexto)
+        monkeypatch.setattr(adapter, "_llamada_openai", fake_llamada)
+
+        out = await adapter.consultar_openai(FakeSession(), _payload(), settings=_settings())
+        assert out.nivel_confianza == "alta"
+        normativa = [f for f in out.fuentes if f.tipo == "normativa"]
+        assert normativa and "Artículo 12" in normativa[0].descripcion
+        assert normativa[0].referencia.endswith(f"/normativa/{pasaje.normativa_id}/pdf")
 
     async def test_sin_clave_usa_fallback(self, monkeypatch):
         llamado = {}
@@ -100,7 +125,7 @@ class TestConsultarOpenai:
 
     async def test_error_de_api_usa_fallback(self, monkeypatch):
         async def fake_contexto(db, payload):
-            return "", []
+            return "", [], []
 
         async def fake_llamada(settings, mensajes):
             raise RuntimeError("timeout simulado")
@@ -138,7 +163,7 @@ class TestConsumoIA:
             registros.append(kw)
 
         async def fake_contexto(db, payload):
-            return "", []
+            return "", [], []
 
         async def fake_llamada(settings, mensajes):
             return "Respuesta.", {"prompt_tokens": 321, "completion_tokens": 45}

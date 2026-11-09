@@ -34,6 +34,7 @@ cómo **verificarla**. El catálogo completo de fuentes está en
 | **Consumo eléctrico** (Datadis) | 🟡 público · ⏳ privado | `/api/v1/verticales/energia/municipio`, `/energia/suministros/{cups}/curva`, `/energia/datadis/estado` | [runbook](runbook-datadis.md) | `python -m scripts.verificar_datadis` (datos públicos sin usuario; privada con `DATADIS_USUARIO/PASSWORD`) |
 | **Series oficiales de turismo** (INE EOH/FRONTUR/EGATUR, Junta-IECA, AENA) | 🟢 | Vista de Gobierno (Turismo, portada), `/api/v1/data/contexto/*` | [runbook](runbook-contexto-oficial.md) | `python -m nijar_dti.workers.contexto_backfill --guardar` |
 | **Inventario de alumbrado** (Excel de WeLight; telegestión SOL-X) | ✅ inventario · ⏳ telegestión | `/api/v1/verticales/alumbrado/*`, Vista de Gobierno · Alumbrado | [runbook](runbook-inventario-alumbrado-welight.md) | `python -m nijar_dti.workers.importar_inventario_alumbrado Inventario.xlsx --dry-run` |
+| **Normativa municipal** (ordenanzas del portal de transparencia de la sede electrónica) | ✅ importación · ⏳ revisión periódica | `/api/v1/normativa/*`, DTI → Normativa municipal, asistente | [runbook](runbook-normativa-municipal.md) | `python -m nijar_dti.workers.importar_normativa <carpeta> --dry-run` |
 | **Contenidos abiertos del tótem** (OpenStreetMap + Wikipedia/Commons) | 🟢 | `/api/v1/tourism/services` (gastronomía), `/tourism/resources` (artesanía, fotos) | ver detalle abajo | `python -m nijar_dti.workers.contenidos_abiertos --dry-run` |
 
 ---

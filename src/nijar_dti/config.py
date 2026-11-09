@@ -235,6 +235,9 @@ class Settings(BaseSettings):
     # --- Almacenamiento ---
     storage_backend: Literal["local", "s3", "gcs"] = "local"
     storage_local_path: str = "/data/storage"
+    # Dominio público de la plataforma (el mismo DOMINIO del Caddyfile): enlaces absolutos
+    # en las respuestas del asistente, p. ej. al PDF de una ordenanza.
+    dominio: str = ""
 
     # --- Observabilidad ---
     sentry_dsn: str = ""

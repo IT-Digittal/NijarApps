@@ -19,6 +19,7 @@ from nijar_dti.api.v1 import (
     health,
     incidencias,
     iot,
+    normativa,
     noticias,
     prediccion,
     publicidad,
@@ -56,4 +57,5 @@ api_router.include_router(noticias.router, prefix="/noticias", tags=["noticias"]
 api_router.include_router(geografia.router, prefix="/geo", tags=["geografia"])
 api_router.include_router(cobertura.router, prefix="/cobertura", tags=["cobertura"])
 api_router.include_router(documentos.router, prefix="/documentos", tags=["documentos"])
+api_router.include_router(normativa.router, prefix="/normativa", tags=["normativa"])
 api_router.include_router(publicidad.router, prefix="/publicidad", tags=["publicidad"])
